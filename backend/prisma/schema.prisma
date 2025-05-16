@@ -1,0 +1,213 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+// 기본 사용자 모델 - 모든 사용자 타입(관리자, 강사, 학생)의 공통 정보
+model User {
+  id        Int      @id @default(autoincrement())
+  userId    String   @unique
+  password  String
+  name      String
+  role      Role     // enum으로 변경
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  notices   Notice[] // 공지사항 작성자 관계
+
+  @@map("users")
+}
+
+// 학생 모델 - 수강생 정보
+model Student {
+  id              Int          @id @default(autoincrement())
+  userId          String       @unique @db.VarChar(255)
+  password        String       @db.VarChar(255)
+  name            String       @db.VarChar(100)
+  phoneNumber     String?      @map("phone_number") @db.VarChar(20)
+  emergencyContact String?     @map("emergency_contact") @db.VarChar(20) // 비상연락처
+  birthDate       DateTime?    @map("birth_date") // 생년월일
+  notes           String?      @db.Text // 특이사항 (알러지, 부상 이력 등)
+  level           String?      @db.VarChar(50) // 수강생 레벨
+  enrollments     Enrollment[] // 수강 신청 내역
+  attendances     Attendance[] // 출석 기록
+  payments        Payment[]    // 결제 내역
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@map("students")
+}
+
+// 강사 모델 - 강사 정보
+model Teacher {
+  id                Int           @id @default(autoincrement())
+  userId            String        @unique @db.VarChar(255)
+  password          String        @db.VarChar(255)
+  name              String        @db.VarChar(100)
+  phoneNumber       String?       @map("phone_number") @db.VarChar(20)
+  introduction      String?       @db.Text // 강사 소개
+  photoUrl          String?       @map("photo_url") @db.VarChar(255)
+  education         String[]      // 학력/경력 사항
+  specialties       String[]      // 전문 분야 (예: 클래식 발레, 모던 발레 등)
+  certifications    String[]      // 자격증 정보
+  yearsOfExperience Int?         @map("years_of_experience") // 교습 경력 연수
+  bankAccount       BankAccount?  // 계좌 정보 (1:1 관계)
+  availableTimes    Json?        @map("available_times") // 강의 가능 시간 (JSON 형식)
+  classes           Class[]       // 담당 클래스
+  classDetails      ClassDetail[] // 클래스 상세 정보
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@map("teachers")
+}
+
+// 강사 계좌 정보 모델
+model BankAccount {
+  id          Int      @id @default(autoincrement())
+  teacherId   Int      @unique @map("teacher_id") // 1:1 관계를 위한 unique 제약
+  bankName    String   @map("bank_name")
+  accountNumber String @map("account_number")
+  accountHolder String @map("account_holder")
+  teacher     Teacher  @relation(fields: [teacherId], references: [id])
+
+  @@map("bank_accounts")
+}
+
+// 수업 모델 - 개설된 클래스 정보
+model Class {
+  id            Int          @id @default(autoincrement())
+  className     String       @map("class_name") @db.VarChar(100)
+  classCode     String       @unique @map("class_code") @db.VarChar(50)
+  description   String?      @db.Text
+  maxStudents   Int         @map("max_students")
+  currentStudents Int       @default(0) @map("current_students")
+  tuitionFee    Decimal      @map("tuition_fee") @db.Decimal(10, 2)
+  teacherId     Int          @map("teacher_id")
+  dayOfWeek     String       @map("day_of_week") @db.VarChar(10)
+  time          DateTime     @db.Time()
+  level         String       @db.VarChar(50)
+  status        String       @default("DRAFT") // 'DRAFT' | 'OPEN' | 'CLOSED' | 'CANCELLED'
+  registrationMonth DateTime @map("registration_month") // 수강신청 월 (예: 2024-03-01)
+  startDate     DateTime     @map("start_date") // 수업 시작일
+  endDate       DateTime     @map("end_date") // 수업 종료일
+  registrationStartDate DateTime @map("registration_start_date") // 수강신청 시작일
+  registrationEndDate   DateTime @map("registration_end_date") // 수강신청 마감일
+  backgroundColor String?    @map("background_color") @db.VarChar(50)
+  teacher       Teacher      @relation(fields: [teacherId], references: [id])
+  enrollments   Enrollment[]
+  classDetail   ClassDetail? @relation(fields: [classDetailId], references: [id])
+  classDetailId Int?        @map("class_detail_id")
+  notices       Notice[]    
+  attendances   Attendance[] 
+
+  @@map("classes")
+}
+
+// 수업 상세 정보 모델
+model ClassDetail {
+  id              Int       @id @default(autoincrement())
+  description     String    @db.Text
+  teacherId       Int       @map("teacher_id")
+  locationName    String    @map("location_name")
+  mapImageUrl     String    @map("map_image_url")
+  requiredItems   String[]  @map("required_items") // 준비물 목록
+  curriculum      String[]  // 커리큘럼 주차별 계획
+  classes         Class[]
+  teacher         Teacher   @relation(fields: [teacherId], references: [id])
+
+  @@map("class_details")
+}
+
+// 수강 신청 모델
+model Enrollment {
+  id            Int         @id @default(autoincrement())
+  classId       Int         @map("class_id")
+  studentId     Int         @map("student_id")
+  status        String      @default("PENDING") // 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED'
+  enrolledAt    DateTime    @default(now())
+  cancelledAt   DateTime?
+  class         Class       @relation(fields: [classId], references: [id])
+  student       Student     @relation(fields: [studentId], references: [id])
+  payment       Payment[]
+  attendances   Attendance[]
+
+  @@unique([classId, studentId])
+  @@map("enrollments")
+}
+
+// 출석 관리 모델
+model Attendance {
+  id            Int         @id @default(autoincrement())
+  enrollmentId  Int         @map("enrollment_id")
+  classId       Int         @map("class_id")
+  studentId     Int         @map("student_id")
+  date          DateTime
+  status        String      // 'PRESENT' | 'ABSENT' | 'LATE'
+  note          String?     // 특이사항
+  enrollment    Enrollment  @relation(fields: [enrollmentId], references: [id])
+  class         Class       @relation(fields: [classId], references: [id])
+  student       Student     @relation(fields: [studentId], references: [id])
+
+  @@map("attendances")
+}
+
+// 결제 관리 모델
+model Payment {
+  id            Int         @id @default(autoincrement())
+  enrollmentId  Int         @map("enrollment_id")
+  studentId     Int         @map("student_id")
+  amount        Decimal     @db.Decimal(10,2)
+  status        String      // 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED'
+  method        String      // 'CARD' | 'BANK_TRANSFER' | 'CASH'
+  paidAt        DateTime?
+  month         DateTime    // 결제 대상 월
+  enrollment    Enrollment  @relation(fields: [enrollmentId], references: [id])
+  student       Student     @relation(fields: [studentId], references: [id])
+
+  @@map("payments")
+}
+
+// 공지사항 모델
+model Notice {
+  id          Int      @id @default(autoincrement())
+  title       String
+  content     String   @db.Text
+  authorId    Int      @map("author_id")
+  classId     Int?     @map("class_id") // null이면 전체 공지
+  isImportant Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  author      User     @relation(fields: [authorId], references: [id])
+  class       Class?   @relation(fields: [classId], references: [id])
+
+  @@map("notices")
+}
+
+// 탈퇴 이력 모델
+model WithdrawalHistory {
+  id             Int      @id @default(autoincrement())
+  userId         String   // 탈퇴한 사용자의 userId
+  userName       String   // 탈퇴한 사용자의 이름
+  userRole       String   // 탈퇴한 사용자의 역할 (student/teacher)
+  reason         String   @db.Text
+  reasonCategory String   // 'DISSATISFACTION' | 'UNUSED' | 'PRIVACY' | 'OTHER'
+  withdrawalDate DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  @@map("withdrawal_histories")
+}

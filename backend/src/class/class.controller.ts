@@ -1,0 +1,92 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  ParseIntPipe,
+} from '@nestjs/common';
+import { ClassService } from './class.service';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CreateClassDto } from '../admin/dto/create-class.dto';
+import { Role } from '@prisma/client';
+
+@Controller('classes')
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class ClassController {
+  constructor(private readonly classService: ClassService) {}
+
+  @Get(':id/details')
+  async getClassDetails(@Param('id', ParseIntPipe) id: number) {
+    return this.classService.getClassDetails(id);
+  }
+
+  @Get()
+  async getAllClasses(
+    @Query('dayOfWeek') dayOfWeek?: string,
+    @Query('teacherId') teacherId?: string,
+  ) {
+    return this.classService.getAllClasses({
+      dayOfWeek,
+      teacherId: teacherId ? parseInt(teacherId) : undefined,
+    });
+  }
+
+  @Post()
+  @Roles(Role.ADMIN)
+  async createClass(@Body() data: CreateClassDto) {
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setFullYear(endDate.getFullYear() + 1);
+
+    return this.classService.createClass({
+      ...data,
+      startDate,
+      endDate,
+    });
+  }
+
+  @Put(':id')
+  @Roles(Role.TEACHER, Role.ADMIN)
+  async updateClass(@Param('id', ParseIntPipe) id: number, @Body() data: any) {
+    return this.classService.updateClass(id, data);
+  }
+
+  @Delete(':id')
+  @Roles(Role.ADMIN)
+  async deleteClass(@Param('id', ParseIntPipe) id: number) {
+    return this.classService.deleteClass(id);
+  }
+
+  @Post(':id/enroll')
+  @Roles(Role.STUDENT)
+  async enrollClass(
+    @Param('id', ParseIntPipe) classId: number,
+    @Body('studentId', ParseIntPipe) studentId: number,
+  ) {
+    return this.classService.enrollStudent(classId, studentId);
+  }
+
+  @Delete(':id/enroll')
+  @Roles(Role.STUDENT, Role.ADMIN)
+  async unenrollClass(
+    @Param('id', ParseIntPipe) classId: number,
+    @Body('studentId', ParseIntPipe) studentId: number,
+  ) {
+    return this.classService.unenrollStudent(classId, studentId);
+  }
+
+  @Get('month/:month')
+  async getClassesByMonth(
+    @Param('month') month: string,
+    @Query('year') year: string,
+  ) {
+    return this.classService.getClassesByMonth(month, parseInt(year));
+  }
+}
