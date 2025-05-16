@@ -1,0 +1,143 @@
+제품 요구사항 문서 (PRD) - 발레 수업 수강신청 프로그램
+
+1. 프로젝트 개요
+
+발레 수업 수강신청 프로그램은 수강생들이 간단하고 직관적인 UI를 통해 요일별, 시간별로 가능한 수업을 확인하고 신청할 수 있는 플랫폼입니다. 관리자와 선생님은 각자의 대시보드를 통해 수강생 및 수업 정보를 관리할 수 있습니다. 이 프로그램은 최신 웹 기술 스택을 활용하여 빠르고 효율적인 서비스를 제공하며, 프론트엔드는 Vercel을 통해 배포하고 백엔드는 AWS를 활용하여 안정적인 서비스를 제공합니다.
+
+2. 유저 플로우
+
+수강생
+
+	1.	로그인 페이지에서 이메일과 비밀번호로 로그인.
+	2.	수업 목록 페이지에서 요일별, 시간별로 가능한 수업 확인.
+	3.	원하는 수업을 클릭하여 수업 소개, 선생님 소개, 선생님 사진 확인.
+	4.	수강신청 버튼을 눌러 신청 완료.
+
+선생님
+
+	1.	로그인 페이지에서 이메일과 비밀번호로 로그인 (수강생 로그인 입력란 사용).
+	2.	선생님 대시보드로 이동.
+	3.	수강생 관리 및 수업 정보 조회, 수정, 추가, 삭제 기능 사용.
+
+관리자
+
+	1.	로그인 페이지에서 admin 아이디와 비밀번호로 로그인 (수강생 로그인 입력란 사용).
+	2.	관리자 대시보드로 이동.
+	3.	수강생, 선생님, 수업 정보 조회, 추가, 삭제 기능 사용.
+
+3. 핵심 기능
+
+공통 기능
+
+	•	로그인/로그아웃 기능: 이메일과 비밀번호를 통한 인증.
+	•	단순한 UI/UX: 사용성을 극대화한 직관적인 인터페이스.
+
+수강생 기능
+
+	•	수업 조회: 요일별, 시간별로 가능한 수업 간단하게 표시.
+	•	수업 상세 보기: 수업 소개, 수업 이름, 선생님 소개, 선생님 사진 확인.
+	•	수강신청: 원하는 수업을 선택하여 신청.
+
+선생님 기능
+
+	•	수강생 관리: 자신의 수업을 듣는 수강생 목록 조회 및 관리.
+	•	수업 관리: 수업 정보 조회, 수정, 추가, 삭제.
+
+관리자 기능
+
+	•	전체 수강생 관리: 모든 수강생의 정보 조회, 추가, 삭제.
+	•	전체 선생님 관리: 모든 선생님의 정보 조회, 추가, 삭제.
+	•	전체 수업 관리: 모든 수업의 정보 조회, 추가, 삭제.
+
+4. 기술스택
+
+프론트엔드
+
+	•	Next.js App Router
+	•	ShadCN UI
+	•	Tailwind CSS
+	•	배포: Vercel
+
+백엔드
+
+	•	NestJS
+	•	배포: AWS (EC2 또는 Elastic Beanstalk)
+
+데이터베이스
+
+	•	PostgreSQL
+	•	호스팅: AWS RDS
+
+추가 기술 및 라이브러리
+
+	•	ORM: Prisma
+	•	인증: NextAuth.js
+	•	파일 업로드: Multer (선생님 사진 업로드)
+	•	상태 관리: React Query 또는 Redux Toolkit
+	•	환경 변수 관리: dotenv
+	•	로깅 및 모니터링: AWS CloudWatch 또는 Sentry
+
+배포 인프라
+
+	•	프론트엔드: Vercel을 통해 자동 배포 및 호스팅.
+	•	백엔드: AWS EC2 또는 Elastic Beanstalk를 사용하여 NestJS 서버 배포.
+	•	데이터베이스: AWS RDS에서 관리형 PostgreSQL 데이터베이스 사용.
+	•	CDN 및 로드 밸런싱: AWS CloudFront와 Elastic Load Balancing을 활용하여 콘텐츠 전송 속도 및 서버 부하 관리.
+
+ERD 및 SQL 스키마
+
+-- 수강생 테이블
+CREATE TABLE students (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  phone_number VARCHAR(20)
+);
+
+-- 선생님 테이블
+CREATE TABLE teachers (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  phone_number VARCHAR(20),
+  introduction TEXT,
+  photo_url VARCHAR(255)
+);
+
+-- 수업 테이블
+CREATE TABLE classes (
+  id SERIAL PRIMARY KEY,
+  class_name VARCHAR(100) NOT NULL,
+  class_code VARCHAR(50) UNIQUE NOT NULL,
+  description TEXT,
+  max_students INTEGER,
+  tuition_fee NUMERIC(10, 2),
+  teacher_id INTEGER REFERENCES teachers(id),
+  day_of_week VARCHAR(10),
+  time TIME
+);
+
+-- 수강 신청 테이블
+CREATE TABLE enrollments (
+  id SERIAL PRIMARY KEY,
+  student_id INTEGER REFERENCES students(id),
+  class_id INTEGER REFERENCES classes(id),
+  enrollment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+5. MVP 기능 개발 이후 추가 개선사항
+
+	•	결제 시스템 연동: 온라인 수강료 결제를 위한 결제 게이트웨이 통합.
+	•	알림 기능: 수업 변경사항이나 공지사항에 대한 이메일 또는 푸시 알림.
+	•	캘린더 연동: 개인 일정 관리를 위한 캘린더 기능 추가.
+	•	리뷰 및 평점 시스템: 수강생들이 수업과 선생님에 대한 리뷰 작성.
+	•	다국어 지원: 한국어 외 다른 언어 지원으로 사용자 범위 확대.
+	•	모바일 앱 개발: iOS 및 Android용 네이티브 앱 개발로 접근성 향상.
+	•	실시간 채팅: 선생님과 수강생 간의 커뮤니케이션을 위한 채팅 기능.
+	•	배포 인프라 개선: AWS Lambda와 API Gateway를 활용한 서버리스 아키텍처 도입.
+	•	CI/CD 파이프라인 구축: AWS CodePipeline 또는 GitHub Actions를 통한 자동 배포 환경 설정.
+	•	보안 강화: AWS WAF 및 Shield를 활용한 보안 설정 및 모니터링.
+
+이와 같이 AWS와 Vercel을 활용한 배포 계획을 포함하여 PRD를 업데이트하였습니다. 이를 통해 안정적이고 확장 가능한 인프라를 구축할 수 있습니다.
