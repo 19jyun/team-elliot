@@ -1,6 +1,7 @@
 import { IsString, MinLength, MaxLength, Matches } from 'class-validator';
-
+import { ApiProperty } from '@nestjs/swagger';
 export class SignupDto {
+  @ApiProperty({ example: 'student001' })
   @IsString()
   @MinLength(8)
   @MaxLength(15)
@@ -9,6 +10,7 @@ export class SignupDto {
   })
   userId: string;
 
+  @ApiProperty({ example: 'securePassword123' })
   @IsString()
   @MinLength(8)
   @Matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/, {
@@ -16,9 +18,11 @@ export class SignupDto {
   })
   password: string;
 
+  @ApiProperty({ example: '홍길동' })
   @IsString()
   name: string;
 
+  @ApiProperty({ example: '010-1234-5678' })
   @IsString()
   @Matches(/^01[0-9]-\d{4}-\d{4}$/, {
     message: '올바른 전화번호 형식이 아닙니다.',
