@@ -5,10 +5,8 @@ const apiClient = axios.create({
   withCredentials: true,
 });
 
-// Request interceptor to add Authorization header
 apiClient.interceptors.request.use(
   (config) => {
-    // Try to get token from localStorage or sessionStorage
     const token =
       (typeof window !== "undefined" && localStorage.getItem("token")) ||
       (typeof window !== "undefined" && sessionStorage.getItem("token"));
@@ -20,7 +18,6 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Helper methods
 const get = <T = any>(url: string, config?: AxiosRequestConfig) =>
   apiClient.get<T>(url, config).then((res: AxiosResponse<T>) => res.data);
 
