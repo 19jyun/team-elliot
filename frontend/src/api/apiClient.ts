@@ -1,17 +1,19 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
+import { getSession } from "next-auth/react";
 
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "/api",
   withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
 apiClient.interceptors.request.use(
-  (config) => {
-    const token =
-      (typeof window !== "undefined" && localStorage.getItem("token")) ||
-      (typeof window !== "undefined" && sessionStorage.getItem("token"));
-    if (token && config.headers) {
-      config.headers["Authorization"] = `Bearer ${token}`;
+  async (config) => {
+    const session = await getSession();
+    if (session?.accessToken && config.headers) {
+      config.headers["Authorization"] = `Bearer ${session.accessToken}`;
     }
     return config;
   },

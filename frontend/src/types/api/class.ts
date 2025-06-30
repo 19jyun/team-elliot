@@ -4,13 +4,18 @@ export interface Class {
   description?: string;
   teacherId: number;
   dayOfWeek: string;
-  startTime: string;
-  endTime: string;
+  startTime: string | Date;
+  endTime: string | Date;
   maxStudents: number;
   level: string;
   location: string;
   monthlyFee: number;
   backgroundColor?: string;
+  teacher?: {
+    id: number;
+    name: string;
+    photoUrl?: string;
+  };
   [key: string]: any;
 }
 

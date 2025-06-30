@@ -12,6 +12,7 @@ import { TimeSlot } from './TimeSlot'
 import { StatusStep } from './StatusStep'
 import { ChevronLeftIcon } from '@heroicons/react/24/outline'
 import { ClassDetails } from './ClassDetails'
+import { ClassDetailsResponse } from '@/types/api/class'
 
 export default function EnrollmentMonthPage() {
   const params = useParams()
@@ -48,7 +49,7 @@ export default function EnrollmentMonthPage() {
   const [showPolicy, setShowPolicy] = React.useState(true)
   const [agreed, setAgreed] = React.useState(false)
   const [showClassDetails, setShowClassDetails] = React.useState(false)
-  const [selectedClassDetails, setSelectedClassDetails] = React.useState(null)
+  const [selectedClassDetails, setSelectedClassDetails] = React.useState<ClassDetailsResponse | null>(null)
   const [showPolicyButton, setShowPolicyButton] = React.useState(false)
 
   const { data: classCards, isLoading } = useQuery({
@@ -59,10 +60,31 @@ export default function EnrollmentMonthPage() {
           ? currentDate.getFullYear() + 1
           : currentDate.getFullYear()
 
-      return getClassCards(`${params.month}`, year)
+      console.log('=== API QUERY DEBUG ===')
+      console.log('Querying for month:', params.month, 'year:', year)
+      const result = getClassCards(`${params.month}`, year)
+      console.log('API call result:', result)
+      return result
     },
     enabled: !!params.month,
   })
+
+  // Debug logging for API response
+  React.useEffect(() => {
+    console.log('=== API RESPONSE DEBUG ===')
+    console.log('classCards data:', classCards)
+    console.log('classCards type:', typeof classCards)
+    console.log('classCards length:', classCards?.length)
+    console.log('isLoading:', isLoading)
+    
+    if (classCards && classCards.length > 0) {
+      console.log('First class card raw data:', classCards[0])
+      console.log('All class cards:', classCards)
+    } else {
+      console.log('No class cards found or empty array')
+    }
+    console.log('=== END API RESPONSE DEBUG ===')
+  }, [classCards, isLoading])
 
   React.useEffect(() => {
     const hasAgreed = localStorage.getItem('refundPolicyAgreed') === 'true'
@@ -118,7 +140,6 @@ export default function EnrollmentMonthPage() {
   if (showClassDetails && selectedClassDetails) {
     return (
       <ClassDetails
-        classInfo={selectedClassDetails}
         onClose={() => setShowClassDetails(false)}
       />
     )
@@ -195,9 +216,62 @@ export default function EnrollmentMonthPage() {
                     {timeSlots.map((hour, index) => (
                       <TimeSlot key={index} hour={hour} />
                     ))}
-                    {classCards?.map((card) => (
-                      <ClassCard key={card.id} {...card} />
-                    ))}
+                    {classCards?.map((card) => {
+                      console.log('=== CARD MAPPING DEBUG ===')
+                      console.log('Processing card:', card)
+                      console.log('Card ID:', card.id)
+                      console.log('Card level:', card.level)
+                      console.log('Card teacher:', card.teacher)
+                      console.log('Card dayOfWeek:', card.dayOfWeek)
+                      console.log('Card startTime:', card.startTime)
+                      console.log('Card endTime:', card.endTime)
+                      console.log('Card backgroundColor:', card.backgroundColor)
+                      
+                      // Calculate day index
+                      const dayIndex = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'].indexOf(card.dayOfWeek)
+                      console.log('Calculated dayIndex:', dayIndex)
+                      
+                      // Calculate start hour - use 'startTime' field which is a Date object
+                      let startTimeString = '00:00'
+                      let endTimeString = '01:00'
+                      
+                      if (card.startTime) {
+                        const startTimeDate = new Date(card.startTime)
+                        const utcHours = startTimeDate.getUTCHours()
+                        const utcMinutes = startTimeDate.getUTCMinutes()
+                        startTimeString = `${utcHours.toString().padStart(2, '0')}:${utcMinutes.toString().padStart(2, '0')}`
+                      }
+                      
+                      if (card.endTime) {
+                        const endTimeDate = new Date(card.endTime)
+                        const utcHours = endTimeDate.getUTCHours()
+                        const utcMinutes = endTimeDate.getUTCMinutes()
+                        endTimeString = `${utcHours.toString().padStart(2, '0')}:${utcMinutes.toString().padStart(2, '0')}`
+                      }
+                      
+                      const startHour = parseInt(startTimeString.split(':')[0])
+                      console.log('Start time string:', startTimeString, 'End time string:', endTimeString, 'Start hour:', startHour)
+                      
+                      // Handle background color
+                      const bgColor = card.backgroundColor ? `bg-${card.backgroundColor}` : 'bg-gray-100'
+                      console.log('Background color:', bgColor)
+                      console.log('=== END CARD MAPPING DEBUG ===')
+                      
+                      return (
+                        <ClassCard 
+                          key={card.id} 
+                          level={card.level || '기본'}
+                          teacher={card.teacher?.name || '선생님'}
+                          startTime={startTimeString}
+                          endTime={endTimeString}
+                          dayIndex={dayIndex}
+                          startHour={startHour}
+                          bgColor={bgColor}
+                          containerWidth="100%"
+                          onInfoClick={() => handleClassInfoClick(card.id)}
+                        />
+                      )
+                    })}
                   </div>
                 </div>
               </div>

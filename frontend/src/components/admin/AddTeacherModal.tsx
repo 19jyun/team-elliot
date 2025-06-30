@@ -3,7 +3,7 @@
 import { Fragment, useState } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import axios from 'axios'
+import { createTeacher } from '@/api/admin'
 import { toast } from 'sonner'
 import { useCheckDuplicateUserId } from '@/hooks/useCheckDuplicateUserId'
 
@@ -31,8 +31,7 @@ export function AddTeacherModal({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: (data: typeof formData) =>
-      axios.post(`${process.env.NEXT_PUBLIC_API_URL}/admin/teachers`, data),
+    mutationFn: (data: typeof formData) => createTeacher(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teachers'] })
       toast.success('선생님이 추가되었습니다.')
