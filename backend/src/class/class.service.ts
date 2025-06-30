@@ -45,7 +45,8 @@ export class ClassService {
     tuitionFee: number;
     teacherId: number;
     dayOfWeek: string;
-    time: string;
+    startTime: string;
+    endTime: string;
     startDate: Date;
     endDate: Date;
   }) {
@@ -77,7 +78,8 @@ export class ClassService {
         currentStudents: 0,
         tuitionFee: data.tuitionFee,
         dayOfWeek: data.dayOfWeek,
-        time: new Date(`1970-01-01T${data.time}Z`),
+        startTime: new Date(`1970-01-01T${data.startTime}Z`),
+        endTime: new Date(`1970-01-01T${data.endTime}Z`),
         startDate: data.startDate,
         endDate: data.endDate,
         level: 'BEGINNER',
@@ -107,7 +109,12 @@ export class ClassService {
       where: { id },
       data: {
         ...data,
-        ...(data.time && { time: new Date(`1970-01-01T${data.time}Z`) }),
+        ...(data.startTime && {
+          startTime: new Date(`1970-01-01T${data.startTime}Z`),
+        }),
+        ...(data.endTime && {
+          endTime: new Date(`1970-01-01T${data.endTime}Z`),
+        }),
       },
     });
   }
@@ -208,13 +215,16 @@ export class ClassService {
 
   async getClassesByMonth(month: string, year: number) {
     const targetDate = new Date(`${year}-${month}-01`);
+    const nextMonth = new Date(targetDate);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
 
     return this.prisma.class.findMany({
       where: {
         AND: [
           {
             registrationMonth: {
-              equals: targetDate,
+              gte: targetDate,
+              lt: nextMonth,
             },
           },
           {

@@ -53,9 +53,10 @@ describe('ClassService', () => {
       tuitionFee: 10000,
       teacherId: 1,
       dayOfWeek: '월',
-      time: '14:00',
-      startDate: new Date(),
-      endDate: new Date(),
+      startTime: '14:00',
+      endTime: '15:00',
+      startDate: new Date('2024-01-01'),
+      endDate: new Date('2024-01-31'),
     });
     expect(result).toEqual({ id: 1, className: 'A' });
   });
@@ -68,9 +69,10 @@ describe('ClassService', () => {
         tuitionFee: 10000,
         teacherId: 1,
         dayOfWeek: '월',
-        time: '14:00',
-        startDate: new Date(),
-        endDate: new Date(),
+        startTime: '14:00',
+        endTime: '15:00',
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-01-31'),
       }),
     ).rejects.toThrow(NotFoundException);
   });

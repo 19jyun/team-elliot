@@ -99,7 +99,8 @@ model Class {
   tuitionFee    Decimal      @map("tuition_fee") @db.Decimal(10, 2)
   teacherId     Int          @map("teacher_id")
   dayOfWeek     String       @map("day_of_week") @db.VarChar(10)
-  time          DateTime     @db.Time()
+  startTime     DateTime     @map("start_time") @db.Time()
+  endTime       DateTime     @map("end_time") @db.Time()
   level         String       @db.VarChar(50)
   status        String       @default("DRAFT") // 'DRAFT' | 'OPEN' | 'CLOSED' | 'CANCELLED'
   registrationMonth DateTime @map("registration_month") // 수강신청 월 (예: 2024-03-01)

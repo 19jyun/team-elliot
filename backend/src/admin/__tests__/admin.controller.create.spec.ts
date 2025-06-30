@@ -82,38 +82,40 @@ describe('AdminController - CREATE endpoints', () => {
   });
 
   it('should create a class', async () => {
-    const dto: CreateClassDto = {
-      className: 'class',
-      description: 'desc',
-      maxStudents: 20,
+    const createClassDto: CreateClassDto = {
+      className: 'Test Class',
+      description: 'Test Description',
+      maxStudents: 10,
       tuitionFee: 100000,
       teacherId: 1,
-      dayOfWeek: '월',
-      time: '14:00',
-      startDate: new Date('2024-07-01'),
-      endDate: new Date('2024-08-31'),
+      dayOfWeek: 'MONDAY',
+      startTime: '14:00',
+      endTime: '15:00',
+      startDate: new Date('2024-01-01'),
+      endDate: new Date('2024-01-31'),
       level: 'BEGINNER',
       backgroundColor: '#F8F9FA',
     };
     const classObj = {
       id: 1,
-      className: dto.className,
+      className: createClassDto.className,
       classCode: 'C001',
-      description: dto.description,
-      maxStudents: dto.maxStudents,
+      description: createClassDto.description,
+      maxStudents: createClassDto.maxStudents,
       currentStudents: 0,
-      tuitionFee: new Decimal(dto.tuitionFee),
-      teacherId: dto.teacherId,
-      dayOfWeek: dto.dayOfWeek,
-      time: new Date('1970-01-01T${dto.time}:00Z'),
-      startDate: dto.startDate,
-      endDate: dto.endDate,
-      level: dto.level,
-      backgroundColor: dto.backgroundColor,
+      tuitionFee: new Decimal(createClassDto.tuitionFee),
+      teacherId: createClassDto.teacherId,
+      dayOfWeek: createClassDto.dayOfWeek,
+      startTime: new Date('1970-01-01T14:00:00Z'),
+      endTime: new Date('1970-01-01T15:00:00Z'),
+      startDate: createClassDto.startDate,
+      endDate: createClassDto.endDate,
+      level: createClassDto.level,
+      backgroundColor: createClassDto.backgroundColor,
       status: 'ACTIVE',
       registrationMonth: new Date(
-        dto.startDate.getFullYear(),
-        dto.startDate.getMonth(),
+        createClassDto.startDate.getFullYear(),
+        createClassDto.startDate.getMonth(),
         1,
       ),
       createdAt: new Date(),
@@ -123,6 +125,8 @@ describe('AdminController - CREATE endpoints', () => {
       registrationEndDate: new Date(),
     };
     jest.spyOn(service, 'createClass').mockResolvedValue(classObj);
-    await expect(controller.createClass(dto)).resolves.toBe(classObj);
+    await expect(controller.createClass(createClassDto)).resolves.toBe(
+      classObj,
+    );
   });
 });
