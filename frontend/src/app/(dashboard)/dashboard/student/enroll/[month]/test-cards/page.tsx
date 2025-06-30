@@ -10,6 +10,7 @@ export default function TestCardsPage() {
     {
       id: 1,
       level: '초급',
+      className: 'dd',
       teacher: { name: '김선생님' },
       startTime: '09:00',
       endTime: '10:00',
@@ -19,6 +20,7 @@ export default function TestCardsPage() {
     {
       id: 2,
       level: '중급',
+      className: 'dd',
       teacher: { name: '이선생님' },
       startTime: '14:00',
       endTime: '15:00',
@@ -28,6 +30,7 @@ export default function TestCardsPage() {
     {
       id: 3,
       level: '고급',
+      className: 'dd',
       teacher: { name: '박선생님' },
       startTime: '16:00',
       endTime: '17:00',
@@ -102,6 +105,7 @@ export default function TestCardsPage() {
                         <ClassCard 
                           key={card.id} 
                           level={card.level || '기본'}
+                          className={card.className}
                           teacher={card.teacher?.name || '선생님'}
                           startTime={timeString}
                           endTime={card.endTime || endTime}

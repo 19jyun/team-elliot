@@ -1,5 +1,6 @@
 export interface ClassCardProps {
   level: string;
+  className: string;
   teacher: string;
   startTime: string;
   endTime: string;
@@ -8,6 +9,8 @@ export interface ClassCardProps {
   bgColor: string;
   containerWidth?: string;
   onInfoClick?: () => void;
+  selected?: boolean;
+  onClick?: () => void;
 }
 
 export interface TimeSlotProps {
