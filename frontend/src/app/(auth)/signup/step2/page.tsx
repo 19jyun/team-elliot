@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { InputField } from '@/components/auth/InputField'
-import axios from 'axios'
+import { useCheckDuplicateUserId } from '@/hooks/useCheckDuplicateUserId'
 
 export default function SignupStep2Page() {
   const router = useRouter()
@@ -21,21 +21,7 @@ export default function SignupStep2Page() {
     password: '',
     confirmPassword: '',
   })
-
-  // 아이디 중복 체크 함수 추가
-  const checkDuplicateUserId = async (userId: string) => {
-    try {
-      const response = await axios.post('/api/auth/check-userid', {
-        userId,
-      })
-      return response.data.available
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        return false
-      }
-      return false
-    }
-  }
+  const { check: checkDuplicateUserId, loading: checkingId } = useCheckDuplicateUserId()
 
   const handleBack = () => {
     // 현재 step2의 데이터도 세션에 저장
@@ -164,7 +150,7 @@ export default function SignupStep2Page() {
               label="아이디"
               id="userId"
               value={formData.userId}
-              onChange={(e) =>
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setFormData({ ...formData, userId: e.target.value })
               }
               required
@@ -177,7 +163,7 @@ export default function SignupStep2Page() {
               id="password"
               type={showPassword ? 'text' : 'password'}
               value={formData.password}
-              onChange={(e) =>
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setFormData({ ...formData, password: e.target.value })
               }
               required
@@ -188,7 +174,7 @@ export default function SignupStep2Page() {
               showPassword={showPassword}
               onClear={
                 formData.password
-                  ? (e) => {
+                  ? (e: React.MouseEvent<HTMLButtonElement>) => {
                       e.preventDefault()
                       setFormData({ ...formData, password: '' })
                     }
@@ -201,7 +187,7 @@ export default function SignupStep2Page() {
               id="confirmPassword"
               type={showConfirmPassword ? 'text' : 'password'}
               value={formData.confirmPassword}
-              onChange={(e) =>
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setFormData({ ...formData, confirmPassword: e.target.value })
               }
               required
@@ -212,7 +198,7 @@ export default function SignupStep2Page() {
               showPassword={showConfirmPassword}
               onClear={
                 formData.confirmPassword
-                  ? (e) => {
+                  ? (e: React.MouseEvent<HTMLButtonElement>) => {
                       e.preventDefault()
                       setFormData({ ...formData, confirmPassword: '' })
                     }

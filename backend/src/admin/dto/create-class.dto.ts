@@ -33,7 +33,11 @@ export class CreateClassDto {
 
   @ApiProperty({ example: '14:00', description: '수업 시작 시간 (HH:mm)' })
   @IsString()
-  time: string;
+  startTime: string;
+
+  @ApiProperty({ example: '15:00', description: '수업 종료 시간 (HH:mm)' })
+  @IsString()
+  endTime: string;
 
   @ApiProperty({
     example: '2024-07-01',

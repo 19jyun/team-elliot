@@ -1,0 +1,796 @@
+{
+  "info": {
+    "name": "Team Elliot API",
+    "description": "발레 수강신청 플랫폼 API Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"testuser\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Signup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"newuser\",\n  \"password\": \"password123\",\n  \"name\": \"홍길동\",\n  \"phoneNumber\": \"010-1234-5678\",\n  \"role\": \"STUDENT\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/signup",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "signup"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Check UserId",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"testuser\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/check-userid",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "check-userid"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Withdrawal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"개인적인 사정으로 인한 탈퇴\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/withdrawal",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "withdrawal"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "SMS",
+      "item": [
+        {
+          "name": "Send Verification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"010-1234-5678\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sms/send-verification",
+              "host": ["{{baseUrl}}"],
+              "path": ["sms", "send-verification"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"010-1234-5678\",\n  \"code\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sms/verify-code",
+              "host": ["{{baseUrl}}"],
+              "path": ["sms", "verify-code"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Get Students",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/students",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "students"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Teachers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/teachers",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "teachers"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Classes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/classes",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "classes"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Withdrawal Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/withdrawal-stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "withdrawal-stats"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Student",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"student1\",\n  \"password\": \"password123\",\n  \"name\": \"김학생\",\n  \"phoneNumber\": \"010-1111-2222\",\n  \"email\": \"student1@example.com\",\n  \"birthDate\": \"2010-01-01\",\n  \"gender\": \"FEMALE\",\n  \"address\": \"서울시 강남구\",\n  \"emergencyContact\": \"010-9999-8888\",\n  \"medicalInfo\": \"알레르기 없음\",\n  \"level\": \"BEGINNER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/students",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "students"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Teacher",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"teacher1\",\n  \"password\": \"password123\",\n  \"name\": \"박선생님\",\n  \"phoneNumber\": \"010-3333-4444\",\n  \"email\": \"teacher1@example.com\",\n  \"introduction\": \"10년 경력의 발레 선생님입니다.\",\n  \"specialization\": \"CLASSICAL_BALLET\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/teachers",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "teachers"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Class",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"초급 발레 클래스\",\n  \"description\": \"발레 기초를 배우는 클래스입니다.\",\n  \"teacherId\": 1,\n  \"dayOfWeek\": \"MONDAY\",\n  \"startTime\": \"18:00\",\n  \"endTime\": \"19:30\",\n  \"maxStudents\": 15,\n  \"level\": \"BEGINNER\",\n  \"location\": \"1층 스튜디오\",\n  \"monthlyFee\": 150000,\n  \"backgroundColor\": \"#FFE5E5\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/classes",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "classes"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Student",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/students/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "students", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Teacher",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/teachers/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "teachers", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Class",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/classes/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "classes", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Student Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newPassword\": \"newpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/students/1/reset-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "students", "1", "reset-password"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Class",
+      "item": [
+        {
+          "name": "Get All Classes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/classes",
+              "host": ["{{baseUrl}}"],
+              "path": ["classes"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Classes with Filter",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/classes?dayOfWeek=MONDAY&teacherId=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["classes"],
+              "query": [
+                {
+                  "key": "dayOfWeek",
+                  "value": "MONDAY"
+                },
+                {
+                  "key": "teacherId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Class Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/classes/1/details",
+              "host": ["{{baseUrl}}"],
+              "path": ["classes", "1", "details"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Class",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"중급 발레 클래스\",\n  \"description\": \"발레 중급 과정입니다.\",\n  \"teacherId\": 1,\n  \"dayOfWeek\": \"WEDNESDAY\",\n  \"startTime\": \"19:00\",\n  \"endTime\": \"20:30\",\n  \"maxStudents\": 12,\n  \"level\": \"INTERMEDIATE\",\n  \"location\": \"2층 스튜디오\",\n  \"monthlyFee\": 180000,\n  \"backgroundColor\": \"#E5F3FF\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/classes",
+              "host": ["{{baseUrl}}"],
+              "path": ["classes"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Class",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"수정된 발레 클래스\",\n  \"description\": \"수정된 설명입니다.\",\n  \"maxStudents\": 20\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/classes/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["classes", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Class",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/classes/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["classes", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Enroll Class",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/classes/1/enroll",
+              "host": ["{{baseUrl}}"],
+              "path": ["classes", "1", "enroll"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Unenroll Class",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/classes/1/enroll",
+              "host": ["{{baseUrl}}"],
+              "path": ["classes", "1", "enroll"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Classes by Month",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/classes/month/1?year=2024",
+              "host": ["{{baseUrl}}"],
+              "path": ["classes", "month", "1"],
+              "query": [
+                {
+                  "key": "year",
+                  "value": "2024"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Student",
+      "item": [
+        {
+          "name": "Get My Classes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/student/classes",
+              "host": ["{{baseUrl}}"],
+              "path": ["student", "classes"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Class Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/student/classes/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["student", "classes", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Enroll Class",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/student/classes/1/enroll",
+              "host": ["{{baseUrl}}"],
+              "path": ["student", "classes", "1", "enroll"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Unenroll Class",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/student/classes/1/enroll",
+              "host": ["{{baseUrl}}"],
+              "path": ["student", "classes", "1", "enroll"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Teacher",
+      "item": [
+        {
+          "name": "Get Teacher Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/teachers/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["teachers", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "introduction",
+                  "value": "업데이트된 자기소개입니다.",
+                  "type": "text"
+                },
+                {
+                  "key": "photo",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/teachers/1/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["teachers", "1", "profile"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Teacher Classes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/teachers/1/classes",
+              "host": ["{{baseUrl}}"],
+              "path": ["teachers", "1", "classes"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+} 

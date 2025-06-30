@@ -12,6 +12,22 @@ import { TimeSlot } from './TimeSlot'
 import { StatusStep } from './StatusStep'
 import { ChevronLeftIcon } from '@heroicons/react/24/outline'
 import { ClassDetails } from './ClassDetails'
+import { ClassDetailsResponse } from '@/types/api/class'
+import { useState } from 'react'
+
+const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
+const daysKor = ['월', '화', '수', '목', '금', '토', '일']
+const timeSlots = [
+  '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
+  '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00',
+]
+
+function formatTime(date: string | Date) {
+  const d = new Date(date)
+  const h = d.getUTCHours().toString().padStart(2, '0')
+  const m = d.getUTCMinutes().toString().padStart(2, '0')
+  return `${h}:${m}`
+}
 
 export default function EnrollmentMonthPage() {
   const params = useParams()
@@ -48,8 +64,9 @@ export default function EnrollmentMonthPage() {
   const [showPolicy, setShowPolicy] = React.useState(true)
   const [agreed, setAgreed] = React.useState(false)
   const [showClassDetails, setShowClassDetails] = React.useState(false)
-  const [selectedClassDetails, setSelectedClassDetails] = React.useState(null)
+  const [selectedClassDetails, setSelectedClassDetails] = React.useState<ClassDetailsResponse | null>(null)
   const [showPolicyButton, setShowPolicyButton] = React.useState(false)
+  const [selectedIds, setSelectedIds] = useState<number[]>([])
 
   const { data: classCards, isLoading } = useQuery({
     queryKey: ['classCards', params.month],
@@ -59,10 +76,31 @@ export default function EnrollmentMonthPage() {
           ? currentDate.getFullYear() + 1
           : currentDate.getFullYear()
 
-      return getClassCards(`${params.month}`, year)
+      console.log('=== API QUERY DEBUG ===')
+      console.log('Querying for month:', params.month, 'year:', year)
+      const result = getClassCards(`${params.month}`, year)
+      console.log('API call result:', result)
+      return result
     },
     enabled: !!params.month,
   })
+
+  // Debug logging for API response
+  React.useEffect(() => {
+    console.log('=== API RESPONSE DEBUG ===')
+    console.log('classCards data:', classCards)
+    console.log('classCards type:', typeof classCards)
+    console.log('classCards length:', classCards?.length)
+    console.log('isLoading:', isLoading)
+    
+    if (classCards && classCards.length > 0) {
+      console.log('First class card raw data:', classCards[0])
+      console.log('All class cards:', classCards)
+    } else {
+      console.log('No class cards found or empty array')
+    }
+    console.log('=== END API RESPONSE DEBUG ===')
+  }, [classCards, isLoading])
 
   React.useEffect(() => {
     const hasAgreed = localStorage.getItem('refundPolicyAgreed') === 'true'
@@ -72,7 +110,6 @@ export default function EnrollmentMonthPage() {
     }
   }, [])
 
-  const timeSlots = ['4', '5', '6', '7', '8', '9', '10', '11', '12']
   const statusSteps = [
     {
       icon: '/icons/CourseRegistrationsStatusSteps1.svg',
@@ -103,6 +140,14 @@ export default function EnrollmentMonthPage() {
     }
   }
 
+  const handleSelect = (id: number) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
+
+  // For horizontal scroll, show only 5 days at a time
+  const visibleDays = days.slice(0, 5)
+  const visibleDaysKor = daysKor.slice(0, 5)
+
   if (status === 'loading' || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -118,7 +163,6 @@ export default function EnrollmentMonthPage() {
   if (showClassDetails && selectedClassDetails) {
     return (
       <ClassDetails
-        classInfo={selectedClassDetails}
         onClose={() => setShowClassDetails(false)}
       />
     )
@@ -172,44 +216,72 @@ export default function EnrollmentMonthPage() {
         )}
       </header>
 
-      <div className="flex-1 overflow-hidden mx-auto w-full max-w-[480px]">
-        <div className="flex flex-col w-full h-full">
-          <div className="flex flex-col mt-0 w-full text-sm font-medium tracking-normal leading-snug text-center whitespace-nowrap text-zinc-600">
-            <div className="flex overflow-x-auto scrollbar-hide relative">
-              <div className="flex flex-col min-w-[calc(140%+25px)]">
-                <div className="sticky flex relative border-b border-solid border-b-zinc-100 bg-white z-50">
-                  <div className="sticky left-0 z-50 bg-white w-[25px] h-[30px]" />
-                  <div className="flex flex-1">
-                    {['월', '화', '수', '목', '금', '토', '일'].map(
-                      (day, index) => (
-                        <div key={index} className="flex-1 py-1.5">
-                          {day}
-                        </div>
-                      ),
-                    )}
-                  </div>
+      <div className="flex-1 overflow-x-auto mx-auto w-full bg-white">
+        {/* Hour labels at the top */}
+        <div className="grid min-w-[450px] sm:min-w-[700px] md:min-w-[900px]" style={{
+          display: 'grid',
+          gridTemplateColumns: `60px repeat(7, 70px)`,
+          gridTemplateRows: `40px repeat(${timeSlots.length}, 1fr)`
+        }}>
+          {/* Header row: empty cell + hour labels */}
+          <div />
+          {daysKor.map(day => (
+            <div key={day} className="flex items-center justify-center font-semibold text-sm border-b border-gray-200 bg-white sticky top-0 z-20">{day}</div>
+          ))}
+          {/* For each row: hour label at the start, then cells */}
+          {timeSlots.map((time, rowIdx) => (
+            <React.Fragment key={time}>
+              {/* Hour label at the start of each row */}
+              <div className="flex items-center justify-center text-xs text-gray-400 border-r border-gray-200 bg-white sticky left-0 z-10">{time}</div>
+              {days.map((day, colIdx) => (
+                <div key={day + time} className="relative border-b border-r border-gray-100 min-h-[60px] flex flex-col gap-1">
+                  {classCards?.filter(card => {
+                    const cardDay = card.dayOfWeek;
+                    const cardTime = formatTime(card.startTime);
+                    return cardDay === day && cardTime === time;
+                  }).map(card => {
+                    const dayIndex = days.indexOf(card.dayOfWeek);
+                    const startHour = Number(formatTime(card.startTime).split(':')[0]);
+                    const bgColor = card.backgroundColor ? `bg-${card.backgroundColor}` : 'bg-gray-100';
+                    return (
+                      <ClassCard
+                        key={card.id}
+                        {...card}
+                        className={card.className}
+                        teacher={card.teacher?.name || '선생님'}
+                        startTime={formatTime(card.startTime)}
+                        endTime={formatTime(card.endTime)}
+                        dayIndex={dayIndex}
+                        startHour={startHour}
+                        bgColor={bgColor}
+                        selected={selectedIds.includes(card.id)}
+                        onClick={() => handleSelect(card.id)}
+                        onInfoClick={() => handleClassInfoClick(card.id)}
+                        containerWidth="100%"
+                      />
+                    );
+                  })}
                 </div>
-
-                <div className="overflow-y-auto max-h-[calc(100vh-300px)]">
-                  <div className="flex flex-col w-full">
-                    {timeSlots.map((hour, index) => (
-                      <TimeSlot key={index} hour={hour} />
-                    ))}
-                    {classCards?.map((card) => (
-                      <ClassCard key={card.id} {...card} />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+              ))}
+            </React.Fragment>
+          ))}
         </div>
       </div>
 
       <footer className="sticky bottom-0 flex flex-col w-full bg-white z-50">
         <div className="flex gap-3 justify-center px-5 pt-2.5 pb-4 w-full text-base font-semibold leading-snug text-white">
-          <button className="flex-1 shrink gap-2.5 self-stretch px-2.5 py-4 rounded-lg bg-zinc-300 min-w-[240px] size-full">
-            클래스를 1개 이상 선택 해 주세요
+          <button
+            className={`flex-1 shrink self-stretch px-2.5 py-4 rounded-lg min-w-[240px] size-full transition-colors duration-300 text-center ${selectedIds.length > 0 ? 'bg-[#AC9592] text-white cursor-pointer' : 'bg-zinc-300 text-white cursor-not-allowed'}`}
+            disabled={selectedIds.length === 0}
+          >
+            {selectedIds.length > 0 ? (
+              <span className="inline-flex items-center justify-center w-full">
+                클래스 선택 완료
+                <span className="ml-2 bg-white text-[#AC9592] rounded-full px-2 py-0.5 text-xs font-bold">{selectedIds.length}</span>
+              </span>
+            ) : (
+              '클래스를 1개 이상 선택 해 주세요'
+            )}
           </button>
         </div>
       </footer>

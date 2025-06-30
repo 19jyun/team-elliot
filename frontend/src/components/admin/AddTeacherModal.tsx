@@ -3,8 +3,9 @@
 import { Fragment, useState } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import axios from 'axios'
+import { createTeacher } from '@/api/admin'
 import { toast } from 'sonner'
+import { useCheckDuplicateUserId } from '@/hooks/useCheckDuplicateUserId'
 
 interface AddTeacherModalProps {
   isOpen: boolean
@@ -19,24 +20,25 @@ export function AddTeacherModal({
 }: AddTeacherModalProps) {
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
+    userId: '',
     password: '',
     phoneNumber: '',
     introduction: '',
   })
+  const [idError, setIdError] = useState('')
+  const { check: checkDuplicateUserId, loading: checkingId } = useCheckDuplicateUserId()
 
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: (data: typeof formData) =>
-      axios.post(`${process.env.NEXT_PUBLIC_API_URL}/admin/teachers`, data),
+    mutationFn: (data: typeof formData) => createTeacher(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teachers'] })
       toast.success('선생님이 추가되었습니다.')
       onClose()
       setFormData({
         name: '',
-        email: '',
+        userId: '',
         password: '',
         phoneNumber: '',
         introduction: '',
@@ -47,8 +49,15 @@ export function AddTeacherModal({
     },
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log(formData)
+    setIdError('')
+    const isAvailable = await checkDuplicateUserId(formData.userId)
+    if (!isAvailable) {
+      setIdError('이미 사용중인 아이디입니다. 다른 아이디를 입력해주세요.')
+      return
+    }
     mutation.mutate(formData)
   }
 
@@ -81,17 +90,21 @@ export function AddTeacherModal({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  이메일
+                  아이디
                 </label>
                 <input
-                  type="email"
+                  type="id"
                   required
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
+                  value={formData.userId}
+                  onChange={(e) => {
+                    setFormData({ ...formData, userId: e.target.value })
+                    setIdError('')
+                  }}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 />
+                {idError && (
+                  <div className="mt-1 text-sm text-red-500">{idError}</div>
+                )}
               </div>
 
               <div>

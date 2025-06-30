@@ -43,15 +43,16 @@ describe('ClassController', () => {
 
   it('should create a class', async () => {
     const dto = {
-      className: 'class',
-      description: 'desc',
-      maxStudents: 20,
+      className: 'Test Class',
+      description: 'Test Description',
+      maxStudents: 10,
       tuitionFee: 100000,
       teacherId: 1,
-      dayOfWeek: '월',
-      time: '14:00',
-      startDate: new Date('2024-07-01'),
-      endDate: new Date('2024-08-31'),
+      dayOfWeek: 'MONDAY',
+      startTime: '14:00',
+      endTime: '15:00',
+      startDate: new Date('2024-01-01'),
+      endDate: new Date('2024-01-31'),
       level: 'BEGINNER',
       backgroundColor: '#F8F9FA',
     };

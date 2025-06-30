@@ -3,6 +3,7 @@ import { AdminService } from '../admin.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { hash } from 'bcrypt';
+import { CreateClassDto } from '../dto/create-class.dto';
 
 jest.mock('bcrypt');
 
@@ -112,16 +113,17 @@ describe('AdminService', () => {
     it('should create a class if teacher exists', async () => {
       prisma.teacher.findUnique.mockResolvedValue({ id: 1 });
       prisma.class.create.mockResolvedValue({ id: 1 });
-      const dto = {
-        className: 'class',
-        description: 'desc',
-        maxStudents: 20,
+      const dto: CreateClassDto = {
+        className: 'Test Class',
+        description: 'Test Description',
+        maxStudents: 10,
         tuitionFee: 100000,
         teacherId: 1,
-        dayOfWeek: '월',
-        time: '14:00',
-        startDate: new Date('2024-07-01'),
-        endDate: new Date('2024-08-31'),
+        dayOfWeek: 'MONDAY',
+        startTime: '14:00',
+        endTime: '15:00',
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-01-31'),
         level: 'BEGINNER',
         backgroundColor: '#F8F9FA',
       };
@@ -130,16 +132,17 @@ describe('AdminService', () => {
     });
     it('should throw if teacher does not exist', async () => {
       prisma.teacher.findUnique.mockResolvedValue(null);
-      const dto = {
-        className: 'class',
-        description: 'desc',
-        maxStudents: 20,
+      const dto: CreateClassDto = {
+        className: 'Test Class',
+        description: 'Test Description',
+        maxStudents: 10,
         tuitionFee: 100000,
         teacherId: 1,
-        dayOfWeek: '월',
-        time: '14:00',
-        startDate: new Date('2024-07-01'),
-        endDate: new Date('2024-08-31'),
+        dayOfWeek: 'MONDAY',
+        startTime: '14:00',
+        endTime: '15:00',
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-01-31'),
         level: 'BEGINNER',
         backgroundColor: '#F8F9FA',
       };
