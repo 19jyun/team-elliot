@@ -21,6 +21,7 @@ export interface StatusStepProps {
   icon: string;
   label: string;
   isActive?: boolean;
+  isCompleted?: boolean;
 }
 
 export interface TeacherInfo {

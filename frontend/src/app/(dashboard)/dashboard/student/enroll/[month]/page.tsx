@@ -273,11 +273,20 @@ export default function EnrollmentMonthPage() {
           <button
             className={`flex-1 shrink self-stretch px-2.5 py-4 rounded-lg min-w-[240px] size-full transition-colors duration-300 text-center ${selectedIds.length > 0 ? 'bg-[#AC9592] text-white cursor-pointer' : 'bg-zinc-300 text-white cursor-not-allowed'}`}
             disabled={selectedIds.length === 0}
+            onClick={() => {
+              if (selectedIds.length > 0) {
+                const month = params.month;
+                // 선택된 클래스 전체 정보 추출
+                const selectedClassCards = classCards?.filter(card => selectedIds.includes(card.id)) || [];
+                localStorage.setItem('selectedClassCards', JSON.stringify(selectedClassCards));
+                router.push(`/dashboard/student/enroll/${month}/date`);
+              }
+            }}
           >
             {selectedIds.length > 0 ? (
               <span className="inline-flex items-center justify-center w-full">
                 클래스 선택 완료
-                <span className="ml-2 bg-white text-[#AC9592] rounded-full px-2 py-0.5 text-xs font-bold">{selectedIds.length}</span>
+                <span className="ml-2 bg-white text-[#AC9592] rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold p-0 aspect-square">{selectedIds.length}</span>
               </span>
             ) : (
               '클래스를 1개 이상 선택 해 주세요'
