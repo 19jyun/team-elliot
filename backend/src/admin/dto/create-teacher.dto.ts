@@ -34,6 +34,14 @@ export class CreateTeacherDto {
   photoUrl?: string;
 
   @ApiPropertyOptional({
+    example: '010-1234-5678',
+    description: '연락처 (선택)',
+  })
+  @IsString()
+  @IsOptional()
+  phoneNumber?: string;
+
+  @ApiPropertyOptional({
     example: ['서울예대 졸업', '영국 로얄발레단 수료'],
     description: '학력 배열 (선택)',
   })

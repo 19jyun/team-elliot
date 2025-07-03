@@ -39,3 +39,6 @@ export const getClassesByMonth = (
   year: string
 ): Promise<ClassesByMonthResponse> =>
   get(`/classes/month/${month}`, { params: { year } });
+
+export const getClassCards = (month: string, year: number) =>
+  get(`/classes/month/${month}?year=${year}`);

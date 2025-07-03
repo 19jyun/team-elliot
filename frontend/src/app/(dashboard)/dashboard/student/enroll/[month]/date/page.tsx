@@ -5,13 +5,15 @@ import DateSelectFooter from './DateSelectFooter'
 import { useState } from 'react'
 import { StatusStep } from '../StatusStep'
 import { ChevronLeftIcon } from '@heroicons/react/24/outline'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 
 export default function EnrollmentDatePage() {
   const router = useRouter()
+  const params = useParams()
   const [selectedCount, setSelectedCount] = useState(0);
   const [selectableCount, setSelectableCount] = useState(0);
   const [isAllSelected, setIsAllSelected] = useState(false);
+  const [selectedClasses, setSelectedClasses] = useState<any[]>([]); 
     
   const statusSteps = [
     {
@@ -51,6 +53,20 @@ export default function EnrollmentDatePage() {
       setIsAllSelected(false)
     }
   }, [selectedCount, selectableCount])
+
+  // 결제 페이지로 이동 및 localStorage 저장
+  const handleGoToPayment = () => {
+    if (typeof window !== 'undefined') {
+      // 선택된 세션 정보를 localStorage에 저장
+      const selectedSessions = selectedClasses.flatMap(classInfo => 
+        classInfo.sessions || []
+      );
+      
+      localStorage.setItem('selectedSessions', JSON.stringify(selectedSessions));
+      localStorage.setItem('selectedClasses', JSON.stringify(selectedClasses));
+    }
+    router.push(`/dashboard/student/enroll/${params.month}/date/payment`);
+  }
     
   return (
     <div className="flex flex-col min-h-screen bg-white font-[Pretendard Variable]">
@@ -86,6 +102,7 @@ export default function EnrollmentDatePage() {
         onSelectAll={handleSelectAll}
         onDeselectAll={handleDeselectAll}
         isAllSelected={isAllSelected}
+        onSelectedClassesChange={setSelectedClasses} // Calendar에서 선택 정보 올림
       />
       {/* 전체선택 체크박스 + 하단 버튼 */}
       <DateSelectFooter 
@@ -93,6 +110,7 @@ export default function EnrollmentDatePage() {
         onSelectAll={handleSelectAll}
         onDeselectAll={handleDeselectAll}
         isAllSelected={isAllSelected}
+        onGoToPayment={handleGoToPayment}
       />
     </div>
   )

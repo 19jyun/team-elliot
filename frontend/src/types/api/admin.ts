@@ -58,3 +58,13 @@ export interface ResetStudentPasswordRequest {
   newPassword: string;
 }
 export interface ResetStudentPasswordResponse extends Student {}
+
+// 클래스 세션 생성 관련 타입
+export interface GenerateSessionsRequest {
+  startDate: string;
+  endDate: string;
+}
+
+export interface GenerateSessionsResponse {
+  message: string;
+}

@@ -1,23 +1,30 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNumber, IsOptional, IsDate } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsDateString,
+  IsNotEmpty,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateClassDto {
   @ApiProperty({ example: '기초 발레 수업', description: '수업 이름' })
   @IsString()
+  @IsNotEmpty()
   className: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     example: '초보자를 위한 수업입니다.',
-    description: '수업 설명 (선택)',
+    description: '수업 설명',
   })
   @IsString()
-  @IsOptional()
-  description?: string;
+  @IsNotEmpty()
+  description: string;
 
-  @ApiPropertyOptional({ example: 20, description: '최대 수강 인원 (선택)' })
+  @ApiProperty({ example: 20, description: '최대 수강 인원' })
   @IsNumber()
-  @IsOptional()
-  maxStudents?: number;
+  maxStudents: number;
 
   @ApiProperty({ example: 100000, description: '수강료' })
   @IsNumber()
@@ -27,39 +34,52 @@ export class CreateClassDto {
   @IsNumber()
   teacherId: number;
 
-  @ApiProperty({ example: '월', description: '수업 요일' })
+  @ApiProperty({
+    example: 'MONDAY',
+    description:
+      '수업 요일 (MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY)',
+  })
   @IsString()
+  @IsNotEmpty()
   dayOfWeek: string;
 
-  @ApiProperty({ example: '14:00', description: '수업 시작 시간 (HH:mm)' })
+  @ApiProperty({
+    example: 'BEGINNER',
+    description: '수업 난이도 (BEGINNER, INTERMEDIATE, ADVANCED)',
+  })
   @IsString()
+  @IsNotEmpty()
+  level: string;
+
+  @ApiProperty({
+    example: '2024-07-01T00:00:00.000Z',
+    description: '수업 시작일 (UTC ISO 문자열)',
+  })
+  @IsDateString()
+  startDate: string;
+
+  @ApiProperty({
+    example: '2024-09-01T23:59:59.999Z',
+    description: '수업 종료일 (UTC ISO 문자열)',
+  })
+  @IsDateString()
+  endDate: string;
+
+  @ApiProperty({
+    example: '19:00',
+    description: '수업 시작 시간 (HH:mm)',
+  })
+  @IsString()
+  @IsNotEmpty()
   startTime: string;
 
-  @ApiProperty({ example: '15:00', description: '수업 종료 시간 (HH:mm)' })
+  @ApiProperty({
+    example: '20:30',
+    description: '수업 종료 시간 (HH:mm)',
+  })
   @IsString()
+  @IsNotEmpty()
   endTime: string;
-
-  @ApiProperty({
-    example: '2024-07-01',
-    description: '수업 시작일 (YYYY-MM-DD)',
-  })
-  @IsDate()
-  startDate: Date;
-
-  @ApiProperty({
-    example: '2024-08-31',
-    description: '수업 종료일 (YYYY-MM-DD)',
-  })
-  @IsDate()
-  endDate: Date;
-
-  @ApiPropertyOptional({
-    example: 'BEGINNER',
-    description: '수업 난이도 (선택)',
-  })
-  @IsString()
-  @IsOptional()
-  level?: string;
 
   @ApiPropertyOptional({
     example: '#F8F9FA',

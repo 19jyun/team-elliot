@@ -42,3 +42,15 @@ export const resetStudentPassword = (
   data: ResetStudentPasswordRequest
 ): Promise<ResetStudentPasswordResponse> =>
   post(`/admin/students/${id}/reset-password`, data);
+
+// 클래스 세션 생성 관련 API
+export const generateSessionsForClass = (
+  classId: number
+): Promise<{ message: string }> =>
+  post(`/classes/${classId}/generate-sessions`);
+
+export const generateSessionsForPeriod = (
+  classId: number,
+  data: { startDate: string; endDate: string }
+): Promise<{ message: string }> =>
+  post(`/classes/${classId}/generate-sessions/period`, data);

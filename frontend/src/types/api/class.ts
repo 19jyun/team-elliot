@@ -19,6 +19,33 @@ export interface Class {
   [key: string]: any;
 }
 
+export interface ClassSession {
+  id: number;
+  classId: number;
+  date: string;
+  startTime: string;
+  endTime: string;
+  class?: {
+    id: number;
+    className: string;
+    level: string;
+    teacher?: {
+      id: number;
+      name: string;
+    };
+  };
+  enrollments?: SessionEnrollment[];
+}
+
+export interface SessionEnrollment {
+  id: number;
+  studentId: number;
+  sessionId: number;
+  status: "PENDING" | "CONFIRMED" | "CANCELLED";
+  enrolledAt: string;
+  cancelledAt?: string;
+}
+
 export interface ClassDetailsResponse extends Class {}
 export interface AllClassesResponse extends Array<Class> {}
 export interface CreateClassRequest extends Omit<Class, "id"> {}
@@ -40,3 +67,20 @@ export interface UnenrollClassResponse {
   message: string;
 }
 export interface ClassesByMonthResponse extends Array<Class> {}
+
+// ClassSession 관련 타입들
+export interface GetClassSessionsRequest {
+  classId: number;
+}
+
+export interface GetClassSessionsResponse extends Array<ClassSession> {}
+
+export interface BatchEnrollSessionsRequest {
+  sessionIds: number[];
+}
+
+export interface BatchEnrollSessionsResponse {
+  success: number;
+  total: number;
+  enrollments: SessionEnrollment[];
+}

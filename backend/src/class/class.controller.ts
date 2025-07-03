@@ -41,15 +41,8 @@ export class ClassController {
   @Post()
   @Roles(Role.ADMIN)
   async createClass(@Body() data: CreateClassDto) {
-    const startDate = new Date();
-    const endDate = new Date();
-    endDate.setFullYear(endDate.getFullYear() + 1);
-
-    return this.classService.createClass({
-      ...data,
-      startDate,
-      endDate,
-    });
+    // DTO에서 이미 UTC ISO 문자열로 변환된 데이터를 그대로 사용
+    return this.classService.createClass(data);
   }
 
   @Put(':id')
@@ -88,5 +81,24 @@ export class ClassController {
     @Query('year') year: string,
   ) {
     return this.classService.getClassesByMonth(month, parseInt(year));
+  }
+
+  @Post(':id/generate-sessions')
+  @Roles(Role.ADMIN, Role.TEACHER)
+  async generateSessionsForClass(@Param('id', ParseIntPipe) classId: number) {
+    return this.classService.generateSessionsForExistingClass(classId);
+  }
+
+  @Post(':id/generate-sessions/period')
+  @Roles(Role.ADMIN, Role.TEACHER)
+  async generateSessionsForPeriod(
+    @Param('id', ParseIntPipe) classId: number,
+    @Body() data: { startDate: string; endDate: string },
+  ) {
+    return this.classService.generateSessionsForPeriod(
+      classId,
+      new Date(data.startDate),
+      new Date(data.endDate),
+    );
   }
 }

@@ -27,6 +27,24 @@ export class StudentService {
             },
           },
         },
+        sessionEnrollments: {
+          include: {
+            session: {
+              include: {
+                class: {
+                  include: {
+                    teacher: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -34,7 +52,18 @@ export class StudentService {
       throw new NotFoundException('학생을 찾을 수 없습니다.');
     }
 
-    return student.enrollments.map((enrollment) => enrollment.class);
+    // 기존 수강 신청과 세션별 수강 신청을 모두 반환
+    const enrollmentClasses = student.enrollments.map(
+      (enrollment) => enrollment.class,
+    );
+    const sessionClasses = student.sessionEnrollments.map(
+      (sessionEnrollment) => sessionEnrollment.session.class,
+    );
+
+    return {
+      enrollmentClasses,
+      sessionClasses,
+    };
   }
 
   async getClassDetail(classId: number) {

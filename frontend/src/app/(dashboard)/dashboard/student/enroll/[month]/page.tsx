@@ -24,8 +24,8 @@ const timeSlots = [
 
 function formatTime(date: string | Date) {
   const d = new Date(date)
-  const h = d.getUTCHours().toString().padStart(2, '0')
-  const m = d.getUTCMinutes().toString().padStart(2, '0')
+  const h = d.getHours().toString().padStart(2, '0')
+  const m = d.getMinutes().toString().padStart(2, '0')
   return `${h}:${m}`
 }
 
@@ -276,7 +276,6 @@ export default function EnrollmentMonthPage() {
             onClick={() => {
               if (selectedIds.length > 0) {
                 const month = params.month;
-                // 선택된 클래스 전체 정보 추출
                 const selectedClassCards = classCards?.filter(card => selectedIds.includes(card.id)) || [];
                 localStorage.setItem('selectedClassCards', JSON.stringify(selectedClassCards));
                 router.push(`/dashboard/student/enroll/${month}/date`);
