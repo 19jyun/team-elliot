@@ -36,6 +36,16 @@ export class ClassSessionService {
     return this.prisma.classSession.findMany({
       where: { classId },
       include: {
+        class: {
+          include: {
+            teacher: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
         enrollments: {
           include: {
             student: true,

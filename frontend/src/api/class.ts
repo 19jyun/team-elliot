@@ -42,9 +42,3 @@ export const getClassesByMonth = (
 
 export const getClassCards = (month: string, year: number) =>
   get(`/classes/month/${month}?year=${year}`);
-
-export const enrollSession = (sessionId: number) =>
-  post(`/class-sessions/${sessionId}/enroll`);
-
-export const batchEnrollSessions = (sessionIds: number[]) =>
-  post("/class-sessions/batch-enroll", { sessionIds });
