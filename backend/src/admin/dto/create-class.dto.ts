@@ -3,10 +3,10 @@ import {
   IsString,
   IsNumber,
   IsOptional,
-  IsDate,
+  IsDateString,
   IsNotEmpty,
 } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import { Type } from 'class-transformer';
 
 export class CreateClassDto {
   @ApiProperty({ example: '기초 발레 수업', description: '수업 이름' })
@@ -52,20 +52,18 @@ export class CreateClassDto {
   level: string;
 
   @ApiProperty({
-    example: '2024-07-01',
-    description: '수업 시작일 (YYYY-MM-DD)',
+    example: '2024-07-01T00:00:00.000Z',
+    description: '수업 시작일 (UTC ISO 문자열)',
   })
-  @Type(() => Date)
-  @IsDate()
-  startDate: Date;
+  @IsDateString()
+  startDate: string;
 
   @ApiProperty({
-    example: '2024-09-01',
-    description: '수업 종료일 (YYYY-MM-DD)',
+    example: '2024-09-01T23:59:59.999Z',
+    description: '수업 종료일 (UTC ISO 문자열)',
   })
-  @Type(() => Date)
-  @IsDate()
-  endDate: Date;
+  @IsDateString()
+  endDate: string;
 
   @ApiProperty({
     example: '19:00',
@@ -73,14 +71,6 @@ export class CreateClassDto {
   })
   @IsString()
   @IsNotEmpty()
-  @Transform(({ value }) => {
-    // HH:mm 형식 검증
-    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-    if (!timeRegex.test(value)) {
-      throw new Error('startTime must be in HH:mm format');
-    }
-    return value;
-  })
   startTime: string;
 
   @ApiProperty({
@@ -89,14 +79,6 @@ export class CreateClassDto {
   })
   @IsString()
   @IsNotEmpty()
-  @Transform(({ value }) => {
-    // HH:mm 형식 검증
-    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-    if (!timeRegex.test(value)) {
-      throw new Error('endTime must be in HH:mm format');
-    }
-    return value;
-  })
   endTime: string;
 
   @ApiPropertyOptional({

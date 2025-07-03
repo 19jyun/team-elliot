@@ -41,15 +41,8 @@ export class ClassController {
   @Post()
   @Roles(Role.ADMIN)
   async createClass(@Body() data: CreateClassDto) {
-    const startDate = data.startDate ? new Date(data.startDate) : new Date();
-    const endDate = data.endDate ? new Date(data.endDate) : new Date();
-    endDate.setFullYear(endDate.getFullYear() + 1);
-
-    return this.classService.createClass({
-      ...data,
-      startDate,
-      endDate,
-    });
+    // DTO에서 이미 UTC ISO 문자열로 변환된 데이터를 그대로 사용
+    return this.classService.createClass(data);
   }
 
   @Put(':id')

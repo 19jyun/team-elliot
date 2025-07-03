@@ -9,7 +9,10 @@ export interface StudentClass {
   [key: string]: any;
 }
 
-export interface MyClassesResponse extends Array<StudentClass> {}
+export interface MyClassesResponse {
+  enrollmentClasses: StudentClass[];
+  sessionClasses: StudentClass[];
+}
 export interface ClassDetailResponse extends StudentClass {}
 export interface EnrollClassResponse {
   success: boolean;

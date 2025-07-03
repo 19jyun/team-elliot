@@ -3,9 +3,22 @@ import React, { useEffect, useState } from 'react';
 import { ChevronLeftIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { StatusStep } from '../../StatusStep';
-
+import { batchEnrollSessions } from '@/app/api/class';
+import { toast } from 'react-hot-toast';
 
 // 타입 정의
+interface SelectedSession {
+  sessionId: number;
+  classId: number;
+  className: string;
+  teacherId: number;
+  teacherName: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  tuitionFee: number;
+}
+
 interface ClassFee {
   name: string;
   count: number;
@@ -14,11 +27,13 @@ interface ClassFee {
 
 interface TeacherPaymentInfo {
   teacherId: number;
+  teacherName: string;
   bankName: string;
   accountNumber: string;
   accountHolder: string;
   classFees: ClassFee[];
   totalAmount: number;
+  sessions: SelectedSession[];
 }
 
 // Toast 컴포넌트
@@ -91,7 +106,7 @@ function TeacherPaymentBox({ teacher, onCopy }: { teacher: TeacherPaymentInfo; o
 }
 
 // PaymentConfirmFooter 컴포넌트
-function PaymentConfirmFooter({ confirmed, setConfirmed, onComplete }: { confirmed: boolean; setConfirmed: (v: boolean) => void; onComplete: () => void }) {
+function PaymentConfirmFooter({ confirmed, setConfirmed, onComplete, isProcessing }: { confirmed: boolean; setConfirmed: (v: boolean) => void; onComplete: () => void; isProcessing: boolean }) {
   return (
     <footer className="sticky bottom-0 left-0 w-full bg-white border-t border-gray-200 z-50 mt-auto">
       <div className="flex flex-col items-center px-5 pt-2 pb-4">
@@ -101,15 +116,16 @@ function PaymentConfirmFooter({ confirmed, setConfirmed, onComplete }: { confirm
             checked={confirmed}
             onChange={e => setConfirmed(e.target.checked)}
             style={{ accentColor: confirmed ? '#AC9592' : '#8C8C8C' }}
+            disabled={isProcessing}
           />
           입금 완료했습니다
         </label>
         <button
-          className={`flex-1 shrink self-stretch px-2.5 py-4 rounded-lg min-w-[240px] size-full transition-colors duration-300 text-center font-semibold ${confirmed ? 'bg-[#AC9592] text-white cursor-pointer' : 'bg-zinc-300 text-white cursor-not-allowed'}`}
-          disabled={!confirmed}
+          className={`flex-1 shrink self-stretch px-2.5 py-4 rounded-lg min-w-[240px] size-full transition-colors duration-300 text-center font-semibold ${confirmed && !isProcessing ? 'bg-[#AC9592] text-white cursor-pointer' : 'bg-zinc-300 text-white cursor-not-allowed'}`}
+          disabled={!confirmed || isProcessing}
           onClick={onComplete}
         >
-          결제 완료
+          {isProcessing ? '처리 중...' : '결제 완료'}
         </button>
       </div>
     </footer>
@@ -118,16 +134,19 @@ function PaymentConfirmFooter({ confirmed, setConfirmed, onComplete }: { confirm
 
 // 결제 페이지 (여러 명의 선생님 지원)
 export default function PaymentPage() {
-  const [selectedClasses, setSelectedClasses] = useState<TeacherPaymentInfo[]>([]);
+  const [selectedSessions, setSelectedSessions] = useState<SelectedSession[]>([]);
+  const [teacherPayments, setTeacherPayments] = useState<TeacherPaymentInfo[]>([]);
   const [showToast, setShowToast] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const router = useRouter();
+  
   const statusSteps = [
     {
       icon: '/icons/CourseRegistrationsStatusSteps1.svg',
       label: '클래스 선택',
       isActive: false,
-      isCompleted: true, // 완료된 단계
+      isCompleted: true,
     },
     {
       icon: '/icons/CourseRegistrationsStatusSteps2.svg',
@@ -148,7 +167,68 @@ export default function PaymentPage() {
       const data = localStorage.getItem('selectedClasses');
       console.log('selectedClasses in localStorage:', data);
       if (data) {
-        setSelectedClasses(JSON.parse(data));
+        const selectedClasses = JSON.parse(data);
+        // 선택된 클래스들을 세션 정보로 변환
+        const sessions: SelectedSession[] = [];
+        
+        selectedClasses.forEach((classInfo: any) => {
+          const { class: classData, numberOfEnrollment } = classInfo;
+          
+          // 각 클래스의 세션들을 생성 (실제로는 백엔드에서 세션 정보를 가져와야 함)
+          for (let i = 0; i < numberOfEnrollment; i++) {
+            sessions.push({
+              sessionId: classData.id * 100 + i, // 임시 세션 ID
+              classId: classData.id,
+              className: classData.className,
+              teacherId: classData.teacher?.id || 1,
+              teacherName: classData.teacher?.name || '선생님',
+              date: new Date().toISOString().split('T')[0], // 임시 날짜
+              startTime: classData.startTime,
+              endTime: classData.endTime,
+              tuitionFee: parseFloat(classData.tuitionFee),
+            });
+          }
+        });
+        
+        setSelectedSessions(sessions);
+        
+        // 선생님별로 결제 정보 그룹화
+        const teacherMap = new Map<number, TeacherPaymentInfo>();
+        
+        sessions.forEach(session => {
+          if (!teacherMap.has(session.teacherId)) {
+            teacherMap.set(session.teacherId, {
+              teacherId: session.teacherId,
+              teacherName: session.teacherName,
+              bankName: '신한은행', // 실제로는 선생님 정보에서 가져와야 함
+              accountNumber: '110-123-456789',
+              accountHolder: session.teacherName,
+              classFees: [],
+              totalAmount: 0,
+              sessions: [],
+            });
+          }
+          
+          const teacher = teacherMap.get(session.teacherId)!;
+          teacher.sessions.push(session);
+          
+          // 클래스별 수강료 계산
+          const existingFee = teacher.classFees.find(fee => fee.name === session.className);
+          if (existingFee) {
+            existingFee.count += 1;
+            existingFee.price += session.tuitionFee;
+          } else {
+            teacher.classFees.push({
+              name: session.className,
+              count: 1,
+              price: session.tuitionFee,
+            });
+          }
+          
+          teacher.totalAmount += session.tuitionFee;
+        });
+        
+        setTeacherPayments(Array.from(teacherMap.values()));
       }
     }
   }, []);
@@ -159,9 +239,32 @@ export default function PaymentPage() {
     setTimeout(() => setShowToast(false), 1500);
   };
 
-  // 결제 완료 버튼 클릭 시 (추후 실제 결제 로직 연결)
-  const handleComplete = () => {
-    alert('결제가 완료되었습니다!');
+  // 결제 완료 버튼 클릭 시
+  const handleComplete = async () => {
+    if (!confirmed || isProcessing) return;
+    
+    setIsProcessing(true);
+    
+    try {
+      // 선택된 세션들의 ID를 추출
+      const sessionIds = selectedSessions.map(session => session.sessionId);
+      
+      // 백엔드에 세션별 수강 신청 요청
+      const result = await batchEnrollSessions(sessionIds);
+      
+      if (result.success > 0) {
+        toast.success(`${result.success}개 세션의 수강 신청이 완료되었습니다.`);
+        // 성공 시 대시보드로 이동
+        router.push('/dashboard/student');
+      } else {
+        toast.error('수강 신청에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('Enrollment error:', error);
+      toast.error('수강 신청 중 오류가 발생했습니다.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -194,12 +297,17 @@ export default function PaymentPage() {
 
       {/* 가로 스크롤 컨테이너 */}
       <div className="flex flex-row gap-4 overflow-x-auto pb-4 w-full">
-        {selectedClasses.map((teacher, idx) => (
+        {teacherPayments.map((teacher, idx) => (
           <TeacherPaymentBox key={idx} teacher={teacher} onCopy={handleCopy} />
         ))}
       </div>
       <Toast show={showToast} message="계좌번호가 복사되었습니다!" />
-      <PaymentConfirmFooter confirmed={confirmed} setConfirmed={setConfirmed} onComplete={handleComplete} />
+      <PaymentConfirmFooter 
+        confirmed={confirmed} 
+        setConfirmed={setConfirmed} 
+        onComplete={handleComplete}
+        isProcessing={isProcessing}
+      />
     </div>
   );
 }

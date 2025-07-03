@@ -48,8 +48,8 @@ export class ClassService {
     level: string;
     startTime: string;
     endTime: string;
-    startDate: Date;
-    endDate: Date;
+    startDate: string; // UTC ISO 문자열
+    endDate: string; // UTC ISO 문자열
   }) {
     console.log('=== createClass 호출됨 ===');
     console.log('받은 데이터:', {
@@ -92,6 +92,9 @@ export class ClassService {
       );
     }
 
+    console.log('DTO에서 변환된 startDate:', data.startDate);
+    console.log('DTO에서 변환된 endDate:', data.endDate);
+
     // 시작일이 종료일보다 늦은지 확인
     if (data.startDate >= data.endDate) {
       throw new BadRequestException('시작일은 종료일보다 이전이어야 합니다.');
@@ -106,22 +109,23 @@ export class ClassService {
     const registrationEndDate = new Date(registrationStartDate);
     registrationEndDate.setDate(registrationEndDate.getDate() + 7);
 
+    // 고유한 클래스 코드 생성
+    const classCode = await this.generateUniqueClassCode(data.dayOfWeek);
+
     // 클래스 생성
     const createdClass = await this.prisma.class.create({
       data: {
         className: data.className,
-        classCode: `BALLET-${data.dayOfWeek.substring(0, 3)}-${
-          Math.floor(Math.random() * 1000) + 1
-        }`,
+        classCode,
         description: data.description,
         maxStudents: data.maxStudents,
         currentStudents: 0,
         tuitionFee: data.tuitionFee,
         dayOfWeek: data.dayOfWeek,
-        startTime: new Date(`1970-01-01T${data.startTime}Z`),
-        endTime: new Date(`1970-01-01T${data.endTime}Z`),
-        startDate: data.startDate,
-        endDate: data.endDate,
+        startTime: new Date(`1970-01-01T${data.startTime}:00`),
+        endTime: new Date(`1970-01-01T${data.endTime}:00`),
+        startDate: new Date(data.startDate),
+        endDate: new Date(data.endDate),
         level: data.level,
         status: 'DRAFT',
         registrationMonth,
@@ -137,13 +141,21 @@ export class ClassService {
 
     console.log('생성된 클래스:', createdClass);
 
+    console.log('=== generateClassSessions 호출됨 ===');
+    console.log('createdClass.id:', createdClass.id);
+    console.log('data.dayOfWeek:', data.dayOfWeek);
+    console.log('data.startTime:', data.startTime);
+    console.log('data.endTime:', data.endTime);
+    console.log('data.startDate:', data.startDate);
+    console.log('data.endDate:', data.endDate);
+
     // 클래스 세션 자동 생성
     const sessionCount = await this.generateClassSessions(createdClass.id, {
       dayOfWeek: data.dayOfWeek,
       startTime: data.startTime,
       endTime: data.endTime,
-      startDate: data.startDate,
-      endDate: data.endDate,
+      startDate: new Date(data.startDate),
+      endDate: new Date(data.endDate),
     });
 
     return {
@@ -151,6 +163,41 @@ export class ClassService {
       sessionCount,
       message: `${sessionCount}개의 세션이 자동으로 생성되었습니다.`,
     };
+  }
+
+  // 고유한 클래스 코드 생성 메서드
+  private async generateUniqueClassCode(dayOfWeek: string): Promise<string> {
+    const baseCode = `BALLET-${dayOfWeek.substring(0, 3)}`;
+
+    // 해당 요일의 기존 클래스 코드들 중 최대 번호 찾기
+    const existingClasses = await this.prisma.class.findMany({
+      where: {
+        classCode: {
+          startsWith: baseCode,
+        },
+      },
+      select: {
+        classCode: true,
+      },
+    });
+
+    // 기존 코드에서 번호 추출하여 최대값 찾기
+    let maxNumber = 0;
+    existingClasses.forEach((cls) => {
+      const match = cls.classCode.match(new RegExp(`^${baseCode}-(\\d+)$`));
+      if (match) {
+        const number = parseInt(match[1], 10);
+        if (number > maxNumber) {
+          maxNumber = number;
+        }
+      }
+    });
+
+    // 다음 번호 사용
+    const nextNumber = maxNumber + 1;
+    const classCode = `${baseCode}-${nextNumber.toString().padStart(3, '0')}`;
+
+    return classCode;
   }
 
   // 클래스 세션 자동 생성 메서드
@@ -201,10 +248,7 @@ export class ClassService {
 
     // 시작일부터 종료일까지 해당 요일의 세션들을 생성
     const currentDate = new Date(startDate);
-    currentDate.setHours(0, 0, 0, 0); // 시간을 00:00:00으로 설정
-
     const endDateTime = new Date(endDate);
-    endDateTime.setHours(23, 59, 59, 999); // 시간을 23:59:59로 설정
 
     console.log('currentDate:', currentDate);
     console.log('endDateTime:', endDateTime);
@@ -219,16 +263,16 @@ export class ClassService {
 
         // 해당 날짜의 시작 시간과 종료 시간 계산
         const sessionDate = new Date(currentDate);
-        sessionDate.setHours(0, 0, 0, 0); // 날짜만 설정
 
-        const sessionStartTime = new Date(currentDate);
-        const sessionEndTime = new Date(currentDate);
-
-        // 시간 설정
+        // 시간 설정 (프론트엔드에서 이미 포맷팅된 UTC 시간 사용)
         const [startHour, startMinute] = startTime.split(':').map(Number);
         const [endHour, endMinute] = endTime.split(':').map(Number);
 
+        // 해당 날짜에 시간 설정
+        const sessionStartTime = new Date(currentDate);
         sessionStartTime.setHours(startHour, startMinute, 0, 0);
+
+        const sessionEndTime = new Date(currentDate);
         sessionEndTime.setHours(endHour, endMinute, 0, 0);
 
         sessions.push({
@@ -278,10 +322,10 @@ export class ClassService {
       data: {
         ...data,
         ...(data.startTime && {
-          startTime: new Date(`1970-01-01T${data.startTime}Z`),
+          startTime: new Date(`1970-01-01T${data.startTime}:00`),
         }),
         ...(data.endTime && {
-          endTime: new Date(`1970-01-01T${data.endTime}Z`),
+          endTime: new Date(`1970-01-01T${data.endTime}:00`),
         }),
       },
     });

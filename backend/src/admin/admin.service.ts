@@ -135,13 +135,10 @@ export class AdminService {
       throw new NotFoundException('학생을 찾을 수 없습니다.');
     }
 
-    // 트랜잭션으로 관련 데이터 모두 삭제
     await this.prisma.$transaction([
-      // 수강 신청 내역 삭제
       this.prisma.enrollment.deleteMany({
         where: { studentId },
       }),
-      // 학생 정보 삭제
       this.prisma.student.delete({
         where: { id: studentId },
       }),
@@ -157,7 +154,6 @@ export class AdminService {
   }
 
   async deleteClass(id: number) {
-    // ClassService의 deleteClass 메서드를 사용하여 관련된 모든 데이터를 안전하게 삭제
     return this.classService.deleteClass(id);
   }
 
