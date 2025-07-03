@@ -192,6 +192,47 @@
       ]
     },
     {
+      "name": "Banking",
+      "item": [
+        {
+          "name": "Get Teacher Bank Account",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/banking/teacher/1/bank-account",
+              "host": ["{{baseUrl}}"],
+              "path": ["banking", "teacher", "1", "bank-account"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Teacher with Bank Account",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/banking/teacher/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["banking", "teacher", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Admin",
       "item": [
         {

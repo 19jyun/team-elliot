@@ -9,6 +9,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { StudentModule } from './student/student.module';
 import { SmsModule } from './sms/sms.module';
+import { BankingModule } from './banking/banking.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -24,6 +25,7 @@ import { SmsModule } from './sms/sms.module';
     ClassModule,
     StudentModule,
     SmsModule,
+    BankingModule,
   ],
   providers: [PrismaService],
 })
