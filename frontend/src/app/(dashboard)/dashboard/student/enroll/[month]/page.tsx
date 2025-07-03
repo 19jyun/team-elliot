@@ -276,7 +276,6 @@ export default function EnrollmentMonthPage() {
             onClick={() => {
               if (selectedIds.length > 0) {
                 const month = params.month;
-                // 선택된 클래스 전체 정보 추출
                 const selectedClassCards = classCards?.filter(card => selectedIds.includes(card.id)) || [];
                 localStorage.setItem('selectedClassCards', JSON.stringify(selectedClassCards));
                 router.push(`/dashboard/student/enroll/${month}/date`);

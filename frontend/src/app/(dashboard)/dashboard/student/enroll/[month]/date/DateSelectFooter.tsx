@@ -5,9 +5,10 @@ interface Props {
   onSelectAll?: () => void
   onDeselectAll?: () => void
   isAllSelected?: boolean
+  onGoToPayment?: () => void
 }
 
-export default function DateSelectFooter({ selectedCount, onSelectAll, onDeselectAll, isAllSelected }: Props) {
+export default function DateSelectFooter({ selectedCount, onSelectAll, onDeselectAll, isAllSelected, onGoToPayment }: Props) {
   // 전체선택 체크박스 클릭 핸들러
   const handleSelectAllChange = (checked: boolean) => {
     if (checked && onSelectAll) {
@@ -34,6 +35,7 @@ export default function DateSelectFooter({ selectedCount, onSelectAll, onDeselec
         <button
           className={`flex-1 shrink self-stretch px-2.5 py-4 rounded-lg min-w-[240px] size-full transition-colors duration-300 text-center ${selectedCount > 0 ? 'bg-[#AC9592] text-white cursor-pointer' : 'bg-zinc-300 text-white cursor-not-allowed'}`}
           disabled={selectedCount === 0}
+          onClick={selectedCount > 0 && onGoToPayment ? onGoToPayment : undefined}
         >
           {selectedCount > 0 ? (
             <span className="inline-flex items-center justify-center w-full">

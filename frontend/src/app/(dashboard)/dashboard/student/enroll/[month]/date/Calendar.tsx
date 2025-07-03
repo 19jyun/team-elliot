@@ -13,7 +13,6 @@ const levelBgColor: Record<string, string> = {
 
 // 해당 월의 달력 배열을 생성하는 함수
 function generateCalendar(year: number, month: number) {
-  // month: 1~12
   const firstDayOfMonth = startOfMonth(new Date(year, month - 1))
   const lastDayOfMonth = endOfMonth(firstDayOfMonth)
   const firstDay = startOfWeek(firstDayOfMonth, { weekStartsOn: 0 }) // 일요일 시작
@@ -40,35 +39,30 @@ interface CalendarProps {
   onSelectAll?: () => void;
   onDeselectAll?: () => void;
   isAllSelected?: boolean;
+  onSelectedClassesChange?: (selected: any[]) => void;
 }
 
-export default function Calendar({ onSelectCountChange, onSelectableCountChange, onSelectAll, onDeselectAll, isAllSelected }: CalendarProps) {
+export default function Calendar({ onSelectCountChange, onSelectableCountChange, onSelectAll, onDeselectAll, isAllSelected, onSelectedClassesChange }: CalendarProps) {
   const params = useParams()
   const month = Number(params.month)
   const year = new Date().getFullYear() // 필요시 쿼리스트링 등에서 받아올 수도 있음
 
-  // localStorage에서 선택된 클래스 정보 읽기
   const [classCards, setClassCards] = useState<any[]>([])
   useEffect(() => {
     const stored = localStorage.getItem('selectedClassCards')
     if (stored) {
       setClassCards(JSON.parse(stored))
+      console.log('classCards in localStorage:', JSON.parse(stored))
     }
   }, [])
 
-  // useMemo를 사용하는 이유:
-  // year/month가 바뀔 때만 달력 배열을 다시 계산하여, 불필요한 연산을 방지합니다.
   const days = useMemo(() => generateCalendar(year, month), [year, month])
-
-  // 날짜 선택 상태: { 'YYYY-MM-DD': true }
   const [selectedDates, setSelectedDates] = useState<{[key: string]: boolean}>({})
 
-  // 날짜를 YYYY-MM-DD 문자열로 변환
   function formatDate(date: Date) {
     return date.toISOString().slice(0, 10)
   }
 
-  // 선택 가능한 모든 날짜 찾기
   const selectableDates = useMemo(() => {
     const dates: string[] = []
     days.forEach(d => {
@@ -84,7 +78,6 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
     return dates
   }, [days, classCards])
 
-  // isAllSelected가 변경되면 모든 선택 가능한 날짜를 선택/해제
   useEffect(() => {
     if (isAllSelected) {
       const allSelected = selectableDates.reduce((acc, date) => ({ ...acc, [date]: true }), {})
@@ -94,15 +87,36 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
     }
   }, [isAllSelected, selectableDates])
 
-  // 선택 가능한 날짜 개수 상위로 전달
   useEffect(() => {
     if (onSelectableCountChange) onSelectableCountChange(selectableDates.length)
   }, [selectableDates, onSelectableCountChange])
 
-  // 선택된 날짜 개수 상위로 전달
   useEffect(() => {
     if (onSelectCountChange) onSelectCountChange(Object.values(selectedDates).filter(Boolean).length)
   }, [selectedDates, onSelectCountChange])
+
+  useEffect(() => {
+    if (!onSelectedClassesChange) return;
+    // { class: card, numberOfEnrollment }
+    const classCountMap: Record<string, any> = {};
+    Object.entries(selectedDates).forEach(([date, isSelected]) => {
+      if (!isSelected) return;
+      const d = new Date(date);
+      const dayOfWeekStr = weekDays[d.getDay()];
+      const availableClasses = classCards.filter(card => card.dayOfWeek === dayOfWeekStr);
+      availableClasses.forEach(card => {
+        const key = card.id;
+        if (!classCountMap[key]) {
+          classCountMap[key] = {
+            class: card,
+            numberOfEnrollment: 0,
+          };
+        }
+        classCountMap[key].numberOfEnrollment += 1;
+      });
+    });
+    onSelectedClassesChange(Object.values(classCountMap));
+  }, [selectedDates, classCards, onSelectedClassesChange]);
 
   return (
     <div className="w-full flex flex-col items-center py-4">

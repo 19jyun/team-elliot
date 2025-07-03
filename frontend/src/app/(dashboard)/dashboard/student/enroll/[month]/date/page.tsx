@@ -12,6 +12,7 @@ export default function EnrollmentDatePage() {
   const [selectedCount, setSelectedCount] = useState(0);
   const [selectableCount, setSelectableCount] = useState(0);
   const [isAllSelected, setIsAllSelected] = useState(false);
+  const [selectedClasses, setSelectedClasses] = useState<any[]>([]); 
     
   const statusSteps = [
     {
@@ -51,6 +52,14 @@ export default function EnrollmentDatePage() {
       setIsAllSelected(false)
     }
   }, [selectedCount, selectableCount])
+
+  // 결제 페이지로 이동 및 localStorage 저장
+  const handleGoToPayment = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('selectedClasses', JSON.stringify(selectedClasses));
+    }
+    router.push('/dashboard/student/enroll/${month}/date/payment');
+  }
     
   return (
     <div className="flex flex-col min-h-screen bg-white font-[Pretendard Variable]">
@@ -86,6 +95,7 @@ export default function EnrollmentDatePage() {
         onSelectAll={handleSelectAll}
         onDeselectAll={handleDeselectAll}
         isAllSelected={isAllSelected}
+        onSelectedClassesChange={setSelectedClasses} // Calendar에서 선택 정보 올림
       />
       {/* 전체선택 체크박스 + 하단 버튼 */}
       <DateSelectFooter 
@@ -93,6 +103,7 @@ export default function EnrollmentDatePage() {
         onSelectAll={handleSelectAll}
         onDeselectAll={handleDeselectAll}
         isAllSelected={isAllSelected}
+        onGoToPayment={handleGoToPayment}
       />
     </div>
   )
