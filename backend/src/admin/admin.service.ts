@@ -4,12 +4,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ClassService } from '../class/class.service';
 import { hash } from 'bcrypt';
 import { CreateStudentDto, CreateTeacherDto, CreateClassDto } from './dto';
 
 @Injectable()
 export class AdminService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private classService: ClassService,
+  ) {}
 
   async createStudent(dto: CreateStudentDto) {
     const exists = await this.prisma.student.findUnique({
@@ -58,43 +62,19 @@ export class AdminService {
       throw new BadRequestException('존재하지 않는 선생님입니다.');
     }
 
-    const classCode = `BALLET-${dto.dayOfWeek.substring(0, 3)}-${
-      Math.floor(Math.random() * 1000) + 1
-    }`;
-
-    const registrationMonth = new Date(dto.startDate);
-    registrationMonth.setDate(1);
-
-    const registrationStartDate = new Date(dto.startDate);
-    registrationStartDate.setDate(registrationStartDate.getDate() - 14);
-
-    const registrationEndDate = new Date(registrationStartDate);
-    registrationEndDate.setDate(registrationEndDate.getDate() + 7);
-
-    return this.prisma.class.create({
-      data: {
-        className: dto.className,
-        classCode,
-        description: dto.description,
-        maxStudents: dto.maxStudents,
-        currentStudents: 0,
-        tuitionFee: dto.tuitionFee,
-        dayOfWeek: dto.dayOfWeek,
-        startTime: new Date(`1970-01-01T${dto.startTime}Z`),
-        endTime: new Date(`1970-01-01T${dto.endTime}Z`),
-        startDate: dto.startDate,
-        endDate: dto.endDate,
-        level: 'BEGINNER',
-        status: 'DRAFT',
-        registrationMonth,
-        registrationStartDate,
-        registrationEndDate,
-        teacher: {
-          connect: {
-            id: dto.teacherId,
-          },
-        },
-      },
+    // ClassService의 createClass 메서드를 사용하여 세션도 함께 생성
+    return this.classService.createClass({
+      className: dto.className,
+      description: dto.description,
+      maxStudents: dto.maxStudents,
+      tuitionFee: dto.tuitionFee,
+      teacherId: dto.teacherId,
+      dayOfWeek: dto.dayOfWeek,
+      level: dto.level,
+      startTime: dto.startTime,
+      endTime: dto.endTime,
+      startDate: dto.startDate,
+      endDate: dto.endDate,
     });
   }
 
@@ -177,9 +157,8 @@ export class AdminService {
   }
 
   async deleteClass(id: number) {
-    return this.prisma.class.delete({
-      where: { id },
-    });
+    // ClassService의 deleteClass 메서드를 사용하여 관련된 모든 데이터를 안전하게 삭제
+    return this.classService.deleteClass(id);
   }
 
   async resetStudentPassword(studentId: number, newPassword: string) {

@@ -13,6 +13,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @ApiTags('ClassSession')
 @Controller('class-sessions')
@@ -52,5 +53,28 @@ export class ClassSessionController {
   @ApiOperation({ summary: '세션 상세 조회' })
   async getClassSession(@Param('id', ParseIntPipe) id: number) {
     return this.classSessionService.getClassSession(id);
+  }
+
+  @Post(':sessionId/enroll')
+  @Roles(Role.STUDENT)
+  @ApiOperation({ summary: '세션별 수강 신청' })
+  async enrollSession(
+    @Param('sessionId', ParseIntPipe) sessionId: number,
+    @CurrentUser() user: any,
+  ) {
+    return this.classSessionService.enrollSession(sessionId, user.id);
+  }
+
+  @Post('batch-enroll')
+  @Roles(Role.STUDENT)
+  @ApiOperation({ summary: '여러 세션 일괄 수강 신청' })
+  async batchEnrollSessions(
+    @Body() data: { sessionIds: number[] },
+    @CurrentUser() user: any,
+  ) {
+    return this.classSessionService.batchEnrollSessions(
+      data.sessionIds,
+      user.id,
+    );
   }
 }

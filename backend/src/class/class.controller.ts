@@ -41,8 +41,8 @@ export class ClassController {
   @Post()
   @Roles(Role.ADMIN)
   async createClass(@Body() data: CreateClassDto) {
-    const startDate = new Date();
-    const endDate = new Date();
+    const startDate = data.startDate ? new Date(data.startDate) : new Date();
+    const endDate = data.endDate ? new Date(data.endDate) : new Date();
     endDate.setFullYear(endDate.getFullYear() + 1);
 
     return this.classService.createClass({
@@ -88,5 +88,24 @@ export class ClassController {
     @Query('year') year: string,
   ) {
     return this.classService.getClassesByMonth(month, parseInt(year));
+  }
+
+  @Post(':id/generate-sessions')
+  @Roles(Role.ADMIN, Role.TEACHER)
+  async generateSessionsForClass(@Param('id', ParseIntPipe) classId: number) {
+    return this.classService.generateSessionsForExistingClass(classId);
+  }
+
+  @Post(':id/generate-sessions/period')
+  @Roles(Role.ADMIN, Role.TEACHER)
+  async generateSessionsForPeriod(
+    @Param('id', ParseIntPipe) classId: number,
+    @Body() data: { startDate: string; endDate: string },
+  ) {
+    return this.classService.generateSessionsForPeriod(
+      classId,
+      new Date(data.startDate),
+      new Date(data.endDate),
+    );
   }
 }
