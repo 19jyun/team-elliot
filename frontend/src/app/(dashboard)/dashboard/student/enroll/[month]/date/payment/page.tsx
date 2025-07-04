@@ -1,5 +1,6 @@
 'use client'
 import React, { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import { ChevronLeftIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { StatusStep } from '../../StatusStep';
@@ -18,6 +19,7 @@ export default function PaymentPage() {
   const [confirmed, setConfirmed] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const router = useRouter();
+  const params = useParams();
   
   const statusSteps = [
     {
@@ -117,8 +119,7 @@ export default function PaymentPage() {
       
       if (result.success > 0) {
         toast.success(`${result.success}개 세션의 수강 신청이 완료되었습니다.`);
-        // 성공 시 대시보드로 이동
-        router.push('/dashboard/student');
+        router.push(`/dashboard/student/enroll/${params.month}/date/payment/complete`);
       } else {
         toast.error('수강 신청에 실패했습니다.');
       }
