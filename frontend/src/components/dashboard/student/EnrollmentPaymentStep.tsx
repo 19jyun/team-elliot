@@ -156,8 +156,11 @@ export function EnrollmentPaymentStep() {
 
             {/* Payment Box Container */}
       <main className="flex-1 min-h-0 bg-white">
-        <div className="w-full h-full overflow-auto">
-          <div className="flex flex-col items-center px-4 py-8">
+        <div className="w-full overflow-auto" style={{ 
+          height: 'calc(100vh - 450px)',
+          minHeight: 0 
+        }}>
+          <div className="flex flex-col items-center px-4 py-8 gap-6">
             {teacherPayments.map((teacher, idx) => (
               <TeacherPaymentBox 
                 key={idx} 

@@ -231,9 +231,12 @@ export function EnrollmentClassStep() {
       </header>
 
       {/* Scrollable Timetable Section */}
-      <main className="flex-1 min-h-0 bg-white px-5 h-300">
+      <main className="flex-1 min-h-0 bg-white px-5">
         {/* Timetable Container with Scroll */}
-        <div className="w-full h-full overflow-auto" style={{ minHeight: 0 }}>
+        <div className="w-full overflow-auto" style={{ 
+          height: 'calc(100vh - 370px)',
+          minHeight: 0 
+        }}>
           {/* Sticky Header Row */}
           <div className="sticky top-0 z-30 bg-white border-b border-gray-200">
             <div className="grid" style={{ gridTemplateColumns: `60px repeat(7, 70px)`, minWidth: '450px' }}>
@@ -250,7 +253,7 @@ export function EnrollmentClassStep() {
             gridTemplateRows: `repeat(${timeSlots.length}, 60px)`,
             minWidth: '450px',
             width: '100%',
-            height: '1500px'
+            height: `${timeSlots.length * 60}px`
           }}>
             {timeSlots.map((time, rowIdx) => (
               <div
