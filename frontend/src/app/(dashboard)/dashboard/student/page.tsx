@@ -2,13 +2,24 @@
 
 import { useSession } from 'next-auth/react'
 import { useQuery } from '@tanstack/react-query'
-import axios from 'axios'
 import Image from 'next/image'
 import { useState } from 'react'
 import { ChevronDownIcon } from '@heroicons/react/24/outline'
 import { format } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import { Navigation } from '@/components/navigation/Navigation'
+import { getMyClasses } from '@/api/student'
+import { SessionModal } from '@/components/student/SessionModal'
+
+// Type for extended session
+type ExtendedSession = {
+  accessToken?: string
+  user: {
+    id: string
+    role: string
+    accessToken?: string
+  } & { name?: string | null | undefined; email?: string | null | undefined; image?: string | null | undefined }
+}
 
 export default function StudentDashboard() {
   const router = useRouter()
@@ -21,44 +32,13 @@ export default function StudentDashboard() {
 
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false)
+  const [selectedClass, setSelectedClass] = useState<any>(null)
+  const [isSessionModalOpen, setIsSessionModalOpen] = useState(false)
 
   const { data: myClasses, isLoading, error } = useQuery({
     queryKey: ['my-classes'],
-    queryFn: async () => {
-      if (!session?.user?.accessToken) return []
-      try {
-        const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_URL}/student/classes`,
-          {
-            headers: {
-              Authorization: `Bearer ${session.user.accessToken}`,
-            },
-          },
-        )
-        return response.data
-      } catch (error) {
-        if (axios.isAxiosError(error)) {
-          if (error.response?.status === 401) {
-            router.push('/login')
-            return []
-          }
-
-          const errorDetails = {
-            status: error.response?.status,
-            statusText: error.response?.statusText,
-            data: error.response?.data || 'No response data',
-            message: error.message,
-          }
-
-          console.error('API Error:', errorDetails)
-          throw new Error(`Failed to fetch classes: ${error.message}`)
-        }
-
-        console.error('Unexpected error:', error)
-        throw new Error('An unexpected error occurred')
-      }
-    },
-    enabled: !!session?.user?.accessToken,
+    queryFn: getMyClasses,
+    enabled: !!session?.user,
     retry: false,
   })
 
@@ -91,6 +71,16 @@ export default function StudentDashboard() {
     setIsMonthPickerOpen(false)
   }
 
+  const handleClassClick = (classData: any) => {
+    setSelectedClass(classData)
+    setIsSessionModalOpen(true)
+  }
+
+  const closeSessionModal = () => {
+    setIsSessionModalOpen(false)
+    setSelectedClass(null)
+  }
+
   const generateCalendarDays = () => {
     const days = []
     const totalDays = 35
@@ -110,9 +100,12 @@ export default function StudentDashboard() {
       days.push({
         day: i,
         isCurrentMonth: true,
-        hasEvent: myClasses?.some((class_) => {
-          const classDate = new Date(class_.time)
+        hasEvent: myClasses?.enrollmentClasses?.some((class_: any) => {
+          const classDate = new Date(class_.startTime)
           return classDate.getDate() === i
+        }) || myClasses?.sessionClasses?.some((session: any) => {
+          const sessionDate = new Date(session.date)
+          return sessionDate.getDate() === i
         }),
       })
     }
@@ -255,21 +248,28 @@ export default function StudentDashboard() {
           <div className="gap-2.5 self-start px-2 text-base font-semibold tracking-normal leading-snug text-stone-700">
             수강중인 클래스
           </div>
-          {myClasses?.length > 0 ? (
-            myClasses.map((class_) => (
-              <div
-                key={class_.id}
-                className="p-4 mt-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-              >
-                <h3 className="font-medium text-stone-700">
-                  {class_.className}
-                </h3>
-                <p className="text-sm text-stone-500">
-                  {class_.dayOfWeek}요일{' '}
-                  {new Date(class_.time).toLocaleTimeString()}
-                </p>
-              </div>
-            ))
+          {(myClasses?.enrollmentClasses?.length ?? 0) > 0 ? (
+            <>
+              {/* Enrollment Classes */}
+              {myClasses?.enrollmentClasses?.map((class_: any) => (
+                <div
+                  key={class_.id}
+                  className="p-4 mt-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
+                  onClick={() => handleClassClick(class_)}
+                >
+                  <h3 className="font-medium text-stone-700">
+                    {class_.className}
+                  </h3>
+                  <p className="text-sm text-stone-500">
+                    {class_.dayOfWeek}요일{' '}
+                    {new Date(class_.startTime).toLocaleTimeString()}
+                  </p>
+                  <p className="text-xs text-stone-400 mt-1">
+                    전체 수강 신청
+                  </p>
+                </div>
+              ))}
+            </>
           ) : (
             <div className="flex flex-col items-center justify-center py-8">
               <Image
@@ -283,6 +283,14 @@ export default function StudentDashboard() {
           )}
         </div>
       </div>
+
+      {/* Session Modal */}
+      <SessionModal
+        isOpen={isSessionModalOpen}
+        selectedClass={selectedClass}
+        sessions={myClasses?.sessionClasses || []}
+        onClose={closeSessionModal}
+      />
     </div>
   )
 }

@@ -52,13 +52,27 @@ export class StudentService {
       throw new NotFoundException('학생을 찾을 수 없습니다.');
     }
 
-    // 기존 수강 신청과 세션별 수강 신청을 모두 반환
-    const enrollmentClasses = student.enrollments.map(
-      (enrollment) => enrollment.class,
+    // Get unique classes where student is enrolled in at least one session
+    const enrolledClassIds = new Set(
+      student.sessionEnrollments.map(
+        (enrollment) => enrollment.session.class.id,
+      ),
     );
-    const sessionClasses = student.sessionEnrollments.map(
-      (sessionEnrollment) => sessionEnrollment.session.class,
-    );
+
+    const enrollmentClasses = Array.from(enrolledClassIds).map((classId) => {
+      const enrollment = student.sessionEnrollments.find(
+        (e) => e.session.class.id === classId,
+      );
+      return enrollment.session.class;
+    });
+
+    // Get individual sessions with session_id and status
+    const sessionClasses = student.sessionEnrollments.map((enrollment) => ({
+      ...enrollment.session,
+      session_id: enrollment.session.id,
+      enrollment_status: enrollment.status || 'PENDING', // Assuming status field exists
+      enrollment_id: enrollment.id,
+    }));
 
     return {
       enrollmentClasses,
