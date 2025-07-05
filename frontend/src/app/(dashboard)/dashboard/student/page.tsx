@@ -1,6 +1,6 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
+import { useSession, signOut } from 'next-auth/react'
 import { useQuery } from '@tanstack/react-query'
 import Image from 'next/image'
 import { useState } from 'react'
@@ -35,13 +35,36 @@ export default function StudentDashboard() {
   const [selectedClass, setSelectedClass] = useState<any>(null)
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false)
 
+  // 디버깅을 위한 세션 정보 로깅
+  console.log('Session status:', status)
+  console.log('Session data:', session)
+  console.log('Access token exists:', !!session?.accessToken)
+  console.log('Access token length:', session?.accessToken?.length)
+
+  // 토큰 만료 시간 확인
+  if (session?.accessToken) {
+    try {
+      const tokenParts = session.accessToken.split('.');
+      if (tokenParts.length === 3) {
+        const payload = JSON.parse(atob(tokenParts[1]));
+        console.log('Token payload:', payload);
+        console.log('Token expiration:', new Date(payload.exp * 1000));
+        console.log('Current time:', new Date());
+        console.log('Token expired:', Date.now() > payload.exp * 1000);
+      }
+    } catch (error) {
+      console.error('Token decode error:', error);
+    }
+  }
+
   const { data: myClasses, isLoading, error } = useQuery({
     queryKey: ['my-classes'],
     queryFn: getMyClasses,
-    enabled: !!session?.user,
+    enabled: status === 'authenticated' && !!session?.user && !!session?.accessToken,
     retry: false,
   })
 
+  // 로딩 상태 처리
   if (status === 'loading' || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -50,7 +73,18 @@ export default function StudentDashboard() {
     )
   }
 
+  // 에러 처리
   if (error) {
+    console.log('Error:', error)
+    
+    // 401 에러인 경우 로그인 페이지로 리다이렉트
+    if ((error as any)?.response?.status === 401) {
+      console.log('토큰이 만료되었습니다. 로그인 페이지로 이동합니다.');
+      // 무한 루프 방지를 위해 signOut 후 리다이렉트
+      signOut({ redirect: true, callbackUrl: '/login' });
+      return null;
+    }
+    
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <p className="text-red-500">데이터를 불러오는데 실패했습니다.</p>
