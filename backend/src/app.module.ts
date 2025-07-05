@@ -6,6 +6,7 @@ import { AdminModule } from './admin/admin.module';
 import { TeacherModule } from './teacher/teacher.module';
 import { ClassModule } from './class/class.module';
 import { ClassSessionModule } from './class-session/class-session.module';
+import { AcademyModule } from './academy/academy.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { StudentModule } from './student/student.module';
@@ -26,6 +27,7 @@ import { BankingModule } from './banking/banking.module';
     TeacherModule,
     ClassModule,
     ClassSessionModule,
+    AcademyModule,
     StudentModule,
     SmsModule,
     BankingModule,

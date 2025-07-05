@@ -34,6 +34,10 @@ export class CreateClassDto {
   @IsNumber()
   teacherId: number;
 
+  @ApiProperty({ example: 1, description: '소속 학원 ID' })
+  @IsNumber()
+  academyId: number;
+
   @ApiProperty({
     example: 'MONDAY',
     description:

@@ -2,17 +2,25 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ClassService } from '../class/class.service';
+import { AcademyService } from '../academy/academy.service';
 import { hash } from 'bcrypt';
-import { CreateStudentDto, CreateTeacherDto, CreateClassDto } from './dto';
+import {
+  CreateStudentDto,
+  CreateTeacherDto,
+  CreateClassDto,
+  CreateAcademyDto,
+} from './dto';
 
 @Injectable()
 export class AdminService {
   constructor(
     private prisma: PrismaService,
     private classService: ClassService,
+    private academyService: AcademyService,
   ) {}
 
   async createStudent(dto: CreateStudentDto) {
@@ -49,6 +57,7 @@ export class AdminService {
       data: {
         ...dto,
         password: hashedPassword,
+        academyId: dto.academyId,
       },
     });
   }
@@ -69,6 +78,7 @@ export class AdminService {
       maxStudents: dto.maxStudents,
       tuitionFee: dto.tuitionFee,
       teacherId: dto.teacherId,
+      academyId: dto.academyId,
       dayOfWeek: dto.dayOfWeek,
       level: dto.level,
       startTime: dto.startTime,
@@ -174,5 +184,18 @@ export class AdminService {
     });
 
     return { message: '비밀번호가 성공적으로 초기화되었습니다.' };
+  }
+
+  // 학원 관련 메서드들 - AcademyService 위임
+  async createAcademy(dto: CreateAcademyDto) {
+    return this.academyService.createAcademy(dto);
+  }
+
+  async getAcademies() {
+    return this.academyService.getAcademies();
+  }
+
+  async deleteAcademy(academyId: number) {
+    return this.academyService.deleteAcademy(academyId);
   }
 }
