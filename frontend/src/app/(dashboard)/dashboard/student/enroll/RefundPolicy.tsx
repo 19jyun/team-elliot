@@ -1,5 +1,4 @@
 import * as React from 'react'
-import { useRouter } from 'next/navigation'
 import { PolicySection } from './PolicySection'
 import { CheckboxAgreement } from './CheckboxAgreement'
 import { Button } from './Button'
@@ -7,10 +6,10 @@ import { policyData } from './data'
 
 interface RefundPolicyProps {
   onClose: () => void
+  onAgree?: () => void
 }
 
-export const RefundPolicy: React.FC<RefundPolicyProps> = ({ onClose }) => {
-  const router = useRouter()
+export const RefundPolicy: React.FC<RefundPolicyProps> = ({ onClose, onAgree }) => {
   const [isBottom, setIsBottom] = React.useState(false)
   const [isChecked, setIsChecked] = React.useState(false)
   const contentRef = React.useRef<HTMLDivElement>(null)
@@ -41,23 +40,30 @@ export const RefundPolicy: React.FC<RefundPolicyProps> = ({ onClose }) => {
     if (!isBottom) {
       scrollToBottom()
     } else {
-      const pathSegments = window.location.pathname.split('/')
-      const month = pathSegments[pathSegments.length - 1]
-      onClose()
-      router.push(`/dashboard/student/enroll/${month}`)
+      if (isChecked) {
+        // 동의하고 수강신청 진행
+        localStorage.setItem('refundPolicyAgreed', 'true')
+        onAgree?.()
+      } else {
+        // 체크하지 않고 닫기
+        onClose()
+      }
     }
   }
 
   const handleClose = () => {
-    onClose()
-    router.push('/dashboard/student/enroll')
+    // 상태 업데이트를 안전하게 처리
+    setTimeout(() => {
+      onClose()
+    }, 0)
   }
 
   return (
-    <div className="flex overflow-hidden flex-col mx-auto w-full bg-white max-w-[480px]">
-      <div className="flex flex-col pt-28 w-full bg-stone-900 bg-opacity-30">
-        <div className="flex overflow-hidden flex-col pt-3 w-full bg-white rounded-3xl">
-          <div className="flex gap-10 justify-between items-center mx-3 w-full max-w-[351px]">
+    <div className="flex flex-col w-full bg-white h-full">
+      <div className="flex flex-col w-full bg-stone-900 bg-opacity-30 h-full">
+        <div className="flex flex-col w-full bg-white rounded-3xl h-full">
+          {/* 고정 헤더 */}
+          <div className="flex-shrink-0 flex gap-10 justify-between items-center mx-3 w-full max-w-[351px] pt-3">
             <div className="flex gap-2.5 items-center self-stretch p-2.5 my-auto w-11">
               <div className="flex self-stretch my-auto w-6 min-h-[24px]" />
             </div>
@@ -76,10 +82,12 @@ export const RefundPolicy: React.FC<RefundPolicyProps> = ({ onClose }) => {
               />
             </button>
           </div>
+
+          {/* 스크롤 가능한 본문 */}
           <div
             ref={contentRef}
             onScroll={handleScroll}
-            className="flex z-10 flex-col w-full text-base tracking-normal text-neutral-800 max-h-[60vh] overflow-y-auto"
+            className="flex-1 overflow-y-auto w-full text-base tracking-normal text-neutral-800"
           >
             <div className="flex flex-col px-5 w-full">
               {policyData.sections.map((section, index) => (
@@ -91,24 +99,28 @@ export const RefundPolicy: React.FC<RefundPolicyProps> = ({ onClose }) => {
               ))}
             </div>
           </div>
-          <CheckboxAgreement
-            text="신규회원 필수 안내를 확인했어요"
-            iconSrc="https://cdn.builder.io/api/v1/image/assets/TEMP/66313034980cffa3f625feffeeea01d71c26e87d2cf3d99975ffeefe94e017d6"
-            onChange={handleCheckboxChange}
-          />
-          <div className="flex z-10 flex-col mt-6 w-full">
-            <div className="flex gap-3 justify-center px-5 pt-2.5 pb-4 w-full bg-white">
-              <Button
-                text={isBottom ? '수강신청 하러 가기' : '아래로 내리기'}
-                onClick={handleButtonClick}
-                disabled={isBottom ? !isChecked : false}
-                className={
-                  isBottom && isChecked ? 'bg-[#AC9592]' : 'bg-zinc-300'
-                }
-              />
-            </div>
-            <div className="flex flex-col items-center px-20 pt-5 pb-2 w-full max-sm:hidden">
-              <div className="flex shrink-0 bg-black h-[5px] rounded-[100px] w-[134px]" />
+
+          {/* 고정 푸터 */}
+          <div className="flex-shrink-0">
+            <CheckboxAgreement
+              text="신규회원 필수 안내를 확인했어요"
+              iconSrc="https://cdn.builder.io/api/v1/image/assets/TEMP/66313034980cffa3f625feffeeea01d71c26e87d2cf3d99975ffeefe94e017d6"
+              onChange={handleCheckboxChange}
+            />
+            <div className="flex z-10 flex-col mt-6 w-full">
+              <div className="flex gap-3 justify-center px-5 pt-2.5 pb-4 w-full bg-white">
+                <Button
+                  text={isBottom ? '수강신청 하러 가기' : '아래로 내리기'}
+                  onClick={handleButtonClick}
+                  disabled={isBottom ? !isChecked : false}
+                  className={
+                    isBottom && isChecked ? 'bg-[#AC9592]' : 'bg-zinc-300'
+                  }
+                />
+              </div>
+              <div className="flex flex-col items-center px-20 pt-5 pb-2 w-full max-sm:hidden">
+                <div className="flex shrink-0 bg-black h-[5px] rounded-[100px] w-[134px]" />
+              </div>
             </div>
           </div>
         </div>

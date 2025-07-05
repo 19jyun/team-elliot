@@ -4,6 +4,7 @@ import React, { ReactNode, useState } from 'react';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { ScrollableContentContainer } from './ScrollableContentContainer';
 import { DashboardPage } from './DashboardPage';
+import { EnrollmentContainer } from './student/EnrollmentContainer';
 
 interface DashboardContainerProps {
   children: ReactNode[];
@@ -13,6 +14,7 @@ export function DashboardContainer({ children }: DashboardContainerProps) {
   const {
     activeTab,
     isTransitioning,
+    subPage,
     handleTabChange,
   } = useDashboardNavigation();
 
@@ -32,6 +34,7 @@ export function DashboardContainer({ children }: DashboardContainerProps) {
     // 전환 완료 후 추가 작업이 필요한 경우 여기에 구현
   }, []);
 
+  // 메인 페이지들 렌더링
   return (
     <div className="w-full h-full">
       <ScrollableContentContainer

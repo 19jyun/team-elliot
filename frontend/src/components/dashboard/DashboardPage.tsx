@@ -1,6 +1,8 @@
 'use client';
 
 import { ReactNode, useEffect, useRef } from 'react';
+import { useDashboardNavigation } from '@/contexts/DashboardContext';
+import { EnrollmentContainer } from './student/EnrollmentContainer';
 
 interface DashboardPageProps {
   children: ReactNode;
@@ -16,6 +18,7 @@ export function DashboardPage({
   initialScrollPosition = 0,
 }: DashboardPageProps) {
   const pageRef = useRef<HTMLDivElement>(null);
+  const { subPage } = useDashboardNavigation();
 
   // 스크롤 위치 복원
   useEffect(() => {
@@ -37,17 +40,51 @@ export function DashboardPage({
     return () => page.removeEventListener('scroll', handleScroll);
   }, [onScroll]);
 
+  // SubPage가 있고 현재 페이지가 활성화된 경우 EnrollmentContainer 렌더링
+  if (subPage && isActive) {
+    return (
+      <div
+        ref={pageRef}
+        className="w-full h-full overflow-hidden"
+        style={{
+          width: '100%',
+          height: '100%',
+        }}
+      >
+        <EnrollmentContainer />
+      </div>
+    );
+  }
+
+  // SubPage가 없고 현재 페이지가 활성화된 경우 children 렌더링
+  if (!subPage && isActive) {
+    return (
+      <div
+        ref={pageRef}
+        className="w-full h-full overflow-hidden"
+        style={{
+          width: '100%',
+          height: '100%',
+        }}
+      >
+        <div className="w-full h-full">
+          {children}
+        </div>
+      </div>
+    );
+  }
+
+  // 비활성화된 페이지는 숨김
   return (
     <div
       ref={pageRef}
-      className="w-full h-full overflow-y-auto overflow-x-hidden"
+      className="w-full h-full overflow-hidden"
       style={{
-        width: '100%', // 전체 너비
-        minHeight: '100vh',
-        scrollBehavior: 'smooth',
+        width: '100%',
+        height: '100%',
       }}
     >
-      <div className="w-full max-w-[480px] mx-auto">
+      <div className="w-full h-full">
         {children}
       </div>
     </div>

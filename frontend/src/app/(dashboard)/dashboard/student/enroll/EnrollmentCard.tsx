@@ -8,8 +8,22 @@ export const EnrollmentCard: React.FC<EnrollmentCardProps> = ({
   onClick,
 }) => (
   <div
-    className="flex gap-10 justify-between items-center py-4 pr-4 pl-5 w-full text-base tracking-normal rounded-lg bg-stone-200 text-stone-700 cursor-pointer hover:bg-stone-300 transition-colors"
-    onClick={onClick}
+    className="flex gap-10 justify-between items-center py-4 pr-4 pl-5 w-full text-base tracking-normal rounded-lg bg-stone-200 text-stone-700 cursor-pointer hover:bg-stone-400 transition-colors duration-200"
+    onClick={(e) => {
+      console.log('EnrollmentCard 클릭됨:', title); // 디버깅용
+      e.preventDefault(); // 기본 동작 방지
+      e.stopPropagation(); // 이벤트 버블링 방지
+      onClick?.();
+    }}
+    onTouchStart={(e) => {
+      e.stopPropagation(); // 터치 이벤트도 버블링 방지
+    }}
+    onTouchMove={(e) => {
+      e.stopPropagation(); // 터치 이동 이벤트도 버블링 방지
+    }}
+    onTouchEnd={(e) => {
+      e.stopPropagation(); // 터치 종료 이벤트도 버블링 방지
+    }}
     role="button"
     tabIndex={0}
   >

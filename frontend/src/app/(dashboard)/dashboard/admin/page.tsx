@@ -146,7 +146,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px]">
+    <div className="flex overflow-hidden flex-col pb-2 w-full bg-white">
 
 
       {/* 헤더 섹션 */}
