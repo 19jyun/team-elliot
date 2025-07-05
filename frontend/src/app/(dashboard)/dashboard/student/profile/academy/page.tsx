@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Plus, MapPin, Phone, Calendar, Users, Building2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import { Navigation } from '@/components/navigation/Navigation';
+
 
 export default function AcademyManagementPage() {
   const router = useRouter();
@@ -83,28 +83,7 @@ export default function AcademyManagementPage() {
 
   return (
     <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px]">
-      {/* 헤더 */}
-      <div className="flex flex-col w-full">
-        <div className="flex gap-2.5 justify-center items-center px-2.5 py-2 w-full min-h-[60px]">
-          <img
-            src="/images/logo/team-eliot-1.png"
-            alt="Team Eliot Logo"
-            className="object-contain self-stretch my-auto aspect-[1.68] w-[77px]"
-          />
-        </div>
-        <Navigation />
-      </div>
 
-      {/* 뒤로가기 버튼 */}
-      <div className="flex items-center px-5 py-4">
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
-        >
-          <ArrowLeft className="h-5 w-5" />
-          <span>뒤로가기</span>
-        </button>
-      </div>
 
       {/* 헤더 */}
       <div className="flex items-center justify-between px-5 pb-4">

@@ -9,7 +9,7 @@ import { AddClassModal } from '@/components/admin/AddClassModal'
 import { TrashIcon } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 
-import { AdminNavigation } from '@/components/navigation/AdminNavigation'
+
 import { LogoutModal } from '@/components/user/LogoutModal'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -118,7 +118,7 @@ export default function AdminDashboard() {
   const [showAddClass, setShowAddClass] = useState(false)
 
   const addTeacherMutation = useMutation({
-    mutationFn: (data: TeacherFormData) =>
+    mutationFn: (data: any) =>
       axiosInstance.post(`/admin/teachers`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teachers'] })
@@ -128,7 +128,7 @@ export default function AdminDashboard() {
   })
 
   const addClassMutation = useMutation({
-    mutationFn: (data: ClassFormData) =>
+    mutationFn: (data: any) =>
       axiosInstance.post(`/admin/classes`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['classes'] })
@@ -147,20 +147,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px]">
-      {/* 상단 로그인 섹션 */}
-      <div className="flex flex-col w-full">
-        <div className="flex gap-2.5 justify-center items-center px-2.5 py-4 w-full min-h-[60px]">
-          <Image
-            src="/images/logo/team-eliot-3.png"
-            alt="Team Eliot Logo"
-            width={77}
-            height={46}
-            className="object-contain"
-            priority
-          />
-        </div>
-        <AdminNavigation />
-      </div>
+
 
       {/* 헤더 섹션 */}
       <div className="flex flex-col px-5 py-6">
@@ -182,7 +169,7 @@ export default function AdminDashboard() {
             <div className="space-y-4">
               {/* 탈퇴 사유 카테고리별 통계 */}
               <div className="grid grid-cols-2 gap-4">
-                {withdrawalStats?.byCategory?.map((stat) => (
+                {withdrawalStats?.byCategory?.map((stat: any) => (
                   <div
                     key={stat.category}
                     className="bg-stone-50 p-3 rounded-lg"
@@ -204,7 +191,7 @@ export default function AdminDashboard() {
               <div className="mt-4">
                 <h3 className="text-md font-semibold mb-2">최근 탈퇴 이력</h3>
                 <div className="space-y-2">
-                  {withdrawalStats?.recentWithdrawals?.map((withdrawal) => (
+                  {withdrawalStats?.recentWithdrawals?.map((withdrawal: any) => (
                     <div
                       key={withdrawal.id}
                       className="bg-stone-50 p-3 rounded-lg"

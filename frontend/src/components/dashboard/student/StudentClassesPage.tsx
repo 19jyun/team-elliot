@@ -1,161 +1,84 @@
-'use client'
+'use client';
 
-import { useSession, signOut } from 'next-auth/react'
-import { useQuery } from '@tanstack/react-query'
-import Image from 'next/image'
-import { useState } from 'react'
-import { ChevronDownIcon } from '@heroicons/react/24/outline'
-import { format } from 'date-fns'
-import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react';
+import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { format } from 'date-fns';
+import { ChevronDownIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
+import { getMyClasses } from '@/api/student';
+import { SessionModal } from '@/components/student/SessionModal';
 
-import { getMyClasses } from '@/api/student'
-import { SessionModal } from '@/components/student/SessionModal'
+export function StudentClassesPage() {
+  const { data: session } = useSession();
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
+  const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
+  const [selectedClass, setSelectedClass] = useState<any>(null);
 
-// Type for extended session
-type ExtendedSession = {
-  accessToken?: string
-  user: {
-    id: string
-    role: string
-    accessToken?: string
-  } & { name?: string | null | undefined; email?: string | null | undefined; image?: string | null | undefined }
-}
-
-export default function StudentDashboard() {
-  const router = useRouter()
-  const { data: session, status } = useSession({
-    required: true,
-    onUnauthenticated() {
-      router.push('/login')
-    },
-  })
-
-  const [selectedDate, setSelectedDate] = useState(new Date())
-  const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false)
-  const [selectedClass, setSelectedClass] = useState<any>(null)
-  const [isSessionModalOpen, setIsSessionModalOpen] = useState(false)
-
-  // 디버깅을 위한 세션 정보 로깅
-  console.log('Session status:', status)
-  console.log('Session data:', session)
-  console.log('Access token exists:', !!session?.accessToken)
-  console.log('Access token length:', session?.accessToken?.length)
-
-  // 토큰 만료 시간 확인
-  if (session?.accessToken) {
-    try {
-      const tokenParts = session.accessToken.split('.');
-      if (tokenParts.length === 3) {
-        const payload = JSON.parse(atob(tokenParts[1]));
-        console.log('Token payload:', payload);
-        console.log('Token expiration:', new Date(payload.exp * 1000));
-        console.log('Current time:', new Date());
-        console.log('Token expired:', Date.now() > payload.exp * 1000);
-      }
-    } catch (error) {
-      console.error('Token decode error:', error);
-    }
-  }
-
-  const { data: myClasses, isLoading, error } = useQuery({
+  const { data: myClasses } = useQuery({
     queryKey: ['my-classes'],
     queryFn: getMyClasses,
-    enabled: status === 'authenticated' && !!session?.user && !!session?.accessToken,
-    retry: false,
-  })
-
-  // 로딩 상태 처리
-  if (status === 'loading' || isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
-      </div>
-    )
-  }
-
-  // 에러 처리
-  if (error) {
-    console.log('Error:', error)
-    
-    // 401 에러인 경우 로그인 페이지로 리다이렉트
-    if ((error as any)?.response?.status === 401) {
-      console.log('토큰이 만료되었습니다. 로그인 페이지로 이동합니다.');
-      // 무한 루프 방지를 위해 signOut 후 리다이렉트
-      signOut({ redirect: true, callbackUrl: '/login' });
-      return null;
-    }
-    
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <p className="text-red-500">데이터를 불러오는데 실패했습니다.</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
-        >
-          다시 시도
-        </button>
-      </div>
-    )
-  }
+  });
 
   const handleMonthChange = (month: number) => {
-    const newDate = new Date(selectedDate)
-    newDate.setMonth(month)
-    setSelectedDate(newDate)
-    setIsMonthPickerOpen(false)
-  }
+    setSelectedDate(new Date(selectedDate.getFullYear(), month, 1));
+    setIsMonthPickerOpen(false);
+  };
 
   const handleClassClick = (classData: any) => {
-    setSelectedClass(classData)
-    setIsSessionModalOpen(true)
-  }
+    setSelectedClass(classData);
+    setIsSessionModalOpen(true);
+  };
 
   const closeSessionModal = () => {
-    setIsSessionModalOpen(false)
-    setSelectedClass(null)
-  }
+    setIsSessionModalOpen(false);
+    setSelectedClass(null);
+  };
 
   const generateCalendarDays = () => {
-    const days = []
-    const totalDays = 35
-    const currentMonth = selectedDate.getMonth()
-    const currentYear = selectedDate.getFullYear()
-    const firstDay = new Date(currentYear, currentMonth, 1).getDay()
-    const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate()
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDayOfWeek = firstDay.getDay();
+    const days: any[] = [];
 
     // 이전 달의 날짜 채우기
-    const prevMonthLastDay = new Date(currentYear, currentMonth, 0).getDate()
-    for (let i = firstDay - 1; i >= 0; i--) {
-      days.push({ day: prevMonthLastDay - i, isCurrentMonth: false })
+    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+      const prevMonthLastDay = new Date(year, month, 0);
+      days.push({
+        day: prevMonthLastDay.getDate() - i,
+        isCurrentMonth: false,
+      });
     }
 
     // 현재 달의 날짜 채우기
-    for (let i = 1; i <= lastDay; i++) {
+    for (let i = 1; i <= lastDay.getDate(); i++) {
       days.push({
         day: i,
         isCurrentMonth: true,
         hasEvent: myClasses?.enrollmentClasses?.some((class_: any) => {
-          const classDate = new Date(class_.startTime)
-          return classDate.getDate() === i
+          const classDate = new Date(class_.startTime);
+          return classDate.getDate() === i;
         }) || myClasses?.sessionClasses?.some((session: any) => {
-          const sessionDate = new Date(session.date)
-          return sessionDate.getDate() === i
+          const sessionDate = new Date(session.date);
+          return sessionDate.getDate() === i;
         }),
-      })
+      });
     }
 
     // 다음 달의 날짜 채우기
-    const remainingDays = 35 - days.length
+    const remainingDays = 35 - days.length;
     for (let i = 1; i <= remainingDays; i++) {
-      days.push({ day: i, isCurrentMonth: false })
+      days.push({ day: i, isCurrentMonth: false });
     }
 
-    return days
-  }
+    return days;
+  };
 
   return (
-    <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px]">
-
+    <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white">
       {/* 환영 메시지 */}
       <div className="flex flex-col px-5 py-6">
         <h1 className="text-2xl font-bold text-stone-700">
@@ -310,5 +233,5 @@ export default function StudentDashboard() {
         onClose={closeSessionModal}
       />
     </div>
-  )
-}
+  );
+} 

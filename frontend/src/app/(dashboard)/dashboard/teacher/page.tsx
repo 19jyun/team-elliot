@@ -14,7 +14,7 @@ import {
 import { TeacherProfile } from '@/components/teacher/TeacherProfile'
 import { LogoutModal } from '@/components/user/LogoutModal'
 import Image from 'next/image'
-import { TeacherNavigation } from '@/components/navigation/TeacherNavigation'
+
 import axiosInstance from '@/lib/axios'
 
 export default function TeacherDashboard() {
@@ -72,20 +72,7 @@ export default function TeacherDashboard() {
 
   return (
     <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px]">
-      {/* 상단 로고 섹션 */}
-      <div className="flex flex-col w-full">
-        <div className="flex gap-2.5 justify-center items-center px-2.5 py-4 w-full min-h-[60px]">
-          <Image
-            src="/images/logo/team-eliot-3.png"
-            alt="Team Eliot Logo"
-            width={77}
-            height={46}
-            className="object-contain"
-            priority
-          />
-        </div>
-        <TeacherNavigation />
-      </div>
+
 
       {/* 헤더 섹션 */}
       <div className="flex flex-col px-5 py-6">
@@ -105,7 +92,7 @@ export default function TeacherDashboard() {
           </div>
           <div className="p-4">
             <div className="space-y-4">
-              {myClasses?.map((class_) => (
+              {myClasses?.map((class_: any) => (
                 <div
                   key={class_.id}
                   className="bg-stone-50 p-3 rounded-lg hover:bg-stone-100 transition-colors duration-200"

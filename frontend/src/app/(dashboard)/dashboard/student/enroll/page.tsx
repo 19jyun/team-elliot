@@ -39,20 +39,7 @@ export default function EnrollPage() {
 
   return (
     <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px]">
-      {/* 상단 로고 섹션 */}
-      <div className="flex flex-col w-full">
-        <div className="flex gap-2.5 justify-center items-center px-2.5 py-4 w-full min-h-[60px]">
-          <Image
-            src="/images/logo/team-eliot-3.png"
-            alt="Team Eliot Logo"
-            width={77}
-            height={46}
-            className="object-contain"
-            priority
-          />
-        </div>
-        <Navigation />
-      </div>
+
 
       {/* 수강신청 카드 섹션 */}
       <div className="flex flex-col self-center mt-5 w-full font-semibold leading-snug text-center max-w-[335px]">
