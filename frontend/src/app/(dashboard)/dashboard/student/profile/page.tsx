@@ -55,9 +55,9 @@ export default function ProfilePage() {
 
   const menuLinks = [
     {
-      label: '소모임 정보',
+      label: '내 학원 관리',
       icon: '/icons/group.svg',
-      href: '/dashboard/student/profile/groups',
+      href: '/dashboard/student/profile/academy',
     },
     {
       label: '개인 정보',
