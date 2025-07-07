@@ -41,7 +41,7 @@ export function EnrollmentClassStep() {
     )
   }
   
-  const { enrollment, setEnrollmentStep, setSelectedClassIds, goBack } = dashboardContext
+  const { enrollment, setEnrollmentStep, setSelectedClassIds, goBack, navigateToSubPage } = dashboardContext
   const { selectedMonth } = enrollment
   const { status } = useSession({
     required: true,
@@ -49,6 +49,11 @@ export function EnrollmentClassStep() {
       // 로그인 페이지로 리다이렉트는 상위에서 처리
     },
   })
+
+  // SubPage 설정 - EnrollmentClassStep이 실제 SubPage
+  React.useEffect(() => {
+    navigateToSubPage('enroll')
+  }, [navigateToSubPage])
 
   const currentDate = new Date()
   const currentMonth = currentDate.getMonth() + 1
@@ -76,7 +81,6 @@ export function EnrollmentClassStep() {
   const [agreed, setAgreed] = React.useState(false)
   const [showClassDetails, setShowClassDetails] = React.useState(false)
   const [selectedClassDetails, setSelectedClassDetails] = React.useState<ClassDetailsResponse | null>(null)
-  const [showPolicyButton, setShowPolicyButton] = React.useState(false)
   const [selectedIds, setSelectedIds] = useState<number[]>([])
 
   const { data: classCards, isLoading } = useQuery({
@@ -113,11 +117,11 @@ export function EnrollmentClassStep() {
     console.log('=== END API RESPONSE DEBUG ===')
   }, [classCards, isLoading])
 
+  // localStorage 확인하여 이전에 동의했다면 정책 건너뛰기
   React.useEffect(() => {
     const hasAgreed = localStorage.getItem('refundPolicyAgreed') === 'true'
     if (hasAgreed) {
       setShowPolicy(false)
-      setShowPolicyButton(true)
     }
   }, [])
 
@@ -177,19 +181,6 @@ export function EnrollmentClassStep() {
     )
   }
 
-  if (showPolicy) {
-    return (
-      <div className="w-full h-full">
-        <RefundPolicy onClose={() => {
-          // 상태 업데이트를 안전하게 처리
-          requestAnimationFrame(() => {
-            setShowPolicy(false)
-          })
-        }} />
-      </div>
-    )
-  }
-
   if (showClassDetails && selectedClassDetails) {
     return (
       <div className="w-full h-full">
@@ -206,8 +197,8 @@ export function EnrollmentClassStep() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-white">
-      {/* Fixed Header */}
+    <div className="flex flex-col h-full bg-white relative">
+      {/* 밑의 페이지 - 항상 렌더링 */}
       <header className="flex-shrink-0 flex flex-col bg-white border-b border-gray-200 py-5 min-h-[120px] relative">
         <div className="flex gap-10 self-center w-full text-sm font-medium tracking-normal leading-snug max-w-[297px] mt-2 mb-2">
           {statusSteps.map((step, index) => (
@@ -217,17 +208,6 @@ export function EnrollmentClassStep() {
         <div className="self-center pb-4 text-base font-medium tracking-normal leading-snug text-center text-zinc-600">
           수강하실 클래스를 모두 선택해주세요.
         </div>
-        {showPolicyButton && (
-          <button
-            onClick={() => setShowPolicy(true)}
-            className="absolute right-4 top-20 flex items-center gap-1 px-3 py-1.5 text-sm bg-stone-50 text-stone-600 rounded-full border border-stone-200 hover:bg-stone-100"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            약관 확인
-          </button>
-        )}
       </header>
 
       {/* Scrollable Timetable Section */}
@@ -320,6 +300,19 @@ export function EnrollmentClassStep() {
           </button>
         </div>
       </footer>
+
+      {/* RefundPolicy Modal - 절대 위치로 위에 배치 */}
+      <div className={`absolute inset-0 z-50 ${showPolicy ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+        <RefundPolicy 
+          isOpen={showPolicy}
+          onClose={() => {
+            // 상태 업데이트를 안전하게 처리
+            requestAnimationFrame(() => {
+              setShowPolicy(false)
+            })
+          }} 
+        />
+      </div>
     </div>
   )
 }

@@ -27,17 +27,21 @@ export function CommonHeader() {
     return pathname === defaultPaths[userRole as keyof typeof defaultPaths] || pathname === '/dashboard';
   };
 
-
+  // 뒤로가기 버튼이 표시되어야 하는지 확인
+  const shouldShowBackButton = () => {
+    return subPage !== null;
+  };
 
   return (
     <div className="sticky top-0 left-0 right-0 z-50 bg-white shadow-sm border-b border-gray-200 flex-shrink-0">
       {/* 로고 섹션 */}
       <div className="flex items-center justify-between px-2.5 py-4 w-full min-h-[60px]">
-        {/* 뒤로가기 버튼 (서브 페이지일 때만 표시) */}
-        {subPage ? (
+        {/* 뒤로가기 버튼 (SubPage가 있을 때만 표시) */}
+        {shouldShowBackButton() ? (
           <button
             onClick={goBack}
             className="flex items-center justify-center w-8 h-8 text-gray-600 hover:text-gray-800 transition-colors"
+            aria-label="뒤로가기"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>

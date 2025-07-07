@@ -106,6 +106,11 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         }));
       }, 300); // CSS transition 시간과 동일
 
+      // 수강신청 탭에서 다른 탭으로 이동할 때 refundPolicyAgreed 초기화
+      if (prev.subPage === 'enroll') {
+        localStorage.removeItem('refundPolicyAgreed');
+      }
+
       return {
         ...prev,
         isTransitioning: true,
@@ -135,7 +140,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const goBack = useCallback(() => {
     setState(prev => {
       // 수강신청 중인 경우 단계별로 뒤로가기
-      if (prev.enrollment.currentStep !== 'main') {
+      if (prev.subPage === 'enroll' && prev.enrollment.currentStep !== 'main') {
         const stepOrder: EnrollmentStep[] = ['main', 'class-selection', 'date-selection', 'payment', 'complete'];
         const currentIndex = stepOrder.indexOf(prev.enrollment.currentStep);
         const previousStep = currentIndex > 0 ? stepOrder[currentIndex - 1] : 'main';
@@ -149,10 +154,23 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         };
       }
       
-      // 메인 단계인 경우 SubPage에서 나가기
+      // 그 외의 경우 SubPage를 완전히 닫기
+      // 수강신청 SubPage인 경우 refundPolicyAgreed 초기화
+      if (prev.subPage === 'enroll') {
+        localStorage.removeItem('refundPolicyAgreed');
+      }
+      
       return {
         ...prev,
         subPage: null,
+        // SubPage가 닫힐 때 enrollment 상태도 초기화
+        enrollment: {
+          currentStep: 'main',
+          selectedMonth: null,
+          selectedClasses: [],
+          selectedSessions: [],
+          selectedClassIds: [],
+        },
       };
     });
   }, []);

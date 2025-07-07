@@ -2,7 +2,9 @@
 
 import { ReactNode, useEffect, useRef } from 'react';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
-import { EnrollmentContainer } from './student/EnrollmentContainer';
+import { EnrollmentContainer } from './student/Enrollment/EnrollmentContainer';
+import { AcademyManagement } from './student/Profile/AcademyManagement';
+import { PersonalInfoManagement } from './student/Profile/PersonalInfoManagement';
 
 interface DashboardPageProps {
   children: ReactNode;
@@ -40,8 +42,21 @@ export function DashboardPage({
     return () => page.removeEventListener('scroll', handleScroll);
   }, [onScroll]);
 
-  // SubPage가 있고 현재 페이지가 활성화된 경우 EnrollmentContainer 렌더링
+  // SubPage가 있고 현재 페이지가 활성화된 경우 해당 SubPage 렌더링
   if (subPage && isActive) {
+    const renderSubPage = () => {
+      switch (subPage) {
+        case 'enroll':
+          return <EnrollmentContainer />;
+        case 'academy':
+          return <AcademyManagement />;
+        case 'personal-info':
+          return <PersonalInfoManagement />;
+        default:
+          return <EnrollmentContainer />;
+      }
+    };
+
     return (
       <div
         ref={pageRef}
@@ -51,7 +66,7 @@ export function DashboardPage({
           height: '100%',
         }}
       >
-        <EnrollmentContainer />
+        {renderSubPage()}
       </div>
     );
   }

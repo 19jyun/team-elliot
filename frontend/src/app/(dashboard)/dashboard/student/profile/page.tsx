@@ -9,10 +9,12 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import axios from 'axios'
 import { LogoutModal } from '@/components/user/LogoutModal'
+import { useDashboardNavigation } from '@/contexts/DashboardContext'
 
 export default function ProfilePage() {
   const router = useRouter()
   const [showLogoutModal, setShowLogoutModal] = React.useState(false)
+  const { navigateToSubPage } = useDashboardNavigation()
   const { data: session, status } = useSession({
     required: true,
     onUnauthenticated() {
@@ -53,16 +55,24 @@ export default function ProfilePage() {
     }
   }
 
+  const handleAcademyClick = () => {
+    navigateToSubPage('academy')
+  }
+
+  const handlePersonalInfoClick = () => {
+    navigateToSubPage('personal-info')
+  }
+
   const menuLinks = [
     {
       label: '내 학원 관리',
       icon: '/icons/group.svg',
-      href: '/dashboard/student/profile/academy',
+      onClick: handleAcademyClick,
     },
     {
       label: '개인 정보',
       icon: '/icons/group.svg',
-      href: '/dashboard/student/profile/info',
+      onClick: handlePersonalInfoClick,
     },
     {
       label: '신청/결제 내역',

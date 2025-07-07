@@ -8,11 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Plus, MapPin, Phone, Calendar, Users, Building2, ArrowLeft } from 'lucide-react';
+import { Plus, MapPin, Phone, Calendar, Users, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-
-export default function AcademyManagementPage() {
+export function AcademyManagement() {
   const router = useRouter();
   const [myAcademies, setMyAcademies] = useState<Academy[]>([]);
   const [joinCode, setJoinCode] = useState('');
@@ -82,16 +81,13 @@ export default function AcademyManagementPage() {
   };
 
   return (
-    <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px]">
-
-
+    <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px] py-5">
       {/* 헤더 */}
       <div className="flex items-center justify-between px-5 pb-4">
         <div>
           <h1 className="text-2xl font-bold text-stone-700">내 학원 관리</h1>
           <p className="text-gray-600 mt-1">가입되어 있는 학원들을 관리하고 새로운 학원에 가입할 수 있습니다.</p>
         </div>
-        <Building2 className="h-8 w-8 text-blue-600" />
       </div>
 
       <Separator className="mx-5" />
