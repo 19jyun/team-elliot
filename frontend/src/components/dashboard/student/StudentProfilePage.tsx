@@ -61,7 +61,7 @@ export function StudentProfilePage() {
     {
       label: '개인 정보',
       icon: '/icons/group.svg',
-      href: '/dashboard/student/profile/info',
+      href: '/dashboard/student/profile/personal-info',
     },
     {
       label: '신청/결제 내역',
@@ -84,7 +84,7 @@ export function StudentProfilePage() {
   }
 
   return (
-    <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white">
+    <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white relative">
       <div className="flex flex-col px-5 py-6">
         <h1 className="text-2xl font-bold text-stone-700">
           {session?.user?.name}님의 정보
@@ -117,12 +117,10 @@ export function StudentProfilePage() {
       </footer>
 
       {showLogoutModal && (
-        <div className="fixed inset-0 z-50">
-          <LogoutModal
-            onLogout={handleSignOut}
-            onClose={() => setShowLogoutModal(false)}
-          />
-        </div>
+        <LogoutModal
+          onLogout={handleSignOut}
+          onClose={() => setShowLogoutModal(false)}
+        />
       )}
     </div>
   );

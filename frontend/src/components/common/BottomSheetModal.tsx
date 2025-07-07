@@ -1,12 +1,13 @@
 'use client'
 
-import React, { ReactNode } from 'react'
+import React, { useEffect } from 'react'
+import { useDashboardNavigation } from '@/contexts/DashboardContext'
 
 interface BottomSheetModalProps {
   isOpen: boolean
   onClose: () => void
   title: string
-  children: ReactNode
+  children: React.ReactNode
   maxHeight?: string
 }
 
@@ -17,6 +18,21 @@ export function BottomSheetModal({
   children, 
   maxHeight = "max-h-96" 
 }: BottomSheetModalProps) {
+  const { pushFocus, popFocus } = useDashboardNavigation()
+
+  useEffect(() => {
+    if (isOpen) {
+      pushFocus('modal')
+    } else {
+      popFocus()
+    }
+  }, [isOpen, pushFocus, popFocus])
+
+  const handleClose = () => {
+    popFocus()
+    onClose()
+  }
+
   if (!isOpen) return null
 
   return (
@@ -24,7 +40,7 @@ export function BottomSheetModal({
       {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-black bg-opacity-50 z-50"
-        onClick={onClose}
+        onClick={handleClose}
       />
       
       {/* Modal Container */}
@@ -40,7 +56,7 @@ export function BottomSheetModal({
             {title}
           </h3>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 text-stone-500 hover:text-stone-700"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -19,7 +19,7 @@ export function ScrollableContentContainer({
   onTransitionComplete,
   onTabChange,
 }: ScrollableContentContainerProps) {
-  const { subPage } = useDashboardNavigation();
+  const { isDashboardFocused } = useDashboardNavigation();
   const containerRef = useRef<HTMLDivElement>(null);
   const [dragOffset, setDragOffset] = useState(0);
   const [xValue, setXValue] = useState(0);
@@ -34,10 +34,20 @@ export function ScrollableContentContainer({
     }
   }, [activeTab, dragOffset]);
 
-  // 터치/스와이프 이벤트 처리 (수강신청 탭에서는 비활성화)
+  // 터치/스와이프 이벤트 처리
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || activeTab === 1) return; // 수강신청 탭(index 1)에서는 스와이프 비활성화
+    if (!container) return;
+
+    // 대시보드가 포커스되어 있지 않으면 슬라이드 비활성화
+    if (!isDashboardFocused()) {
+      return;
+    }
+
+    // 수강신청 탭에서는 스와이프 비활성화 (기존 로직 유지)
+    if (activeTab === 1) {
+      return;
+    }
 
     let startX = 0;
     let currentX = 0;
@@ -96,7 +106,7 @@ export function ScrollableContentContainer({
       container.removeEventListener('touchmove', handleTouchMove);
       container.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [activeTab, onTabChange, subPage]);
+  }, [activeTab, onTabChange, isDashboardFocused]);
 
   return (
     <div className="relative w-full overflow-hidden">

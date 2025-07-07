@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useDashboardNavigation } from '@/contexts/DashboardContext';
 
 interface SlideUpModalProps {
   isOpen: boolean;
@@ -31,17 +32,20 @@ export function SlideUpModal({
 }: SlideUpModalProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const { pushFocus, popFocus } = useDashboardNavigation();
 
   // 모달이 열릴 때 애니메이션 시작
   useEffect(() => {
     if (isOpen) {
       setIsVisible(true);
       setIsClosing(false);
+      pushFocus('modal'); // 모달이 열릴 때 포커스를 modal로 변경
     }
-  }, [isOpen]);
+  }, [isOpen, pushFocus]);
 
   const handleClose = () => {
     setIsClosing(true);
+    popFocus(); // 모달이 닫힐 때 이전 포커스로 복원
     // 애니메이션 완료 후에만 onClose 호출
     setTimeout(() => {
       onClose();
@@ -62,12 +66,13 @@ export function SlideUpModal({
   useEffect(() => {
     if (!isOpen && isVisible) {
       setIsClosing(true);
+      popFocus(); // 모달이 닫힐 때 이전 포커스로 복원
       setTimeout(() => {
         setIsVisible(false);
         setIsClosing(false);
       }, 300);
     }
-  }, [isOpen, isVisible]);
+  }, [isOpen, isVisible, popFocus]);
 
   if (!isOpen && !isVisible) return null;
 
@@ -99,7 +104,7 @@ export function SlideUpModal({
           )}
 
           {/* Header */}
-          <header className="flex-shrink-0 flex items-center justify-between px-5 pb-4 relative">
+          <header className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
             <div className="w-11" /> {/* 왼쪽 여백 고정 */}
             <div className="flex-1 flex justify-center px-4">
               <h1 className="text-base font-semibold tracking-normal leading-snug text-stone-900 text-center">

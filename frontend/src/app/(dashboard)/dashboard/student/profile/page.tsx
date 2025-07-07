@@ -95,10 +95,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px]">
-
-
-
+    <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px] relative">
       <div className="flex flex-col px-5 py-6">
         <h1 className="text-2xl font-bold text-stone-700">
           {session?.user?.name}님의 정보
@@ -131,12 +128,10 @@ export default function ProfilePage() {
       </footer>
 
       {showLogoutModal && (
-        <div className="fixed inset-0 z-50">
-          <LogoutModal
-            onLogout={handleSignOut}
-            onClose={() => setShowLogoutModal(false)}
-          />
-        </div>
+        <LogoutModal
+          onLogout={handleSignOut}
+          onClose={() => setShowLogoutModal(false)}
+        />
       )}
     </div>
   )

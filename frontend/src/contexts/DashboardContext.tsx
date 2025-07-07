@@ -21,11 +21,17 @@ export interface EnrollmentState {
   selectedClassIds: number[];
 }
 
+// 포커스 상태 타입
+export type FocusType = 'dashboard' | 'modal' | 'subpage' | 'overlay';
+
 interface DashboardState {
   activeTab: number;
   isTransitioning: boolean;
   subPage: string | null;
   enrollment: EnrollmentState;
+  currentFocus: FocusType;
+  focusHistory: FocusType[];
+  isFocusTransitioning: boolean;
 }
 
 interface DashboardContextType {
@@ -34,9 +40,21 @@ interface DashboardContextType {
   isTransitioning: boolean;
   subPage: string | null;
   enrollment: EnrollmentState;
+  currentFocus: FocusType;
+  focusHistory: FocusType[];
+  isFocusTransitioning: boolean;
   handleTabChange: (newTab: number) => void;
   navigateToSubPage: (page: string) => void;
   goBack: () => void;
+  // 포커스 관리 메서드들
+  setFocus: (focus: FocusType) => void;
+  pushFocus: (focus: FocusType) => void;
+  popFocus: () => void;
+  isDashboardFocused: () => boolean;
+  isModalFocused: () => boolean;
+  isSubPageFocused: () => boolean;
+  isOverlayFocused: () => boolean;
+  clearFocusHistory: () => void;
   // 수강신청 관련 메서드들
   setEnrollmentStep: (step: EnrollmentStep) => void;
   setSelectedMonth: (month: number) => void;
@@ -61,6 +79,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       selectedSessions: [],
       selectedClassIds: [],
     },
+    currentFocus: 'dashboard',
+    focusHistory: ['dashboard'],
+    isFocusTransitioning: false,
   });
 
   // 사용자 역할에 따른 네비게이션 아이템 정의
@@ -93,6 +114,91 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }
   }, [session?.user]);
 
+  // 포커스 설정
+  const setFocus = useCallback((focus: FocusType) => {
+    setState(prev => ({
+      ...prev,
+      currentFocus: focus,
+    }));
+  }, []);
+
+  // 대시보드가 포커스되어 있는지 확인
+  const isDashboardFocused = useCallback(() => {
+    return state.currentFocus === 'dashboard';
+  }, [state.currentFocus]);
+
+  // 모달이 포커스되어 있는지 확인
+  const isModalFocused = useCallback(() => {
+    return state.currentFocus === 'modal';
+  }, [state.currentFocus]);
+
+  // 서브페이지가 포커스되어 있는지 확인
+  const isSubPageFocused = useCallback(() => {
+    return state.currentFocus === 'subpage';
+  }, [state.currentFocus]);
+
+  // 오버레이가 포커스되어 있는지 확인
+  const isOverlayFocused = useCallback(() => {
+    return state.currentFocus === 'overlay';
+  }, [state.currentFocus]);
+
+  // 포커스 스택에 추가
+  const pushFocus = useCallback((focus: FocusType) => {
+    setState(prev => ({
+      ...prev,
+      currentFocus: focus,
+      focusHistory: [...prev.focusHistory, focus],
+      isFocusTransitioning: true,
+    }));
+
+    setTimeout(() => {
+      setState(current => ({
+        ...current,
+        isFocusTransitioning: false,
+      }));
+    }, 100);
+  }, []);
+
+  // 포커스 스택에서 제거 (이전 포커스로 복원)
+  const popFocus = useCallback(() => {
+    setState(prev => {
+      const newHistory = [...prev.focusHistory];
+      newHistory.pop(); // 현재 포커스 제거
+      const previousFocus = newHistory[newHistory.length - 1] || 'dashboard';
+
+      return {
+        ...prev,
+        currentFocus: previousFocus,
+        focusHistory: newHistory,
+        isFocusTransitioning: true,
+      };
+    });
+
+    setTimeout(() => {
+      setState(current => ({
+        ...current,
+        isFocusTransitioning: false,
+      }));
+    }, 100);
+  }, []);
+
+  // 포커스 히스토리 초기화
+  const clearFocusHistory = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      currentFocus: 'dashboard',
+      focusHistory: ['dashboard'],
+      isFocusTransitioning: true,
+    }));
+
+    setTimeout(() => {
+      setState(current => ({
+        ...current,
+        isFocusTransitioning: false,
+      }));
+    }, 100);
+  }, []);
+
   // 탭 변경 핸들러
   const handleTabChange = useCallback((newTab: number) => {
     if (newTab === state.activeTab || state.isTransitioning) return;
@@ -117,6 +223,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         activeTab: newTab,
         // 탭 변경 시 SubPage 상태 초기화
         subPage: null,
+        currentFocus: 'dashboard', // 탭 변경 시 대시보드로 포커스
         enrollment: {
           currentStep: 'main',
           selectedMonth: null,
@@ -133,6 +240,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setState(prev => ({
       ...prev,
       subPage: page,
+      currentFocus: 'subpage', // 서브페이지로 이동 시 포커스 변경
     }));
   }, []);
 
@@ -163,6 +271,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       return {
         ...prev,
         subPage: null,
+        currentFocus: 'dashboard', // 서브페이지 닫을 때 대시보드로 포커스
         // SubPage가 닫힐 때 enrollment 상태도 초기화
         enrollment: {
           currentStep: 'main',
@@ -250,9 +359,20 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     isTransitioning: state.isTransitioning,
     subPage: state.subPage,
     enrollment: state.enrollment,
+    currentFocus: state.currentFocus,
+    focusHistory: state.focusHistory,
+    isFocusTransitioning: state.isFocusTransitioning,
     handleTabChange,
     navigateToSubPage,
     goBack,
+    setFocus,
+    pushFocus,
+    popFocus,
+    isDashboardFocused,
+    isModalFocused,
+    isSubPageFocused,
+    isOverlayFocused,
+    clearFocusHistory,
     setEnrollmentStep,
     setSelectedMonth,
     setSelectedClasses,
