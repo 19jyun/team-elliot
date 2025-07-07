@@ -19,6 +19,36 @@ enum Role {
   STUDENT
 }
 
+// 학원 모델
+model Academy {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(100) // 학원 이름
+  phoneNumber String   @map("phone_number") @db.VarChar(20) // 학원 연락처
+  address     String   @db.Text // 학원 주소
+  description String   @db.Text // 학원 설명
+  code        String   @unique @db.VarChar(50) // 학원 고유 코드
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  teachers    Teacher[] // 소속 강사들
+  classes     Class[] // 소속 수업들
+  students    StudentAcademy[] // 가입한 학생들
+
+  @@map("academies")
+}
+
+// 학생-학원 관계 모델 (다대다 관계)
+model StudentAcademy {
+  id        Int      @id @default(autoincrement())
+  studentId Int      @map("student_id")
+  academyId Int      @map("academy_id")
+  joinedAt  DateTime @default(now())
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  academy   Academy  @relation(fields: [academyId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, academyId])
+  @@map("student_academies")
+}
+
 // 기본 사용자 모델 - 모든 사용자 타입(관리자, 강사, 학생)의 공통 정보
 model User {
   id        Int      @id @default(autoincrement())
@@ -50,6 +80,7 @@ model Student {
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   sessionEnrollments SessionEnrollment[]
+  academies         StudentAcademy[] // 가입한 학원들
 
   @@map("students")
 }
@@ -67,12 +98,14 @@ model Teacher {
   specialties       String[] // 전문 분야 (예: 클래식 발레, 모던 발레 등)
   certifications    String[] // 자격증 정보
   yearsOfExperience Int?          @map("years_of_experience") // 교습 경력 연수
+  academyId         Int           @map("academy_id") // 소속 학원 (필수)
   bankAccount       BankAccount? // 계좌 정보 (1:1 관계)
   availableTimes    Json?         @map("available_times") // 강의 가능 시간 (JSON 형식)
   classes           Class[] // 담당 클래스
   classDetails      ClassDetail[] // 클래스 상세 정보
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
+  academy           Academy       @relation(fields: [academyId], references: [id])
 
   @@map("teachers")
 }
@@ -99,6 +132,7 @@ model Class {
   currentStudents       Int            @default(0) @map("current_students")
   tuitionFee            Decimal        @map("tuition_fee") @db.Decimal(10, 2)
   teacherId             Int            @map("teacher_id")
+  academyId             Int            @map("academy_id") // 소속 학원 (필수)
   dayOfWeek             String         @map("day_of_week") @db.VarChar(10)
   startTime             DateTime       @map("start_time") @db.Time()
   endTime               DateTime       @map("end_time") @db.Time()
@@ -111,6 +145,7 @@ model Class {
   registrationEndDate   DateTime       @map("registration_end_date")
   backgroundColor       String?        @map("background_color") @db.VarChar(50)
   teacher               Teacher        @relation(fields: [teacherId], references: [id])
+  academy               Academy        @relation(fields: [academyId], references: [id])
   classDetailId         Int?           @map("class_detail_id")
   classDetail           ClassDetail?   @relation(fields: [classDetailId], references: [id])
   notices               Notice[]

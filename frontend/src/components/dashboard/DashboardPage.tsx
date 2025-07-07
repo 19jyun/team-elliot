@@ -1,0 +1,92 @@
+'use client';
+
+import { ReactNode, useEffect, useRef } from 'react';
+import { useDashboardNavigation } from '@/contexts/DashboardContext';
+import { EnrollmentContainer } from './student/EnrollmentContainer';
+
+interface DashboardPageProps {
+  children: ReactNode;
+  isActive: boolean;
+  onScroll?: (position: number) => void;
+  initialScrollPosition?: number;
+}
+
+export function DashboardPage({
+  children,
+  isActive,
+  onScroll,
+  initialScrollPosition = 0,
+}: DashboardPageProps) {
+  const pageRef = useRef<HTMLDivElement>(null);
+  const { subPage } = useDashboardNavigation();
+
+  // 스크롤 위치 복원
+  useEffect(() => {
+    if (isActive && pageRef.current && initialScrollPosition > 0) {
+      pageRef.current.scrollTop = initialScrollPosition;
+    }
+  }, [isActive, initialScrollPosition]);
+
+  // 스크롤 이벤트 처리
+  useEffect(() => {
+    const page = pageRef.current;
+    if (!page || !onScroll) return;
+
+    const handleScroll = () => {
+      onScroll(page.scrollTop);
+    };
+
+    page.addEventListener('scroll', handleScroll, { passive: true });
+    return () => page.removeEventListener('scroll', handleScroll);
+  }, [onScroll]);
+
+  // SubPage가 있고 현재 페이지가 활성화된 경우 EnrollmentContainer 렌더링
+  if (subPage && isActive) {
+    return (
+      <div
+        ref={pageRef}
+        className="w-full h-full overflow-hidden"
+        style={{
+          width: '100%',
+          height: '100%',
+        }}
+      >
+        <EnrollmentContainer />
+      </div>
+    );
+  }
+
+  // SubPage가 없고 현재 페이지가 활성화된 경우 children 렌더링
+  if (!subPage && isActive) {
+    return (
+      <div
+        ref={pageRef}
+        className="w-full h-full overflow-hidden"
+        style={{
+          width: '100%',
+          height: '100%',
+        }}
+      >
+        <div className="w-full h-full">
+          {children}
+        </div>
+      </div>
+    );
+  }
+
+  // 비활성화된 페이지는 숨김
+  return (
+    <div
+      ref={pageRef}
+      className="w-full h-full overflow-hidden"
+      style={{
+        width: '100%',
+        height: '100%',
+      }}
+    >
+      <div className="w-full h-full">
+        {children}
+      </div>
+    </div>
+  );
+} 

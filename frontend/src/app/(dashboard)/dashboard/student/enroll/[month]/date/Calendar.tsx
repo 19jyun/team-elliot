@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation'
 import { useMemo, useEffect, useState } from 'react'
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, getDate, isSameMonth, format } from 'date-fns'
 import { getClassSessions } from '@/api/class-sessions'
+import { getClassDetails } from '@/app/api/classes'
 import { ClassSession } from '@/types/api/class'
 
 // levelBgColor를 Calendar.tsx 상단에 추가
@@ -40,11 +41,12 @@ interface CalendarProps {
   onDeselectAll?: () => void;
   isAllSelected?: boolean;
   onSelectedClassesChange?: (selected: any[]) => void;
+  month?: number; // 월 정보를 props로 받을 수 있도록 추가
 }
 
-export default function Calendar({ onSelectCountChange, onSelectableCountChange, onSelectAll, onDeselectAll, isAllSelected, onSelectedClassesChange }: CalendarProps) {
+export default function Calendar({ onSelectCountChange, onSelectableCountChange, onSelectAll, onDeselectAll, isAllSelected, onSelectedClassesChange, month: propMonth }: CalendarProps) {
   const params = useParams()
-  const month = Number(params.month)
+  const month = propMonth || Number(params.month) // props로 받은 월을 우선 사용, 없으면 URL 파라미터 사용
   const year = new Date().getFullYear() // 필요시 쿼리스트링 등에서 받아올 수도 있음
 
   const [classCards, setClassCards] = useState<any[]>([])
@@ -55,13 +57,36 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
     const stored = localStorage.getItem('selectedClassCards')
     if (stored) {
       const cards = JSON.parse(stored)
-      setClassCards(cards)
       console.log('classCards in localStorage:', cards)
       
-      // 선택된 클래스들의 세션 정보를 가져오기
-      loadClassSessions(cards)
+      // 실제 클래스 정보를 가져오기
+      loadClassDetails(cards)
     }
   }, [])
+
+  const loadClassDetails = async (cards: any[]) => {
+    try {
+      // 실제 클래스 정보를 가져오는 API 호출
+      const classDetails = await Promise.all(
+        cards.map(async (card) => {
+          try {
+            const details = await getClassDetails(card.id)
+            return details
+          } catch (error) {
+            console.error(`Failed to load class details for ID ${card.id}:`, error)
+            return card // 에러 시 기본 정보 사용
+          }
+        })
+      )
+      
+      setClassCards(classDetails.filter(Boolean)) // null 값 제거
+      
+      // 선택된 클래스들의 세션 정보를 가져오기
+      loadClassSessions(classDetails.filter(Boolean))
+    } catch (error) {
+      console.error('Failed to load class details:', error)
+    }
+  }
 
   const loadClassSessions = async (cards: any[]) => {
     setIsLoadingSessions(true)
@@ -177,7 +202,7 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
   }
 
   return (
-    <div className="w-full flex flex-col items-center py-4">
+    <div className="w-full flex flex-col items-center py-4 px-5">
       <div className="grid grid-cols-7 gap-2 w-full max-w-lg">
         {/* 요일 헤더 */}
         {['일', '월', '화', '수', '목', '금', '토'].map(day => (

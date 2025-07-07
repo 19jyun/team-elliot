@@ -44,6 +44,7 @@ export class ClassService {
     maxStudents: number;
     tuitionFee: number;
     teacherId: number;
+    academyId: number;
     dayOfWeek: string;
     level: string;
     startTime: string;
@@ -134,6 +135,11 @@ export class ClassService {
         teacher: {
           connect: {
             id: data.teacherId,
+          },
+        },
+        academy: {
+          connect: {
+            id: data.academyId,
           },
         },
       },

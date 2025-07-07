@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsArray } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsNumber } from 'class-validator';
 
 export class CreateTeacherDto {
   @ApiProperty({ example: 'teacher001', description: '선생님의 로그인용 ID' })
@@ -16,6 +16,10 @@ export class CreateTeacherDto {
   @ApiProperty({ example: '이예진', description: '선생님의 이름' })
   @IsString()
   name: string;
+
+  @ApiProperty({ example: 1, description: '소속 학원 ID' })
+  @IsNumber()
+  academyId: number;
 
   @ApiPropertyOptional({
     example: '한국예술종합학교 졸업, 유럽 무용단 활동',

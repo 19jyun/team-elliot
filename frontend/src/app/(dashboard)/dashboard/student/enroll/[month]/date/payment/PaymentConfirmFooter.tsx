@@ -12,8 +12,7 @@ export function PaymentConfirmFooter({
   isProcessing 
 }: PaymentConfirmFooterProps) {
   return (
-    <footer className="sticky bottom-0 left-0 w-full bg-white border-t border-gray-200 z-50 mt-auto font-[Pretendard Variable]">
-      <div className="flex flex-col items-center px-5 pt-2 pb-4">
+    <div className="flex flex-col items-center px-5 pt-2 pb-4 w-full">
         <label className="flex items-center gap-2 text-sm mb-2 py-3">
           <input
             type="checkbox"
@@ -38,6 +37,5 @@ export function PaymentConfirmFooter({
           {isProcessing ? '처리 중...' : '결제 완료'}
         </button>
       </div>
-    </footer>
   );
 } 

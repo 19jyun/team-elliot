@@ -1,12 +1,21 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ClassService } from '../class/class.service';
+import { AcademyService } from '../academy/academy.service';
+import { JoinAcademyDto } from './dto/join-academy.dto';
+import { LeaveAcademyDto } from './dto/leave-academy.dto';
 
 @Injectable()
 export class StudentService {
   constructor(
     private prisma: PrismaService,
     private classService: ClassService,
+    private academyService: AcademyService,
   ) {}
 
   async getStudentClasses(studentId: number) {
@@ -109,5 +118,18 @@ export class StudentService {
 
   async unenrollClass(classId: number, studentId: number) {
     return this.classService.unenrollStudent(classId, studentId);
+  }
+
+  // 학원 관련 메서드들 - AcademyService 위임
+  async getMyAcademies(studentId: number) {
+    return this.academyService.getMyAcademies(studentId);
+  }
+
+  async joinAcademy(studentId: number, joinAcademyDto: JoinAcademyDto) {
+    return this.academyService.joinAcademy(studentId, joinAcademyDto);
+  }
+
+  async leaveAcademy(studentId: number, leaveAcademyDto: LeaveAcademyDto) {
+    return this.academyService.leaveAcademy(studentId, leaveAcademyDto);
   }
 }

@@ -18,6 +18,20 @@ async function main() {
     },
   });
 
+  // 학원 생성
+  const academy = await prisma.academy.upsert({
+    where: { code: 'TEAM_ELLIOT_001' },
+    update: {},
+    create: {
+      name: '팀 엘리엇 발레 학원',
+      phoneNumber: '02-1234-5678',
+      address: '서울특별시 강남구 테헤란로 123, 4층',
+      description:
+        '저희 팀 엘리엇 학원은 체계적이고 전문적인 발레 교육을 추구하는 강의를 진행합니다. 초보자부터 고급자까지 모든 레벨의 학생들을 위한 맞춤형 커리큘럼을 제공합니다.',
+      code: 'TEAM_ELLIOT_001',
+    },
+  });
+
   // Create test teacher
   const teacher = await prisma.teacher.upsert({
     where: { userId: 'teacher123' },
@@ -33,6 +47,7 @@ async function main() {
         '(배우 이하늬 개인레슨)',
         '전) 압구정 인사이드발레 성인반 강사',
       ],
+      academyId: academy.id,
     },
     create: {
       userId: 'teacher123',
@@ -49,6 +64,7 @@ async function main() {
         '(배우 이하늬 개인레슨)',
         '전) 압구정 인사이드발레 성인반 강사',
       ],
+      academyId: academy.id,
     },
   });
 
@@ -63,6 +79,21 @@ async function main() {
       password: hashedPassword,
       name: '이학생',
       phoneNumber: '010-9876-5432',
+    },
+  });
+
+  // 학생을 학원에 가입시킴
+  await prisma.studentAcademy.upsert({
+    where: {
+      studentId_academyId: {
+        studentId: student.id,
+        academyId: academy.id,
+      },
+    },
+    update: {},
+    create: {
+      studentId: student.id,
+      academyId: academy.id,
     },
   });
 
@@ -109,6 +140,7 @@ async function main() {
       startTime: new Date('2024-01-01T06:00:00Z'),
       endTime: new Date('2024-01-01T07:00:00Z'),
       teacherId: teacher.id,
+      academyId: academy.id,
       classDetailId: classDetail.id,
       level: 'BEGINNER',
       status: 'OPEN',
@@ -130,6 +162,7 @@ async function main() {
       startTime: new Date('2024-01-01T06:00:00Z'),
       endTime: new Date('2024-01-01T07:00:00Z'),
       teacherId: teacher.id,
+      academyId: academy.id,
       classDetailId: classDetail.id,
       level: 'ADVANCED',
       status: 'OPEN',
@@ -151,6 +184,7 @@ async function main() {
       startTime: new Date('2024-01-01T09:00:00Z'),
       endTime: new Date('2024-01-01T10:00:00Z'),
       teacherId: teacher.id,
+      academyId: academy.id,
       classDetailId: classDetail.id,
       level: 'BEGINNER',
       status: 'OPEN',

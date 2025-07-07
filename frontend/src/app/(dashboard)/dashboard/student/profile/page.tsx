@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Navigation } from '@/components/navigation/Navigation'
+
 import { StatusBar } from '@/components/ui/StatusBar'
 import { MenuLinks } from '@/components/navigation/MenuLinks'
 import { useSession, signOut } from 'next-auth/react'
@@ -55,9 +55,9 @@ export default function ProfilePage() {
 
   const menuLinks = [
     {
-      label: '소모임 정보',
+      label: '내 학원 관리',
       icon: '/icons/group.svg',
-      href: '/dashboard/student/profile/groups',
+      href: '/dashboard/student/profile/academy',
     },
     {
       label: '개인 정보',
@@ -87,16 +87,7 @@ export default function ProfilePage() {
   return (
     <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px]">
 
-      <div className="flex flex-col w-full">
-        <div className="flex gap-2.5 justify-center items-center px-2.5 py-2 w-full min-h-[60px]">
-          <img
-            src="/images/logo/team-eliot-1.png"
-            alt="Team Eliot Logo"
-            className="object-contain self-stretch my-auto aspect-[1.68] w-[77px]"
-          />
-        </div>
-        <Navigation />
-      </div>
+
 
       <div className="flex flex-col px-5 py-6">
         <h1 className="text-2xl font-bold text-stone-700">
