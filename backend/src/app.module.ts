@@ -12,6 +12,8 @@ import { join } from 'path';
 import { StudentModule } from './student/student.module';
 import { SmsModule } from './sms/sms.module';
 import { BankingModule } from './banking/banking.module';
+import { ActivityLogModule } from './activity-log/activity-log.module';
+import { RefundModule } from './refund/refund.module';
 
 @Module({
   imports: [
@@ -31,6 +33,8 @@ import { BankingModule } from './banking/banking.module';
     StudentModule,
     SmsModule,
     BankingModule,
+    ActivityLogModule,
+    RefundModule,
   ],
   providers: [PrismaService],
 })

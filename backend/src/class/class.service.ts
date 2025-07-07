@@ -477,6 +477,7 @@ export class ClassService {
             name: true,
             introduction: true,
             photoUrl: true,
+            education: true,
           },
         },
         classDetail: true,
