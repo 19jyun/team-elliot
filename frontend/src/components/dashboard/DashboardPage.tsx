@@ -5,6 +5,8 @@ import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { EnrollmentContainer } from './student/Enrollment/EnrollmentContainer';
 import { AcademyManagement } from './student/Profile/AcademyManagement';
 import { PersonalInfoManagement } from './student/Profile/PersonalInfoManagement';
+import { EnrollmentHistory } from './student/Profile/EnrollmentHistory';
+import { CancellationHistory } from './student/Profile/CancellationHistory';
 
 interface DashboardPageProps {
   children: ReactNode;
@@ -52,6 +54,10 @@ export function DashboardPage({
           return <AcademyManagement />;
         case 'personal-info':
           return <PersonalInfoManagement />;
+        case 'enrollment-history':
+          return <EnrollmentHistory />;
+        case 'cancellation-history':
+          return <CancellationHistory />;
         default:
           return <EnrollmentContainer />;
       }

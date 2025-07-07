@@ -1,7 +1,8 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
+import { ClassDetailModal } from './ClassDetailModal'
 
 interface Session {
   id: number
@@ -40,61 +41,92 @@ interface SessionModalProps {
 }
 
 export function SessionModal({ isOpen, selectedClass, sessions, onClose }: SessionModalProps) {
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(null)
+  const [isClassDetailOpen, setIsClassDetailOpen] = useState(false)
+
   if (!isOpen || !selectedClass) return null
 
   const filteredSessions = sessions.filter((session: any) => session.class.id === selectedClass.id)
 
+  const handleSessionClick = (session: any) => {
+    // 세션의 클래스 ID를 설정하고 클래스 상세 모달을 엽니다
+    console.log('세션 클릭됨:', session);
+    console.log('클래스 ID:', session.class.id);
+    setSelectedClassId(session.class.id)
+    setIsClassDetailOpen(true)
+  }
+
+  const handleClassDetailClose = () => {
+    setIsClassDetailOpen(false)
+    setSelectedClassId(null)
+  }
+
   return (
-    <SlideUpModal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={`${selectedClass.className} - 세션 목록`}
-    >
-      <div className="pb-6">
-        {filteredSessions.length > 0 ? (
-          filteredSessions.map((session: any) => (
-            <div
-              key={`${session.session_id}-${session.enrollment_id}`}
-              className="p-4 mb-3 bg-blue-50 rounded-lg border border-blue-100"
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-medium text-stone-700">
-                    {new Date(session.date).toLocaleDateString('ko-KR', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      weekday: 'long'
-                    })}
-                  </p>
-                  <p className="text-sm text-stone-500 mt-1">
-                    {new Date(session.startTime).toLocaleTimeString('ko-KR', {
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })} - {new Date(session.endTime).toLocaleTimeString('ko-KR', {
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </p>
+    <>
+      <SlideUpModal
+        isOpen={isOpen}
+        onClose={onClose}
+        title={`${selectedClass.className} - 세션 목록`}
+      >
+        <div className="pb-6">
+          {filteredSessions.length > 0 ? (
+            filteredSessions.map((session: any) => (
+              <div
+                key={`${session.session_id}-${session.enrollment_id}`}
+                className="p-4 mb-3 bg-blue-50 rounded-lg border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors"
+                onClick={() => handleSessionClick(session)}
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-medium text-stone-700">
+                      {new Date(session.date).toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        weekday: 'long'
+                      })}
+                    </p>
+                    <p className="text-sm text-stone-500 mt-1">
+                      {new Date(session.startTime).toLocaleTimeString('ko-KR', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })} - {new Date(session.endTime).toLocaleTimeString('ko-KR', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    session.enrollment_status === 'PENDING' 
+                      ? 'bg-yellow-100 text-yellow-800' 
+                      : session.enrollment_status === 'CONFIRMED'
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {session.enrollment_status}
+                  </span>
                 </div>
-                <span className={`px-2 py-1 text-xs rounded-full ${
-                  session.enrollment_status === 'PENDING' 
-                    ? 'bg-yellow-100 text-yellow-800' 
-                    : session.enrollment_status === 'CONFIRMED'
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-gray-100 text-gray-800'
-                }`}>
-                  {session.enrollment_status}
-                </span>
               </div>
+            ))
+          ) : (
+            <div className="text-center py-8 text-stone-500">
+              <p>등록된 세션이 없습니다.</p>
             </div>
-          ))
-        ) : (
-          <div className="text-center py-8 text-stone-500">
-            <p>등록된 세션이 없습니다.</p>
-          </div>
-        )}
-      </div>
-    </SlideUpModal>
+          )}
+        </div>
+      </SlideUpModal>
+
+      {/* 클래스 상세 정보 모달 */}
+      {selectedClassId && (
+        <>
+          {console.log('ClassDetailModal 렌더링 시도:', { selectedClassId, isClassDetailOpen })}
+          <ClassDetailModal
+            isOpen={isClassDetailOpen}
+            onClose={handleClassDetailClose}
+            classId={selectedClassId}
+          />
+        </>
+      )}
+    </>
   )
 } 
