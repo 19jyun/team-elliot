@@ -240,7 +240,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setState(prev => ({
       ...prev,
       subPage: page,
-      currentFocus: 'subpage', // 서브페이지로 이동 시 포커스 변경
+      // 수강신청 페이지의 경우 슬라이드 애니메이션을 허용하기 위해 dashboard 포커스 유지
+      currentFocus: page === 'enroll' ? 'dashboard' : 'subpage',
     }));
   }, []);
 

@@ -44,11 +44,6 @@ export function ScrollableContentContainer({
       return;
     }
 
-    // 수강신청 탭에서는 스와이프 비활성화 (기존 로직 유지)
-    if (activeTab === 1) {
-      return;
-    }
-
     let startX = 0;
     let currentX = 0;
     let startTime = 0;

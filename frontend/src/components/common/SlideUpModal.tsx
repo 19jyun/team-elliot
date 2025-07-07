@@ -13,8 +13,6 @@ interface SlideUpModalProps {
   onCloseButtonClick?: () => void;
   className?: string;
   contentClassName?: string;
-  maxHeight?: string;
-  minHeight?: string;
 }
 
 export function SlideUpModal({
@@ -26,9 +24,7 @@ export function SlideUpModal({
   showCloseButton = true,
   onCloseButtonClick,
   className = '',
-  contentClassName = '',
-  maxHeight = '100vh',
-  minHeight = 'auto'
+  contentClassName = ''
 }: SlideUpModalProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
@@ -56,7 +52,16 @@ export function SlideUpModal({
 
   const handleCloseButtonClick = () => {
     if (onCloseButtonClick) {
-      onCloseButtonClick();
+      // 애니메이션 시작
+      setIsClosing(true);
+      popFocus();
+      
+      // 애니메이션 완료 후 onCloseButtonClick 호출
+      setTimeout(() => {
+        onCloseButtonClick();
+        setIsClosing(false);
+        setIsVisible(false);
+      }, 300);
     } else {
       handleClose();
     }
@@ -89,10 +94,9 @@ export function SlideUpModal({
       {/* 모달 컨테이너 */}
       <div className="absolute bottom-0 left-0 right-0 flex justify-center">
         <div 
-          className={`w-full max-w-md bg-white rounded-t-3xl transform transition-transform duration-300 ease-out ${className}`}
+          className={`w-full max-w-md bg-white rounded-t-3xl transform transition-transform duration-300 ease-out overflow-hidden ${className}`}
           style={{
-            maxHeight,
-            minHeight,
+            maxHeight: '90vh',
             transform: isClosing ? 'translateY(100%)' : isVisible ? 'translateY(0)' : 'translateY(100%)'
           }}
         >

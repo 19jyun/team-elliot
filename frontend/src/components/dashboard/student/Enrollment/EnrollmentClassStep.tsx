@@ -52,6 +52,8 @@ export function EnrollmentClassStep() {
 
   // SubPage 설정 - EnrollmentClassStep이 실제 SubPage
   React.useEffect(() => {
+    // 수강신청 페이지에서는 슬라이드 애니메이션을 허용하기 위해 
+    // 포커스를 dashboard로 유지하되, subPage 상태만 설정
     navigateToSubPage('enroll')
   }, [navigateToSubPage])
 

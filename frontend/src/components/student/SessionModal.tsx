@@ -49,8 +49,6 @@ export function SessionModal({ isOpen, selectedClass, sessions, onClose }: Sessi
       isOpen={isOpen}
       onClose={onClose}
       title={`${selectedClass.className} - 세션 목록`}
-      maxHeight="80vh"
-      minHeight="auto"
     >
       <div className="pb-6">
         {filteredSessions.length > 0 ? (
