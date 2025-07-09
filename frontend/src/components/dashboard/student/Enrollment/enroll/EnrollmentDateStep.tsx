@@ -156,9 +156,26 @@ export function EnrollmentDateStep({ mode = 'enrollment', classId, existingEnrol
         const changeAmount = Math.abs(change.amount);
         const changeType = change.type;
         
+        // 기존에 신청된 세션들 (CONFIRMED 또는 PENDING 상태)
+        const originalEnrolledSessions = existingEnrollments?.filter(
+          (enrollment: any) =>
+            enrollment.enrollment &&
+            (enrollment.enrollment.status === "CONFIRMED" ||
+              enrollment.enrollment.status === "PENDING")
+        ) || [];
+
+        // 기존 신청 세션의 날짜들
+        const originalDates = originalEnrolledSessions.map(
+          (enrollment: any) => new Date(enrollment.date).toISOString().split("T")[0]
+        );
+
+        // 새로 선택된 세션 수 (기존에 신청되지 않은 세션들)
+        const newSessionsCount = selectedDates.filter(date => !originalDates.includes(date)).length;
+        
         localStorage.setItem('modificationChangeAmount', changeAmount.toString());
         localStorage.setItem('modificationChangeType', changeType);
         localStorage.setItem('modificationNetChangeCount', netChangeCount.toString());
+        localStorage.setItem('modificationNewSessionsCount', newSessionsCount.toString());
         
         // 기존 수강 신청 정보도 저장 (Payment Step에서 비교용)
         if (existingEnrollments) {

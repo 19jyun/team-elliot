@@ -3,10 +3,8 @@
 import React, { useState } from 'react';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
-import { ChevronLeftIcon } from '@heroicons/react/24/outline';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { InfoBubble } from '@/components/common/InfoBubble';
 
 interface RefundRequestStepProps {
   refundAmount: number;
@@ -14,7 +12,6 @@ interface RefundRequestStepProps {
   onComplete: () => void;
 }
 
-// 은행 목록
 const banks = [
   { value: 'shinhan', label: '신한은행' },
   { value: 'kb', label: 'KB국민은행' },
@@ -31,13 +28,12 @@ const banks = [
 export function RefundRequestStep({ refundAmount, cancelledSessionsCount, onComplete }: RefundRequestStepProps) {
   const { goBack } = useDashboardNavigation();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // 계좌 정보 상태
   const [accountInfo, setAccountInfo] = useState({
     bank: '',
     accountNumber: '',
     accountHolder: '',
   });
+  const [saveAccount, setSaveAccount] = useState(false);
 
   const statusSteps = [
     {
@@ -103,8 +99,14 @@ export function RefundRequestStep({ refundAmount, cancelledSessionsCount, onComp
     }
   };
 
+  // 입력값 모두 채워져야 버튼 활성화 (은행명, 계좌번호(숫자 8~16자리), 예금주 2글자 이상)
+  const isFormValid =
+    accountInfo.bank &&
+    /^[0-9]{8,16}$/.test(accountInfo.accountNumber) &&
+    accountInfo.accountHolder.length >= 2;
+
   return (
-    <div className="flex flex-col min-h-screen bg-white font-[Pretendard Variable]">
+    <div className="flex flex-col min-h-screen bg-white font-[Pretendard Variable] items-center">
       {/* 헤더 */}
       <header className="sticky top-0 z-40 flex flex-col bg-white border-b py-5 border-gray-200">
         <div className="flex gap-10 self-center w-full text-sm font-medium tracking-normal leading-snug max-w-[297px] mt-2 mb-2">
@@ -118,101 +120,92 @@ export function RefundRequestStep({ refundAmount, cancelledSessionsCount, onComp
         </div>
       </header>
 
-      {/* 환불 정보 요약 */}
-      <div className="px-5 py-4 bg-blue-50 border-b border-blue-100">
-        <div className="text-center">
-          <p className="text-lg font-semibold text-blue-900">
-            환불 금액: {refundAmount.toLocaleString()}원
-          </p>
-          <p className="text-sm text-blue-700 mt-1">
-            취소된 세션: {cancelledSessionsCount}개
-          </p>
-        </div>
+      {/* 환불금액 카드 */}
+      <div className="mt-8 mb-4 w-[335px]">
+        <InfoBubble
+          label="환불금액"
+          value={refundAmount.toLocaleString() + '원'}
+          type="amount"
+        />
       </div>
 
-      {/* 계좌 정보 입력 폼 */}
-      <div className="flex-1 px-5 py-6">
-        <div className="max-w-md mx-auto space-y-6">
-          {/* 은행 선택 */}
-          <div className="space-y-2">
-            <label htmlFor="bank" className="text-sm font-medium text-gray-700">
-              은행
-            </label>
-            <select
-              id="bank"
-              value={accountInfo.bank}
-              onChange={(e) => handleInputChange('bank', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#AC9592] focus:border-transparent"
-            >
-              <option value="">은행을 선택해주세요</option>
-              {banks.map((bank) => (
-                <option key={bank.value} value={bank.value}>
-                  {bank.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* 계좌번호 */}
-          <div className="space-y-2">
-            <label htmlFor="accountNumber" className="text-sm font-medium text-gray-700">
-              계좌번호
-            </label>
-            <Input
-              id="accountNumber"
-              type="text"
-              placeholder="계좌번호를 입력해주세요"
-              value={accountInfo.accountNumber}
-              onChange={(e) => handleInputChange('accountNumber', e.target.value)}
-              className="w-full"
-            />
-          </div>
-
-          {/* 예금주 */}
-          <div className="space-y-2">
-            <label htmlFor="accountHolder" className="text-sm font-medium text-gray-700">
-              예금주
-            </label>
-            <Input
-              id="accountHolder"
-              type="text"
-              placeholder="예금주명을 입력해주세요"
-              value={accountInfo.accountHolder}
-              onChange={(e) => handleInputChange('accountHolder', e.target.value)}
-              className="w-full"
-            />
-          </div>
-
-          {/* 안내 문구 */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <p className="text-sm text-yellow-800">
-              • 환불은 신청 후 3-5일 내에 처리됩니다.<br/>
-              • 계좌 정보는 환불 처리 목적으로만 사용됩니다.<br/>
-              • 정확한 계좌 정보를 입력해주세요.
-            </p>
-          </div>
+      {/* 안내문구 */}
+      <div className="w-[335px] flex flex-col items-center mb-2">
+        <div className="flex items-center mb-1">
+          <span className="text-[#595959] text-sm font-medium px-1.5 py-0.5 rounded text-center">적어주신 계좌번호로 환불을 도와드리겠습니다.</span>
         </div>
+        <div className="text-xs text-[#8C8C8C] mt-1 text-center">환불까지 최대 48시간이 걸릴 수 있습니다.</div>
+      </div>
+
+      {/* 입력 카드들 */}
+      <div className="w-[335px] flex flex-col gap-3 mb-2">
+        <InfoBubble
+          label="은행명"
+          type="select"
+          selectValue={accountInfo.bank}
+          onSelectChange={e => handleInputChange('bank', e.target.value)}
+          options={[
+            { value: '', label: '은행명 선택' },
+            { value: 'shinhan', label: '신한은행' },
+            { value: 'kb', label: 'KB국민은행' },
+            { value: 'woori', label: '우리은행' },
+            { value: 'hana', label: '하나은행' },
+            { value: 'nh', label: 'NH농협은행' },
+            { value: 'ibk', label: 'IBK기업은행' },
+            { value: 'kakao', label: '카카오뱅크' },
+            { value: 'toss', label: '토스뱅크' },
+            { value: 'kbank', label: '케이뱅크' },
+            { value: 'other', label: '기타' },
+          ]}
+        />
+        <InfoBubble
+          label="계좌번호"
+          type="input"
+          placeholder="계좌번호 입력"
+          inputValue={accountInfo.accountNumber}
+          onChange={e => handleInputChange('accountNumber', e.target.value.replace(/[^0-9]/g, ''))}
+          inputProps={{
+            inputMode: 'numeric',
+            pattern: '[0-9]*',
+            maxLength: 16,
+            minLength: 8,
+            autoComplete: 'off',
+          }}
+        />
+        <InfoBubble
+          label="예금주"
+          type="input"
+          placeholder="예금주 입력"
+          inputValue={accountInfo.accountHolder}
+          onChange={e => handleInputChange('accountHolder', e.target.value)}
+        />
+      </div>
+
+      {/* 체크박스 */}
+      <div className="w-[335px] flex items-center mb-6">
+        <input
+          type="checkbox"
+          id="saveAccount"
+          checked={saveAccount}
+          onChange={e => setSaveAccount(e.target.checked)}
+          className="mr-2 w-4 h-4 accent-[#AC9592]"
+        />
+        <label htmlFor="saveAccount" className="text-sm text-[#595959] select-none">계좌정보 저장하기</label>
       </div>
 
       {/* 하단 버튼 */}
-      <div className="flex-shrink-0 px-5 pb-6">
-        <div className="flex gap-3">
-          <Button
-            variant="outline"
-            onClick={goBack}
-            className="flex-1"
-            disabled={isSubmitting}
-          >
-            뒤로가기
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            className="flex-1 bg-[#AC9592] hover:bg-[#8B7A77]"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? '처리 중...' : '환불 신청하기'}
-          </Button>
-        </div>
+      <div className="w-[335px] mb-4">
+        <button
+          onClick={handleSubmit}
+          disabled={!isFormValid || isSubmitting}
+          className={`w-full py-4 rounded-lg text-base font-semibold leading-snug transition-colors
+            ${isFormValid && !isSubmitting
+              ? 'bg-[#AC9592] text-white hover:bg-[#8c7a74] cursor-pointer opacity-100'
+              : 'bg-[#D9D9D9] text-white cursor-not-allowed opacity-60'}
+          `}
+        >
+          환불 신청
+        </button>
       </div>
     </div>
   );

@@ -35,6 +35,7 @@ export function EnrollmentPaymentStep({
     changeAmount: number;
     changeType: string;
     netChangeCount: number;
+    newSessionsCount: number; // 새로 추가된 세션 개수
   } | null>(null);
   
   const statusSteps = [
@@ -58,22 +59,27 @@ export function EnrollmentPaymentStep({
     },
   ]
 
+  // 최초 1회만 modificationInfo 세팅
   useEffect(() => {
-    // 수강 변경 모드에서 변경 정보 로드
-    if (mode === 'modification' && typeof window !== 'undefined') {
+    if (mode === 'modification' && typeof window !== 'undefined' && modificationInfo === null) {
       const changeAmount = localStorage.getItem('modificationChangeAmount');
       const changeType = localStorage.getItem('modificationChangeType');
       const netChangeCount = localStorage.getItem('modificationNetChangeCount');
+      const newSessionsCount = localStorage.getItem('modificationNewSessionsCount');
       
       if (changeAmount && changeType && netChangeCount) {
         setModificationInfo({
           changeAmount: parseInt(changeAmount),
           changeType,
-          netChangeCount: parseInt(netChangeCount)
+          netChangeCount: parseInt(netChangeCount),
+          newSessionsCount: newSessionsCount ? parseInt(newSessionsCount) : 0
         });
       }
     }
-    
+    // eslint-disable-next-line
+  }, []);
+
+  useEffect(() => {
     // Context에서 세션 정보를 우선 사용하고, 없으면 localStorage에서 가져옴
     let sessions: SelectedSession[] = [];
     
@@ -121,43 +127,53 @@ export function EnrollmentPaymentStep({
           });
           
           console.log('수강 변경 - 새로 추가된 세션들:', newSessions);
+          console.log('modificationInfo.newSessionsCount:', modificationInfo.newSessionsCount);
           
-          newSessions.forEach(session => {
-            const teacherId = session.class?.teacher?.id || 1;
-            const teacherName = session.class?.teacher?.name || '선생님';
-            
-            if (!teacherMap.has(teacherId)) {
-              teacherMap.set(teacherId, {
-                teacherId,
-                teacherName,
-                bankName: '신한은행',
-                accountNumber: '110-123-456789',
-                accountHolder: teacherName,
-                classFees: [],
-                totalAmount: 0,
-                sessions: [],
-              });
-            }
-            
-            const teacher = teacherMap.get(teacherId)!;
-            teacher.sessions.push(session);
-            
-            const className = session.class?.className || '클래스';
-            
-            const existingFee = teacher.classFees.find(fee => fee.name === className);
-            if (existingFee) {
-              existingFee.count += 1;
-              existingFee.price += sessionPrice;
-            } else {
-              teacher.classFees.push({
-                name: className,
-                count: 1,
-                price: sessionPrice,
-              });
-            }
-            
-            teacher.totalAmount += sessionPrice;
-          });
+          // newSessionsCount와 실제 필터링된 세션 수가 일치하는지 확인
+          if (newSessions.length === modificationInfo.newSessionsCount) {
+            // PaymentBox에는 newSessions만 사용
+            newSessions.forEach(session => {
+              const teacherId = session.class?.teacher?.id || 1;
+              const teacherName = session.class?.teacher?.name || '선생님';
+              
+              if (!teacherMap.has(teacherId)) {
+                teacherMap.set(teacherId, {
+                  teacherId,
+                  teacherName,
+                  bankName: '신한은행',
+                  accountNumber: '110-123-456789',
+                  accountHolder: teacherName,
+                  classFees: [],
+                  totalAmount: 0,
+                  sessions: [],
+                });
+              }
+              
+              const teacher = teacherMap.get(teacherId)!;
+              teacher.sessions.push(session);
+              
+              const className = session.class?.className || '클래스';
+              
+              const existingFee = teacher.classFees.find(fee => fee.name === className);
+              if (existingFee) {
+                existingFee.count += 1;
+                existingFee.price += sessionPrice;
+              } else {
+                teacher.classFees.push({
+                  name: className,
+                  count: 1,
+                  price: sessionPrice,
+                });
+              }
+              
+              teacher.totalAmount += sessionPrice;
+            });
+          } else {
+            console.warn('newSessionsCount와 실제 필터링된 세션 수가 일치하지 않습니다:', {
+              expected: modificationInfo.newSessionsCount,
+              actual: newSessions.length
+            });
+          }
         }
         
         setTeacherPayments(Array.from(teacherMap.values()));
@@ -256,20 +272,11 @@ export function EnrollmentPaymentStep({
           {mode === 'modification' && modificationInfo ? (
             <>
               {modificationInfo.changeType === 'additional_payment' ? (
-                <>
-                  <span className="font-bold text-[#595959]">추가 결제를 완료해주세요!</span><br />
-                  <span className="text-[#595959]">추가 금액: {modificationInfo.changeAmount.toLocaleString()}원 ({modificationInfo.netChangeCount}개 세션)</span>
-                </>
+                <span className="font-bold text-[#595959]">추가 결제를 완료해주세요!</span>
               ) : modificationInfo.changeType === 'refund' ? (
-                <>
-                  <span className="font-bold text-[#595959]">환불 정보를 입력해주세요!</span><br />
-                  <span className="text-[#595959]">환불 금액: {modificationInfo.changeAmount.toLocaleString()}원 ({Math.abs(modificationInfo.netChangeCount)}개 세션)</span>
-                </>
+                <span className="font-bold text-[#595959]">환불 정보를 입력해주세요!</span>
               ) : (
-                <>
-                  <span className="font-bold text-[#595959]">수강 변경을 완료해주세요!</span><br />
-                  <span className="text-[#595959]">변경 사항이 없습니다.</span>
-                </>
+                <span className="font-bold text-[#595959]">수강 변경을 완료해주세요!</span>
               )}
             </>
           ) : (
@@ -293,6 +300,8 @@ export function EnrollmentPaymentStep({
                 key={idx} 
                 teacher={teacher} 
                 onCopy={handleCopy}
+                mode={mode}
+                modificationInfo={modificationInfo}
               />
             ))}
           </div>
