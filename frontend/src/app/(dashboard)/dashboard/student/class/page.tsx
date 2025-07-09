@@ -9,7 +9,7 @@ import { format } from 'date-fns'
 import { useRouter } from 'next/navigation'
 
 import { getMyClasses } from '@/api/student'
-import { SessionModal } from '@/components/features/student/classes/SessionModal'
+import { ClassSessionModal } from '@/components/features/student/classes/ClassSessionModal'
 import { EnrolledClassesList } from '@/components/features/student/classes/EnrolledClassesList'
 
 // Type for extended session
@@ -251,8 +251,8 @@ export default function StudentDashboard() {
         </div>
       </div>
 
-      {/* Session Modal */}
-      <SessionModal
+      {/* Class Session Modal */}
+      <ClassSessionModal
         isOpen={isSessionModalOpen}
         selectedClass={selectedClass}
         sessions={myClasses?.sessionClasses || []}
