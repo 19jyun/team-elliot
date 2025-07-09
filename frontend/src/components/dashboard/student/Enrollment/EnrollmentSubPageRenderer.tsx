@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
-import { EnrollmentContainer } from './Enrollment/EnrollmentContainer';
-import { EnrollmentModificationContainer } from './Enrollment/EnrollmentModificationContainer';
+import { EnrollmentContainer } from './enroll/EnrollmentContainer';
+import { EnrollmentModificationContainer } from './modify/EnrollmentModificationContainer';
 
 interface EnrollmentSubPageRendererProps {
   page: string;

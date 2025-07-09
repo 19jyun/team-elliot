@@ -2,8 +2,8 @@
 
 import * as React from 'react'
 import { Navigation } from '@/components/navigation/Navigation'
-import { EnrollmentCard } from '@/app/(dashboard)/dashboard/student/enroll/EnrollmentCard'
-import { Notice } from '@/app/(dashboard)/dashboard/student/enroll/Notice'
+import { EnrollmentCard } from '@/components/features/student/enrollment/EnrollmentCard'
+import { Notice } from '@/components/features/student/enrollment/Notice'
 import Image from 'next/image'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'

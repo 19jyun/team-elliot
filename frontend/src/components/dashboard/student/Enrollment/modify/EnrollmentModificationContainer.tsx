@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { useDashboardNavigation, EnrollmentStep } from '@/contexts/DashboardContext';
-import { EnrollmentDateStep } from './EnrollmentDateStep';
-import { EnrollmentPaymentStep } from './EnrollmentPaymentStep';
-import { EnrollmentCompleteStep } from './EnrollmentCompleteStep';
+import { EnrollmentDateStep } from '../enroll/EnrollmentDateStep';
+import { EnrollmentPaymentStep } from '../enroll/EnrollmentPaymentStep';
+import { EnrollmentCompleteStep } from '../enroll/EnrollmentCompleteStep';
 import { RefundRequestStep } from './RefundRequestStep';
 import { RefundCompleteStep } from './RefundCompleteStep';
 import { getStudentClassEnrollments } from '@/api/class-sessions';

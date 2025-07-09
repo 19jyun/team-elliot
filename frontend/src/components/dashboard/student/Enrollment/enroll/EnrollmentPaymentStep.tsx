@@ -1,13 +1,13 @@
 'use client'
 import React, { useEffect, useState } from 'react';
 import { ChevronLeftIcon } from '@heroicons/react/24/outline';
-import { StatusStep } from '@/app/(dashboard)/dashboard/student/enroll/[month]/StatusStep';
+import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { batchEnrollSessions } from '@/api/class-sessions';
 import { toast } from 'react-hot-toast';
-import { PaymentToast } from '@/app/(dashboard)/dashboard/student/enroll/[month]/date/payment/PaymentToast';
-import { TeacherPaymentBox } from '@/app/(dashboard)/dashboard/student/enroll/[month]/date/payment/TeacherPaymentBox';
-import { PaymentConfirmFooter } from '@/app/(dashboard)/dashboard/student/enroll/[month]/date/payment/PaymentConfirmFooter';
-import { SelectedSession, TeacherPaymentInfo } from '@/app/(dashboard)/dashboard/student/enroll/[month]/date/payment/types';
+import { PaymentToast } from '@/components/features/student/enrollment/month/date/payment/PaymentToast';
+import { TeacherPaymentBox } from '@/components/features/student/enrollment/month/date/payment/TeacherPaymentBox';
+import { PaymentConfirmFooter } from '@/components/features/student/enrollment/month/date/payment/PaymentConfirmFooter';
+import { SelectedSession, TeacherPaymentInfo } from '@/components/features/student/enrollment/month/date/payment/types';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 
 interface EnrollmentPaymentStepProps {

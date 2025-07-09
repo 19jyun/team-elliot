@@ -1,25 +1,25 @@
 'use client'
 
 import * as React from 'react'
-import { useParams, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'react-hot-toast'
 import { getClassCards, getClassDetails } from '@/app/api/classes'
-import { RefundPolicy } from '../RefundPolicy'
-import { ClassCard } from './ClassCard'
-import { TimeSlot } from './TimeSlot'
-import { StatusStep } from './StatusStep'
+import { RefundPolicy } from '@/components/features/student/enrollment/RefundPolicy'
+import { ClassCard } from '@/components/features/student/enrollment/month/ClassCard'
+import { TimeSlot } from '@/components/features/student/enrollment/month/TimeSlot'
+import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep'
 import { ChevronLeftIcon } from '@heroicons/react/24/outline'
-import { ClassDetails } from './ClassDetails'
+import { ClassDetails } from '@/components/features/student/enrollment/month/ClassDetails'
 import { ClassDetailsResponse } from '@/types/api/class'
 import { useState } from 'react'
+import { useDashboardNavigation } from '@/contexts/DashboardContext'
 
 const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
 const daysKor = ['월', '화', '수', '목', '금', '토', '일']
 const timeSlots = [
-  '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
-  '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00',
+  '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', 
+  '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00',
 ]
 
 function formatTime(date: string | Date) {
@@ -29,20 +29,38 @@ function formatTime(date: string | Date) {
   return `${h}:${m}`
 }
 
-export default function EnrollmentMonthPage() {
-  const params = useParams()
-  const router = useRouter()
+export function EnrollmentClassStep() {
+  const dashboardContext = useDashboardNavigation()
+  
+  // Context가 undefined인 경우를 처리
+  if (!dashboardContext) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
+      </div>
+    )
+  }
+  
+  const { enrollment, setEnrollmentStep, setSelectedClassIds, goBack, navigateToSubPage } = dashboardContext
+  const { selectedMonth } = enrollment
   const { status } = useSession({
     required: true,
     onUnauthenticated() {
-      router.push('/login')
+      // 로그인 페이지로 리다이렉트는 상위에서 처리
     },
   })
+
+  // SubPage 설정 - EnrollmentClassStep이 실제 SubPage
+  React.useEffect(() => {
+    // 수강신청 페이지에서는 슬라이드 애니메이션을 허용하기 위해 
+    // 포커스를 dashboard로 유지하되, subPage 상태만 설정
+    navigateToSubPage('enroll')
+  }, [navigateToSubPage])
 
   const currentDate = new Date()
   const currentMonth = currentDate.getMonth() + 1
   const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1
-  const requestedMonth = Number(params.month)
+  const requestedMonth = selectedMonth || currentMonth
 
   React.useEffect(() => {
     // const isEndOfMonth = currentDate.getDate() >= 25
@@ -56,20 +74,19 @@ export default function EnrollmentMonthPage() {
 
     if (!isAccessible) {
       toast.error('해당 월의 수강신청 기간이 아닙니다')
-      router.push('/dashboard/student/enroll')
+      goBack()
       return
     }
-  }, [currentMonth, nextMonth, requestedMonth, router])
+  }, [currentMonth, nextMonth, requestedMonth, goBack])
 
   const [showPolicy, setShowPolicy] = React.useState(true)
   const [agreed, setAgreed] = React.useState(false)
   const [showClassDetails, setShowClassDetails] = React.useState(false)
   const [selectedClassDetails, setSelectedClassDetails] = React.useState<ClassDetailsResponse | null>(null)
-  const [showPolicyButton, setShowPolicyButton] = React.useState(false)
   const [selectedIds, setSelectedIds] = useState<number[]>([])
 
   const { data: classCards, isLoading } = useQuery({
-    queryKey: ['classCards', params.month],
+    queryKey: ['classCards', requestedMonth],
     queryFn: () => {
       const year =
         requestedMonth === 1 && currentMonth === 12
@@ -77,12 +94,12 @@ export default function EnrollmentMonthPage() {
           : currentDate.getFullYear()
 
       console.log('=== API QUERY DEBUG ===')
-      console.log('Querying for month:', params.month, 'year:', year)
-      const result = getClassCards(`${params.month}`, year)
+      console.log('Querying for month:', requestedMonth, 'year:', year)
+      const result = getClassCards(`${requestedMonth}`, year)
       console.log('API call result:', result)
       return result
     },
-    enabled: !!params.month,
+    enabled: !!requestedMonth,
   })
 
   // Debug logging for API response
@@ -102,11 +119,11 @@ export default function EnrollmentMonthPage() {
     console.log('=== END API RESPONSE DEBUG ===')
   }, [classCards, isLoading])
 
+  // localStorage 확인하여 이전에 동의했다면 정책 건너뛰기
   React.useEffect(() => {
     const hasAgreed = localStorage.getItem('refundPolicyAgreed') === 'true'
     if (hasAgreed) {
       setShowPolicy(false)
-      setShowPolicyButton(true)
     }
   }, [])
 
@@ -144,6 +161,16 @@ export default function EnrollmentMonthPage() {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
   }
 
+  const handleNextStep = () => {
+    if (selectedIds.length === 0) {
+      toast.error('최소 1개 이상의 클래스를 선택해주세요.')
+      return
+    }
+    
+    setSelectedClassIds(selectedIds)
+    setEnrollmentStep('date-selection')
+  }
+
   // For horizontal scroll, show only 5 days at a time
   const visibleDays = days.slice(0, 5)
   const visibleDaysKor = daysKor.slice(0, 5)
@@ -156,94 +183,82 @@ export default function EnrollmentMonthPage() {
     )
   }
 
-  if (showPolicy) {
-    return <RefundPolicy onClose={() => setShowPolicy(false)} />
-  }
-
   if (showClassDetails && selectedClassDetails) {
     return (
-      <ClassDetails
-        onClose={() => setShowClassDetails(false)}
-      />
+      <div className="w-full h-full">
+        <ClassDetails
+          onClose={() => {
+            // 상태 업데이트를 안전하게 처리
+            requestAnimationFrame(() => {
+              setShowClassDetails(false)
+            })
+          }}
+        />
+      </div>
     )
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-white">
-      <header className="sticky top-0 z-40 flex flex-col bg-white border-b border-gray-200">
-        <div className="flex items-center justify-between px-4 h-14">
-          <button
-            onClick={() => router.back()}
-            className="p-2 text-gray-600 hover:text-gray-900"
-          >
-            <ChevronLeftIcon className="w-5 h-5" />
-          </button>
-          <h1 className="absolute left-1/2 transform -translate-x-1/2 text-lg font-semibold text-gray-900">
-            수강신청
-          </h1>
-          <div className="w-10" />
-        </div>
-
+    <div className="flex flex-col h-full bg-white relative">
+      {/* 밑의 페이지 - 항상 렌더링 */}
+      <header className="flex-shrink-0 flex flex-col bg-white border-b border-gray-200 py-5 min-h-[120px] relative">
         <div className="flex gap-10 self-center w-full text-sm font-medium tracking-normal leading-snug max-w-[297px] mt-2 mb-2">
           {statusSteps.map((step, index) => (
             <StatusStep key={index} {...step} />
           ))}
         </div>
-
         <div className="self-center pb-4 text-base font-medium tracking-normal leading-snug text-center text-zinc-600">
           수강하실 클래스를 모두 선택해주세요.
         </div>
-        {showPolicyButton && (
-          <button
-            onClick={() => setShowPolicy(true)}
-            className="absolute right-4 top-20 flex items-center gap-1 px-3 py-1.5 text-sm bg-stone-50 text-stone-600 rounded-full border border-stone-200 hover:bg-stone-100"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            약관 확인
-          </button>
-        )}
       </header>
 
-      <div className="flex-1 overflow-x-auto mx-auto w-full bg-white">
-        {/* Hour labels at the top */}
-        <div className="grid min-w-[450px] sm:min-w-[700px] md:min-w-[900px]" style={{
-          display: 'grid',
-          gridTemplateColumns: `60px repeat(7, 70px)`,
-          gridTemplateRows: `40px repeat(${timeSlots.length}, 1fr)`
+      {/* Scrollable Timetable Section */}
+      <main className="flex-1 min-h-0 bg-white px-5">
+        {/* Timetable Container with Scroll */}
+        <div className="w-full overflow-auto" style={{ 
+          height: 'calc(100vh - 370px)',
+          minHeight: 0 
         }}>
-          {/* Header row: empty cell + hour labels */}
-          <div />
-          {daysKor.map(day => (
-            <div key={day} className="flex items-center justify-center font-semibold text-sm border-b border-gray-200 bg-white sticky top-0 z-20">{day}</div>
-          ))}
-          {/* For each row: hour label at the start, then cells */}
-          {timeSlots.map((time, rowIdx) => (
-            <React.Fragment key={time}>
-              {/* Hour label at the start of each row */}
-              <div className="flex items-center justify-center text-xs text-gray-400 border-r border-gray-200 bg-white sticky left-0 z-10">{time}</div>
-              {days.map((day, colIdx) => (
-                <div key={day + time} className="relative border-b border-r border-gray-100 min-h-[60px] flex flex-col gap-1">
-                  {classCards?.filter(card => {
-                    const cardDay = card.dayOfWeek;
-                    const cardTime = formatTime(card.startTime);
-                    return cardDay === day && cardTime === time;
-                  }).map(card => {
-                    const dayIndex = days.indexOf(card.dayOfWeek);
-                    const startHour = Number(formatTime(card.startTime).split(':')[0]);
-                    const bgColor = card.backgroundColor ? `bg-${card.backgroundColor}` : 'bg-gray-100';
-                    return (
+          {/* Sticky Header Row */}
+          <div className="sticky top-0 z-30 bg-white border-b border-gray-200">
+            <div className="grid" style={{ gridTemplateColumns: `60px repeat(7, 70px)`, minWidth: '450px' }}>
+              <div className="h-10 bg-white" />
+              {daysKor.map(day => (
+                <div key={day} className="h-10 flex items-center justify-center font-semibold text-sm text-gray-900">{day}</div>
+              ))}
+            </div>
+          </div>
+
+          {/* Timetable Grid */}
+          <div className="grid" style={{
+            gridTemplateColumns: `60px repeat(7, 70px)`,
+            gridTemplateRows: `repeat(${timeSlots.length}, 60px)`,
+            minWidth: '450px',
+            width: '100%',
+            height: `${timeSlots.length * 60}px`
+          }}>
+            {timeSlots.map((time, rowIdx) => (
+              <div
+                key={time}
+                className="sticky left-0 z-20 flex items-center justify-center text-xs text-gray-400 border-r border-gray-200 bg-white"
+                style={{ gridRow: rowIdx + 1, gridColumn: 1 }}
+              >
+                {time}
+              </div>
+            ))}
+
+            {timeSlots.map((time, rowIdx) => (
+              days.map((day, colIdx) => {
+                const cellKey = `${day}-${time}`
+                return (
+                  <div
+                    key={cellKey}
+                    className="relative border-b border-r border-gray-100 flex flex-col gap-1 p-1"
+                    style={{ gridRow: rowIdx + 1, gridColumn: colIdx + 2 }}
+                  >
+                    {classCards?.filter(card =>
+                      card.dayOfWeek === day && formatTime(card.startTime) === time
+                    ).map(card => (
                       <ClassCard
                         key={card.id}
                         {...card}
@@ -251,36 +266,30 @@ export default function EnrollmentMonthPage() {
                         teacher={card.teacher?.name || '선생님'}
                         startTime={formatTime(card.startTime)}
                         endTime={formatTime(card.endTime)}
-                        dayIndex={dayIndex}
-                        startHour={startHour}
-                        bgColor={bgColor}
+                        dayIndex={days.indexOf(card.dayOfWeek)}
+                        startHour={Number(formatTime(card.startTime).split(':')[0])}
+                        bgColor={card.backgroundColor ? `bg-${card.backgroundColor}` : 'bg-gray-100'}
                         selected={selectedIds.includes(card.id)}
                         onClick={() => handleSelect(card.id)}
                         onInfoClick={() => handleClassInfoClick(card.id)}
                         containerWidth="100%"
                       />
-                    );
-                  })}
-                </div>
-              ))}
-            </React.Fragment>
-          ))}
+                    ))}
+                  </div>
+                )
+              })
+            ))}
+          </div>
         </div>
-      </div>
+      </main>
 
-      <footer className="sticky bottom-0 flex flex-col w-full bg-white z-50">
+      {/* Fixed Footer */}
+      <footer className="flex-shrink-0 flex flex-col w-full bg-white border-t border-gray-200 min-h-[100px]">
         <div className="flex gap-3 justify-center px-5 pt-2.5 pb-4 w-full text-base font-semibold leading-snug text-white">
           <button
             className={`flex-1 shrink self-stretch px-2.5 py-4 rounded-lg min-w-[240px] size-full transition-colors duration-300 text-center ${selectedIds.length > 0 ? 'bg-[#AC9592] text-white cursor-pointer' : 'bg-zinc-300 text-white cursor-not-allowed'}`}
             disabled={selectedIds.length === 0}
-            onClick={() => {
-              if (selectedIds.length > 0) {
-                const month = params.month;
-                const selectedClassCards = classCards?.filter(card => selectedIds.includes(card.id)) || [];
-                localStorage.setItem('selectedClassCards', JSON.stringify(selectedClassCards));
-                router.push(`/dashboard/student/enroll/${month}/date`);
-              }
-            }}
+            onClick={handleNextStep}
           >
             {selectedIds.length > 0 ? (
               <span className="inline-flex items-center justify-center w-full">
@@ -293,6 +302,19 @@ export default function EnrollmentMonthPage() {
           </button>
         </div>
       </footer>
+
+      {/* RefundPolicy Modal - 절대 위치로 위에 배치 */}
+      <div className={`absolute inset-0 z-50 ${showPolicy ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+        <RefundPolicy 
+          isOpen={showPolicy}
+          onClose={() => {
+            // 상태 업데이트를 안전하게 처리
+            requestAnimationFrame(() => {
+              setShowPolicy(false)
+            })
+          }} 
+        />
+      </div>
     </div>
   )
 }

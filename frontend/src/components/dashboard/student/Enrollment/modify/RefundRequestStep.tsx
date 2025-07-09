@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
-import { StatusStep } from '@/app/(dashboard)/dashboard/student/enroll/[month]/StatusStep';
+import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { ChevronLeftIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

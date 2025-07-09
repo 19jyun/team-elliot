@@ -2,8 +2,8 @@
 
 import { ReactNode, useEffect, useRef } from 'react';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
-import { EnrollmentContainer } from './student/Enrollment/EnrollmentContainer';
-import { EnrollmentSubPageRenderer } from './student/EnrollmentSubPageRenderer';
+import { EnrollmentContainer } from './student/Enrollment/enroll/EnrollmentContainer';
+import { EnrollmentSubPageRenderer } from './student/Enrollment/EnrollmentSubPageRenderer';
 import { AcademyManagement } from './student/Profile/AcademyManagement';
 import { PersonalInfoManagement } from './student/Profile/PersonalInfoManagement';
 import { EnrollmentHistory } from './student/Profile/EnrollmentHistory';

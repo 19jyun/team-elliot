@@ -9,7 +9,8 @@ import { format } from 'date-fns'
 import { useRouter } from 'next/navigation'
 
 import { getMyClasses } from '@/api/student'
-import { SessionModal } from '@/components/student/SessionModal'
+import { SessionModal } from '@/components/features/student/classes/SessionModal'
+import { EnrolledClassesList } from '@/components/features/student/classes/EnrolledClassesList'
 
 // Type for extended session
 type ExtendedSession = {
@@ -35,27 +36,6 @@ export default function StudentDashboard() {
   const [selectedClass, setSelectedClass] = useState<any>(null)
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false)
 
-  // 디버깅을 위한 세션 정보 로깅
-  console.log('Session status:', status)
-  console.log('Session data:', session)
-  console.log('Access token exists:', !!session?.accessToken)
-  console.log('Access token length:', session?.accessToken?.length)
-
-  // 토큰 만료 시간 확인
-  if (session?.accessToken) {
-    try {
-      const tokenParts = session.accessToken.split('.');
-      if (tokenParts.length === 3) {
-        const payload = JSON.parse(atob(tokenParts[1]));
-        console.log('Token payload:', payload);
-        console.log('Token expiration:', new Date(payload.exp * 1000));
-        console.log('Current time:', new Date());
-        console.log('Token expired:', Date.now() > payload.exp * 1000);
-      }
-    } catch (error) {
-      console.error('Token decode error:', error);
-    }
-  }
 
   const { data: myClasses, isLoading, error } = useQuery({
     queryKey: ['my-classes'],
@@ -63,6 +43,9 @@ export default function StudentDashboard() {
     enabled: status === 'authenticated' && !!session?.user && !!session?.accessToken,
     retry: false,
   })
+
+  // myClasses 객체 로그 출력
+  console.log('myClasses:', myClasses)
 
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {
@@ -75,12 +58,7 @@ export default function StudentDashboard() {
 
   // 에러 처리
   if (error) {
-    console.log('Error:', error)
-    
-    // 401 에러인 경우 로그인 페이지로 리다이렉트
     if ((error as any)?.response?.status === 401) {
-      console.log('토큰이 만료되었습니다. 로그인 페이지로 이동합니다.');
-      // 무한 루프 방지를 위해 signOut 후 리다이렉트
       signOut({ redirect: true, callbackUrl: '/login' });
       return null;
     }
@@ -263,42 +241,13 @@ export default function StudentDashboard() {
       {/* 수업 목록 섹션 */}
       <div className="flex flex-col px-5 mt-4 w-full">
         <div className="flex flex-col mt-5 w-full">
-          <div className="gap-2.5 self-start px-2 text-base font-semibold tracking-normal leading-snug text-stone-700">
+          <div className="gap-2.5 self-start px-2 py-3 text-base font-semibold tracking-normal leading-snug text-stone-700">
             수강중인 클래스
           </div>
-          {(myClasses?.enrollmentClasses?.length ?? 0) > 0 ? (
-            <>
-              {/* Enrollment Classes */}
-              {myClasses?.enrollmentClasses?.map((class_: any) => (
-                <div
-                  key={class_.id}
-                  className="p-4 mt-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
-                  onClick={() => handleClassClick(class_)}
-                >
-                  <h3 className="font-medium text-stone-700">
-                    {class_.className}
-                  </h3>
-                  <p className="text-sm text-stone-500">
-                    {class_.dayOfWeek}요일{' '}
-                    {new Date(class_.startTime).toLocaleTimeString()}
-                  </p>
-                  <p className="text-xs text-stone-400 mt-1">
-                    전체 수강 신청
-                  </p>
-                </div>
-              ))}
-            </>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-8">
-              <Image
-                src="/images/logo/team-eliot-2.png"
-                alt="수강중인 클래스 없음"
-                width={120}
-                height={120}
-              />
-              <p className="mt-4 text-stone-500">수강중인 클래스가 없습니다</p>
-            </div>
-          )}
+          <EnrolledClassesList
+            classes={myClasses?.enrollmentClasses || []}
+            onClassClick={handleClassClick}
+          />
         </div>
       </div>
 

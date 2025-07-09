@@ -6,7 +6,7 @@ import { DashboardContainer } from '@/components/dashboard/DashboardContainer';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 
 // 학생 페이지 컴포넌트들
-import StudentDashboardPage from '@/app/(dashboard)/dashboard/student/page';
+import StudentDashboardPage from '@/app/(dashboard)/dashboard/student/class/page';
 import StudentEnrollPage from '@/app/(dashboard)/dashboard/student/enroll/page';
 import StudentProfilePage from '@/app/(dashboard)/dashboard/student/profile/page';
 
