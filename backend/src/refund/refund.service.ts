@@ -104,6 +104,11 @@ export class RefundService {
       },
     });
 
+    await this.prisma.sessionEnrollment.update({
+      where: { id: dto.sessionEnrollmentId },
+      data: { status: 'REFUND_REQUESTED' },
+    });
+
     // 환불 요청 로그
     await this.activityLogService.logActivityAsync({
       userId: studentId,
@@ -260,6 +265,19 @@ export class RefundService {
         data: {
           status: 'REFUNDED',
         },
+      });
+    }
+
+    // [추가] sessionEnrollment 상태도 함께 업데이트
+    if (dto.status === 'APPROVED' || dto.status === 'PARTIAL_APPROVED') {
+      await this.prisma.sessionEnrollment.update({
+        where: { id: refundRequest.sessionEnrollmentId },
+        data: { status: 'REFUNDED' },
+      });
+    } else if (dto.status === 'REJECTED') {
+      await this.prisma.sessionEnrollment.update({
+        where: { id: refundRequest.sessionEnrollmentId },
+        data: { status: 'REFUND_REJECTED' },
       });
     }
 

@@ -279,7 +279,7 @@ model SessionEnrollment {
   id          Int          @id @default(autoincrement())
   studentId   Int          @map("student_id")
   sessionId   Int          @map("session_id")
-  status      String       @default("PENDING") // PENDING | CONFIRMED | CANCELLED
+  status      String       @default("PENDING") // PENDING | CONFIRMED | CANCELLED | REFUND_REQUESTED | REFUNDED | REFUND_REJECTED
   enrolledAt  DateTime     @default(now())
   cancelledAt DateTime?
   session     ClassSession @relation(fields: [sessionId], references: [id])
