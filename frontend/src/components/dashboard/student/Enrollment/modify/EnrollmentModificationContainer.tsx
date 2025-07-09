@@ -139,6 +139,29 @@ export function EnrollmentModificationContainer({ classId, className, month }: E
 
   // 환불 신청 완료 시 처리
   const handleRefundComplete = () => {
+    // localStorage 정리
+    localStorage.removeItem('modificationChangeAmount');
+    localStorage.removeItem('modificationChangeType');
+    localStorage.removeItem('modificationNetChangeCount');
+    localStorage.removeItem('modificationNewSessionsCount');
+    localStorage.removeItem('existingEnrollments');
+    localStorage.removeItem('selectedSessions');
+    localStorage.removeItem('selectedClasses');
+    
+    setEnrollmentStep('refund-complete');
+  };
+
+  // 수강 변경 완료 시 처리
+  const handleModificationComplete = () => {
+    // localStorage 정리
+    localStorage.removeItem('modificationChangeAmount');
+    localStorage.removeItem('modificationChangeType');
+    localStorage.removeItem('modificationNetChangeCount');
+    localStorage.removeItem('modificationNewSessionsCount');
+    localStorage.removeItem('existingEnrollments');
+    localStorage.removeItem('selectedSessions');
+    localStorage.removeItem('selectedClasses');
+    
     setEnrollmentStep('refund-complete');
   };
 
@@ -161,6 +184,7 @@ export function EnrollmentModificationContainer({ classId, className, month }: E
             mode="modification"
             additionalAmount={change.amount}
             newSessionsCount={change.newSessionsCount}
+            onComplete={handleModificationComplete}
           />
         );
       case 'refund-request':
@@ -172,10 +196,13 @@ export function EnrollmentModificationContainer({ classId, className, month }: E
           />
         );
       case 'refund-complete':
+        // 환불 신청 완료인지 수강 변경 완료인지 구분
+        const isRefundRequest = change.type === 'refund';
         return (
           <RefundCompleteStep
             refundAmount={refundAmount}
             cancelledSessionsCount={cancelledSessionsCount}
+            isModification={!isRefundRequest}
           />
         );
       case 'complete':

@@ -6,12 +6,20 @@ import { useDashboardNavigation } from '@/contexts/DashboardContext';
 interface RefundCompleteStepProps {
   refundAmount: number;
   cancelledSessionsCount: number;
+  isModification?: boolean;
 }
 
-export function RefundCompleteStep({ refundAmount, cancelledSessionsCount }: RefundCompleteStepProps) {
+export function RefundCompleteStep({ refundAmount, cancelledSessionsCount, isModification }: RefundCompleteStepProps) {
   const { goBack } = useDashboardNavigation();
 
   const handleConfirm = () => {
+    localStorage.removeItem('modificationChangeAmount');
+    localStorage.removeItem('modificationChangeType');
+    localStorage.removeItem('modificationNetChangeCount');
+    localStorage.removeItem('modificationNewSessionsCount');
+    localStorage.removeItem('existingEnrollments');
+    localStorage.removeItem('selectedSessions');
+    localStorage.removeItem('selectedClasses');
     goBack();
   };
 
@@ -28,10 +36,10 @@ export function RefundCompleteStep({ refundAmount, cancelledSessionsCount }: Ref
           {/* 완료 메시지 */}
           <div className="text-center">
             <h2 className="text-xl font-semibold mb-2" style={{ color: '#573B30' }}>
-              환불 신청이 완료되었어요!
+              {isModification ? '수강 변경' : '환불'}이 완료되었어요!
             </h2>
             <p className="mt-4 text-sm text-[#595959]">
-              수강신청 변경까지<br />
+              {isModification ? '수강 변경' : '환불'}까지<br />
               최대 48시간이 걸릴 수 있어요.
             </p>
           </div>

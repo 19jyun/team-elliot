@@ -14,13 +14,15 @@ interface EnrollmentPaymentStepProps {
   mode?: 'enrollment' | 'modification';
   additionalAmount?: number;
   newSessionsCount?: number;
+  onComplete?: () => void; // 수강 변경 완료 시 호출할 콜백
 }
 
 // 결제 페이지 (여러 명의 선생님 지원)
 export function EnrollmentPaymentStep({ 
   mode = 'enrollment', 
   additionalAmount = 0, 
-  newSessionsCount = 0 
+  newSessionsCount = 0,
+  onComplete
 }: EnrollmentPaymentStepProps) {
   const { enrollment, setEnrollmentStep, goBack } = useDashboardNavigation();
   const { selectedSessions: contextSessions } = enrollment;
@@ -238,21 +240,87 @@ export function EnrollmentPaymentStep({
     setIsProcessing(true);
     
     try {
-      // 선택된 세션들의 ID를 추출
-      const sessionIds = selectedSessions.map(session => session.id);
-      
-      // 백엔드에 세션별 수강 신청 요청
-      const result = await batchEnrollSessions(sessionIds);
-      
-      if (result.success > 0) {
-        toast.success(`${result.success}개 세션의 수강 신청이 완료되었습니다.`);
+      if (mode === 'modification') {
+        // 수강 변경 모드: batchModifyEnrollments API 호출
+        const existingEnrollmentsData = localStorage.getItem('existingEnrollments');
+        const selectedSessionsData = localStorage.getItem('selectedSessions');
+        
+        if (!existingEnrollmentsData || !selectedSessionsData) {
+          throw new Error('수강 변경 정보를 찾을 수 없습니다.');
+        }
+
+        const existingEnrollments = JSON.parse(existingEnrollmentsData);
+        const selectedSessions = JSON.parse(selectedSessionsData);
+
+        // 기존에 신청된 세션들 (CONFIRMED 또는 PENDING 상태)
+        const originalEnrolledSessions = existingEnrollments.filter(
+          (enrollment: any) =>
+            enrollment.enrollment &&
+            (enrollment.enrollment.status === "CONFIRMED" ||
+              enrollment.enrollment.status === "PENDING")
+        );
+
+        // 기존 신청 세션의 날짜들
+        const originalDates = originalEnrolledSessions.map(
+          (enrollment: any) => new Date(enrollment.date).toISOString().split("T")[0]
+        );
+
+        // 선택된 세션의 날짜들
+        const selectedDates = selectedSessions.map(
+          (session: any) => new Date(session.date).toISOString().split("T")[0]
+        );
+
+        // 취소할 세션들의 enrollment ID
+        const cancellations = originalEnrolledSessions
+          .filter((enrollment: any) => {
+            const enrollmentDate = new Date(enrollment.date).toISOString().split("T")[0];
+            return !selectedDates.includes(enrollmentDate);
+          })
+          .map((enrollment: any) => enrollment.enrollment.id);
+
+        // 새로 신청할 세션들의 session ID
+        const newEnrollments = selectedSessions
+          .filter((session: any) => {
+            const sessionDate = new Date(session.date).toISOString().split("T")[0];
+            return !originalDates.includes(sessionDate);
+          })
+          .map((session: any) => session.id);
+
+        console.log('수강 변경 요청:', {
+          cancellations,
+          newEnrollments,
+          reason: '수강 변경'
+        });
+
+        // batchModifyEnrollments API 호출
+        const { batchModifyEnrollments } = await import('@/api/class-sessions');
+        const result = await batchModifyEnrollments({
+          cancellations,
+          newEnrollments,
+          reason: '수강 변경'
+        });
+
+        console.log('수강 변경 결과:', result);
+        toast.success('수강 변경이 완료되었습니다.');
         setEnrollmentStep('complete');
+        onComplete?.(); // 수강 변경 완료 시 콜백 호출
       } else {
-        toast.error('수강 신청에 실패했습니다.');
+        // 일반 수강 신청 모드: 기존 로직
+        const sessionIds = selectedSessions.map(session => session.id);
+        
+        // 백엔드에 세션별 수강 신청 요청
+        const result = await batchEnrollSessions(sessionIds);
+        
+        if (result.success > 0) {
+          toast.success(`${result.success}개 세션의 수강 신청이 완료되었습니다.`);
+          setEnrollmentStep('complete');
+        } else {
+          toast.error('수강 신청에 실패했습니다.');
+        }
       }
     } catch (error) {
       console.error('Enrollment error:', error);
-      toast.error('수강 신청 중 오류가 발생했습니다.');
+      toast.error(error instanceof Error ? error.message : '처리 중 오류가 발생했습니다.');
     } finally {
       setIsProcessing(false);
     }

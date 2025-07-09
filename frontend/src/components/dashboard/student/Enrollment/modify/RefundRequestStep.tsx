@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useDashboardNavigation } from '@/contexts/DashboardContext';
-import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { toast } from 'sonner';
+import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { InfoBubble } from '@/components/common/InfoBubble';
+import { useDashboardNavigation } from '@/contexts/DashboardContext';
+import { refundApi } from '@/api/refund';
+import { RefundReason } from '@/types/api/refund';
 
 interface RefundRequestStepProps {
   refundAmount: number;
@@ -34,6 +36,8 @@ export function RefundRequestStep({ refundAmount, cancelledSessionsCount, onComp
     accountHolder: '',
   });
   const [saveAccount, setSaveAccount] = useState(false);
+  const [refundReason, setRefundReason] = useState<RefundReason>(RefundReason.PERSONAL_SCHEDULE);
+  const [detailedReason, setDetailedReason] = useState('');
 
   const statusSteps = [
     {
@@ -64,13 +68,21 @@ export function RefundRequestStep({ refundAmount, cancelledSessionsCount, onComp
   };
 
   const handleSubmit = async () => {
-    // 필수 필드 검증
     if (!accountInfo.bank || !accountInfo.accountNumber || !accountInfo.accountHolder) {
       toast.error('모든 필드를 입력해주세요.');
       return;
     }
 
-    // 계좌번호 형식 검증 (숫자만)
+    if (!refundReason) {
+      toast.error('환불 사유를 선택해주세요.');
+      return;
+    }
+
+    if (refundReason === RefundReason.OTHER && !detailedReason.trim()) {
+      toast.error('기타를 선택하셨을 경우 상세 사유를 입력해주세요.');
+      return;
+    }
+
     if (!/^\d+$/.test(accountInfo.accountNumber.replace(/\s/g, ''))) {
       toast.error('계좌번호는 숫자만 입력해주세요.');
       return;
@@ -79,31 +91,89 @@ export function RefundRequestStep({ refundAmount, cancelledSessionsCount, onComp
     setIsSubmitting(true);
     
     try {
-      // TODO: 환불 신청 API 호출
-      console.log('환불 신청:', {
-        refundAmount,
-        cancelledSessionsCount,
-        accountInfo
-      });
+      // localStorage에서 기존 수강 신청 정보와 선택된 세션 정보 가져오기
+      const existingEnrollmentsData = localStorage.getItem('existingEnrollments');
+      const selectedSessionsData = localStorage.getItem('selectedSessions');
       
-      // 임시로 1초 대기
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast.success('환불 신청이 완료되었습니다.');
+      if (!existingEnrollmentsData || !selectedSessionsData) {
+        throw new Error('수강 변경 정보를 찾을 수 없습니다.');
+      }
+
+      const existingEnrollments = JSON.parse(existingEnrollmentsData);
+      const selectedSessions = JSON.parse(selectedSessionsData);
+
+      // 기존에 신청된 세션들 (CONFIRMED 또는 PENDING 상태)
+      const originalEnrolledSessions = existingEnrollments.filter(
+        (enrollment: any) =>
+          enrollment.enrollment &&
+          (enrollment.enrollment.status === "CONFIRMED" ||
+            enrollment.enrollment.status === "PENDING")
+      );
+
+      // 기존 신청 세션의 날짜들
+      const originalDates = originalEnrolledSessions.map(
+        (enrollment: any) => new Date(enrollment.date).toISOString().split("T")[0]
+      );
+
+      // 선택된 세션의 날짜들
+      const selectedDates = selectedSessions.map(
+        (session: any) => new Date(session.date).toISOString().split("T")[0]
+      );
+
+      // 취소될 세션들 (기존에 신청되었지만 현재 선택되지 않은 세션들)
+      const cancelledSessions = originalEnrolledSessions.filter(
+        (enrollment: any) => {
+          const enrollmentDate = new Date(enrollment.date).toISOString().split("T")[0];
+          return !selectedDates.includes(enrollmentDate);
+        }
+      );
+
+      console.log('환불 신청할 세션들:', cancelledSessions);
+
+      // 각 취소된 세션에 대해 환불 요청 생성
+      const sessionPrice = 50000; // 임시 수강료
+      const refundRequests = [];
+
+      for (const cancelledSession of cancelledSessions) {
+        const refundRequest = {
+          sessionEnrollmentId: cancelledSession.enrollment.id,
+          reason: refundReason,
+          detailedReason: refundReason === RefundReason.OTHER ? detailedReason : undefined,
+          refundAmount: sessionPrice
+        };
+
+        try {
+          const response = await refundApi.createRefundRequest(refundRequest);
+          refundRequests.push(response);
+          console.log('환불 요청 생성 성공:', response);
+        } catch (error) {
+          console.error('환불 요청 생성 실패:', error);
+          throw new Error(`세션 ${cancelledSession.sessionId}의 환불 요청 생성에 실패했습니다.`);
+        }
+      }
+
+      // 계좌 정보 저장 (선택사항)
+      if (saveAccount) {
+        localStorage.setItem('savedAccountInfo', JSON.stringify(accountInfo));
+      }
+
+      toast.success(`${refundRequests.length}개 세션의 환불 신청이 완료되었습니다.`);
       onComplete();
     } catch (error) {
       console.error('환불 신청 실패:', error);
-      toast.error('환불 신청에 실패했습니다. 다시 시도해주세요.');
+      toast.error(error instanceof Error ? error.message : '환불 신청에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // 입력값 모두 채워져야 버튼 활성화 (은행명, 계좌번호(숫자 8~16자리), 예금주 2글자 이상)
+  // 입력값 모두 채워져야 버튼 활성화 (은행명, 계좌번호(숫자 8~16자리), 예금주 2글자 이상, 환불 사유, 기타 선택 시 상세 사유)
   const isFormValid =
     accountInfo.bank &&
     /^[0-9]{8,16}$/.test(accountInfo.accountNumber) &&
-    accountInfo.accountHolder.length >= 2;
+    accountInfo.accountHolder.length >= 2 &&
+    refundReason &&
+    (refundReason !== RefundReason.OTHER || detailedReason.trim().length > 0);
 
   return (
     <div className="flex flex-col min-h-screen bg-white font-[Pretendard Variable] items-center">
@@ -129,6 +199,32 @@ export function RefundRequestStep({ refundAmount, cancelledSessionsCount, onComp
         />
       </div>
 
+      {/* 환불 사유 선택 */}
+      <div className="w-[335px] flex flex-col gap-3 mb-4">
+        <InfoBubble
+          label="환불 사유"
+          type="select"
+          selectValue={refundReason}
+          onSelectChange={(e: React.ChangeEvent<HTMLSelectElement>) => setRefundReason(e.target.value as RefundReason)}
+          options={[
+            { value: RefundReason.PERSONAL_SCHEDULE, label: '개인 일정' },
+            { value: RefundReason.HEALTH_ISSUE, label: '건강상 문제' },
+            { value: RefundReason.DISSATISFACTION, label: '서비스 불만족' },
+            { value: RefundReason.FINANCIAL_ISSUE, label: '경제적 사유' },
+            { value: RefundReason.OTHER, label: '기타' },
+          ]}
+        />
+        {refundReason === RefundReason.OTHER && (
+          <InfoBubble
+            label="상세 사유"
+            type="input"
+            placeholder="상세 사유를 입력해주세요"
+            inputValue={detailedReason}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDetailedReason(e.target.value)}
+          />
+        )}
+      </div>
+
       {/* 안내문구 */}
       <div className="w-[335px] flex flex-col items-center mb-2">
         <div className="flex items-center mb-1">
@@ -143,7 +239,7 @@ export function RefundRequestStep({ refundAmount, cancelledSessionsCount, onComp
           label="은행명"
           type="select"
           selectValue={accountInfo.bank}
-          onSelectChange={e => handleInputChange('bank', e.target.value)}
+          onSelectChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleInputChange('bank', e.target.value)}
           options={[
             { value: '', label: '은행명 선택' },
             { value: 'shinhan', label: '신한은행' },
@@ -163,7 +259,7 @@ export function RefundRequestStep({ refundAmount, cancelledSessionsCount, onComp
           type="input"
           placeholder="계좌번호 입력"
           inputValue={accountInfo.accountNumber}
-          onChange={e => handleInputChange('accountNumber', e.target.value.replace(/[^0-9]/g, ''))}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('accountNumber', e.target.value.replace(/[^0-9]/g, ''))}
           inputProps={{
             inputMode: 'numeric',
             pattern: '[0-9]*',
@@ -177,7 +273,7 @@ export function RefundRequestStep({ refundAmount, cancelledSessionsCount, onComp
           type="input"
           placeholder="예금주 입력"
           inputValue={accountInfo.accountHolder}
-          onChange={e => handleInputChange('accountHolder', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('accountHolder', e.target.value)}
         />
       </div>
 
