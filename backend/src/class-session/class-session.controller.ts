@@ -280,4 +280,42 @@ export class ClassSessionController {
       user.id,
     );
   }
+
+  /**
+   * 학생의 특정 클래스 수강 신청 현황 조회 (수강 변경/취소용)
+   */
+  @Get('class/:classId/student-enrollments')
+  @Roles(Role.STUDENT)
+  @ApiOperation({
+    summary: '학생의 특정 클래스 수강 신청 현황 조회 (수강 변경/취소용)',
+  })
+  @ApiResponse({ status: 200, description: '수강 신청 현황 조회 성공' })
+  async getStudentClassEnrollments(
+    @Param('classId', ParseIntPipe) classId: number,
+    @CurrentUser() user: any,
+  ) {
+    return this.classSessionService.getStudentClassEnrollments(
+      classId,
+      user.id,
+    );
+  }
+
+  /**
+   * 배치 수강 변경/취소 처리
+   */
+  @Post('batch-modify')
+  @Roles(Role.STUDENT)
+  @ApiOperation({ summary: '배치 수강 변경/취소 처리' })
+  @ApiResponse({ status: 200, description: '배치 수강 변경/취소 성공' })
+  async batchModifyEnrollments(
+    @Body()
+    data: {
+      cancellations: number[];
+      newEnrollments: number[];
+      reason?: string;
+    },
+    @CurrentUser() user: any,
+  ) {
+    return this.classSessionService.batchModifyEnrollments(data, user.id);
+  }
 }

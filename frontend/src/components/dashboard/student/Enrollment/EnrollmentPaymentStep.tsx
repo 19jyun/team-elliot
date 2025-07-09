@@ -10,8 +10,18 @@ import { PaymentConfirmFooter } from '@/app/(dashboard)/dashboard/student/enroll
 import { SelectedSession, TeacherPaymentInfo } from '@/app/(dashboard)/dashboard/student/enroll/[month]/date/payment/types';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 
+interface EnrollmentPaymentStepProps {
+  mode?: 'enrollment' | 'modification';
+  additionalAmount?: number;
+  newSessionsCount?: number;
+}
+
 // 결제 페이지 (여러 명의 선생님 지원)
-export function EnrollmentPaymentStep() {
+export function EnrollmentPaymentStep({ 
+  mode = 'enrollment', 
+  additionalAmount = 0, 
+  newSessionsCount = 0 
+}: EnrollmentPaymentStepProps) {
   const { enrollment, setEnrollmentStep, goBack } = useDashboardNavigation();
   const { selectedSessions: contextSessions } = enrollment;
   const [selectedSessions, setSelectedSessions] = useState<SelectedSession[]>([]);
@@ -20,10 +30,17 @@ export function EnrollmentPaymentStep() {
   const [confirmed, setConfirmed] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   
+  // 수강 변경 모드에서 사용할 상태
+  const [modificationInfo, setModificationInfo] = useState<{
+    changeAmount: number;
+    changeType: string;
+    netChangeCount: number;
+  } | null>(null);
+  
   const statusSteps = [
     {
       icon: '/icons/CourseRegistrationsStatusSteps1.svg',
-      label: '클래스 선택',
+      label: mode === 'modification' ? '수강 변경' : '클래스 선택',
       isActive: false,
       isCompleted: true,
     },
@@ -35,13 +52,28 @@ export function EnrollmentPaymentStep() {
     },
     {
       icon: '/icons/CourseRegistrationsStatusSteps2.svg',
-      label: '결제하기',
+      label: mode === 'modification' ? '추가 결제' : '결제하기',
       isActive: true,
       isCompleted: false,
     },
   ]
 
   useEffect(() => {
+    // 수강 변경 모드에서 변경 정보 로드
+    if (mode === 'modification' && typeof window !== 'undefined') {
+      const changeAmount = localStorage.getItem('modificationChangeAmount');
+      const changeType = localStorage.getItem('modificationChangeType');
+      const netChangeCount = localStorage.getItem('modificationNetChangeCount');
+      
+      if (changeAmount && changeType && netChangeCount) {
+        setModificationInfo({
+          changeAmount: parseInt(changeAmount),
+          changeType,
+          netChangeCount: parseInt(netChangeCount)
+        });
+      }
+    }
+    
     // Context에서 세션 정보를 우선 사용하고, 없으면 localStorage에서 가져옴
     let sessions: SelectedSession[] = [];
     
@@ -59,51 +91,123 @@ export function EnrollmentPaymentStep() {
     if (sessions.length > 0) {
       setSelectedSessions(sessions);
       
-      // 선생님별로 결제 정보 그룹화
-      const teacherMap = new Map<number, TeacherPaymentInfo>();
-      
-      sessions.forEach(session => {
-        const teacherId = session.class?.teacher?.id || 1;
-        const teacherName = session.class?.teacher?.name || '선생님';
+      if (mode === 'modification' && modificationInfo) {
+        // 수강 변경 모드: 변경된 금액만 표시
+        const teacherMap = new Map<number, TeacherPaymentInfo>();
         
-        if (!teacherMap.has(teacherId)) {
-          teacherMap.set(teacherId, {
-            teacherId,
-            teacherName,
-            bankName: '신한은행', // 실제로는 선생님 정보에서 가져와야 함
-            accountNumber: '110-123-456789',
-            accountHolder: teacherName,
-            classFees: [],
-            totalAmount: 0,
-            sessions: [],
+        // 수강 변경 모드에서는 변경된 세션만 계산
+        if (modificationInfo.changeType === 'additional_payment' && modificationInfo.netChangeCount > 0) {
+          // 추가 결제가 필요한 경우: 새로 추가된 세션만 계산
+          const sessionPrice = 50000; // 임시 수강료
+          
+          // 새로 추가된 세션들을 찾기 위해 기존 수강 신청 정보와 비교
+          const existingEnrollmentsData = localStorage.getItem('existingEnrollments');
+          let existingDates: string[] = [];
+          
+          if (existingEnrollmentsData) {
+            const existingEnrollments = JSON.parse(existingEnrollmentsData);
+            existingDates = existingEnrollments
+              .filter((enrollment: any) => 
+                enrollment.enrollment && 
+                (enrollment.enrollment.status === "CONFIRMED" || enrollment.enrollment.status === "PENDING")
+              )
+              .map((enrollment: any) => new Date(enrollment.date).toISOString().split("T")[0]);
+          }
+          
+          // 새로 추가된 세션들만 필터링
+          const newSessions = sessions.filter(session => {
+            const sessionDate = new Date(session.date).toISOString().split("T")[0];
+            return !existingDates.includes(sessionDate);
+          });
+          
+          console.log('수강 변경 - 새로 추가된 세션들:', newSessions);
+          
+          newSessions.forEach(session => {
+            const teacherId = session.class?.teacher?.id || 1;
+            const teacherName = session.class?.teacher?.name || '선생님';
+            
+            if (!teacherMap.has(teacherId)) {
+              teacherMap.set(teacherId, {
+                teacherId,
+                teacherName,
+                bankName: '신한은행',
+                accountNumber: '110-123-456789',
+                accountHolder: teacherName,
+                classFees: [],
+                totalAmount: 0,
+                sessions: [],
+              });
+            }
+            
+            const teacher = teacherMap.get(teacherId)!;
+            teacher.sessions.push(session);
+            
+            const className = session.class?.className || '클래스';
+            
+            const existingFee = teacher.classFees.find(fee => fee.name === className);
+            if (existingFee) {
+              existingFee.count += 1;
+              existingFee.price += sessionPrice;
+            } else {
+              teacher.classFees.push({
+                name: className,
+                count: 1,
+                price: sessionPrice,
+              });
+            }
+            
+            teacher.totalAmount += sessionPrice;
           });
         }
         
-        const teacher = teacherMap.get(teacherId)!;
-        teacher.sessions.push(session);
+        setTeacherPayments(Array.from(teacherMap.values()));
+      } else {
+        // 일반 수강 신청 모드: 기존 로직
+        const teacherMap = new Map<number, TeacherPaymentInfo>();
         
-        // 클래스별 수강료 계산 (실제로는 세션별 수강료를 계산해야 함)
-        const className = session.class?.className || '클래스';
-        const sessionFee = 50000; // 임시 수강료 (실제로는 클래스 정보에서 가져와야 함)
+        sessions.forEach(session => {
+          const teacherId = session.class?.teacher?.id || 1;
+          const teacherName = session.class?.teacher?.name || '선생님';
+          
+          if (!teacherMap.has(teacherId)) {
+            teacherMap.set(teacherId, {
+              teacherId,
+              teacherName,
+              bankName: '신한은행', // 실제로는 선생님 정보에서 가져와야 함
+              accountNumber: '110-123-456789',
+              accountHolder: teacherName,
+              classFees: [],
+              totalAmount: 0,
+              sessions: [],
+            });
+          }
+          
+          const teacher = teacherMap.get(teacherId)!;
+          teacher.sessions.push(session);
+          
+          // 클래스별 수강료 계산 (실제로는 세션별 수강료를 계산해야 함)
+          const className = session.class?.className || '클래스';
+          const sessionFee = 50000; // 임시 수강료 (실제로는 클래스 정보에서 가져와야 함)
+          
+          const existingFee = teacher.classFees.find(fee => fee.name === className);
+          if (existingFee) {
+            existingFee.count += 1;
+            existingFee.price += sessionFee;
+          } else {
+            teacher.classFees.push({
+              name: className,
+              count: 1,
+              price: sessionFee,
+            });
+          }
+          
+          teacher.totalAmount += sessionFee;
+        });
         
-        const existingFee = teacher.classFees.find(fee => fee.name === className);
-        if (existingFee) {
-          existingFee.count += 1;
-          existingFee.price += sessionFee;
-        } else {
-          teacher.classFees.push({
-            name: className,
-            count: 1,
-            price: sessionFee,
-          });
-        }
-        
-        teacher.totalAmount += sessionFee;
-      });
-      
-      setTeacherPayments(Array.from(teacherMap.values()));
+        setTeacherPayments(Array.from(teacherMap.values()));
+      }
     }
-  }, [contextSessions]);
+  }, [contextSessions, mode, modificationInfo]);
 
   // 복사 버튼 클릭 시 toast
   const handleCopy = () => {
@@ -149,8 +253,31 @@ export function EnrollmentPaymentStep() {
         </div>
 
         <div className="self-center pb-4 text-base font-medium tracking-normal leading-snug text-center" style={{ color: '#595959' }}>
-          <span className="font-bold text-[#595959]">신청 완료 전, 수강료 송금을 마무리 해주세요!</span><br />
-          <span className="text-[#595959]">입금이 확인되지 않으면 신청이 취소될 수 있습니다.</span>
+          {mode === 'modification' && modificationInfo ? (
+            <>
+              {modificationInfo.changeType === 'additional_payment' ? (
+                <>
+                  <span className="font-bold text-[#595959]">추가 결제를 완료해주세요!</span><br />
+                  <span className="text-[#595959]">추가 금액: {modificationInfo.changeAmount.toLocaleString()}원 ({modificationInfo.netChangeCount}개 세션)</span>
+                </>
+              ) : modificationInfo.changeType === 'refund' ? (
+                <>
+                  <span className="font-bold text-[#595959]">환불 정보를 입력해주세요!</span><br />
+                  <span className="text-[#595959]">환불 금액: {modificationInfo.changeAmount.toLocaleString()}원 ({Math.abs(modificationInfo.netChangeCount)}개 세션)</span>
+                </>
+              ) : (
+                <>
+                  <span className="font-bold text-[#595959]">수강 변경을 완료해주세요!</span><br />
+                  <span className="text-[#595959]">변경 사항이 없습니다.</span>
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              <span className="font-bold text-[#595959]">신청 완료 전, 수강료 송금을 마무리 해주세요!</span><br />
+              <span className="text-[#595959]">입금이 확인되지 않으면 신청이 취소될 수 있습니다.</span>
+            </>
+          )}
         </div>
       </header>
 

@@ -3,6 +3,7 @@
 import { ReactNode, useEffect, useRef } from 'react';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { EnrollmentContainer } from './student/Enrollment/EnrollmentContainer';
+import { EnrollmentSubPageRenderer } from './student/EnrollmentSubPageRenderer';
 import { AcademyManagement } from './student/Profile/AcademyManagement';
 import { PersonalInfoManagement } from './student/Profile/PersonalInfoManagement';
 import { EnrollmentHistory } from './student/Profile/EnrollmentHistory';
@@ -47,6 +48,16 @@ export function DashboardPage({
   // SubPage가 있고 현재 페이지가 활성화된 경우 해당 SubPage 렌더링
   if (subPage && isActive) {
     const renderSubPage = () => {
+      // 수강 변경 관련 SubPage (modify-*)
+      if (subPage.startsWith('modify-')) {
+        return <EnrollmentSubPageRenderer page={subPage} />;
+      }
+      
+      // 월별 수강신청 SubPage (enroll-*)
+      if (subPage.startsWith('enroll-')) {
+        return <EnrollmentSubPageRenderer page={subPage} />;
+      }
+      
       switch (subPage) {
         case 'enroll':
           return <EnrollmentContainer />;

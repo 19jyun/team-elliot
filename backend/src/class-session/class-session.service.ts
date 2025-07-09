@@ -1021,6 +1021,252 @@ export class ClassSessionService {
     };
   }
 
+  /**
+   * 학생의 특정 클래스 수강 신청 현황 조회 (수강 변경/취소용)
+   */
+  async getStudentClassEnrollments(classId: number, studentId: number) {
+    // 해당 클래스의 모든 세션과 학생의 수강 신청 현황을 함께 조회
+    const classSessions = await this.prisma.classSession.findMany({
+      where: { classId },
+      include: {
+        class: {
+          include: {
+            teacher: true,
+          },
+        },
+        enrollments: {
+          where: { studentId },
+          include: {
+            student: true,
+            payment: true,
+          },
+        },
+      },
+      orderBy: { date: 'asc' },
+    });
+
+    // 각 세션별로 학생의 수강 신청 상태를 명확히 표시
+    const sessionsWithEnrollmentStatus = classSessions.map((session) => {
+      const studentEnrollment = session.enrollments[0]; // 학생당 세션당 하나의 수강 신청만 존재
+
+      return {
+        sessionId: session.id,
+        classId: session.classId,
+        date: session.date,
+        startTime: session.startTime,
+        endTime: session.endTime,
+        className: session.class.className,
+        teacherName: session.class.teacher.name,
+        level: session.class.level,
+        tuitionFee: session.class.tuitionFee,
+        // 학생의 수강 신청 정보
+        enrollment: studentEnrollment
+          ? {
+              id: studentEnrollment.id,
+              status: studentEnrollment.status,
+              enrolledAt: studentEnrollment.enrolledAt,
+              cancelledAt: studentEnrollment.cancelledAt,
+              payment: studentEnrollment.payment,
+            }
+          : null,
+        // 수강 가능 여부 (이미 시작된 수업은 수강 불가)
+        isEnrollable: new Date(session.startTime) > new Date(),
+      };
+    });
+
+    return {
+      classId,
+      className: classSessions[0]?.class.className,
+      teacherName: classSessions[0]?.class.teacher.name,
+      sessions: sessionsWithEnrollmentStatus,
+    };
+  }
+
+  /**
+   * 배치 수강 변경/취소 처리
+   */
+  async batchModifyEnrollments(
+    data: {
+      cancellations: number[];
+      newEnrollments: number[];
+      reason?: string;
+    },
+    studentId: number,
+  ) {
+    const { cancellations, newEnrollments, reason } = data;
+
+    // 트랜잭션으로 배치 처리
+    const result = await this.prisma.$transaction(async (prisma) => {
+      const cancelledEnrollments = [];
+      const newEnrollmentResults = [];
+
+      // 1. 기존 수강 신청 취소
+      for (const enrollmentId of cancellations) {
+        const enrollment = await prisma.sessionEnrollment.findUnique({
+          where: { id: enrollmentId },
+          include: {
+            session: {
+              include: {
+                class: {
+                  include: {
+                    teacher: true,
+                  },
+                },
+              },
+            },
+            student: true,
+          },
+        });
+
+        if (!enrollment) {
+          throw new NotFoundException(
+            `수강 신청 ID ${enrollmentId}를 찾을 수 없습니다.`,
+          );
+        }
+
+        if (enrollment.studentId !== studentId) {
+          throw new ForbiddenException(
+            '자신의 수강 신청만 변경할 수 있습니다.',
+          );
+        }
+
+        // 이미 시작된 수업은 취소 불가
+        const now = new Date();
+        const sessionStartTime = new Date(enrollment.session.startTime);
+        if (now >= sessionStartTime) {
+          throw new BadRequestException(
+            `이미 시작된 수업은 취소할 수 없습니다: ${enrollment.session.class.className}`,
+          );
+        }
+
+        const cancelledEnrollment = await prisma.sessionEnrollment.update({
+          where: { id: enrollmentId },
+          data: {
+            status: SessionEnrollmentStatus.CANCELLED,
+            cancelledAt: new Date(),
+          },
+          include: {
+            session: {
+              include: {
+                class: {
+                  include: {
+                    teacher: true,
+                  },
+                },
+              },
+            },
+            student: true,
+          },
+        });
+
+        cancelledEnrollments.push(cancelledEnrollment);
+      }
+
+      // 2. 새로운 수강 신청 생성
+      for (const sessionId of newEnrollments) {
+        // 이미 신청했는지 확인
+        const existingEnrollment = await prisma.sessionEnrollment.findUnique({
+          where: {
+            studentId_sessionId: {
+              studentId,
+              sessionId,
+            },
+          },
+        });
+
+        if (existingEnrollment) {
+          throw new BadRequestException(
+            `이미 신청한 세션입니다: 세션 ID ${sessionId}`,
+          );
+        }
+
+        // 세션 정보 조회
+        const session = await prisma.classSession.findUnique({
+          where: { id: sessionId },
+          include: {
+            class: {
+              include: {
+                teacher: true,
+              },
+            },
+          },
+        });
+
+        if (!session) {
+          throw new NotFoundException(
+            `세션 ID ${sessionId}를 찾을 수 없습니다.`,
+          );
+        }
+
+        // 이미 시작된 수업은 신청 불가
+        const now = new Date();
+        const sessionStartTime = new Date(session.startTime);
+        if (now >= sessionStartTime) {
+          throw new BadRequestException(
+            `이미 시작된 수업은 신청할 수 없습니다: ${session.class.className}`,
+          );
+        }
+
+        const newEnrollment = await prisma.sessionEnrollment.create({
+          data: {
+            studentId,
+            sessionId,
+            status: SessionEnrollmentStatus.PENDING,
+          },
+          include: {
+            session: {
+              include: {
+                class: {
+                  include: {
+                    teacher: true,
+                  },
+                },
+              },
+            },
+            student: true,
+          },
+        });
+
+        newEnrollmentResults.push(newEnrollment);
+      }
+
+      return {
+        cancelledEnrollments,
+        newEnrollments: newEnrollmentResults,
+      };
+    });
+
+    // 배치 수강 변경 로그
+    await this.activityLogService.logActivityAsync({
+      userId: studentId,
+      userRole: 'STUDENT',
+      action: ACTIVITY_TYPES.ENROLLMENT.BATCH_MODIFY_ENROLLMENT,
+      entityType: ENTITY_TYPES.SESSION_ENROLLMENT,
+      entityId:
+        result.newEnrollments[0]?.id || result.cancelledEnrollments[0]?.id,
+      oldValue: {
+        cancelledEnrollmentIds: result.cancelledEnrollments.map((e) => e.id),
+        cancelledSessionIds: result.cancelledEnrollments.map(
+          (e) => e.sessionId,
+        ),
+        cancelledClassNames: result.cancelledEnrollments.map(
+          (e) => e.session.class.className,
+        ),
+      },
+      newValue: {
+        newEnrollmentIds: result.newEnrollments.map((e) => e.id),
+        newSessionIds: result.newEnrollments.map((e) => e.sessionId),
+        newClassNames: result.newEnrollments.map(
+          (e) => e.session.class.className,
+        ),
+        reason,
+      },
+      description: `배치 수강 변경: ${result.cancelledEnrollments.length}개 취소, ${result.newEnrollments.length}개 신청`,
+    });
+
+    return result;
+  }
+
   // 헬퍼 메서드들
   private getActionForStatusChange(
     oldStatus: string,

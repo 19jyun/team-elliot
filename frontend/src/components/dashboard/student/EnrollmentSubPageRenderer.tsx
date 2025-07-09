@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
+import { EnrollmentContainer } from './Enrollment/EnrollmentContainer';
+import { EnrollmentModificationContainer } from './Enrollment/EnrollmentModificationContainer';
 
 interface EnrollmentSubPageRendererProps {
   page: string;
@@ -10,9 +12,23 @@ interface EnrollmentSubPageRendererProps {
 export function EnrollmentSubPageRenderer({ page }: EnrollmentSubPageRendererProps) {
   const { goBack } = useDashboardNavigation();
 
-  // 페이지 파싱 (예: "enroll-8" -> month: 8)
-  const month = page.replace('enroll-', '');
+  // 페이지 파싱
+  // "enroll-8" -> 일반 수강신청 (month: 8)
+  // "modify-123" -> 수강 변경 (classId: 123)
+  // "modify-123-8" -> 수강 변경 (classId: 123, month: 8)
+  const isModification = page.startsWith('modify-');
+  
+  if (isModification) {
+    const parts = page.replace('modify-', '').split('-');
+    const classId = parseInt(parts[0]);
+    const month = parts.length > 1 ? parseInt(parts[1]) : null;
+    console.log('EnrollmentSubPageRenderer - 수강 변경 파싱:', { classId, month });
+    return <EnrollmentModificationContainer classId={classId} month={month} />;
+  }
 
+  // 일반 수강신청
+  const month = page.replace('enroll-', '');
+  
   // 임시로 간단한 컴포넌트 렌더링
   // 나중에 실제 월별 수강신청 페이지 컴포넌트로 교체
   return (

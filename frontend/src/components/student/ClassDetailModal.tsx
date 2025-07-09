@@ -10,11 +10,13 @@ import { getClassDetails } from '@/api/class';
 import { ClassDetailsResponse } from '@/types/api/class';
 import { toast } from 'sonner';
 import cn from 'classnames';
+import { useDashboardNavigation } from '@/contexts/DashboardContext';
 
 interface ClassDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   classId: number;
+  classSessions?: any[];
 }
 
 interface TeacherInfo {
@@ -30,9 +32,10 @@ interface LocationInfo {
   mapImageUrl?: string;
 }
 
-export function ClassDetailModal({ isOpen, onClose, classId }: ClassDetailModalProps) {
+export function ClassDetailModal({ isOpen, onClose, classId, classSessions }: ClassDetailModalProps) {
   const [classDetails, setClassDetails] = useState<ClassDetailsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { navigateToSubPage } = useDashboardNavigation();
 
   console.log('ClassDetailModal 렌더링:', { isOpen, classId, classDetails, isLoading });
 
@@ -75,10 +78,39 @@ export function ClassDetailModal({ isOpen, onClose, classId }: ClassDetailModalP
     return dayMap[dayOfWeek] || dayOfWeek;
   };
 
-  const handleRefundRequest = () => {
-    // TODO: 환불 요청 페이지로 이동하거나 환불 요청 모달 열기
-    console.log('환불 요청:', classId);
-    toast.info('환불 요청 기능이 준비 중입니다.');
+  const handleModificationRequest = () => {
+    // 기존 수강 신청된 세션들의 월 정보를 분석
+    let targetMonth = null;
+    
+    if (classSessions && classSessions.length > 0) {
+      const enrolledSessions = classSessions.filter((session: any) => 
+        session.enrollment_status === 'CONFIRMED' || session.enrollment_status === 'PENDING'
+      );
+      
+      if (enrolledSessions.length > 0) {
+        const sessionDates = enrolledSessions.map((session: any) => new Date(session.date));
+        const months = sessionDates.map(date => date.getMonth() + 1); // 0-based index
+        const uniqueMonths = [...new Set(months)];
+        
+        // 가장 많은 세션이 있는 월을 targetMonth로 설정
+        const monthCounts = uniqueMonths.map(month => ({
+          month,
+          count: months.filter(m => m === month).length
+        }));
+        const mostFrequentMonth = monthCounts.reduce((prev, current) => 
+          prev.count > current.count ? prev : current
+        );
+        
+        targetMonth = mostFrequentMonth.month;
+        console.log('분석된 targetMonth:', targetMonth);
+      }
+    }
+    
+    // 수강 변경 SubPage로 이동 (월 정보 포함)
+    const subPagePath = targetMonth ? `modify-${classId}-${targetMonth}` : `modify-${classId}`;
+    console.log('수강 변경 SubPage 경로:', subPagePath);
+    navigateToSubPage(subPagePath);
+    onClose(); // 모달 닫기
   };
 
   if (!classDetails && !isLoading) {
@@ -128,7 +160,7 @@ export function ClassDetailModal({ isOpen, onClose, classId }: ClassDetailModalP
         {/* 하단 고정 버튼 */}
         <div className="flex-shrink-0 flex flex-col w-full bg-white px-5 pb-4 pt-2">
           <button
-            onClick={handleRefundRequest}
+            onClick={handleModificationRequest}
             className={cn(
               'flex-1 shrink gap-2.5 self-stretch px-2.5 py-4 rounded-lg min-w-[240px] size-full text-base font-semibold leading-snug text-white',
               'bg-[#AC9592] hover:bg-[#8c7a74] transition-colors',

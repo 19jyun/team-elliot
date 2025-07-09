@@ -10,7 +10,7 @@ export interface NavigationItem {
 }
 
 // 수강신청 단계 타입
-export type EnrollmentStep = 'main' | 'class-selection' | 'date-selection' | 'payment' | 'complete';
+export type EnrollmentStep = 'main' | 'class-selection' | 'date-selection' | 'payment' | 'complete' | 'refund-request' | 'refund-complete';
 
 // 수강신청 상태 인터페이스
 export interface EnrollmentState {

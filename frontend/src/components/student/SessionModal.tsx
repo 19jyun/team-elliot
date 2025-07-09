@@ -42,6 +42,7 @@ interface SessionModalProps {
 
 export function SessionModal({ isOpen, selectedClass, sessions, onClose }: SessionModalProps) {
   const [selectedClassId, setSelectedClassId] = useState<number | null>(null)
+  const [selectedClassSessions, setSelectedClassSessions] = useState<SessionData[]>([])
   const [isClassDetailOpen, setIsClassDetailOpen] = useState(false)
 
   if (!isOpen || !selectedClass) return null
@@ -49,16 +50,22 @@ export function SessionModal({ isOpen, selectedClass, sessions, onClose }: Sessi
   const filteredSessions = sessions.filter((session: any) => session.class.id === selectedClass.id)
 
   const handleSessionClick = (session: any) => {
-    // 세션의 클래스 ID를 설정하고 클래스 상세 모달을 엽니다
+    // 해당 클래스의 모든 세션 정보를 함께 전달
     console.log('세션 클릭됨:', session);
     console.log('클래스 ID:', session.class.id);
-    setSelectedClassId(session.class.id)
-    setIsClassDetailOpen(true)
+    
+    const classSessions = sessions.filter((s: any) => s.class.id === session.class.id);
+    console.log('해당 클래스의 모든 세션:', classSessions);
+    
+    setSelectedClassId(session.class.id);
+    setSelectedClassSessions(classSessions);
+    setIsClassDetailOpen(true);
   }
 
   const handleClassDetailClose = () => {
     setIsClassDetailOpen(false)
     setSelectedClassId(null)
+    setSelectedClassSessions([])
   }
 
   return (
@@ -119,11 +126,12 @@ export function SessionModal({ isOpen, selectedClass, sessions, onClose }: Sessi
       {/* 클래스 상세 정보 모달 */}
       {selectedClassId && (
         <>
-          {console.log('ClassDetailModal 렌더링 시도:', { selectedClassId, isClassDetailOpen })}
+          {console.log('ClassDetailModal 렌더링 시도:', { selectedClassId, isClassDetailOpen, selectedClassSessions })}
           <ClassDetailModal
             isOpen={isClassDetailOpen}
             onClose={handleClassDetailClose}
             classId={selectedClassId}
+            classSessions={selectedClassSessions}
           />
         </>
       )}

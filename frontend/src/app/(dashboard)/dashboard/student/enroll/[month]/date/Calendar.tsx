@@ -42,9 +42,11 @@ interface CalendarProps {
   isAllSelected?: boolean;
   onSelectedClassesChange?: (selected: any[]) => void;
   month?: number; // 월 정보를 props로 받을 수 있도록 추가
+  mode?: 'enrollment' | 'modification';
+  existingEnrollments?: any[];
 }
 
-export default function Calendar({ onSelectCountChange, onSelectableCountChange, onSelectAll, onDeselectAll, isAllSelected, onSelectedClassesChange, month: propMonth }: CalendarProps) {
+export default function Calendar({ onSelectCountChange, onSelectableCountChange, onSelectAll, onDeselectAll, isAllSelected, onSelectedClassesChange, month: propMonth, mode = 'enrollment', existingEnrollments }: CalendarProps) {
   const params = useParams()
   const month = propMonth || Number(params.month) // props로 받은 월을 우선 사용, 없으면 URL 파라미터 사용
   const year = new Date().getFullYear() // 필요시 쿼리스트링 등에서 받아올 수도 있음
@@ -125,6 +127,24 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
     return format(date, 'yyyy-MM-dd')
   }
 
+  // 수강 변경 모드에서 기존 수강 신청 세션들을 미리 선택
+  useEffect(() => {
+    if (mode === 'modification' && existingEnrollments && existingEnrollments.length > 0) {
+      const preSelectedDates: {[key: string]: boolean} = {};
+      
+      existingEnrollments.forEach((enrollment: any) => {
+        if (enrollment.enrollment && 
+            (enrollment.enrollment.status === 'CONFIRMED' || enrollment.enrollment.status === 'PENDING')) {
+          const dateStr = format(new Date(enrollment.date), 'yyyy-MM-dd');
+          preSelectedDates[dateStr] = true;
+        }
+      });
+      
+      console.log('기존 수강 신청 세션들 미리 선택:', preSelectedDates);
+      setSelectedDates(preSelectedDates);
+    }
+  }, [mode, existingEnrollments]);
+
   const selectableDates = useMemo(() => {
     const dates: string[] = []
     days.forEach(d => {
@@ -147,10 +167,12 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
     if (isAllSelected) {
       const allSelected = selectableDates.reduce((acc, date) => ({ ...acc, [date]: true }), {})
       setSelectedDates(allSelected)
-    } else {
+    } else if (mode !== 'modification') {
+      // 수강 변경 모드가 아닐 때만 selectedDates를 초기화
       setSelectedDates({})
     }
-  }, [isAllSelected, selectableDates])
+    // 수강 변경 모드에서는 기존 선택을 유지
+  }, [isAllSelected, selectableDates, mode])
 
   useEffect(() => {
     if (onSelectableCountChange) onSelectableCountChange(selectableDates.length)
@@ -219,6 +241,17 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
           }) : []
           const isSelectable = d.isCurrentMonth && availableSessions.length > 0
           const isSelected = !!selectedDates[dateStr]
+
+          // 수정 모드에서 기존 수강 신청된 세션인지 확인
+          const wasOriginallyEnrolled = mode === 'modification' && existingEnrollments?.some((enrollment: any) => {
+            const enrollmentDate = format(new Date(enrollment.date), 'yyyy-MM-dd');
+            return enrollmentDate === dateStr && 
+                   enrollment.enrollment && 
+                   (enrollment.enrollment.status === 'CONFIRMED' || enrollment.enrollment.status === 'PENDING');
+          });
+
+          // 취소될 세션인지 확인 (기존에 신청되었지만 현재 선택되지 않은 경우)
+          const willBeCancelled = mode === 'modification' && wasOriginallyEnrolled && !isSelected;
 
           return (
             <div
