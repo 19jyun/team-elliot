@@ -71,68 +71,62 @@ export default function TeacherDashboard() {
   }
 
   return (
-    <div className="flex overflow-hidden flex-col pb-2 w-full bg-white">
-
-
-      {/* 헤더 섹션 */}
-      <div className="flex flex-col px-5 py-6">
-        <h1 className="text-2xl font-bold text-stone-700">
-          {session?.user?.name}님의 선생님 대시보드
-        </h1>
-        <p className="mt-2 text-stone-500">
-          수업과 수강생 정보를 확인할 수 있습니다.
-        </p>
-      </div>
-
-      <div className="px-5 space-y-4">
-        {/* 내 수업 카드 */}
-        <div className="bg-white rounded-lg shadow-md border border-stone-100">
-          <div className="px-4 py-3 bg-stone-700">
-            <h2 className="text-lg font-semibold text-white">내 수업</h2>
-          </div>
-          <div className="p-4">
-            <div className="space-y-4">
-              {myClasses?.map((class_: any) => (
-                <div
-                  key={class_.id}
-                  className="bg-stone-50 p-3 rounded-lg hover:bg-stone-100 transition-colors duration-200"
-                >
-                  <p className="font-semibold text-stone-900">
-                    {class_.className}
-                  </p>
-                  <p className="text-sm text-stone-600">
-                    {class_.dayOfWeek}요일 {class_.time}
-                  </p>
-                  <p className="text-sm text-stone-500">
-                    수강생: {class_.currentStudents}/{class_.maxStudents}명
-                  </p>
-                </div>
-              ))}
+    <div className="flex flex-col h-screen bg-gray-50 relative">
+      {/* 헤더 */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <h1 className="text-2xl font-bold text-gray-900">선생님 대시보드</h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span className="text-gray-700">
+                {session?.user?.name}님 환영합니다
+              </span>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* 수강생 관리 카드 */}
-        <div className="bg-white rounded-lg shadow-md border border-stone-100">
-          <div className="px-4 py-3 bg-stone-700">
-            <h2 className="text-lg font-semibold text-white">수강생 관리</h2>
-          </div>
-          <div className="p-4">
-            <p className="text-stone-500 text-center py-4">
-              수강생 관리 기능이 곧 추가될 예정입니다.
-            </p>
-          </div>
-        </div>
+      {/* 메인 컨텐츠 */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* 내 수업 카드 */}
+            <div className="bg-white rounded-lg shadow-md border border-stone-100">
+              <div className="px-4 py-3 bg-stone-700">
+                <h2 className="text-lg font-semibold text-white">내 수업</h2>
+              </div>
+              <div className="p-4">
+                <p className="text-stone-500 text-center py-4">
+                  현재 담당하고 있는 수업: {myClasses?.length || 0}개
+                </p>
+              </div>
+            </div>
 
-        {/* 수업 일정 카드 */}
-        <div className="bg-white rounded-lg shadow-md border border-stone-100">
-          <div className="px-4 py-3 bg-stone-700">
-            <h2 className="text-lg font-semibold text-white">수업 일정</h2>
-          </div>
-          <div className="p-4">
-            <p className="text-stone-500 text-center py-4">
-              수업 일정 관리 기능이 곧 추가될 예정입니다.
-            </p>
+            {/* 수강생 관리 카드 */}
+            <div className="bg-white rounded-lg shadow-md border border-stone-100">
+              <div className="px-4 py-3 bg-stone-700">
+                <h2 className="text-lg font-semibold text-white">수강생 관리</h2>
+              </div>
+              <div className="p-4">
+                <p className="text-stone-500 text-center py-4">
+                  수강생 관리 기능이 곧 추가될 예정입니다.
+                </p>
+              </div>
+            </div>
+
+            {/* 수업 일정 카드 */}
+            <div className="bg-white rounded-lg shadow-md border border-stone-100">
+              <div className="px-4 py-3 bg-stone-700">
+                <h2 className="text-lg font-semibold text-white">수업 일정</h2>
+              </div>
+              <div className="p-4">
+                <p className="text-stone-500 text-center py-4">
+                  수업 일정 관리 기능이 곧 추가될 예정입니다.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -149,12 +143,10 @@ export default function TeacherDashboard() {
 
       {/* 로그아웃 모달 */}
       {showLogoutModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <LogoutModal
-            onLogout={handleSignOut}
-            onClose={() => setShowLogoutModal(false)}
-          />
-        </div>
+        <LogoutModal
+          onLogout={handleSignOut}
+          onClose={() => setShowLogoutModal(false)}
+        />
       )}
     </div>
   )

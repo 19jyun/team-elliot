@@ -18,6 +18,8 @@ import axiosInstance from '@/lib/axios'
 export default function AdminDashboard() {
   const router = useRouter()
   const [showLogoutModal, setShowLogoutModal] = useState(false)
+  const [showAddTeacherModal, setShowAddTeacherModal] = useState(false)
+  const [showAddClassModal, setShowAddClassModal] = useState(false)
   const { data: session, status } = useSession({
     required: true,
     onUnauthenticated() {
@@ -56,86 +58,102 @@ export default function AdminDashboard() {
 
   const queryClient = useQueryClient()
 
-  const { data: teachersData, error: teachersError } = useQuery({
+  const { data: academies } = useQuery({
+    queryKey: ['academies'],
+    queryFn: async () => {
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/admin/academies`,
+      )
+      return response.data
+    },
+  })
+
+  const { data: teachers } = useQuery({
     queryKey: ['teachers'],
     queryFn: async () => {
-      try {
-        const response = await axiosInstance.get('/admin/teachers')
-        return response.data
-      } catch (error) {
-        console.error('Teachers fetch error:', error)
-        throw error
-      }
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/admin/teachers`,
+      )
+      return response.data
     },
   })
 
   const { data: classes } = useQuery({
     queryKey: ['classes'],
-    queryFn: () => axiosInstance.get('/admin/classes').then((res) => res.data),
+    queryFn: async () => {
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/admin/classes`,
+      )
+      return response.data
+    },
   })
 
-  const { data: withdrawalStats } = useQuery({
-    queryKey: ['withdrawalStats'],
-    queryFn: async () => {
-      try {
-        const response = await axiosInstance.get(`/admin/withdrawal-stats`)
-        return response.data
-      } catch (error) {
-        console.error('Withdrawal stats fetch error:', error)
-        return { byCategory: [], recentWithdrawals: [] } // 기본값 제공
-      }
+  const deleteAcademyMutation = useMutation({
+    mutationFn: async (academyId: number) => {
+      await axios.delete(
+        `${process.env.NEXT_PUBLIC_API_URL}/admin/academies/${academyId}`,
+      )
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['academies'] })
+      toast.success('학원이 삭제되었습니다')
+    },
+    onError: () => {
+      toast.error('학원 삭제에 실패했습니다')
     },
   })
 
   const deleteTeacherMutation = useMutation({
-    mutationFn: (id: number) => axiosInstance.delete(`/admin/teachers/${id}`),
+    mutationFn: async (teacherId: number) => {
+      await axios.delete(
+        `${process.env.NEXT_PUBLIC_API_URL}/admin/teachers/${teacherId}`,
+      )
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teachers'] })
-      toast.success('선생님이 삭제되었습니다.')
+      toast.success('선생님이 삭제되었습니다')
+    },
+    onError: () => {
+      toast.error('선생님 삭제에 실패했습니다')
     },
   })
 
   const deleteClassMutation = useMutation({
-    mutationFn: (id: number) => axiosInstance.delete(`/admin/classes/${id}`),
+    mutationFn: async (classId: number) => {
+      await axios.delete(
+        `${process.env.NEXT_PUBLIC_API_URL}/admin/classes/${classId}`,
+      )
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['classes'] })
-      toast.success('수업이 삭제되었습니다.')
+      toast.success('수업이 삭제되었습니다')
+    },
+    onError: () => {
+      toast.error('수업 삭제에 실패했습니다')
     },
   })
 
-  const getCategoryLabel = (category: string) => {
-    const labels = {
-      DISSATISFACTION: '서비스 불만족',
-      UNUSED: '이용 빈도 낮음',
-      PRIVACY: '개인정보 보호',
-      OTHER: '기타',
+  const handleAddTeacher = async (teacherData: any) => {
+    try {
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/admin/teachers`, teacherData)
+      queryClient.invalidateQueries({ queryKey: ['teachers'] })
+      toast.success('선생님이 추가되었습니다')
+      setShowAddTeacherModal(false)
+    } catch (error) {
+      toast.error('선생님 추가에 실패했습니다')
     }
-    return labels[category as keyof typeof labels] || category
   }
 
-  const [showAddStudent, setShowAddStudent] = useState(false)
-  const [showAddTeacher, setShowAddTeacher] = useState(false)
-  const [showAddClass, setShowAddClass] = useState(false)
-
-  const addTeacherMutation = useMutation({
-    mutationFn: (data: any) =>
-      axiosInstance.post(`/admin/teachers`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['teachers'] })
-      toast.success('선생님이 추가되었습니다.')
-      setShowAddTeacher(false)
-    },
-  })
-
-  const addClassMutation = useMutation({
-    mutationFn: (data: any) =>
-      axiosInstance.post(`/admin/classes`, data),
-    onSuccess: () => {
+  const handleAddClass = async (classData: any) => {
+    try {
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/admin/classes`, classData)
       queryClient.invalidateQueries({ queryKey: ['classes'] })
-      toast.success('수업이 추가되었습니다.')
-      setShowAddClass(false)
-    },
-  })
+      toast.success('수업이 추가되었습니다')
+      setShowAddClassModal(false)
+    } catch (error) {
+      toast.error('수업 추가에 실패했습니다')
+    }
+  }
 
   if (status === 'loading') {
     return (
@@ -146,65 +164,129 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="flex overflow-hidden flex-col pb-2 w-full bg-white">
-
-
-      {/* 헤더 섹션 */}
-      <div className="flex flex-col px-5 py-6">
-        <h1 className="text-2xl font-bold text-stone-700">
-          {session?.user?.name}님의 관리자 대시보드
-        </h1>
-        <p className="mt-2 text-stone-500">
-          수강생, 선생님, 수업을 관리할 수 있습니다.
-        </p>
+    <div className="flex flex-col h-screen bg-gray-50 relative">
+      {/* 헤더 */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <h1 className="text-2xl font-bold text-gray-900">관리자 대시보드</h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span className="text-gray-700">
+                {session?.user?.name}님 환영합니다
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="px-5 space-y-4">
-        {/* 회원 탈퇴 통계 카드 */}
-        <div className="bg-white rounded-lg shadow-md border border-stone-100">
-          <div className="px-4 py-3 bg-stone-700">
-            <h2 className="text-lg font-semibold text-white">회원 탈퇴 통계</h2>
-          </div>
-          <div className="p-4">
-            <div className="space-y-4">
-              {/* 탈퇴 사유 카테고리별 통계 */}
-              <div className="grid grid-cols-2 gap-4">
-                {withdrawalStats?.byCategory?.map((stat: any) => (
-                  <div
-                    key={stat.category}
-                    className="bg-stone-50 p-3 rounded-lg"
-                  >
-                    <p className="font-semibold text-stone-900">
-                      {getCategoryLabel(stat.category)}
-                    </p>
-                    <p className="text-2xl font-bold text-stone-700">
-                      {stat.count}명
-                    </p>
-                    <p className="text-sm text-stone-500">
-                      {stat.percentage.toFixed(1)}%
-                    </p>
-                  </div>
-                ))}
+      {/* 메인 컨텐츠 */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* 학원 관리 */}
+            <div className="bg-white rounded-lg shadow-md border border-stone-100">
+              <div className="px-4 py-3 bg-stone-700">
+                <h2 className="text-lg font-semibold text-white">학원 관리</h2>
               </div>
-
-              {/* 최근 탈퇴 이력 */}
-              <div className="mt-4">
-                <h3 className="text-md font-semibold mb-2">최근 탈퇴 이력</h3>
-                <div className="space-y-2">
-                  {withdrawalStats?.recentWithdrawals?.map((withdrawal: any) => (
+              <div className="p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-sm text-gray-600">
+                    총 {academies?.length || 0}개 학원
+                  </span>
+                  <button
+                    onClick={() => setShowAddTeacherModal(true)}
+                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    추가
+                  </button>
+                </div>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {academies?.map((academy: any) => (
                     <div
-                      key={withdrawal.id}
-                      className="bg-stone-50 p-3 rounded-lg"
+                      key={academy.id}
+                      className="flex justify-between items-center p-2 bg-gray-50 rounded"
                     >
-                      <p className="font-semibold text-stone-900">
-                        {withdrawal.userName}
-                      </p>
-                      <p className="text-sm text-stone-600">
-                        {withdrawal.reason}
-                      </p>
-                      <p className="text-sm text-stone-500">
-                        {new Date(withdrawal.createdAt).toLocaleDateString()}
-                      </p>
+                      <span className="text-sm">{academy.name}</span>
+                      <button
+                        onClick={() => deleteAcademyMutation.mutate(academy.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* 선생님 관리 */}
+            <div className="bg-white rounded-lg shadow-md border border-stone-100">
+              <div className="px-4 py-3 bg-stone-700">
+                <h2 className="text-lg font-semibold text-white">선생님 관리</h2>
+              </div>
+              <div className="p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-sm text-gray-600">
+                    총 {teachers?.length || 0}명 선생님
+                  </span>
+                  <button
+                    onClick={() => setShowAddTeacherModal(true)}
+                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    추가
+                  </button>
+                </div>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {teachers?.map((teacher: any) => (
+                    <div
+                      key={teacher.id}
+                      className="flex justify-between items-center p-2 bg-gray-50 rounded"
+                    >
+                      <span className="text-sm">{teacher.name}</span>
+                      <button
+                        onClick={() => deleteTeacherMutation.mutate(teacher.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* 수업 관리 */}
+            <div className="bg-white rounded-lg shadow-md border border-stone-100">
+              <div className="px-4 py-3 bg-stone-700">
+                <h2 className="text-lg font-semibold text-white">수업 관리</h2>
+              </div>
+              <div className="p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-sm text-gray-600">
+                    총 {classes?.length || 0}개 수업
+                  </span>
+                  <button
+                    onClick={() => setShowAddClassModal(true)}
+                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    추가
+                  </button>
+                </div>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {classes?.map((class_: any) => (
+                    <div
+                      key={class_.id}
+                      className="flex justify-between items-center p-2 bg-gray-50 rounded"
+                    >
+                      <span className="text-sm">{class_.name}</span>
+                      <button
+                        onClick={() => deleteClassMutation.mutate(class_.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -225,12 +307,27 @@ export default function AdminDashboard() {
       </div>
 
       {showLogoutModal && (
-        <div className="fixed inset-0 z-50">
-          <LogoutModal
-            onLogout={handleSignOut}
-            onClose={() => setShowLogoutModal(false)}
-          />
-        </div>
+        <LogoutModal
+          onLogout={handleSignOut}
+          onClose={() => setShowLogoutModal(false)}
+        />
+      )}
+
+      {showAddTeacherModal && (
+        <AddTeacherModal
+          isOpen={showAddTeacherModal}
+          onClose={() => setShowAddTeacherModal(false)}
+          onSubmit={handleAddTeacher}
+        />
+      )}
+
+      {showAddClassModal && (
+        <AddClassModal
+          isOpen={showAddClassModal}
+          onClose={() => setShowAddClassModal(false)}
+          onSubmit={handleAddClass}
+          teachers={teachers || []}
+        />
       )}
     </div>
   )

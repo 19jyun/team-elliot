@@ -9,6 +9,7 @@ import { ClassService } from '../class/class.service';
 import { AcademyService } from '../academy/academy.service';
 import { JoinAcademyDto } from './dto/join-academy.dto';
 import { LeaveAcademyDto } from './dto/leave-academy.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class StudentService {
@@ -131,5 +132,94 @@ export class StudentService {
 
   async leaveAcademy(studentId: number, leaveAcademyDto: LeaveAcademyDto) {
     return this.academyService.leaveAcademy(studentId, leaveAcademyDto);
+  }
+
+  async getMyProfile(studentId: number) {
+    const student = await this.prisma.student.findUnique({
+      where: { id: studentId },
+      select: {
+        id: true,
+        userId: true,
+        name: true,
+        phoneNumber: true,
+        emergencyContact: true,
+        birthDate: true,
+        notes: true,
+        level: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!student) {
+      throw new NotFoundException('학생을 찾을 수 없습니다.');
+    }
+
+    return {
+      id: student.id,
+      userId: student.userId,
+      name: student.name,
+      phoneNumber: student.phoneNumber,
+      emergencyContact: student.emergencyContact,
+      birthDate: student.birthDate,
+      notes: student.notes,
+      level: student.level,
+      createdAt: student.createdAt,
+      updatedAt: student.updatedAt,
+    };
+  }
+
+  async updateMyProfile(studentId: number, updateProfileDto: UpdateProfileDto) {
+    const student = await this.prisma.student.findUnique({
+      where: { id: studentId },
+    });
+
+    if (!student) {
+      throw new NotFoundException('학생을 찾을 수 없습니다.');
+    }
+
+    // 빈 문자열을 null로 변환하고 birthDate를 ISO 형식으로 변환
+    const updateData = {
+      name: updateProfileDto.name,
+      phoneNumber: updateProfileDto.phoneNumber || null,
+      emergencyContact: updateProfileDto.emergencyContact || null,
+      birthDate:
+        updateProfileDto.birthDate && updateProfileDto.birthDate.trim() !== ''
+          ? new Date(updateProfileDto.birthDate).toISOString()
+          : null,
+      notes: updateProfileDto.notes || null,
+      level: updateProfileDto.level || null,
+      updatedAt: new Date(),
+    };
+
+    const updatedStudent = await this.prisma.student.update({
+      where: { id: studentId },
+      data: updateData,
+      select: {
+        id: true,
+        userId: true,
+        name: true,
+        phoneNumber: true,
+        emergencyContact: true,
+        birthDate: true,
+        notes: true,
+        level: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return {
+      id: updatedStudent.id,
+      userId: updatedStudent.userId,
+      name: updatedStudent.name,
+      phoneNumber: updatedStudent.phoneNumber,
+      emergencyContact: updatedStudent.emergencyContact,
+      birthDate: updatedStudent.birthDate,
+      notes: updatedStudent.notes,
+      level: updatedStudent.level,
+      createdAt: updatedStudent.createdAt,
+      updatedAt: updatedStudent.updatedAt,
+    };
   }
 }

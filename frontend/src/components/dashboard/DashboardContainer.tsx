@@ -4,7 +4,7 @@ import React, { ReactNode, useState } from 'react';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { ScrollableContentContainer } from './ScrollableContentContainer';
 import { DashboardPage } from './DashboardPage';
-import { EnrollmentContainer } from './student/EnrollmentContainer';
+import { EnrollmentContainer } from './student/Enrollment/enroll/EnrollmentContainer';
 
 interface DashboardContainerProps {
   children: ReactNode[];

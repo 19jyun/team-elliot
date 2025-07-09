@@ -9,10 +9,16 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import axios from 'axios'
 import { LogoutModal } from '@/components/user/LogoutModal'
+import { useDashboardNavigation } from '@/contexts/DashboardContext'
+import { AcademyManagement } from '@/components/dashboard/student/Profile/AcademyManagement'
+import { PersonalInfoManagement } from '@/components/dashboard/student/Profile/PersonalInfoManagement'
+import { EnrollmentHistory } from '@/components/dashboard/student/Profile/EnrollmentHistory'
+import { CancellationHistory } from '@/components/dashboard/student/Profile/CancellationHistory'
 
 export default function ProfilePage() {
   const router = useRouter()
   const [showLogoutModal, setShowLogoutModal] = React.useState(false)
+  const { navigateToSubPage, subPage } = useDashboardNavigation()
   const { data: session, status } = useSession({
     required: true,
     onUnauthenticated() {
@@ -53,28 +59,60 @@ export default function ProfilePage() {
     }
   }
 
+  const handleAcademyClick = () => {
+    navigateToSubPage('academy')
+  }
+
+  const handlePersonalInfoClick = () => {
+    navigateToSubPage('personal-info')
+  }
+
+  const handleEnrollmentHistoryClick = () => {
+    navigateToSubPage('enrollment-history')
+  }
+
+  const handleRefundHistoryClick = () => {
+    navigateToSubPage('cancellation-history')
+  }
+
   const menuLinks = [
     {
       label: '내 학원 관리',
       icon: '/icons/group.svg',
-      href: '/dashboard/student/profile/academy',
+      onClick: handleAcademyClick,
     },
     {
       label: '개인 정보',
       icon: '/icons/group.svg',
-      href: '/dashboard/student/profile/info',
+      onClick: handlePersonalInfoClick,
     },
     {
       label: '신청/결제 내역',
       icon: '/icons/group.svg',
-      href: '/dashboard/student/profile/payments',
+      onClick: handleEnrollmentHistoryClick,
     },
     {
       label: '환불/취소 내역',
       icon: '/icons/group.svg',
-      href: '/dashboard/student/profile/refunds',
+      onClick: handleRefundHistoryClick,
     },
   ]
+
+  // SubPage 렌더링
+  const renderSubPage = () => {
+    switch (subPage) {
+      case 'academy':
+        return <AcademyManagement />
+      case 'personal-info':
+        return <PersonalInfoManagement />
+      case 'enrollment-history':
+        return <EnrollmentHistory />
+      case 'cancellation-history':
+        return <CancellationHistory />
+      default:
+        return null
+    }
+  }
 
   if (status === 'loading') {
     return (
@@ -84,11 +122,18 @@ export default function ProfilePage() {
     )
   }
 
+  // SubPage가 활성화된 경우 SubPage 렌더링
+  if (subPage) {
+    return (
+      <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px] relative">
+        {renderSubPage()}
+      </div>
+    )
+  }
+
+  // 메인 프로필 페이지 렌더링
   return (
-    <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px]">
-
-
-
+    <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px] relative">
       <div className="flex flex-col px-5 py-6">
         <h1 className="text-2xl font-bold text-stone-700">
           {session?.user?.name}님의 정보
@@ -121,13 +166,11 @@ export default function ProfilePage() {
       </footer>
 
       {showLogoutModal && (
-        <div className="fixed inset-0 z-50">
-          <LogoutModal
-            onLogout={handleSignOut}
-            onClose={() => setShowLogoutModal(false)}
-          />
-        </div>
+        <LogoutModal
+          onLogout={handleSignOut}
+          onClose={() => setShowLogoutModal(false)}
+        />
       )}
     </div>
   )
-}
+} 

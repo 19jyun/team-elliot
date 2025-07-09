@@ -22,3 +22,27 @@ export interface UnenrollClassResponse {
   success: boolean;
   message: string;
 }
+
+// 학생 개인 정보 타입
+export interface StudentProfile {
+  id: number;
+  userId: string;
+  name: string;
+  phoneNumber: string | null;
+  emergencyContact: string | null;
+  birthDate: string | null;
+  notes: string | null;
+  level: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 개인 정보 수정 요청 타입
+export interface UpdateProfileRequest {
+  name?: string;
+  phoneNumber?: string;
+  emergencyContact?: string;
+  birthDate?: string;
+  notes?: string;
+  level?: string;
+}

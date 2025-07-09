@@ -2,7 +2,12 @@
 
 import { ReactNode, useEffect, useRef } from 'react';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
-import { EnrollmentContainer } from './student/EnrollmentContainer';
+import { EnrollmentContainer } from './student/Enrollment/enroll/EnrollmentContainer';
+import { EnrollmentSubPageRenderer } from './student/Enrollment/EnrollmentSubPageRenderer';
+import { AcademyManagement } from './student/Profile/AcademyManagement';
+import { PersonalInfoManagement } from './student/Profile/PersonalInfoManagement';
+import { EnrollmentHistory } from './student/Profile/EnrollmentHistory';
+import { CancellationHistory } from './student/Profile/CancellationHistory';
 
 interface DashboardPageProps {
   children: ReactNode;
@@ -40,8 +45,35 @@ export function DashboardPage({
     return () => page.removeEventListener('scroll', handleScroll);
   }, [onScroll]);
 
-  // SubPage가 있고 현재 페이지가 활성화된 경우 EnrollmentContainer 렌더링
+  // SubPage가 있고 현재 페이지가 활성화된 경우 해당 SubPage 렌더링
   if (subPage && isActive) {
+    const renderSubPage = () => {
+      // 수강 변경 관련 SubPage (modify-*)
+      if (subPage.startsWith('modify-')) {
+        return <EnrollmentSubPageRenderer page={subPage} />;
+      }
+      
+      // 월별 수강신청 SubPage (enroll-*)
+      if (subPage.startsWith('enroll-')) {
+        return <EnrollmentSubPageRenderer page={subPage} />;
+      }
+      
+      switch (subPage) {
+        case 'enroll':
+          return <EnrollmentContainer />;
+        case 'academy':
+          return <AcademyManagement />;
+        case 'personal-info':
+          return <PersonalInfoManagement />;
+        case 'enrollment-history':
+          return <EnrollmentHistory />;
+        case 'cancellation-history':
+          return <CancellationHistory />;
+        default:
+          return <EnrollmentContainer />;
+      }
+    };
+
     return (
       <div
         ref={pageRef}
@@ -51,7 +83,7 @@ export function DashboardPage({
           height: '100%',
         }}
       >
-        <EnrollmentContainer />
+        {renderSubPage()}
       </div>
     );
   }

@@ -19,6 +19,14 @@ enum Role {
   STUDENT
 }
 
+// 활동 로그 레벨 enum
+enum LogLevel {
+  CRITICAL
+  IMPORTANT
+  NORMAL
+  DEBUG
+}
+
 // 학원 모델
 model Academy {
   id          Int      @id @default(autoincrement())
@@ -59,6 +67,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   notices   Notice[] // 공지사항 작성자 관계
+  activityLogs ActivityLog[] // 활동 로그 관계
+  processedRefunds RefundRequest[] @relation("RefundProcessor") // 처리한 환불 요청들
 
   @@map("users")
 }
@@ -81,6 +91,7 @@ model Student {
   updatedAt         DateTime            @updatedAt
   sessionEnrollments SessionEnrollment[]
   academies         StudentAcademy[] // 가입한 학원들
+  refundRequests    RefundRequest[] // 환불 요청 내역
 
   @@map("students")
 }
@@ -274,7 +285,56 @@ model SessionEnrollment {
   session     ClassSession @relation(fields: [sessionId], references: [id])
   student     Student      @relation(fields: [studentId], references: [id])
   payment     Payment?
+  refundRequests RefundRequest[] // 환불 요청 내역
 
   @@unique([studentId, sessionId])
   @@map("session_enrollments")
+}
+
+// 활동 로그 모델 - 사용자 활동 추적
+model ActivityLog {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  userRole    Role     @map("user_role")
+  action      String   @db.VarChar(100) // 활동 타입 (ENROLL, PAYMENT, etc.)
+  entityType  String?  @map("entity_type") @db.VarChar(50) // 관련 엔티티 타입
+  entityId    Int?     @map("entity_id") // 관련 엔티티 ID
+  oldValue    Json?    @map("old_value") // 변경 전 값
+  newValue    Json?    @map("new_value") // 변경 후 값
+  description String   @db.Text // 활동 설명
+  level       LogLevel @default(IMPORTANT) // 로그 중요도
+  ipAddress   String?  @map("ip_address") @db.VarChar(45)
+  userAgent   String?  @map("user_agent") @db.Text
+  createdAt   DateTime @default(now())
+  
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@index([entityType, entityId])
+  @@index([level, createdAt])
+  @@map("activity_logs")
+}
+
+// 환불 요청 모델
+model RefundRequest {
+  id                  Int               @id @default(autoincrement())
+  sessionEnrollmentId Int               @map("session_enrollment_id")
+  studentId           Int               @map("student_id")
+  reason              String            // 환불 사유
+  detailedReason      String?           @map("detailed_reason") @db.Text
+  refundAmount        Decimal           @map("refund_amount") @db.Decimal(10, 2)
+  status              String            @default("PENDING") // PENDING | APPROVED | REJECTED | PARTIAL_APPROVED | CANCELLED
+  processReason       String?           @map("process_reason") @db.Text
+  actualRefundAmount  Decimal?          @map("actual_refund_amount") @db.Decimal(10, 2)
+  processedBy         Int?              @map("processed_by") // 처리한 관리자/강사 ID
+  processedAt         DateTime?         @map("processed_at")
+  requestedAt         DateTime          @default(now()) @map("requested_at")
+  cancelledAt         DateTime?         @map("cancelled_at")
+  
+  sessionEnrollment   SessionEnrollment @relation(fields: [sessionEnrollmentId], references: [id])
+  student             Student           @relation(fields: [studentId], references: [id])
+  processor           User?             @relation("RefundProcessor", fields: [processedBy], references: [id])
+
+  @@map("refund_requests")
 }

@@ -4,7 +4,7 @@ import * as React from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
-import { EnrollmentMainStep } from '@/components/dashboard/student/EnrollmentMainStep'
+import { EnrollmentMainStep } from '@/components/dashboard/student/Enrollment/EnrollmentMainStep'
 
 export default function EnrollPage() {
   const router = useRouter()
@@ -31,4 +31,4 @@ export default function EnrollPage() {
   }
 
   return <EnrollmentMainStep />
-}
+} 

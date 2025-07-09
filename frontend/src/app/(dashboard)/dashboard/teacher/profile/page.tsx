@@ -40,37 +40,75 @@ export default function TeacherProfilePage() {
   }
 
   return (
-    <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px]">
-      <div className="flex flex-col w-full">
-        <div className="flex gap-2.5 justify-center items-center px-2.5 py-4 w-full min-h-[60px]">
-          <Image
-            src="/images/logo/team-eliot-3.png"
-            alt="Team Eliot Logo"
-            width={77}
-            height={46}
-            className="object-contain"
-            priority
-          />
-        </div>
-        <TeacherNavigation />
-      </div>
-
-      <div className="flex flex-col px-5 py-6">
-        <h1 className="text-2xl font-bold text-stone-700">
-          {session?.user?.name}님의 정보
-        </h1>
-      </div>
-
-      <div className="px-5 space-y-4">
-        <div className="bg-white rounded-lg shadow-md border border-stone-100">
-          <div className="px-4 py-3 bg-stone-700">
-            <h2 className="text-lg font-semibold text-white">개인정보</h2>
-          </div>
-          <div className="p-4">
-            <p className="text-stone-600">이메일: {session?.user?.email}</p>
+    <div className="flex flex-col h-screen bg-gray-50 relative">
+      {/* 헤더 */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <h1 className="text-2xl font-bold text-gray-900">선생님 프로필</h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span className="text-gray-700">
+                {session?.user?.name}님 환영합니다
+              </span>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* 메인 컨텐츠 */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center space-x-4 mb-6">
+              <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center">
+                <span className="text-2xl font-bold text-gray-600">
+                  {session?.user?.name?.charAt(0)}
+                </span>
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {session?.user?.name}
+                </h2>
+                <p className="text-gray-600">선생님</p>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">개인 정보</h3>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-gray-700">
+                    <span className="font-medium">이름:</span> {session?.user?.name}
+                  </p>
+                  <p className="text-gray-700">
+                    <span className="font-medium">이메일:</span> {session?.user?.email}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 로그아웃 버튼 */}
+      <div className="flex flex-col px-5 mt-auto">
+        <button
+          onClick={() => setShowLogoutModal(true)}
+          className="mt-6 w-full py-4 text-base font-semibold text-neutral-400 rounded-lg border border-zinc-300"
+        >
+          로그아웃
+        </button>
+      </div>
+
+      {/* 로그아웃 모달 */}
+      {showLogoutModal && (
+        <LogoutModal
+          onLogout={handleSignOut}
+          onClose={() => setShowLogoutModal(false)}
+        />
+      )}
     </div>
   )
 }

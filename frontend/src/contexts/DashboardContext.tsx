@@ -10,7 +10,7 @@ export interface NavigationItem {
 }
 
 // 수강신청 단계 타입
-export type EnrollmentStep = 'main' | 'class-selection' | 'date-selection' | 'payment' | 'complete';
+export type EnrollmentStep = 'main' | 'class-selection' | 'date-selection' | 'payment' | 'complete' | 'refund-request' | 'refund-complete';
 
 // 수강신청 상태 인터페이스
 export interface EnrollmentState {
@@ -21,11 +21,17 @@ export interface EnrollmentState {
   selectedClassIds: number[];
 }
 
+// 포커스 상태 타입
+export type FocusType = 'dashboard' | 'modal' | 'subpage' | 'overlay';
+
 interface DashboardState {
   activeTab: number;
   isTransitioning: boolean;
   subPage: string | null;
   enrollment: EnrollmentState;
+  currentFocus: FocusType;
+  focusHistory: FocusType[];
+  isFocusTransitioning: boolean;
 }
 
 interface DashboardContextType {
@@ -34,9 +40,21 @@ interface DashboardContextType {
   isTransitioning: boolean;
   subPage: string | null;
   enrollment: EnrollmentState;
+  currentFocus: FocusType;
+  focusHistory: FocusType[];
+  isFocusTransitioning: boolean;
   handleTabChange: (newTab: number) => void;
   navigateToSubPage: (page: string) => void;
   goBack: () => void;
+  // 포커스 관리 메서드들
+  setFocus: (focus: FocusType) => void;
+  pushFocus: (focus: FocusType) => void;
+  popFocus: () => void;
+  isDashboardFocused: () => boolean;
+  isModalFocused: () => boolean;
+  isSubPageFocused: () => boolean;
+  isOverlayFocused: () => boolean;
+  clearFocusHistory: () => void;
   // 수강신청 관련 메서드들
   setEnrollmentStep: (step: EnrollmentStep) => void;
   setSelectedMonth: (month: number) => void;
@@ -61,6 +79,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       selectedSessions: [],
       selectedClassIds: [],
     },
+    currentFocus: 'dashboard',
+    focusHistory: ['dashboard'],
+    isFocusTransitioning: false,
   });
 
   // 사용자 역할에 따른 네비게이션 아이템 정의
@@ -93,6 +114,91 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }
   }, [session?.user]);
 
+  // 포커스 설정
+  const setFocus = useCallback((focus: FocusType) => {
+    setState(prev => ({
+      ...prev,
+      currentFocus: focus,
+    }));
+  }, []);
+
+  // 대시보드가 포커스되어 있는지 확인
+  const isDashboardFocused = useCallback(() => {
+    return state.currentFocus === 'dashboard';
+  }, [state.currentFocus]);
+
+  // 모달이 포커스되어 있는지 확인
+  const isModalFocused = useCallback(() => {
+    return state.currentFocus === 'modal';
+  }, [state.currentFocus]);
+
+  // 서브페이지가 포커스되어 있는지 확인
+  const isSubPageFocused = useCallback(() => {
+    return state.currentFocus === 'subpage';
+  }, [state.currentFocus]);
+
+  // 오버레이가 포커스되어 있는지 확인
+  const isOverlayFocused = useCallback(() => {
+    return state.currentFocus === 'overlay';
+  }, [state.currentFocus]);
+
+  // 포커스 스택에 추가
+  const pushFocus = useCallback((focus: FocusType) => {
+    setState(prev => ({
+      ...prev,
+      currentFocus: focus,
+      focusHistory: [...prev.focusHistory, focus],
+      isFocusTransitioning: true,
+    }));
+
+    setTimeout(() => {
+      setState(current => ({
+        ...current,
+        isFocusTransitioning: false,
+      }));
+    }, 100);
+  }, []);
+
+  // 포커스 스택에서 제거 (이전 포커스로 복원)
+  const popFocus = useCallback(() => {
+    setState(prev => {
+      const newHistory = [...prev.focusHistory];
+      newHistory.pop(); // 현재 포커스 제거
+      const previousFocus = newHistory[newHistory.length - 1] || 'dashboard';
+
+      return {
+        ...prev,
+        currentFocus: previousFocus,
+        focusHistory: newHistory,
+        isFocusTransitioning: true,
+      };
+    });
+
+    setTimeout(() => {
+      setState(current => ({
+        ...current,
+        isFocusTransitioning: false,
+      }));
+    }, 100);
+  }, []);
+
+  // 포커스 히스토리 초기화
+  const clearFocusHistory = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      currentFocus: 'dashboard',
+      focusHistory: ['dashboard'],
+      isFocusTransitioning: true,
+    }));
+
+    setTimeout(() => {
+      setState(current => ({
+        ...current,
+        isFocusTransitioning: false,
+      }));
+    }, 100);
+  }, []);
+
   // 탭 변경 핸들러
   const handleTabChange = useCallback((newTab: number) => {
     if (newTab === state.activeTab || state.isTransitioning) return;
@@ -106,12 +212,18 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         }));
       }, 300); // CSS transition 시간과 동일
 
+      // 수강신청 탭에서 다른 탭으로 이동할 때 refundPolicyAgreed 초기화
+      if (prev.subPage === 'enroll') {
+        localStorage.removeItem('refundPolicyAgreed');
+      }
+
       return {
         ...prev,
         isTransitioning: true,
         activeTab: newTab,
         // 탭 변경 시 SubPage 상태 초기화
         subPage: null,
+        currentFocus: 'dashboard', // 탭 변경 시 대시보드로 포커스
         enrollment: {
           currentStep: 'main',
           selectedMonth: null,
@@ -128,6 +240,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setState(prev => ({
       ...prev,
       subPage: page,
+      // 수강신청 페이지의 경우 슬라이드 애니메이션을 허용하기 위해 dashboard 포커스 유지
+      currentFocus: page === 'enroll' ? 'dashboard' : 'subpage',
     }));
   }, []);
 
@@ -135,7 +249,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const goBack = useCallback(() => {
     setState(prev => {
       // 수강신청 중인 경우 단계별로 뒤로가기
-      if (prev.enrollment.currentStep !== 'main') {
+      if (prev.subPage === 'enroll' && prev.enrollment.currentStep !== 'main') {
         const stepOrder: EnrollmentStep[] = ['main', 'class-selection', 'date-selection', 'payment', 'complete'];
         const currentIndex = stepOrder.indexOf(prev.enrollment.currentStep);
         const previousStep = currentIndex > 0 ? stepOrder[currentIndex - 1] : 'main';
@@ -149,10 +263,24 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         };
       }
       
-      // 메인 단계인 경우 SubPage에서 나가기
+      // 그 외의 경우 SubPage를 완전히 닫기
+      // 수강신청 SubPage인 경우 refundPolicyAgreed 초기화
+      if (prev.subPage === 'enroll') {
+        localStorage.removeItem('refundPolicyAgreed');
+      }
+      
       return {
         ...prev,
         subPage: null,
+        currentFocus: 'dashboard', // 서브페이지 닫을 때 대시보드로 포커스
+        // SubPage가 닫힐 때 enrollment 상태도 초기화
+        enrollment: {
+          currentStep: 'main',
+          selectedMonth: null,
+          selectedClasses: [],
+          selectedSessions: [],
+          selectedClassIds: [],
+        },
       };
     });
   }, []);
@@ -232,9 +360,20 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     isTransitioning: state.isTransitioning,
     subPage: state.subPage,
     enrollment: state.enrollment,
+    currentFocus: state.currentFocus,
+    focusHistory: state.focusHistory,
+    isFocusTransitioning: state.isFocusTransitioning,
     handleTabChange,
     navigateToSubPage,
     goBack,
+    setFocus,
+    pushFocus,
+    popFocus,
+    isDashboardFocused,
+    isModalFocused,
+    isSubPageFocused,
+    isOverlayFocused,
+    clearFocusHistory,
     setEnrollmentStep,
     setSelectedMonth,
     setSelectedClasses,

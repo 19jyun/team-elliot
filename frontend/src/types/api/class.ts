@@ -84,3 +84,39 @@ export interface BatchEnrollSessionsResponse {
   total: number;
   enrollments: SessionEnrollment[];
 }
+
+// 수강 변경/취소 관련 타입들
+export interface StudentClassEnrollmentsResponse {
+  classId: number;
+  className: string;
+  sessions: Array<{
+    id: number;
+    date: string;
+    startTime: string;
+    endTime: string;
+    enrollment?: {
+      id: number;
+      status: "PENDING" | "CONFIRMED" | "CANCELLED";
+      enrolledAt: string;
+      cancelledAt?: string;
+    };
+  }>;
+}
+
+export interface ChangeEnrollmentRequest {
+  newSessionId: number;
+  reason?: string;
+}
+
+export interface BatchModifyEnrollmentsRequest {
+  cancellations: number[];
+  newEnrollments: number[];
+  reason?: string;
+}
+
+export interface BatchModifyEnrollmentsResponse {
+  success: boolean;
+  cancelledCount: number;
+  enrolledCount: number;
+  message: string;
+}
