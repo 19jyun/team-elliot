@@ -7,18 +7,14 @@ import { MenuLinks } from '@/components/navigation/MenuLinks'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import axios from 'axios'
 import { LogoutModal } from '@/components/user/LogoutModal'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
-import { AcademyManagement } from '@/components/dashboard/student/Profile/AcademyManagement'
-import { PersonalInfoManagement } from '@/components/dashboard/student/Profile/PersonalInfoManagement'
-import { EnrollmentHistory } from '@/components/dashboard/student/Profile/EnrollmentHistory'
-import { CancellationHistory } from '@/components/dashboard/student/Profile/CancellationHistory'
+import { logout } from '@/api/auth'
 
 export default function ProfilePage() {
   const router = useRouter()
   const [showLogoutModal, setShowLogoutModal] = React.useState(false)
-  const { navigateToSubPage, subPage } = useDashboardNavigation()
+  const { navigateToSubPage } = useDashboardNavigation()
   const { data: session, status } = useSession({
     required: true,
     onUnauthenticated() {
@@ -31,15 +27,7 @@ export default function ProfilePage() {
       if (!session?.user) return
 
       // 백엔드 로그아웃 API 호출
-      await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/logout`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${session.user.id}`,
-          },
-        },
-      )
+      await logout()
 
       // next-auth 로그아웃 처리
       await signOut({ redirect: false })
@@ -47,14 +35,10 @@ export default function ProfilePage() {
       toast.success('로그아웃되었습니다')
       router.push('/login')
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        if (error.response?.status === 401) {
-          await signOut({ redirect: false })
-          router.push('/login')
-          return
-        }
-        console.error('API Error:', error.response?.data)
-      }
+      console.error('Logout error:', error)
+      // API 호출 실패 시에도 next-auth 로그아웃은 진행
+      await signOut({ redirect: false })
+      router.push('/login')
       toast.error('로그아웃 중 오류가 발생했습니다')
     }
   }
@@ -98,22 +82,6 @@ export default function ProfilePage() {
     },
   ]
 
-  // SubPage 렌더링
-  const renderSubPage = () => {
-    switch (subPage) {
-      case 'academy':
-        return <AcademyManagement />
-      case 'personal-info':
-        return <PersonalInfoManagement />
-      case 'enrollment-history':
-        return <EnrollmentHistory />
-      case 'cancellation-history':
-        return <CancellationHistory />
-      default:
-        return null
-    }
-  }
-
   if (status === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-full">
@@ -122,18 +90,17 @@ export default function ProfilePage() {
     )
   }
 
-  // SubPage가 활성화된 경우 SubPage 렌더링
-  if (subPage) {
-    return (
-      <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px] relative">
-        {renderSubPage()}
-      </div>
-    )
-  }
-
-  // 메인 프로필 페이지 렌더링
   return (
     <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px] relative">
+      <StatusBar 
+        time="9:41"
+        icons={[
+          { src: '/icons/signal.svg', alt: 'Signal', width: 'w-4', aspectRatio: 'square' },
+          { src: '/icons/wifi.svg', alt: 'WiFi', width: 'w-4', aspectRatio: 'square' },
+          { src: '/icons/battery.svg', alt: 'Battery', width: 'w-6', aspectRatio: 'square' }
+        ]}
+        logoSrc="/icons/logo.svg"
+      />
       <div className="flex flex-col px-5 py-6">
         <h1 className="text-2xl font-bold text-stone-700">
           {session?.user?.name}님의 정보

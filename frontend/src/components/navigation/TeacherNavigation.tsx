@@ -12,8 +12,8 @@ export function TeacherNavigation() {
       href: '/dashboard/teacher',
     },
     {
-      label: '수강생 관리',
-      href: '/dashboard/teacher/students',
+      label: '수업 관리',
+      href: '/dashboard/teacher/class_management',
     },
     {
       label: '나의 정보',
