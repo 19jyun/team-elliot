@@ -134,7 +134,7 @@ export default function TeacherDashboard() {
   }
 
   return (
-    <div className="flex overflow-hidden flex-col pb-2 w-full bg-white">
+    <div className="flex flex-col h-full overflow-y-auto pb-2 w-full bg-white">
 
       {/* 환영 메시지 */}
       <div className="flex flex-col px-5 py-6">

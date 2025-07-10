@@ -8,9 +8,9 @@ export default function DashboardLayout({
 }) {
   return (
     <DashboardProvider>
-      <div className="h-screen bg-gray-50 overflow-hidden">
+      <div className="flex flex-col h-screen bg-gray-50">
         <CommonHeader />
-        <main className="h-full overflow-hidden">
+        <main className="flex-1 overflow-hidden">
           {children}
         </main>
       </div>
