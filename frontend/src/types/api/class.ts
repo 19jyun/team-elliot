@@ -48,8 +48,47 @@ export interface SessionEnrollment {
 
 export interface ClassDetailsResponse extends Class {}
 export interface AllClassesResponse extends Array<Class> {}
-export interface CreateClassRequest extends Omit<Class, "id"> {}
-export interface CreateClassResponse extends Class {}
+export interface CreateClassRequest {
+  className: string;
+  description: string;
+  maxStudents: number;
+  tuitionFee: number;
+  teacherId: number;
+  academyId: number;
+  dayOfWeek: string;
+  level: string;
+  startDate: string;
+  endDate: string;
+  startTime: string;
+  endTime: string;
+  backgroundColor?: string;
+}
+
+export interface CreateClassResponse {
+  id: number;
+  className: string;
+  classCode: string;
+  description: string;
+  maxStudents: number;
+  currentStudents: number;
+  tuitionFee: string;
+  teacherId: number;
+  academyId: number;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  level: string;
+  status: string;
+  registrationMonth: string;
+  startDate: string;
+  endDate: string;
+  registrationStartDate: string;
+  registrationEndDate: string;
+  backgroundColor: string | null;
+  classDetailId: number | null;
+  sessionCount: number;
+  message: string;
+}
 export interface UpdateClassRequest extends Partial<Omit<Class, "id">> {}
 export interface UpdateClassResponse extends Class {}
 export interface EnrollClassRequest {

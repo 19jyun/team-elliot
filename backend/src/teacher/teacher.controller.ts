@@ -18,11 +18,27 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { multerConfig } from '../config/multer.config';
 import { Role } from '@prisma/client';
+import { CreateClassDto } from '../admin/dto/create-class.dto';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
+@ApiTags('Teacher')
 @Controller('teachers')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class TeacherController {
   constructor(private readonly teacherService: TeacherService) {}
+
+  @Post('me/classes')
+  @Roles(Role.TEACHER)
+  @ApiOperation({ summary: '선생님 클래스 생성' })
+  @ApiResponse({ status: 201, description: '클래스 생성 성공' })
+  async createClass(
+    @GetUser() user: any,
+    @Body() createClassDto: CreateClassDto,
+  ) {
+    // teacherId가 요청에 포함되어 있지만, 보안을 위해 현재 로그인한 사용자의 ID로 덮어쓰기
+    createClassDto.teacherId = user.id;
+    return this.teacherService.createClass(user.id, createClassDto);
+  }
 
   @Get('me')
   @Roles(Role.TEACHER)

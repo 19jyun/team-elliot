@@ -30,12 +30,16 @@ export interface CreateClassState {
   classFormData: {
     name: string;
     description: string;
+    level: string;
     maxStudents: number;
     price: number;
+    academyId?: number;
     schedule: {
       days: string[];
       startTime: string;
       endTime: string;
+      startDate?: string;
+      endDate?: string;
     };
     content: string;
   };
@@ -111,8 +115,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       classFormData: {
         name: '',
         description: '',
+        level: '',
         maxStudents: 10,
         price: 0,
+        academyId: undefined,
         schedule: {
           days: [],
           startTime: '',
@@ -280,8 +286,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           classFormData: {
             name: '',
             description: '',
+            level: '',
             maxStudents: 10,
             price: 0,
+            academyId: undefined,
             schedule: {
               days: [],
               startTime: '',
@@ -361,8 +369,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           classFormData: {
             name: '',
             description: '',
+            level: '',
             maxStudents: 10,
             price: 0,
+            academyId: undefined,
             schedule: {
               days: [],
               startTime: '',
@@ -487,8 +497,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         classFormData: {
           name: '',
           description: '',
+          level: '',
           maxStudents: 10,
           price: 0,
+          academyId: undefined,
           schedule: {
             days: [],
             startTime: '',

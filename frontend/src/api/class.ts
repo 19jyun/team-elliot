@@ -21,6 +21,10 @@ export const getAllClasses = (
 export const createClass = (
   data: CreateClassRequest
 ): Promise<CreateClassResponse> => post("/classes", data);
+
+export const createTeacherClass = (
+  data: CreateClassRequest
+): Promise<CreateClassResponse> => post("/teachers/me/classes", data);
 export const updateClass = (
   id: number,
   data: UpdateClassRequest
