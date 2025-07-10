@@ -41,21 +41,6 @@ export default function TeacherProfilePage() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-50 relative">
-      {/* 헤더 */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-gray-900">선생님 프로필</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-700">
-                {session?.user?.name}님 환영합니다
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* 메인 컨텐츠 */}
       <div className="flex-1 overflow-y-auto">

@@ -13,7 +13,7 @@ import StudentProfilePage from '@/app/(dashboard)/dashboard/student/profile/page
 // 강사 페이지 컴포넌트들
 import TeacherStudentsPage from '@/app/(dashboard)/dashboard/teacher/students/page';
 import TeacherProfilePage from '@/app/(dashboard)/dashboard/teacher/profile/page';
-import TeacherDashboardPage from '@/app/(dashboard)/dashboard/teacher/page';
+import TeacherDashboardPage from '@/app/(dashboard)/dashboard/teacher/class/page';
 
 // 관리자 페이지 컴포넌트들
 import AdminStudentsPage from '@/app/(dashboard)/dashboard/admin/students/page';

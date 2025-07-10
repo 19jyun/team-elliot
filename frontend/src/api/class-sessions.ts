@@ -1,4 +1,4 @@
-import { get, post } from "./apiClient";
+import { get, post, put } from "./apiClient";
 import {
   GetClassSessionsResponse,
   BatchEnrollSessionsRequest,
@@ -7,6 +7,12 @@ import {
   BatchModifyEnrollmentsRequest,
   BatchModifyEnrollmentsResponse,
 } from "../types/api/class";
+import {
+  UpdateEnrollmentStatusRequest,
+  BatchUpdateEnrollmentStatusRequest,
+  UpdateEnrollmentStatusResponse,
+  BatchUpdateEnrollmentStatusResponse,
+} from "../types/api/teacher";
 
 // ClassSession 관련 API 함수들
 export const getClassSessions = (
@@ -50,3 +56,21 @@ export const batchModifyEnrollments = (
   data: BatchModifyEnrollmentsRequest
 ): Promise<BatchModifyEnrollmentsResponse> =>
   post("/class-sessions/batch-modify", data);
+
+// 선생님용 수강신청 관리 API들
+export const updateEnrollmentStatus = (
+  enrollmentId: number,
+  data: UpdateEnrollmentStatusRequest
+): Promise<UpdateEnrollmentStatusResponse> =>
+  put(`/class-sessions/enrollments/${enrollmentId}/status`, data);
+
+export const batchUpdateEnrollmentStatus = (
+  data: BatchUpdateEnrollmentStatusRequest
+): Promise<BatchUpdateEnrollmentStatusResponse> =>
+  put("/class-sessions/enrollments/batch-status", data);
+
+export const checkAttendance = (
+  enrollmentId: number,
+  status: "ATTENDED" | "ABSENT"
+): Promise<UpdateEnrollmentStatusResponse> =>
+  put(`/class-sessions/enrollments/${enrollmentId}/attendance`, { status });

@@ -36,21 +36,21 @@ export function MenuLinks({ links }: MenuLinksProps) {
         }
 
         return (
-          <Link
-            key={index}
+        <Link
+          key={index}
             href={link.href!}
-            className="flex gap-10 justify-between items-center py-5 w-full hover:bg-gray-50 transition-colors cursor-pointer"
-            role="button"
-            tabIndex={0}
-          >
-            <div className="self-stretch my-auto">{link.label}</div>
-            <img
-              loading="lazy"
-              src={link.icon}
-              alt=""
-              className="object-contain shrink-0 self-stretch my-auto w-6 aspect-square"
-            />
-          </Link>
+          className="flex gap-10 justify-between items-center py-5 w-full hover:bg-gray-50 transition-colors cursor-pointer"
+          role="button"
+          tabIndex={0}
+        >
+          <div className="self-stretch my-auto">{link.label}</div>
+          <img
+            loading="lazy"
+            src={link.icon}
+            alt=""
+            className="object-contain shrink-0 self-stretch my-auto w-6 aspect-square"
+          />
+        </Link>
         )
       })}
     </div>
