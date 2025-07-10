@@ -8,13 +8,14 @@ import TeacherClassManagementPage from '@/app/(dashboard)/dashboard/teacher/clas
 import TeacherProfilePage from '@/app/(dashboard)/dashboard/teacher/profile/page';
 import { CreateClassContainer } from './teacher/class_management/containers/CreateClassContainer';
 import { TeacherProfileManagement } from './teacher/profile/TeacherProfileManagement';
-import { TeacherPersonalInfo } from './teacher/profile/TeacherPersonalInfo';
+import { TeacherPersonalInfoManagement } from './teacher/profile/TeacherPersonalInfoManagement';
+import AcademyManagement from './teacher/profile/AcademyManagement';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
 function TeacherDashboardContent() {
   const { activeTab } = useTeacherContext();
-  const { subPage } = useDashboardNavigation();
+  const { subPage, clearSubPage } = useDashboardNavigation();
 
   // SubPage가 있는 경우 SubPage 렌더링
   if (subPage) {
@@ -25,7 +26,9 @@ function TeacherDashboardContent() {
         case 'profile':
           return <TeacherProfileManagement />;
         case 'personal-info':
-          return <TeacherPersonalInfo />;
+          return <TeacherPersonalInfoManagement />;
+        case 'academy-management':
+          return <AcademyManagement onBack={clearSubPage} />;
         default:
           return null;
       }

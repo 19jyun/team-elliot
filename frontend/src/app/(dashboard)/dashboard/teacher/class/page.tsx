@@ -7,7 +7,7 @@ import { ChevronDownIcon } from '@heroicons/react/24/outline'
 import { format } from 'date-fns'
 import { useRouter } from 'next/navigation'
 
-import { getMyTeacherClassesWithSessions } from '@/api/teacher'
+import { getTeacherClassesWithSessions } from '@/api/teacher'
 import { TeacherClassSessionModal } from '@/components/features/teacher/classes/TeacherClassSessionModal'
 import { TeacherClassesList } from '@/components/features/teacher/classes/TeacherClassesList'
 import { TeacherClassesWithSessionsResponse } from '@/types/api/teacher'
@@ -41,7 +41,7 @@ export default function TeacherDashboard() {
   // 선생님 클래스와 세션 정보를 한 번에 조회 (토큰 기반)
   const { data: myData, isLoading, error } = useQuery({
     queryKey: ['teacher-classes-with-sessions'],
-    queryFn: getMyTeacherClassesWithSessions,
+    queryFn: getTeacherClassesWithSessions,
     enabled: status === 'authenticated' && !!session?.user && !!session?.accessToken,
     retry: false,
   })
@@ -49,8 +49,8 @@ export default function TeacherDashboard() {
   console.log("log", myData)
   console.log("sessions", myData?.sessions)
 
-  const myClasses = myData?.classes || []
-  const mySessions = myData?.sessions || []
+  const myClasses = (myData as TeacherClassesWithSessionsResponse)?.classes || []
+  const mySessions = (myData as TeacherClassesWithSessionsResponse)?.sessions || []
 
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {

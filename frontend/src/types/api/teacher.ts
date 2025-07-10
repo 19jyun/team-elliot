@@ -1,20 +1,89 @@
 export interface TeacherProfile {
   id: number;
-  userId: string;
   name: string;
   phoneNumber: string;
   introduction?: string;
-  specialization?: string;
+  education?: string[];
+  specialties?: string[];
+  certifications?: string[];
+  yearsOfExperience?: number;
+  availableTimes?: string[];
   photoUrl?: string;
-  [key: string]: any;
+  academyId?: number;
+  academy?: Academy;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Academy {
+  id: number;
+  name: string;
+  code: string;
+  description?: string;
+  address?: string;
+  phoneNumber?: string;
+  email?: string;
+  website?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateAcademyRequest {
+  name: string;
+  code: string;
+  description?: string;
+  address?: string;
+  phoneNumber?: string;
+  email?: string;
+  website?: string;
+}
+
+export interface ChangeAcademyRequest {
+  code: string;
+}
+
+export interface CreateAndJoinAcademyRequest {
+  name: string;
+  code: string;
+  description?: string;
+  address?: string;
+  phoneNumber?: string;
+  email?: string;
+  website?: string;
+}
+
+export interface CreateAndJoinAcademyResponse {
+  academy: Academy;
+  teacher: TeacherProfile;
+}
+
+export interface UpdateTeacherProfileRequest {
+  name?: string;
+  phoneNumber?: string;
+  introduction?: string;
+  education?: string[];
+  specialties?: string[];
+  certifications?: string[];
+  yearsOfExperience?: number;
+  availableTimes?: string[];
 }
 
 export interface TeacherProfileResponse extends TeacherProfile {}
+
 export interface UpdateProfileRequest {
+  name?: string;
+  phoneNumber?: string;
   introduction?: string;
+  education?: string[];
+  specialties?: string[];
+  certifications?: string[];
+  yearsOfExperience?: number;
+  availableTimes?: any;
   photo?: File;
 }
+
 export interface UpdateProfileResponse extends TeacherProfile {}
+
 export interface TeacherClassesResponse
   extends Array<{
     id: number;
@@ -34,7 +103,40 @@ export interface TeacherClassesResponse
     [key: string]: any;
   }> {}
 
-// 새로운 타입들
+export interface TeacherClass {
+  id: number;
+  name: string;
+  description?: string;
+  level: string;
+  maxStudents: number;
+  fee: number;
+  startDate: string;
+  endDate: string;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  backgroundColor?: string;
+  currentStudents: number;
+  isRegistrationOpen: boolean;
+  teacherId: number;
+  academyId: number;
+  createdAt: string;
+  updatedAt: string;
+  sessions?: ClassSession[];
+}
+
+export interface ClassSession {
+  id: number;
+  date: string;
+  startTime: string;
+  endTime: string;
+  status: "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+  classId: number;
+  createdAt: string;
+  updatedAt: string;
+  enrollments?: SessionEnrollment[];
+}
+
 export interface TeacherSession {
   id: number;
   date: string;
@@ -135,13 +237,11 @@ export interface UpdateClassDetailsResponse {
   };
 }
 
-// 선생님 클래스와 세션 통합 응답 타입
 export interface TeacherClassesWithSessionsResponse {
   classes: TeacherClassesResponse;
   sessions: TeacherSessionsResponse;
 }
 
-// 수강신청 상태 관리 타입들
 export interface UpdateEnrollmentStatusRequest {
   status:
     | "PENDING"

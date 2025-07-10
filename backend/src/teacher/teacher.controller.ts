@@ -19,6 +19,7 @@ import { GetUser } from '../auth/decorators/get-user.decorator';
 import { multerConfig } from '../config/multer.config';
 import { Role } from '@prisma/client';
 import { CreateClassDto } from '../admin/dto/create-class.dto';
+import { CreateAcademyDto } from '../academy/dto/create-academy.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @ApiTags('Teacher')
@@ -51,10 +52,32 @@ export class TeacherController {
   @UseInterceptors(FileInterceptor('photo', multerConfig))
   async updateMyProfile(
     @GetUser() user: any,
-    @Body() updateData: { introduction?: string },
+    @Body() updateData: any,
     @UploadedFile() photo?: Express.Multer.File,
   ) {
-    return this.teacherService.updateProfile(user.id, updateData, photo);
+    // JSON 문자열로 전송된 배열 필드들을 파싱
+    const parsedData = {
+      name: updateData.name,
+      phoneNumber: updateData.phoneNumber,
+      introduction: updateData.introduction,
+      education: updateData.education
+        ? JSON.parse(updateData.education)
+        : undefined,
+      specialties: updateData.specialties
+        ? JSON.parse(updateData.specialties)
+        : undefined,
+      certifications: updateData.certifications
+        ? JSON.parse(updateData.certifications)
+        : undefined,
+      yearsOfExperience: updateData.yearsOfExperience
+        ? parseInt(updateData.yearsOfExperience)
+        : undefined,
+      availableTimes: updateData.availableTimes
+        ? JSON.parse(updateData.availableTimes)
+        : undefined,
+    };
+
+    return this.teacherService.updateProfile(user.id, parsedData, photo);
   }
 
   @Get('me/classes')
@@ -69,6 +92,54 @@ export class TeacherController {
     return this.teacherService.getTeacherClassesWithSessions(user.id);
   }
 
+  // 선생님의 현재 학원 정보 조회
+  @Get('me/academy')
+  @Roles(Role.TEACHER)
+  @ApiOperation({ summary: '내 학원 정보 조회' })
+  @ApiResponse({
+    status: 200,
+    description: '현재 소속된 학원 정보를 반환합니다.',
+  })
+  async getMyAcademy(@GetUser() user: any) {
+    return this.teacherService.getMyAcademy(user.id);
+  }
+
+  // 선생님의 학원 변경
+  @Post('me/change-academy')
+  @Roles(Role.TEACHER)
+  @ApiOperation({ summary: '학원 변경' })
+  @ApiResponse({ status: 200, description: '학원 변경이 완료되었습니다.' })
+  async changeAcademy(@GetUser() user: any, @Body() body: { code: string }) {
+    return this.teacherService.changeAcademy(user.id, body.code);
+  }
+
+  // 선생님이 새 학원 생성
+  @Post('me/create-academy')
+  @Roles(Role.TEACHER)
+  @ApiOperation({ summary: '새 학원 생성' })
+  @ApiResponse({ status: 201, description: '새 학원이 생성되었습니다.' })
+  async createAcademy(
+    @GetUser() user: any,
+    @Body() createAcademyDto: CreateAcademyDto,
+  ) {
+    return this.teacherService.createAcademy(createAcademyDto);
+  }
+
+  // 선생님이 새 학원을 생성하고 자동으로 소속되기
+  @Post('me/create-and-join-academy')
+  @Roles(Role.TEACHER)
+  @ApiOperation({ summary: '새 학원 생성 및 자동 소속' })
+  @ApiResponse({
+    status: 201,
+    description: '새 학원이 생성되고 자동으로 소속되었습니다.',
+  })
+  async createAndJoinAcademy(
+    @GetUser() user: any,
+    @Body() createAcademyDto: CreateAcademyDto,
+  ) {
+    return this.teacherService.createAndJoinAcademy(user.id, createAcademyDto);
+  }
+
   // 관리자용 API들 (기존 유지)
   @Get(':id')
   @Roles(Role.ADMIN)
@@ -81,7 +152,7 @@ export class TeacherController {
   @UseInterceptors(FileInterceptor('photo', multerConfig))
   async updateProfile(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateData: { introduction?: string },
+    @Body() updateData: any,
     @UploadedFile() photo?: Express.Multer.File,
   ) {
     return this.teacherService.updateProfile(id, updateData, photo);

@@ -1,16 +1,15 @@
 // Teacher APIs
 export {
-  getMyTeacherProfile,
-  updateMyTeacherProfile,
-  getMyTeacherClasses,
-  getMyTeacherClassesWithSessions,
   getTeacherProfile,
-  updateProfile,
+  updateTeacherProfile,
   getTeacherClasses,
   getTeacherClassesWithSessions,
-  getTeacherSessions,
   getSessionEnrollments,
   updateClassDetails,
+  getMyAcademy,
+  changeAcademy,
+  createAcademy,
+  createAndJoinAcademy,
 } from "./teacher";
 
 // Class Sessions API
