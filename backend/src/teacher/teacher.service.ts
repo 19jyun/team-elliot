@@ -75,7 +75,23 @@ export class TeacherService {
       throw new NotFoundException('선생님을 찾을 수 없습니다.');
     }
 
-    return teacher.classes;
+    // startDate와 endDate를 포함하여 반환
+    return teacher.classes.map((class_) => ({
+      id: class_.id,
+      className: class_.className,
+      dayOfWeek: class_.dayOfWeek,
+      startTime: class_.startTime,
+      endTime: class_.endTime,
+      startDate: class_.startDate,
+      endDate: class_.endDate,
+      maxStudents: class_.maxStudents,
+      currentStudents: class_.currentStudents,
+      level: class_.level,
+      tuitionFee: class_.tuitionFee,
+      description: class_.description,
+      backgroundColor: class_.backgroundColor,
+      enrollments: class_.enrollments,
+    }));
   }
 
   async getTeacherClassesWithSessions(id: number) {
@@ -131,6 +147,8 @@ export class TeacherService {
       dayOfWeek: class_.dayOfWeek,
       startTime: class_.startTime,
       endTime: class_.endTime,
+      startDate: class_.startDate,
+      endDate: class_.endDate,
       maxStudents: class_.maxStudents,
       currentStudents: class_.currentStudents,
       level: class_.level,

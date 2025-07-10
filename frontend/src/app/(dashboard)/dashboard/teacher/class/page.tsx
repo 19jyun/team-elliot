@@ -55,7 +55,7 @@ export default function TeacherDashboard() {
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-full">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
       </div>
     )
@@ -69,7 +69,7 @@ export default function TeacherDashboard() {
     }
     
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">데이터를 불러오는데 실패했습니다.</p>
         <button
           onClick={() => window.location.reload()}
@@ -241,15 +241,17 @@ export default function TeacherDashboard() {
       <div className="flex mt-4 w-full opacity-50 bg-zinc-100 min-h-[8px]" />
 
       {/* 수업 목록 섹션 */}
-      <div className="flex flex-col px-5 mt-4 w-full">
-        <div className="flex flex-col mt-5 w-full">
-          <div className="gap-2.5 self-start px-2 py-3 text-base font-semibold tracking-normal leading-snug text-stone-700">
+      <div className="flex flex-col px-5 mt-4 w-full flex-1 overflow-hidden h-full">
+        <div className="flex flex-col mt-5 w-full h-full">
+          <div className="gap-2.5 self-start px-2 py-3 text-base font-semibold tracking-normal leading-snug text-stone-700 flex-shrink-0">
             담당 클래스
           </div>
-          <TeacherClassesList
-            classes={myClasses || []}
-            onClassClick={handleClassClick}
-          />
+          <div className="flex-1 overflow-y-auto pb-4">
+            <TeacherClassesList
+              classes={myClasses || []}
+              onClassClick={handleClassClick}
+            />
+          </div>
         </div>
       </div>
 

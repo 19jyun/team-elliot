@@ -128,7 +128,7 @@ export const EnrolledStudentCardList: React.FC<EnrolledStudentCardListProps> = (
       {/* 배치 작업 도구 */}
       {sessionEnrollments.length > 0 && (
         <div className="bg-stone-50 p-4 rounded-lg">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <label className="flex items-center gap-2">
                 <input

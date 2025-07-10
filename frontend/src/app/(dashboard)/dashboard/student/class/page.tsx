@@ -50,7 +50,7 @@ export default function StudentDashboard() {
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-full">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
       </div>
     )
@@ -64,7 +64,7 @@ export default function StudentDashboard() {
     }
     
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">데이터를 불러오는데 실패했습니다.</p>
         <button
           onClick={() => window.location.reload()}
