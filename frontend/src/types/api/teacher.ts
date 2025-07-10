@@ -22,6 +22,8 @@ export interface TeacherClassesResponse
     dayOfWeek: string;
     startTime: string;
     endTime: string;
+    startDate: string;
+    endDate: string;
     maxStudents: number;
     currentStudents: number;
     level: string;

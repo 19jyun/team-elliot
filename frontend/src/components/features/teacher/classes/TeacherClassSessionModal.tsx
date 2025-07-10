@@ -74,7 +74,6 @@ export function TeacherClassSessionModal({
 
   const handleSessionClick = (session: any) => {
     setSelectedSession(session)
-    handleTabChange('enrollments')
   }
 
   const navigationItems = [
@@ -136,35 +135,22 @@ export function TeacherClassSessionModal({
         </div>
       </div>
 
-      {/* Enrollments Modal (세션 클릭 시 표시) */}
-      {selectedSession && activeTab === 'enrollments' && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="text-lg font-semibold">
-                {selectedSession.class?.className || 'Unknown'} - {new Date(selectedSession.date).toLocaleDateString()} 수강생 목록
-              </h3>
-              <button
-                onClick={() => {
-                  setSelectedSession(null)
-                  handleTabChange('sessions')
-                }}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="p-4 overflow-y-auto max-h-[calc(90vh-80px)]">
-              <SessionEnrollmentList
-                sessionEnrollments={(sessionEnrollmentsResponse?.enrollments as any) || []}
-                isLoading={enrollmentsLoading}
-                session={selectedSession as any}
-              />
-            </div>
-          </div>
-        </div>
+      {/* Enrollments SlideUpModal (세션 클릭 시 표시) */}
+      {selectedSession && (
+        <SlideUpModal
+          isOpen={!!selectedSession}
+          onClose={() => {
+            setSelectedSession(null)
+            handleTabChange('sessions')
+          }}
+          title={`${selectedSession.class?.className || 'Unknown'} - ${new Date(selectedSession.date).toLocaleDateString()} 수강생 목록`}
+        >
+          <SessionEnrollmentList
+            sessionEnrollments={(sessionEnrollmentsResponse?.enrollments as any) || []}
+            isLoading={enrollmentsLoading}
+            session={selectedSession as any}
+          />
+        </SlideUpModal>
       )}
     </SlideUpModal>
   )
