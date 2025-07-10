@@ -854,6 +854,157 @@ export class ClassSessionService {
   }
 
   /**
+   * 특정 세션의 수강생 목록 조회
+   */
+  async getSessionEnrollments(sessionId: number, teacherId: number) {
+    // 세션 정보 조회
+    const session = await this.prisma.classSession.findUnique({
+      where: { id: sessionId },
+      include: {
+        class: {
+          include: {
+            teacher: true,
+          },
+        },
+      },
+    });
+
+    if (!session) {
+      throw new NotFoundException('세션을 찾을 수 없습니다.');
+    }
+
+    // 권한 확인
+    if (session.class.teacherId !== teacherId) {
+      throw new ForbiddenException(
+        '해당 세션의 수강생 목록을 조회할 권한이 없습니다.',
+      );
+    }
+
+    // 세션의 수강생 목록 조회
+    const enrollments = await this.prisma.sessionEnrollment.findMany({
+      where: { sessionId },
+      include: {
+        student: {
+          select: {
+            id: true,
+            name: true,
+            phoneNumber: true,
+            level: true,
+          },
+        },
+        payment: {
+          select: {
+            id: true,
+            amount: true,
+            status: true,
+            paidAt: true,
+          },
+        },
+        refundRequests: {
+          where: {
+            status: {
+              in: ['PENDING', 'APPROVED', 'PARTIAL_APPROVED'],
+            },
+          },
+          select: {
+            id: true,
+            reason: true,
+            refundAmount: true,
+            status: true,
+            requestedAt: true,
+          },
+        },
+      },
+      orderBy: { enrolledAt: 'asc' },
+    });
+
+    return {
+      session: {
+        id: session.id,
+        date: session.date,
+        startTime: session.startTime,
+        endTime: session.endTime,
+        class: {
+          id: session.class.id,
+          className: session.class.className,
+          teacher: session.class.teacher,
+        },
+      },
+      enrollments,
+      totalCount: enrollments.length,
+      statusCounts: {
+        pending: enrollments.filter((e) => e.status === 'PENDING').length,
+        confirmed: enrollments.filter((e) => e.status === 'CONFIRMED').length,
+        cancelled: enrollments.filter((e) => e.status === 'CANCELLED').length,
+        attended: enrollments.filter((e) => e.status === 'ATTENDED').length,
+        absent: enrollments.filter((e) => e.status === 'ABSENT').length,
+        completed: enrollments.filter((e) => e.status === 'COMPLETED').length,
+      },
+    };
+  }
+
+  /**
+   * 선생님의 모든 세션 조회 (달력용)
+   */
+  async getTeacherSessions(
+    teacherId: number,
+    filters: {
+      startDate?: Date;
+      endDate?: Date;
+    },
+  ) {
+    const where: any = {
+      class: {
+        teacherId,
+      },
+      ...(filters.startDate &&
+        filters.endDate && {
+          date: {
+            gte: filters.startDate,
+            lte: filters.endDate,
+          },
+        }),
+    };
+
+    const sessions = await this.prisma.classSession.findMany({
+      where,
+      include: {
+        class: {
+          select: {
+            id: true,
+            className: true,
+            teacher: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        enrollments: {
+          select: {
+            id: true,
+            status: true,
+          },
+        },
+      },
+      orderBy: { date: 'asc' },
+    });
+
+    return sessions.map((session) => ({
+      id: session.id,
+      date: session.date,
+      startTime: session.startTime,
+      endTime: session.endTime,
+      class: session.class,
+      enrollmentCount: session.enrollments.length,
+      confirmedCount: session.enrollments.filter(
+        (e) => e.status === 'CONFIRMED',
+      ).length,
+    }));
+  }
+
+  /**
    * 수강 변경 (기존 수강 취소 + 새로운 수강 신청)
    */
   async changeEnrollment(

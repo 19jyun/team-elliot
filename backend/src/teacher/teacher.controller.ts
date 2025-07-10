@@ -13,22 +13,55 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { TeacherService } from './teacher.service';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { GetUser } from '../auth/decorators/get-user.decorator';
 import { multerConfig } from '../config/multer.config';
 import { Role } from '@prisma/client';
 
 @Controller('teachers')
-@UseGuards(RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class TeacherController {
   constructor(private readonly teacherService: TeacherService) {}
 
+  @Get('me')
+  @Roles(Role.TEACHER)
+  async getMyProfile(@GetUser() user: any) {
+    return this.teacherService.getTeacherProfile(user.id);
+  }
+
+  @Put('me/profile')
+  @Roles(Role.TEACHER)
+  @UseInterceptors(FileInterceptor('photo', multerConfig))
+  async updateMyProfile(
+    @GetUser() user: any,
+    @Body() updateData: { introduction?: string },
+    @UploadedFile() photo?: Express.Multer.File,
+  ) {
+    return this.teacherService.updateProfile(user.id, updateData, photo);
+  }
+
+  @Get('me/classes')
+  @Roles(Role.TEACHER)
+  async getMyClasses(@GetUser() user: any) {
+    return this.teacherService.getTeacherClasses(user.id);
+  }
+
+  @Get('me/classes-with-sessions')
+  @Roles(Role.TEACHER)
+  async getMyClassesWithSessions(@GetUser() user: any) {
+    return this.teacherService.getTeacherClassesWithSessions(user.id);
+  }
+
+  // 관리자용 API들 (기존 유지)
   @Get(':id')
+  @Roles(Role.ADMIN)
   async getTeacherProfile(@Param('id', ParseIntPipe) id: number) {
     return this.teacherService.getTeacherProfile(id);
   }
 
   @Put(':id/profile')
-  @Roles(Role.TEACHER)
+  @Roles(Role.ADMIN)
   @UseInterceptors(FileInterceptor('photo', multerConfig))
   async updateProfile(
     @Param('id', ParseIntPipe) id: number,
@@ -39,8 +72,14 @@ export class TeacherController {
   }
 
   @Get(':id/classes')
-  @Roles(Role.TEACHER, Role.ADMIN)
+  @Roles(Role.ADMIN)
   async getTeacherClasses(@Param('id', ParseIntPipe) id: number) {
     return this.teacherService.getTeacherClasses(id);
+  }
+
+  @Get(':id/classes-with-sessions')
+  @Roles(Role.ADMIN)
+  async getTeacherClassesWithSessions(@Param('id', ParseIntPipe) id: number) {
+    return this.teacherService.getTeacherClassesWithSessions(id);
   }
 }
