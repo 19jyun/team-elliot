@@ -12,12 +12,13 @@ import { AcademyManagement } from './student/Profile/AcademyManagement';
 import { PersonalInfoManagement } from './student/Profile/PersonalInfoManagement';
 import { EnrollmentHistory } from './student/Profile/EnrollmentHistory';
 import { CancellationHistory } from './student/Profile/CancellationHistory';
+import { DashboardContainer } from './DashboardContainer';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
 function StudentDashboardContent() {
-  const { activeTab } = useStudentContext();
-  const { subPage } = useDashboardNavigation();
+  const { activeTab, handleTabChange } = useStudentContext();
+  const { subPage, isTransitioning } = useDashboardNavigation();
 
   // SubPage가 있는 경우 SubPage 렌더링
   if (subPage) {
@@ -60,29 +61,25 @@ function StudentDashboardContent() {
     );
   }
 
-  // 탭에 따라 각 페이지 렌더링
-  let content = null;
-  switch (activeTab) {
-    case 0:
-      content = <StudentClassPage />;
-      break;
-    case 1:
-      content = <StudentEnrollPage />;
-      break;
-    case 2:
-      content = <StudentProfilePage />;
-      break;
-    default:
-      content = <StudentClassPage />;
-  }
+  // 메인 탭 페이지들을 배열로 준비
+  const tabPages = [
+    <StudentClassPage key="class" />,
+    <StudentEnrollPage key="enroll" />,
+    <StudentProfilePage key="profile" />
+  ];
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       <CommonHeader />
       <main className="flex-1 overflow-hidden">
-        <div className="w-full h-full">
-          <div className="flex-1">{content}</div>
-        </div>
+        <DashboardContainer
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          isTransitioning={isTransitioning}
+          subPage={subPage}
+        >
+          {tabPages}
+        </DashboardContainer>
       </main>
     </div>
   );

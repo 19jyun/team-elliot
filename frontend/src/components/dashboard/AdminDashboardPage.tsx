@@ -6,12 +6,13 @@ import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import AdminStudentsPage from '@/app/(dashboard)/dashboard/admin/students/page';
 import AdminTeachersPage from '@/app/(dashboard)/dashboard/admin/teachers/page';
 import AdminClassesPage from '@/app/(dashboard)/dashboard/admin/classes/page';
+import { DashboardContainer } from './DashboardContainer';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
 function AdminDashboardContent() {
-  const { activeTab } = useAdminContext();
-  const { subPage } = useDashboardNavigation();
+  const { activeTab, handleTabChange } = useAdminContext();
+  const { subPage, isTransitioning } = useDashboardNavigation();
 
   // SubPage가 있는 경우 SubPage 렌더링
   if (subPage) {
@@ -35,29 +36,25 @@ function AdminDashboardContent() {
     );
   }
 
-  // 탭에 따라 각 페이지 렌더링
-  let content = null;
-  switch (activeTab) {
-    case 0:
-      content = <AdminStudentsPage />;
-      break;
-    case 1:
-      content = <AdminTeachersPage />;
-      break;
-    case 2:
-      content = <AdminClassesPage />;
-      break;
-    default:
-      content = <AdminStudentsPage />;
-  }
+  // 메인 탭 페이지들을 배열로 준비
+  const tabPages = [
+    <AdminStudentsPage key="students" />,
+    <AdminTeachersPage key="teachers" />,
+    <AdminClassesPage key="classes" />
+  ];
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       <CommonHeader />
       <main className="flex-1 overflow-hidden">
-        <div className="w-full h-full">
-          <div className="flex-1">{content}</div>
-        </div>
+        <DashboardContainer
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          isTransitioning={isTransitioning}
+          subPage={subPage}
+        >
+          {tabPages}
+        </DashboardContainer>
       </main>
     </div>
   );
