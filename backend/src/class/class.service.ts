@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -489,6 +490,85 @@ export class ClassService {
     }
 
     return classWithDetails;
+  }
+
+  async updateClassDetails(
+    id: number,
+    data: {
+      description?: string;
+      locationName?: string;
+      mapImageUrl?: string;
+      requiredItems?: string[];
+      curriculum?: string[];
+    },
+    teacherId: number,
+  ) {
+    // 클래스 정보 조회
+    const classInfo = await this.prisma.class.findUnique({
+      where: { id },
+      include: {
+        teacher: true,
+        classDetail: true,
+      },
+    });
+
+    if (!classInfo) {
+      throw new NotFoundException('클래스를 찾을 수 없습니다.');
+    }
+
+    // 권한 확인
+    if (classInfo.teacherId !== teacherId) {
+      throw new ForbiddenException(
+        '해당 클래스의 상세 정보를 수정할 권한이 없습니다.',
+      );
+    }
+
+    // 트랜잭션으로 클래스 상세 정보 업데이트
+    const result = await this.prisma.$transaction(async (prisma) => {
+      let classDetail;
+
+      if (classInfo.classDetail) {
+        // 기존 상세 정보가 있으면 업데이트
+        classDetail = await prisma.classDetail.update({
+          where: { id: classInfo.classDetail.id },
+          data: {
+            ...(data.description && { description: data.description }),
+            ...(data.locationName && { locationName: data.locationName }),
+            ...(data.mapImageUrl && { mapImageUrl: data.mapImageUrl }),
+            ...(data.requiredItems && { requiredItems: data.requiredItems }),
+            ...(data.curriculum && { curriculum: data.curriculum }),
+          },
+        });
+      } else {
+        // 기존 상세 정보가 없으면 새로 생성
+        classDetail = await prisma.classDetail.create({
+          data: {
+            description: data.description || '',
+            locationName: data.locationName || '',
+            mapImageUrl: data.mapImageUrl || '',
+            requiredItems: data.requiredItems || [],
+            curriculum: data.curriculum || [],
+            teacherId: teacherId,
+          },
+        });
+
+        // 클래스에 상세 정보 연결
+        await prisma.class.update({
+          where: { id },
+          data: {
+            classDetailId: classDetail.id,
+          },
+        });
+      }
+
+      return classDetail;
+    });
+
+    return {
+      id: classInfo.id,
+      className: classInfo.className,
+      classDetail: result,
+    };
   }
 
   async getClassesByMonth(month: string, year: number) {

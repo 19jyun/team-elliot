@@ -16,6 +16,8 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateClassDto } from '../admin/dto/create-class.dto';
 import { Role } from '@prisma/client';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Controller('classes')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -49,6 +51,25 @@ export class ClassController {
   @Roles(Role.TEACHER, Role.ADMIN)
   async updateClass(@Param('id', ParseIntPipe) id: number, @Body() data: any) {
     return this.classService.updateClass(id, data);
+  }
+
+  @Put(':id/details')
+  @Roles(Role.TEACHER, Role.ADMIN)
+  @ApiOperation({ summary: '클래스 상세 정보 수정' })
+  @ApiResponse({ status: 200, description: '클래스 상세 정보 수정 성공' })
+  async updateClassDetails(
+    @Param('id', ParseIntPipe) id: number,
+    @Body()
+    data: {
+      description?: string;
+      locationName?: string;
+      mapImageUrl?: string;
+      requiredItems?: string[];
+      curriculum?: string[];
+    },
+    @CurrentUser() user: any,
+  ) {
+    return this.classService.updateClassDetails(id, data, user.id);
   }
 
   @Delete(':id')

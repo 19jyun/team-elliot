@@ -177,6 +177,43 @@ export class ClassSessionController {
   }
 
   /**
+   * 특정 세션의 수강생 목록 조회
+   */
+  @Get(':sessionId/enrollments')
+  @Roles(Role.TEACHER, Role.ADMIN)
+  @ApiOperation({ summary: '특정 세션의 수강생 목록 조회' })
+  @ApiResponse({ status: 200, description: '세션별 수강생 목록 조회 성공' })
+  async getSessionEnrollments(
+    @Param('sessionId', ParseIntPipe) sessionId: number,
+    @CurrentUser() user: any,
+  ) {
+    return this.classSessionService.getSessionEnrollments(sessionId, user.id);
+  }
+
+  /**
+   * 선생님의 모든 세션 조회 (달력용)
+   */
+  @Get('teacher/sessions')
+  @Roles(Role.TEACHER, Role.ADMIN)
+  @ApiOperation({ summary: '선생님의 모든 세션 조회 (달력용)' })
+  @ApiResponse({ status: 200, description: '선생님 세션 목록 조회 성공' })
+  async getTeacherSessions(
+    @CurrentUser() user: any,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const filters = {
+      ...(startDate &&
+        endDate && {
+          startDate: new Date(startDate),
+          endDate: new Date(endDate),
+        }),
+    };
+
+    return this.classSessionService.getTeacherSessions(user.id, filters);
+  }
+
+  /**
    * 수업 완료 처리 (스케줄러용)
    */
   @Post('complete-sessions')

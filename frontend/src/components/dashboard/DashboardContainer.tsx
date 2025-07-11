@@ -1,23 +1,18 @@
 'use client';
 
 import React, { ReactNode, useState } from 'react';
-import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { ScrollableContentContainer } from './ScrollableContentContainer';
 import { DashboardPage } from './DashboardPage';
-import { EnrollmentContainer } from './student/Enrollment/enroll/EnrollmentContainer';
 
 interface DashboardContainerProps {
   children: ReactNode[];
+  activeTab: number;
+  onTabChange: (tab: number) => void;
+  isTransitioning?: boolean;
+  subPage?: string | null;
 }
 
-export function DashboardContainer({ children }: DashboardContainerProps) {
-  const {
-    activeTab,
-    isTransitioning,
-    subPage,
-    handleTabChange,
-  } = useDashboardNavigation();
-
+export function DashboardContainer({ children, activeTab, onTabChange, isTransitioning = false, subPage = null }: DashboardContainerProps) {
   // 각 페이지의 스크롤 위치를 개별적으로 관리
   const [pageScrollPositions, setPageScrollPositions] = useState<Record<number, number>>({});
 
@@ -41,7 +36,7 @@ export function DashboardContainer({ children }: DashboardContainerProps) {
         activeTab={activeTab}
         isTransitioning={isTransitioning}
         onTransitionComplete={handleTransitionComplete}
-        onTabChange={handleTabChange}
+        onTabChange={onTabChange}
       >
         {children.map((child, index) => (
           <DashboardPage

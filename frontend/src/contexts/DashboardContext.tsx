@@ -21,6 +21,30 @@ export interface EnrollmentState {
   selectedClassIds: number[];
 }
 
+// 강의 개설 단계 타입
+export type CreateClassStep = 'info' | 'schedule' | 'content' | 'complete';
+
+// 강의 개설 상태 인터페이스
+export interface CreateClassState {
+  currentStep: CreateClassStep;
+  classFormData: {
+    name: string;
+    description: string;
+    level: string;
+    maxStudents: number;
+    price: number;
+    academyId?: number;
+    schedule: {
+      days: string[];
+      startTime: string;
+      endTime: string;
+      startDate?: string;
+      endDate?: string;
+    };
+    content: string;
+  };
+}
+
 // 포커스 상태 타입
 export type FocusType = 'dashboard' | 'modal' | 'subpage' | 'overlay';
 
@@ -29,6 +53,7 @@ interface DashboardState {
   isTransitioning: boolean;
   subPage: string | null;
   enrollment: EnrollmentState;
+  createClass: CreateClassState;
   currentFocus: FocusType;
   focusHistory: FocusType[];
   isFocusTransitioning: boolean;
@@ -40,12 +65,14 @@ interface DashboardContextType {
   isTransitioning: boolean;
   subPage: string | null;
   enrollment: EnrollmentState;
+  createClass: CreateClassState;
   currentFocus: FocusType;
   focusHistory: FocusType[];
   isFocusTransitioning: boolean;
-  handleTabChange: (newTab: number) => void;
+  handleTabChange: (tab: number) => void;
   navigateToSubPage: (page: string) => void;
   goBack: () => void;
+  clearSubPage: () => void;
   // 포커스 관리 메서드들
   setFocus: (focus: FocusType) => void;
   pushFocus: (focus: FocusType) => void;
@@ -60,8 +87,12 @@ interface DashboardContextType {
   setSelectedMonth: (month: number) => void;
   setSelectedClasses: (classes: any[]) => void;
   setSelectedSessions: (sessions: any[]) => void;
-  setSelectedClassIds: (ids: number[]) => void;
+  setSelectedClassIds: (classIds: number[]) => void;
   resetEnrollment: () => void;
+  // 수업 생성 관련 메서드들
+  setCreateClassStep: (step: CreateClassStep) => void;
+  setClassFormData: (data: any) => void;
+  resetCreateClass: () => void;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
@@ -78,6 +109,23 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       selectedClasses: [],
       selectedSessions: [],
       selectedClassIds: [],
+    },
+    createClass: {
+      currentStep: 'info',
+      classFormData: {
+        name: '',
+        description: '',
+        level: '',
+        maxStudents: 10,
+        price: 0,
+        academyId: undefined,
+        schedule: {
+          days: [],
+          startTime: '',
+          endTime: '',
+        },
+        content: '',
+      },
     },
     currentFocus: 'dashboard',
     focusHistory: ['dashboard'],
@@ -100,7 +148,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       case 'TEACHER':
         return [
           { label: '내 수업', href: '/dashboard/teacher', index: 0 },
-          { label: '수강생 관리', href: '/dashboard/teacher/students', index: 1 },
+          { label: '수업 관리', href: '/dashboard/teacher/class_management', index: 1 },
           { label: '나의 정보', href: '/dashboard/teacher/profile', index: 2 },
         ];
       case 'ADMIN':
@@ -224,12 +272,31 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         // 탭 변경 시 SubPage 상태 초기화
         subPage: null,
         currentFocus: 'dashboard', // 탭 변경 시 대시보드로 포커스
+        // 탭 변경 시 enrollment 상태 초기화
         enrollment: {
           currentStep: 'main',
           selectedMonth: null,
           selectedClasses: [],
           selectedSessions: [],
           selectedClassIds: [],
+        },
+        // 탭 변경 시 createClass 상태 초기화
+        createClass: {
+          currentStep: 'info',
+          classFormData: {
+            name: '',
+            description: '',
+            level: '',
+            maxStudents: 10,
+            price: 0,
+            academyId: undefined,
+            schedule: {
+              days: [],
+              startTime: '',
+              endTime: '',
+            },
+            content: '',
+          },
         },
       };
     });
@@ -263,6 +330,21 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         };
       }
       
+      // 강의 개설 중인 경우 단계별로 뒤로가기
+      if (prev.subPage === 'create-class' && prev.createClass.currentStep !== 'info') {
+        const stepOrder: CreateClassStep[] = ['info', 'schedule', 'content', 'complete'];
+        const currentIndex = stepOrder.indexOf(prev.createClass.currentStep);
+        const previousStep = currentIndex > 0 ? stepOrder[currentIndex - 1] : 'info';
+        
+        return {
+          ...prev,
+          createClass: {
+            ...prev.createClass,
+            currentStep: previousStep,
+          },
+        };
+      }
+      
       // 그 외의 경우 SubPage를 완전히 닫기
       // 수강신청 SubPage인 경우 refundPolicyAgreed 초기화
       if (prev.subPage === 'enroll') {
@@ -281,8 +363,35 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           selectedSessions: [],
           selectedClassIds: [],
         },
+        // SubPage가 닫힐 때 createClass 상태도 초기화
+        createClass: {
+          currentStep: 'info',
+          classFormData: {
+            name: '',
+            description: '',
+            level: '',
+            maxStudents: 10,
+            price: 0,
+            academyId: undefined,
+            schedule: {
+              days: [],
+              startTime: '',
+              endTime: '',
+            },
+            content: '',
+          },
+        },
       };
     });
+  }, []);
+
+  // SubPage 초기화
+  const clearSubPage = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      subPage: null,
+      currentFocus: 'dashboard',
+    }));
   }, []);
 
   // 수강신청 단계 설정
@@ -354,18 +463,69 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  // 강의 개설 단계 설정
+  const setCreateClassStep = useCallback((step: CreateClassStep) => {
+    setState(prev => ({
+      ...prev,
+      createClass: {
+        ...prev.createClass,
+        currentStep: step,
+      },
+    }));
+  }, []);
+
+  // 강의 폼 데이터 설정
+  const setClassFormData = useCallback((data: Partial<CreateClassState['classFormData']>) => {
+    setState(prev => ({
+      ...prev,
+      createClass: {
+        ...prev.createClass,
+        classFormData: {
+          ...prev.createClass.classFormData,
+          ...data,
+        },
+      },
+    }));
+  }, []);
+
+  // 강의 개설 상태 초기화
+  const resetCreateClass = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      createClass: {
+        currentStep: 'info',
+        classFormData: {
+          name: '',
+          description: '',
+          level: '',
+          maxStudents: 10,
+          price: 0,
+          academyId: undefined,
+          schedule: {
+            days: [],
+            startTime: '',
+            endTime: '',
+          },
+          content: '',
+        },
+      },
+    }));
+  }, []);
+
   const value: DashboardContextType = {
     navigationItems: getNavigationItems(),
     activeTab: state.activeTab,
     isTransitioning: state.isTransitioning,
     subPage: state.subPage,
     enrollment: state.enrollment,
+    createClass: state.createClass,
     currentFocus: state.currentFocus,
     focusHistory: state.focusHistory,
     isFocusTransitioning: state.isFocusTransitioning,
     handleTabChange,
     navigateToSubPage,
     goBack,
+    clearSubPage,
     setFocus,
     pushFocus,
     popFocus,
@@ -380,6 +540,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setSelectedSessions,
     setSelectedClassIds,
     resetEnrollment,
+    setCreateClassStep,
+    setClassFormData,
+    resetCreateClass,
   };
 
   return (

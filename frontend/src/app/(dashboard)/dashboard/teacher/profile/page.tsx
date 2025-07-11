@@ -1,17 +1,20 @@
 'use client'
 
+import * as React from 'react'
+
+import { StatusBar } from '@/components/ui/StatusBar'
+import { MenuLinks } from '@/components/navigation/MenuLinks'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
-import Image from 'next/image'
 import { toast } from 'sonner'
-import { TeacherNavigation } from '@/components/navigation/TeacherNavigation'
 import { LogoutModal } from '@/components/user/LogoutModal'
-import axiosInstance from '@/lib/axios'
+import { useDashboardNavigation } from '@/contexts/DashboardContext'
+import { logout } from '@/api/auth'
 
 export default function TeacherProfilePage() {
   const router = useRouter()
-  const [showLogoutModal, setShowLogoutModal] = useState(false)
+  const [showLogoutModal, setShowLogoutModal] = React.useState(false)
+  const { navigateToSubPage } = useDashboardNavigation()
   const { data: session, status } = useSession({
     required: true,
     onUnauthenticated() {
@@ -22,77 +25,81 @@ export default function TeacherProfilePage() {
   const handleSignOut = async () => {
     try {
       if (!session?.user) return
-      await axiosInstance.post('/auth/logout')
+
+      // 백엔드 로그아웃 API 호출
+      await logout()
+
+      // next-auth 로그아웃 처리
       await signOut({ redirect: false })
+
       toast.success('로그아웃되었습니다')
       router.push('/login')
     } catch (error) {
+      console.error('Logout error:', error)
+      // API 호출 실패 시에도 next-auth 로그아웃은 진행
+      await signOut({ redirect: false })
+      router.push('/login')
       toast.error('로그아웃 중 오류가 발생했습니다')
     }
   }
 
+  const handleProfileClick = () => {
+    navigateToSubPage('profile')
+  }
+
+  const handlePersonalInfoClick = () => {
+    navigateToSubPage('personal-info')
+  }
+
+  const handleAcademyManagementClick = () => {
+    navigateToSubPage('academy-management')
+  }
+
+  const menuLinks = [
+    {
+      label: '내 프로필 관리',
+      icon: '/icons/group.svg',
+      onClick: handleProfileClick,
+    },
+    {
+      label: '개인 정보',
+      icon: '/icons/group.svg',
+      onClick: handlePersonalInfoClick,
+    },
+    {
+      label: '내 학원 관리',
+      icon: '/icons/group.svg',
+      onClick: handleAcademyManagementClick,
+    },
+  ]
+
   if (status === 'loading') {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-full">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 relative">
-      {/* 헤더 */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-gray-900">선생님 프로필</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-700">
-                {session?.user?.name}님 환영합니다
-              </span>
-            </div>
-          </div>
-        </div>
+    <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px] relative">
+      <StatusBar 
+        time="9:41"
+        icons={[
+          { src: '/icons/signal.svg', alt: 'Signal', width: 'w-4', aspectRatio: 'square' },
+          { src: '/icons/wifi.svg', alt: 'WiFi', width: 'w-4', aspectRatio: 'square' },
+          { src: '/icons/battery.svg', alt: 'Battery', width: 'w-6', aspectRatio: 'square' }
+        ]}
+        logoSrc="/icons/logo.svg"
+      />
+      <div className="flex flex-col px-5 py-6">
+        <h1 className="text-2xl font-bold text-stone-700">
+          {session?.user?.name}님의 정보
+        </h1>
       </div>
 
-      {/* 메인 컨텐츠 */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center space-x-4 mb-6">
-              <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center">
-                <span className="text-2xl font-bold text-gray-600">
-                  {session?.user?.name?.charAt(0)}
-                </span>
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {session?.user?.name}
-                </h2>
-                <p className="text-gray-600">선생님</p>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">개인 정보</h3>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-gray-700">
-                    <span className="font-medium">이름:</span> {session?.user?.name}
-                  </p>
-                  <p className="text-gray-700">
-                    <span className="font-medium">이메일:</span> {session?.user?.email}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <MenuLinks links={menuLinks} />
 
-      {/* 로그아웃 버튼 */}
       <div className="flex flex-col px-5 mt-auto">
         <button
           onClick={() => setShowLogoutModal(true)}
@@ -102,7 +109,20 @@ export default function TeacherProfilePage() {
         </button>
       </div>
 
-      {/* 로그아웃 모달 */}
+      <footer className="flex flex-col px-5 pt-3.5 pb-12 mt-6 w-full text-sm font-medium bg-neutral-100 min-h-[80px] text-neutral-400">
+        <nav className="flex gap-6 justify-center items-center max-w-full w-[335px]">
+          <a href="/terms" className="hover:text-neutral-600">
+            이용약관
+          </a>
+          <a href="/privacy" className="hover:text-neutral-600">
+            개인정보처리방침
+          </a>
+          <a href="/withdrawal" className="hover:text-neutral-600">
+            회원탈퇴
+          </a>
+        </nav>
+      </footer>
+
       {showLogoutModal && (
         <LogoutModal
           onLogout={handleSignOut}
