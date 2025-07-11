@@ -43,7 +43,7 @@ export function CreateClassStep3() {
       maxStudents: updatedClassFormData.maxStudents,
       tuitionFee: updatedClassFormData.price,
       teacherId: Number(session.user.id), // 현재 로그인한 선생님의 ID
-      academyId: updatedClassFormData.academyId || 1, // 기본값 설정
+      academyId: updatedClassFormData.academyId!, // 이미 학원 가입 여부를 확인했으므로 non-null assertion 사용
       dayOfWeek: updatedClassFormData.schedule.days[0],
       level: updatedClassFormData.level,
       startDate: updatedClassFormData.schedule.startDate,

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { User, Building2 } from 'lucide-react';
 import { TeacherPersonalInfoManagement } from './profile/TeacherPersonalInfoManagement';
-import AcademyManagement from './profile/AcademyManagement';
+import AcademyManagement from './profile/AcademyManagement/AcademyManagement';
 
 type TabType = 'personal' | 'academy';
 

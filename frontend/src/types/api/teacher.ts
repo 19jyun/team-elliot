@@ -24,6 +24,11 @@ export interface Academy {
   phoneNumber?: string;
   email?: string;
   website?: string;
+  adminId?: number;
+  admin?: {
+    id: number;
+    name: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -55,6 +60,17 @@ export interface CreateAndJoinAcademyRequest {
 export interface CreateAndJoinAcademyResponse {
   academy: Academy;
   teacher: TeacherProfile;
+}
+
+export interface UpdateAcademyRequest {
+  name?: string;
+  phoneNumber?: string;
+  address?: string;
+  description?: string;
+}
+
+export interface LeaveAcademyResponse {
+  message: string;
 }
 
 export interface UpdateTeacherProfileRequest {

@@ -17,6 +17,8 @@ import {
   ChangeAcademyRequest,
   CreateAndJoinAcademyRequest,
   CreateAndJoinAcademyResponse,
+  UpdateAcademyRequest,
+  LeaveAcademyResponse,
 } from "@/types/api/teacher";
 
 // 프로필 관련 API
@@ -137,5 +139,19 @@ export const createAndJoinAcademy = async (
     "/teachers/me/create-and-join-academy",
     data
   );
+  return response.data;
+};
+
+// 학원 정보 수정 (관리자만)
+export const updateAcademy = async (
+  data: UpdateAcademyRequest
+): Promise<Academy> => {
+  const response = await axiosInstance.put("/teachers/me/academy", data);
+  return response.data;
+};
+
+// 학원 탈퇴 (관리자 불가)
+export const leaveAcademy = async (): Promise<LeaveAcademyResponse> => {
+  const response = await axiosInstance.post("/teachers/me/leave-academy");
   return response.data;
 };

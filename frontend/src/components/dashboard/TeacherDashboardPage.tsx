@@ -9,7 +9,7 @@ import TeacherProfilePage from '@/app/(dashboard)/dashboard/teacher/profile/page
 import { CreateClassContainer } from './teacher/class_management/containers/CreateClassContainer';
 import { TeacherProfileManagement } from './teacher/profile/TeacherProfileManagement';
 import { TeacherPersonalInfoManagement } from './teacher/profile/TeacherPersonalInfoManagement';
-import AcademyManagement from './teacher/profile/AcademyManagement';
+import AcademyManagement from './teacher/profile/AcademyManagement/AcademyManagement';
 import { DashboardContainer } from './DashboardContainer';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
