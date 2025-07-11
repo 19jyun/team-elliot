@@ -35,11 +35,13 @@ model Academy {
   address     String   @db.Text // 학원 주소
   description String   @db.Text // 학원 설명
   code        String   @unique @db.VarChar(50) // 학원 고유 코드
+  adminId     Int?     @unique @map("admin_id") // 학원 관리자 ID (선생님 ID)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   teachers    Teacher[] // 소속 강사들
   classes     Class[] // 소속 수업들
   students    StudentAcademy[] // 가입한 학생들
+  admin       Teacher? @relation("AcademyAdmin", fields: [adminId], references: [id])
 
   @@map("academies")
 }
@@ -109,14 +111,15 @@ model Teacher {
   specialties       String[] // 전문 분야 (예: 클래식 발레, 모던 발레 등)
   certifications    String[] // 자격증 정보
   yearsOfExperience Int?          @map("years_of_experience") // 교습 경력 연수
-  academyId         Int           @map("academy_id") // 소속 학원 (필수)
+  academyId         Int?          @map("academy_id") // 소속 학원 (nullable로 변경)
   bankAccount       BankAccount? // 계좌 정보 (1:1 관계)
   availableTimes    Json?         @map("available_times") // 강의 가능 시간 (JSON 형식)
   classes           Class[] // 담당 클래스
   classDetails      ClassDetail[] // 클래스 상세 정보
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
-  academy           Academy       @relation(fields: [academyId], references: [id])
+  academy           Academy?      @relation(fields: [academyId], references: [id])
+  managedAcademy    Academy?      @relation("AcademyAdmin") // 관리하는 학원 (1:1 관계)
 
   @@map("teachers")
 }

@@ -20,6 +20,7 @@ import { multerConfig } from '../config/multer.config';
 import { Role } from '@prisma/client';
 import { CreateClassDto } from '../admin/dto/create-class.dto';
 import { CreateAcademyDto } from '../academy/dto/create-academy.dto';
+import { UpdateAcademyDto } from '../academy/dto/update-academy.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @ApiTags('Teacher')
@@ -122,7 +123,28 @@ export class TeacherController {
     @GetUser() user: any,
     @Body() createAcademyDto: CreateAcademyDto,
   ) {
-    return this.teacherService.createAcademy(createAcademyDto);
+    return this.teacherService.createAcademy(createAcademyDto, user.id);
+  }
+
+  // 학원 정보 수정 (관리자만)
+  @Put('me/academy')
+  @Roles(Role.TEACHER)
+  @ApiOperation({ summary: '학원 정보 수정 (관리자만)' })
+  @ApiResponse({ status: 200, description: '학원 정보가 수정되었습니다.' })
+  async updateAcademy(
+    @GetUser() user: any,
+    @Body() updateAcademyDto: UpdateAcademyDto,
+  ) {
+    return this.teacherService.updateAcademy(user.id, updateAcademyDto);
+  }
+
+  // 학원 탈퇴 (관리자 불가)
+  @Post('me/leave-academy')
+  @Roles(Role.TEACHER)
+  @ApiOperation({ summary: '학원 탈퇴' })
+  @ApiResponse({ status: 200, description: '학원 탈퇴가 완료되었습니다.' })
+  async leaveAcademy(@GetUser() user: any) {
+    return this.teacherService.leaveAcademy(user.id);
   }
 
   // 선생님이 새 학원을 생성하고 자동으로 소속되기

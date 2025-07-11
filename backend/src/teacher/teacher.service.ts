@@ -3,11 +3,13 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ClassService } from '../class/class.service';
 import { CreateClassDto } from '../admin/dto/create-class.dto';
 import { CreateAcademyDto } from '../academy/dto/create-academy.dto';
+import { UpdateAcademyDto } from '../academy/dto/update-academy.dto';
 
 @Injectable()
 export class TeacherService {
@@ -282,34 +284,42 @@ export class TeacherService {
     };
   }
 
-  // 선생님의 현재 학원 정보 조회
+  // 선생님의 현재 학원 정보 조회 (admin 정보 포함)
   async getMyAcademy(teacherId: number) {
     const teacher = await this.prisma.teacher.findUnique({
       where: { id: teacherId },
       include: {
-        academy: true,
+        academy: {
+          include: {
+            admin: true,
+          },
+        },
       },
     });
-
     if (!teacher) {
       throw new NotFoundException('선생님을 찾을 수 없습니다.');
     }
-
     return teacher.academy;
   }
 
   // 선생님의 학원 변경
   async changeAcademy(teacherId: number, academyCode: string) {
-    // 학원 코드로 학원 찾기
     const academy = await this.prisma.academy.findUnique({
       where: { code: academyCode },
     });
-
     if (!academy) {
       throw new NotFoundException('해당 코드의 학원을 찾을 수 없습니다.');
     }
-
-    // 선생님 정보 업데이트
+    // 관리자인 경우 탈퇴 불가
+    const teacher = await this.prisma.teacher.findUnique({
+      where: { id: teacherId },
+      include: { academy: true },
+    });
+    if (teacher?.academy?.adminId === teacherId) {
+      throw new BadRequestException(
+        '학원 관리자는 탈퇴할 수 없습니다. 다른 관리자에게 권한을 이전하거나 학원을 삭제해주세요.',
+      );
+    }
     const updatedTeacher = await this.prisma.teacher.update({
       where: { id: teacherId },
       data: {
@@ -317,40 +327,36 @@ export class TeacherService {
         updatedAt: new Date(),
       },
       include: {
-        academy: true,
+        academy: {
+          include: { admin: true },
+        },
       },
     });
-
     return updatedTeacher.academy;
   }
 
-  // 선생님이 새 학원 생성 (관리자 권한과 동일)
-  async createAcademy(createAcademyDto: CreateAcademyDto) {
-    // 학원 코드 중복 체크
+  // 선생님이 새 학원 생성 (관리자 지정)
+  async createAcademy(createAcademyDto: CreateAcademyDto, teacherId: number) {
     const existingAcademy = await this.prisma.academy.findUnique({
       where: { code: createAcademyDto.code },
     });
-
     if (existingAcademy) {
       throw new ConflictException('이미 존재하는 학원 코드입니다.');
     }
-
-    // 새 학원 생성
+    // 새 학원 생성 (adminId 지정)
     const newAcademy = await this.prisma.academy.create({
-      data: createAcademyDto,
+      data: { ...createAcademyDto, adminId: teacherId },
     });
-
     return newAcademy;
   }
 
-  // 선생님이 새 학원을 생성하고 자동으로 소속되기
+  // 선생님이 새 학원을 생성하고 자동으로 소속되기 (관리자 지정)
   async createAndJoinAcademy(
     teacherId: number,
     createAcademyDto: CreateAcademyDto,
   ) {
-    // 새 학원 생성
-    const newAcademy = await this.createAcademy(createAcademyDto);
-
+    // 새 학원 생성 (adminId 지정)
+    const newAcademy = await this.createAcademy(createAcademyDto, teacherId);
     // 선생님을 새 학원에 소속시키기
     const updatedTeacher = await this.prisma.teacher.update({
       where: { id: teacherId },
@@ -359,13 +365,56 @@ export class TeacherService {
         updatedAt: new Date(),
       },
       include: {
-        academy: true,
+        academy: {
+          include: { admin: true },
+        },
       },
     });
-
     return {
-      academy: newAcademy,
+      academy: updatedTeacher.academy,
       teacher: updatedTeacher,
     };
+  }
+
+  // 학원 정보 수정 (관리자만)
+  async updateAcademy(teacherId: number, updateAcademyDto: UpdateAcademyDto) {
+    const teacher = await this.prisma.teacher.findUnique({
+      where: { id: teacherId },
+      include: { academy: true },
+    });
+    if (!teacher || !teacher.academy) {
+      throw new NotFoundException('소속된 학원이 없습니다.');
+    }
+    if (teacher.academy.adminId !== teacherId) {
+      throw new ForbiddenException('학원 정보 수정 권한이 없습니다.');
+    }
+    return this.prisma.academy.update({
+      where: { id: teacher.academy.id },
+      data: updateAcademyDto,
+    });
+  }
+
+  // 선생님 학원 탈퇴 (관리자 불가)
+  async leaveAcademy(teacherId: number) {
+    const teacher = await this.prisma.teacher.findUnique({
+      where: { id: teacherId },
+      include: { academy: true },
+    });
+    if (!teacher) {
+      throw new NotFoundException('선생님을 찾을 수 없습니다.');
+    }
+    if (!teacher.academy) {
+      throw new BadRequestException('소속된 학원이 없습니다.');
+    }
+    if (teacher.academy.adminId === teacherId) {
+      throw new BadRequestException(
+        '학원 관리자는 탈퇴할 수 없습니다. 다른 관리자에게 권한을 이전하거나 학원을 삭제해주세요.',
+      );
+    }
+    await this.prisma.teacher.update({
+      where: { id: teacherId },
+      data: { academyId: null },
+    });
+    return { message: '학원 탈퇴가 완료되었습니다.' };
   }
 }
