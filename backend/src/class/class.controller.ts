@@ -104,6 +104,19 @@ export class ClassController {
     return this.classService.getClassesByMonth(month, parseInt(year));
   }
 
+  @Get('sessions/:month')
+  @ApiOperation({ summary: '해당 월에 세션이 있는 클래스들과 세션 정보 조회' })
+  @ApiResponse({ status: 200, description: '클래스와 세션 정보 조회 성공' })
+  async getClassesWithSessionsByMonth(
+    @Param('month') month: string,
+    @Query('year') year: string,
+  ) {
+    return this.classService.getClassesWithSessionsByMonth(
+      month,
+      parseInt(year),
+    );
+  }
+
   @Post(':id/generate-sessions')
   @Roles(Role.ADMIN, Role.TEACHER)
   async generateSessionsForClass(@Param('id', ParseIntPipe) classId: number) {

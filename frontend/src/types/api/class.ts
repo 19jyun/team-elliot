@@ -1,22 +1,30 @@
 export interface Class {
   id: number;
-  name: string;
-  description?: string;
-  teacherId: number;
-  dayOfWeek: string;
-  startTime: string | Date;
-  endTime: string | Date;
+  className: string;
+  classCode: string;
+  description: string;
   maxStudents: number;
+  currentStudents: number;
+  tuitionFee: number;
+  teacherId: number;
+  academyId: number;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
   level: string;
-  location: string;
-  monthlyFee: number;
-  backgroundColor?: string;
-  teacher?: {
+  status: string;
+  startDate: string;
+  endDate: string;
+  backgroundColor: string;
+  teacher: {
     id: number;
     name: string;
-    photoUrl?: string;
+    photoUrl: string;
   };
-  [key: string]: any;
+  academy: {
+    id: number;
+    name: string;
+  };
 }
 
 export interface ClassSession {
@@ -79,11 +87,8 @@ export interface CreateClassResponse {
   endTime: string;
   level: string;
   status: string;
-  registrationMonth: string;
   startDate: string;
   endDate: string;
-  registrationStartDate: string;
-  registrationEndDate: string;
   backgroundColor: string | null;
   classDetailId: number | null;
   sessionCount: number;
@@ -105,7 +110,45 @@ export interface UnenrollClassResponse {
   success: boolean;
   message: string;
 }
-export interface ClassesByMonthResponse extends Array<Class> {}
+export interface ClassesByMonthResponse {
+  id: number;
+  className: string;
+  teacher: {
+    id: number;
+    name: string;
+    photoUrl: string;
+  };
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  level: string;
+  backgroundColor: string;
+}
+
+export interface ClassesWithSessionsByMonthResponse {
+  id: number;
+  className: string;
+  teacher: {
+    id: number;
+    name: string;
+    photoUrl: string;
+  };
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  level: string;
+  backgroundColor: string;
+  academyId: number;
+  sessions: {
+    id: number;
+    date: string;
+    startTime: string;
+    endTime: string;
+    enrollments: number;
+    maxStudents: number;
+    isEnrollable: boolean;
+  }[];
+}
 
 // ClassSession 관련 타입들
 export interface GetClassSessionsRequest {

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { useSession } from 'next-auth/react';
+import { ClassesWithSessionsByMonthResponse } from '@/types/api/class';
 
 export interface NavigationItem {
   label: string;
@@ -10,7 +11,7 @@ export interface NavigationItem {
 }
 
 // 수강신청 단계 타입
-export type EnrollmentStep = 'main' | 'class-selection' | 'date-selection' | 'payment' | 'complete' | 'refund-request' | 'refund-complete';
+export type EnrollmentStep = 'main' | 'academy-selection' | 'class-selection' | 'date-selection' | 'payment' | 'complete' | 'refund-request' | 'refund-complete';
 
 // 수강신청 상태 인터페이스
 export interface EnrollmentState {
@@ -19,6 +20,8 @@ export interface EnrollmentState {
   selectedClasses: any[];
   selectedSessions: any[];
   selectedClassIds: number[];
+  selectedAcademyId: number | null;
+  selectedClassesWithSessions: ClassesWithSessionsByMonthResponse[];
 }
 
 // 강의 개설 단계 타입
@@ -88,6 +91,8 @@ interface DashboardContextType {
   setSelectedClasses: (classes: any[]) => void;
   setSelectedSessions: (sessions: any[]) => void;
   setSelectedClassIds: (classIds: number[]) => void;
+  setSelectedAcademyId: (academyId: number | null) => void;
+  setSelectedClassesWithSessions: (classes: ClassesWithSessionsByMonthResponse[]) => void;
   resetEnrollment: () => void;
   // 수업 생성 관련 메서드들
   setCreateClassStep: (step: CreateClassStep) => void;
@@ -109,6 +114,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       selectedClasses: [],
       selectedSessions: [],
       selectedClassIds: [],
+      selectedAcademyId: null,
+      selectedClassesWithSessions: [],
     },
     createClass: {
       currentStep: 'info',
@@ -279,6 +286,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           selectedClasses: [],
           selectedSessions: [],
           selectedClassIds: [],
+          selectedAcademyId: null,
+          selectedClassesWithSessions: [],
         },
         // 탭 변경 시 createClass 상태 초기화
         createClass: {
@@ -317,7 +326,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setState(prev => {
       // 수강신청 중인 경우 단계별로 뒤로가기
       if (prev.subPage === 'enroll' && prev.enrollment.currentStep !== 'main') {
-        const stepOrder: EnrollmentStep[] = ['main', 'class-selection', 'date-selection', 'payment', 'complete'];
+        const stepOrder: EnrollmentStep[] = ['main', 'academy-selection', 'class-selection', 'date-selection', 'payment', 'complete'];
         const currentIndex = stepOrder.indexOf(prev.enrollment.currentStep);
         const previousStep = currentIndex > 0 ? stepOrder[currentIndex - 1] : 'main';
         
@@ -362,6 +371,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           selectedClasses: [],
           selectedSessions: [],
           selectedClassIds: [],
+          selectedAcademyId: null,
+          selectedClassesWithSessions: [],
         },
         // SubPage가 닫힐 때 createClass 상태도 초기화
         createClass: {
@@ -449,6 +460,28 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  // 선택된 학원 ID 설정
+  const setSelectedAcademyId = useCallback((academyId: number | null) => {
+    setState(prev => ({
+      ...prev,
+      enrollment: {
+        ...prev.enrollment,
+        selectedAcademyId: academyId,
+      },
+    }));
+  }, []);
+
+  // 선택된 클래스 및 세션 데이터 설정
+  const setSelectedClassesWithSessions = useCallback((classes: ClassesWithSessionsByMonthResponse[]) => {
+    setState(prev => ({
+      ...prev,
+      enrollment: {
+        ...prev.enrollment,
+        selectedClassesWithSessions: classes,
+      },
+    }));
+  }, []);
+
   // 수강신청 상태 초기화
   const resetEnrollment = useCallback(() => {
     setState(prev => ({
@@ -459,6 +492,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         selectedClasses: [],
         selectedSessions: [],
         selectedClassIds: [],
+        selectedAcademyId: null,
+        selectedClassesWithSessions: [],
       },
     }));
   }, []);
@@ -539,6 +574,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setSelectedClasses,
     setSelectedSessions,
     setSelectedClassIds,
+    setSelectedAcademyId,
+    setSelectedClassesWithSessions,
     resetEnrollment,
     setCreateClassStep,
     setClassFormData,

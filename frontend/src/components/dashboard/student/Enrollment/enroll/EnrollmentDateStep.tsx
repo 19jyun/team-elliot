@@ -18,7 +18,7 @@ interface EnrollmentDateStepProps {
 
 export function EnrollmentDateStep({ mode = 'enrollment', classId, existingEnrollments, month, onComplete }: EnrollmentDateStepProps) {
   const { enrollment, setEnrollmentStep, setSelectedSessions, goBack } = useDashboardNavigation()
-  const { selectedMonth, selectedClassIds } = enrollment
+  const { selectedMonth, selectedClassIds, selectedClassesWithSessions } = enrollment
   const [selectedCount, setSelectedCount] = useState(0);
   const [selectableCount, setSelectableCount] = useState(0);
   const [isAllSelected, setIsAllSelected] = useState(false);
@@ -38,9 +38,10 @@ export function EnrollmentDateStep({ mode = 'enrollment', classId, existingEnrol
       }];
       localStorage.setItem('selectedClassCards', JSON.stringify(selectedClassCards));
     } else if (selectedClassIds && selectedClassIds.length > 0 && typeof window !== 'undefined') {
-      // 일반 수강 신청 모드: 기존 로직
-      const selectedClassCards = selectedClassIds.map(id => ({
-        id: id,
+      // 일반 수강 신청 모드: Context에서 가져온 세션 정보 사용
+      const selectedClassCards = selectedClassesWithSessions.map(classInfo => ({
+        id: classInfo.id,
+        sessions: classInfo.sessions,
         // Calendar 컴포넌트에서 실제 클래스 정보를 로드할 때 사용
       }));
       localStorage.setItem('selectedClassCards', JSON.stringify(selectedClassCards));
@@ -48,9 +49,15 @@ export function EnrollmentDateStep({ mode = 'enrollment', classId, existingEnrol
       // 선택된 클래스가 없으면 localStorage에서 제거
       localStorage.removeItem('selectedClassCards');
     }
-  }, [selectedClassIds, isModificationMode, classId]); 
+  }, [selectedClassIds, selectedClassesWithSessions, isModificationMode, classId]);
     
   const statusSteps = [
+    {
+      icon: '/icons/CourseRegistrationsStatusSteps1.svg',
+      label: '학원 선택',
+      isActive: false,
+      isCompleted: true,
+    },
     {
       icon: '/icons/CourseRegistrationsStatusSteps1.svg',
       label: isModificationMode ? '수강 변경' : '클래스 선택',

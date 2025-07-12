@@ -5,6 +5,8 @@ import { useSession } from 'next-auth/react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'react-hot-toast'
 import { getClassCards, getClassDetails } from '@/app/api/classes'
+import { getClassesWithSessionsByMonth } from '@/api/class'
+import { ClassesWithSessionsByMonthResponse } from '@/types/api/class'
 import { RefundPolicy } from '@/components/features/student/enrollment/RefundPolicy'
 import { ClassCard } from '@/components/features/student/enrollment/month/ClassCard'
 import { TimeSlot } from '@/components/features/student/enrollment/month/TimeSlot'
@@ -41,8 +43,8 @@ export function EnrollmentClassStep() {
     )
   }
   
-  const { enrollment, setEnrollmentStep, setSelectedClassIds, goBack, navigateToSubPage } = dashboardContext
-  const { selectedMonth } = enrollment
+  const { enrollment, setEnrollmentStep, setSelectedClassIds, setSelectedClassesWithSessions, goBack, navigateToSubPage } = dashboardContext
+  const { selectedMonth, selectedAcademyId } = enrollment
   const { status } = useSession({
     required: true,
     onUnauthenticated() {
@@ -85,8 +87,8 @@ export function EnrollmentClassStep() {
   const [selectedClassDetails, setSelectedClassDetails] = React.useState<ClassDetailsResponse | null>(null)
   const [selectedIds, setSelectedIds] = useState<number[]>([])
 
-  const { data: classCards, isLoading } = useQuery({
-    queryKey: ['classCards', requestedMonth],
+  const { data: classesWithSessions, isLoading } = useQuery({
+    queryKey: ['classesWithSessions', requestedMonth, selectedAcademyId],
     queryFn: () => {
       const year =
         requestedMonth === 1 && currentMonth === 12
@@ -95,29 +97,41 @@ export function EnrollmentClassStep() {
 
       console.log('=== API QUERY DEBUG ===')
       console.log('Querying for month:', requestedMonth, 'year:', year)
-      const result = getClassCards(`${requestedMonth}`, year)
+      console.log('Selected academy ID:', selectedAcademyId)
+      const result = getClassesWithSessionsByMonth(`${requestedMonth}`, year)
       console.log('API call result:', result)
       return result
     },
-    enabled: !!requestedMonth,
+    enabled: !!requestedMonth && selectedAcademyId !== null,
   })
+
+  // 선택된 학원에 속한 클래스만 필터링
+  const filteredClassesWithSessions = React.useMemo(() => {
+    if (!classesWithSessions || selectedAcademyId === null) return []
+    
+    return classesWithSessions.filter((classInfo: ClassesWithSessionsByMonthResponse) => 
+      classInfo.academyId === selectedAcademyId
+    )
+  }, [classesWithSessions, selectedAcademyId])
 
   // Debug logging for API response
   React.useEffect(() => {
     console.log('=== API RESPONSE DEBUG ===')
-    console.log('classCards data:', classCards)
-    console.log('classCards type:', typeof classCards)
-    console.log('classCards length:', classCards?.length)
+    console.log('classCards data:', classesWithSessions)
+    console.log('filteredClassCards data:', filteredClassesWithSessions)
+    console.log('classCards type:', typeof classesWithSessions)
+    console.log('classCards length:', classesWithSessions?.length)
+    console.log('filteredClassCards length:', filteredClassesWithSessions?.length)
     console.log('isLoading:', isLoading)
     
-    if (classCards && classCards.length > 0) {
-      console.log('First class card raw data:', classCards[0])
-      console.log('All class cards:', classCards)
+    if (filteredClassesWithSessions && filteredClassesWithSessions.length > 0) {
+      console.log('First filtered class card raw data:', filteredClassesWithSessions[0])
+      console.log('All filtered class cards:', filteredClassesWithSessions)
     } else {
-      console.log('No class cards found or empty array')
+      console.log('No filtered class cards found or empty array')
     }
     console.log('=== END API RESPONSE DEBUG ===')
-  }, [classCards, isLoading])
+  }, [classesWithSessions, filteredClassesWithSessions, isLoading])
 
   // localStorage 확인하여 이전에 동의했다면 정책 건너뛰기
   React.useEffect(() => {
@@ -128,6 +142,12 @@ export function EnrollmentClassStep() {
   }, [])
 
   const statusSteps = [
+    {
+      icon: '/icons/CourseRegistrationsStatusSteps1.svg',
+      label: '학원 선택',
+      isActive: false,
+      isCompleted: true,
+    },
     {
       icon: '/icons/CourseRegistrationsStatusSteps1.svg',
       label: '클래스 선택',
@@ -167,7 +187,13 @@ export function EnrollmentClassStep() {
       return
     }
     
+    // 선택된 클래스들의 세션 정보를 Context에 저장
+    const selectedClassesData = filteredClassesWithSessions?.filter((classInfo: ClassesWithSessionsByMonthResponse) => 
+      selectedIds.includes(classInfo.id)
+    ) || []
+    
     setSelectedClassIds(selectedIds)
+    setSelectedClassesWithSessions(selectedClassesData)
     setEnrollmentStep('date-selection')
   }
 
@@ -216,7 +242,7 @@ export function EnrollmentClassStep() {
       <main className="flex-1 min-h-0 bg-white px-5">
         {/* Timetable Container with Scroll */}
         <div className="w-full overflow-auto" style={{ 
-          height: 'calc(100vh - 370px)',
+          height: 'calc(100vh - 400px)',
           minHeight: 0 
         }}>
           {/* Sticky Header Row */}
@@ -256,22 +282,22 @@ export function EnrollmentClassStep() {
                     className="relative border-b border-r border-gray-100 flex flex-col gap-1 p-1"
                     style={{ gridRow: rowIdx + 1, gridColumn: colIdx + 2 }}
                   >
-                    {classCards?.filter(card =>
-                      card.dayOfWeek === day && formatTime(card.startTime) === time
-                    ).map(card => (
+                    {filteredClassesWithSessions?.filter((classInfo: ClassesWithSessionsByMonthResponse) =>
+                      classInfo.dayOfWeek === day && formatTime(classInfo.startTime) === time
+                    ).map((classInfo: ClassesWithSessionsByMonthResponse) => (
                       <ClassCard
-                        key={card.id}
-                        {...card}
-                        className={card.className}
-                        teacher={card.teacher?.name || '선생님'}
-                        startTime={formatTime(card.startTime)}
-                        endTime={formatTime(card.endTime)}
-                        dayIndex={days.indexOf(card.dayOfWeek)}
-                        startHour={Number(formatTime(card.startTime).split(':')[0])}
-                        bgColor={card.backgroundColor ? `bg-${card.backgroundColor}` : 'bg-gray-100'}
-                        selected={selectedIds.includes(card.id)}
-                        onClick={() => handleSelect(card.id)}
-                        onInfoClick={() => handleClassInfoClick(card.id)}
+                        key={classInfo.id}
+                        {...classInfo}
+                        className={classInfo.className}
+                        teacher={classInfo.teacher?.name || '선생님'}
+                        startTime={formatTime(classInfo.startTime)}
+                        endTime={formatTime(classInfo.endTime)}
+                        dayIndex={days.indexOf(classInfo.dayOfWeek)}
+                        startHour={Number(formatTime(classInfo.startTime).split(':')[0])}
+                        bgColor={classInfo.backgroundColor ? `bg-${classInfo.backgroundColor}` : 'bg-gray-100'}
+                        selected={selectedIds.includes(classInfo.id)}
+                        onClick={() => handleSelect(classInfo.id)}
+                        onInfoClick={() => handleClassInfoClick(classInfo.id)}
                         containerWidth="100%"
                       />
                     ))}

@@ -2,13 +2,31 @@ import * as React from 'react'
 import { CalendarDay } from './CalendarDay'
 import { Tab } from '@/components/common/Tab'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { useDashboardNavigation } from '@/contexts/DashboardContext'
 
 export function Calendar() {
+  const { enrollment } = useDashboardNavigation()
+  const { selectedClassesWithSessions } = enrollment
+
   const tabs = [
     { label: '클래스 정보', isActive: true },
     { label: '수강신청', isActive: false },
     { label: '나의 정보', isActive: false },
   ]
+
+  // 선택된 클래스들의 세션 정보를 날짜별로 정리
+  const sessionDates = React.useMemo(() => {
+    const dates = new Set<string>()
+    
+    selectedClassesWithSessions.forEach(classInfo => {
+      classInfo.sessions.forEach(session => {
+        const dateStr = new Date(session.date).toISOString().split('T')[0]
+        dates.add(dateStr)
+      })
+    })
+    
+    return Array.from(dates)
+  }, [selectedClassesWithSessions])
 
   const generateCalendarDays = () => {
     const days = []
@@ -21,7 +39,12 @@ export function Calendar() {
       } else if (i >= 32) {
         days.push({ day: i - 31, isCurrentMonth: false })
       } else {
-        days.push({ day: i, isCurrentMonth: true, hasEvent: i === 2 })
+        // 해당 날짜에 세션이 있는지 확인
+        const currentDate = new Date(2024, 0, i) // 2024년 1월 기준
+        const dateStr = currentDate.toISOString().split('T')[0]
+        const hasSession = sessionDates.includes(dateStr)
+        
+        days.push({ day: i, isCurrentMonth: true, hasEvent: hasSession })
       }
     }
     return days

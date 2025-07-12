@@ -85,15 +85,16 @@ describe('AdminController - CREATE endpoints', () => {
     const createClassDto: CreateClassDto = {
       className: 'Test Class',
       description: 'Test Description',
-      maxStudents: 10,
+      maxStudents: 20,
       tuitionFee: 100000,
       teacherId: 1,
+      academyId: 1,
       dayOfWeek: 'MONDAY',
-      startTime: '14:00',
-      endTime: '15:00',
-      startDate: new Date('2024-01-01'),
-      endDate: new Date('2024-01-31'),
       level: 'BEGINNER',
+      startTime: '10:00',
+      endTime: '11:00',
+      startDate: '2024-01-01T00:00:00.000Z',
+      endDate: '2024-12-31T00:00:00.000Z',
       backgroundColor: '#F8F9FA',
     };
     const classObj = {

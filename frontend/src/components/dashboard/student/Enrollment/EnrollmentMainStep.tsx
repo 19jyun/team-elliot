@@ -42,7 +42,7 @@ export function EnrollmentMainStep() {
     }
     
     setSelectedMonth(month)
-    setEnrollmentStep('class-selection')
+    setEnrollmentStep('academy-selection')
     navigateToSubPage('enroll') // SubPage 설정 추가
   }
 

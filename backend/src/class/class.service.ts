@@ -5,6 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Class } from '@prisma/client';
 
 @Injectable()
 export class ClassService {
@@ -102,15 +103,6 @@ export class ClassService {
       throw new BadRequestException('시작일은 종료일보다 이전이어야 합니다.');
     }
 
-    const registrationMonth = new Date(data.startDate);
-    registrationMonth.setDate(1);
-
-    const registrationStartDate = new Date(data.startDate);
-    registrationStartDate.setDate(registrationStartDate.getDate() - 14);
-
-    const registrationEndDate = new Date(registrationStartDate);
-    registrationEndDate.setDate(registrationEndDate.getDate() + 7);
-
     // 고유한 클래스 코드 생성
     const classCode = await this.generateUniqueClassCode(data.dayOfWeek);
 
@@ -130,9 +122,6 @@ export class ClassService {
         endDate: new Date(data.endDate),
         level: data.level,
         status: 'DRAFT',
-        registrationMonth,
-        registrationStartDate,
-        registrationEndDate,
         teacher: {
           connect: {
             id: data.teacherId,
@@ -572,17 +561,40 @@ export class ClassService {
   }
 
   async getClassesByMonth(month: string, year: number) {
+    // registrationMonth 관련 조건 제거, status만 남김
+    return this.prisma.class.findMany({
+      where: {
+        status: 'OPEN',
+      },
+      include: {
+        teacher: {
+          select: {
+            id: true,
+            name: true,
+            photoUrl: true,
+          },
+        },
+      },
+    });
+  }
+
+  async getClassesWithSessionsByMonth(month: string, year: number) {
     const targetDate = new Date(`${year}-${month}-01`);
     const nextMonth = new Date(targetDate);
     nextMonth.setMonth(nextMonth.getMonth() + 1);
 
-    return this.prisma.class.findMany({
+    // 해당 월에 세션이 있는 클래스들을 조회
+    const classesWithSessions = await this.prisma.class.findMany({
       where: {
         AND: [
           {
-            registrationMonth: {
-              gte: targetDate,
-              lt: nextMonth,
+            classSessions: {
+              some: {
+                date: {
+                  gte: targetDate,
+                  lt: nextMonth,
+                },
+              },
             },
           },
           {
@@ -598,7 +610,61 @@ export class ClassService {
             photoUrl: true,
           },
         },
+        classSessions: {
+          where: {
+            date: {
+              gte: targetDate,
+              lt: nextMonth,
+            },
+          },
+          include: {
+            enrollments: {
+              select: {
+                id: true,
+                status: true,
+              },
+            },
+          },
+          orderBy: {
+            date: 'asc',
+          },
+        },
       },
+    });
+
+    // 응답 데이터 구조화
+    return classesWithSessions.map((classInfo) => {
+      const sessions = classInfo.classSessions.map((session) => {
+        const confirmedEnrollments = session.enrollments.filter(
+          (enrollment) => enrollment.status === 'CONFIRMED',
+        ).length;
+
+        const now = new Date();
+        const sessionStartTime = new Date(session.startTime);
+
+        return {
+          id: session.id,
+          date: session.date,
+          startTime: session.startTime,
+          endTime: session.endTime,
+          enrollments: confirmedEnrollments,
+          maxStudents: classInfo.maxStudents,
+          isEnrollable: now < sessionStartTime,
+        };
+      });
+
+      return {
+        id: classInfo.id,
+        className: classInfo.className,
+        teacher: classInfo.teacher,
+        dayOfWeek: classInfo.dayOfWeek,
+        startTime: classInfo.startTime,
+        endTime: classInfo.endTime,
+        level: classInfo.level,
+        backgroundColor: classInfo.backgroundColor,
+        academyId: classInfo.academyId,
+        sessions,
+      };
     });
   }
 

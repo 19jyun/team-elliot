@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useDashboardNavigation, EnrollmentStep } from '@/contexts/DashboardContext';
-import { EnrollmentMainStep } from '../EnrollmentMainStep';
+import { EnrollmentAcademyStep } from '../EnrollmentAcademyStep';
 import { EnrollmentClassStep } from './EnrollmentClassStep';
 import { EnrollmentDateStep } from './EnrollmentDateStep';
 import { EnrollmentPaymentStep } from './EnrollmentPaymentStep';
@@ -15,8 +15,8 @@ export function EnrollmentContainer() {
   // 현재 단계에 따라 적절한 컴포넌트 렌더링
   const renderCurrentStep = () => {
     switch (currentStep) {
-      case 'main':
-        return <EnrollmentMainStep />;
+      case 'academy-selection':
+        return <EnrollmentAcademyStep />;
       case 'class-selection':
         return <EnrollmentClassStep />;
       case 'date-selection':
@@ -26,7 +26,7 @@ export function EnrollmentContainer() {
       case 'complete':
         return <EnrollmentCompleteStep />;
       default:
-        return <EnrollmentMainStep />;
+        return <EnrollmentAcademyStep />;
     }
   };
 
