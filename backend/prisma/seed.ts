@@ -144,6 +144,8 @@ async function main() {
       classDetailId: classDetail.id,
       level: 'BEGINNER',
       status: 'OPEN',
+      startDate: new Date('2024-01-01'),
+      endDate: new Date('2024-12-31'),
       backgroundColor: 'orange-100',
     },
     {
@@ -161,6 +163,8 @@ async function main() {
       classDetailId: classDetail.id,
       level: 'ADVANCED',
       status: 'OPEN',
+      startDate: new Date('2024-01-01'),
+      endDate: new Date('2024-12-31'),
       backgroundColor: 'slate-300',
     },
     {
@@ -178,6 +182,8 @@ async function main() {
       classDetailId: classDetail.id,
       level: 'BEGINNER',
       status: 'OPEN',
+      startDate: new Date('2024-01-01'),
+      endDate: new Date('2024-12-31'),
       backgroundColor: 'rose-100',
     },
   ];

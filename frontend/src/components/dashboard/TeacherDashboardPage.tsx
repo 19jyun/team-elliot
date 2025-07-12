@@ -13,6 +13,7 @@ import AcademyManagement from './teacher/profile/AcademyManagement/AcademyManage
 import { DashboardContainer } from './DashboardContainer';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 function TeacherDashboardContent() {
   const { activeTab, handleTabChange } = useTeacherContext();
@@ -75,6 +76,12 @@ export function TeacherDashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
+  useEffect(() => {
+    if (status !== 'loading' && !session?.user) {
+      router.push('/login');
+    }
+  }, [session, status, router]);
+
   if (status === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-full">
@@ -84,8 +91,11 @@ export function TeacherDashboardPage() {
   }
 
   if (!session?.user) {
-    router.push('/login');
-    return null;
+    return (
+      <div className="flex items-center justify-center min-h-full">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
+      </div>
+    );
   }
 
   return (

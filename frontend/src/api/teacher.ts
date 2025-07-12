@@ -27,6 +27,18 @@ export const getTeacherProfile = async (): Promise<TeacherProfileResponse> => {
   return response.data;
 };
 
+export const getTeacherProfileById = async (
+  teacherId?: number
+): Promise<TeacherProfileResponse> => {
+  if (teacherId) {
+    const response = await axiosInstance.get(`/teachers/${teacherId}/profile`);
+    return response.data;
+  } else {
+    const response = await axiosInstance.get("/teachers/me");
+    return response.data;
+  }
+};
+
 export const updateTeacherProfile = async (
   data: UpdateProfileRequest
 ): Promise<UpdateProfileResponse> => {

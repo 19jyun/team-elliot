@@ -7,6 +7,7 @@ import { ClassDetailsResponse } from '@/types/api/class';
 import { toast } from 'sonner';
 import cn from 'classnames';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
+import { TeacherProfileCard } from '@/components/common/TeacherProfileCard';
 
 interface ClassDetailProps {
   classId: number;
@@ -36,6 +37,13 @@ export function ClassDetail({ classId, classSessions }: ClassDetailProps) {
       loadClassDetails();
     }
   }, [classId]);
+
+  // teacher 정보 디버깅
+  useEffect(() => {
+    if (classDetails?.teacher) {
+      console.log('ClassDetail에서 teacher 정보:', classDetails.teacher);
+    }
+  }, [classDetails?.teacher]);
 
   const loadClassDetails = async () => {
     try {
@@ -138,24 +146,16 @@ export function ClassDetail({ classId, classSessions }: ClassDetailProps) {
         <div className="text-base text-[#262626] whitespace-pre-line">
           {classDetails?.classDetail?.description || classDetails?.description || '클래스 설명이 없습니다.'}
         </div>
-        {/* 선생님 정보 */}
+        
+        {/* 선생님 프로필 카드 */}
         {classDetails?.teacher && (
-          <div className="mt-6 flex items-start gap-4">
-            <div className="flex-1">
-              <div className="font-semibold text-[#262626]">{classDetails.teacher.name}</div>
-              <div className="mt-2 text-base text-[#262626] whitespace-pre-line">
-                {(classDetails.teacher as any).education?.length > 0
-                  ? (classDetails.teacher as any).education.join('\n')
-                  : '학력/경력 정보 없음'}
-              </div>
-            </div>
-            {classDetails.teacher.photoUrl && (
-              <img
-                src={classDetails.teacher.photoUrl}
-                alt="프로필"
-                className="w-20 h-20 rounded-lg object-cover"
-              />
-            )}
+          <div className="mt-6">
+            <TeacherProfileCard 
+              teacherId={classDetails.teacherId} 
+              isEditable={false}
+              showHeader={false}
+              compact={true}
+            />
           </div>
         )}
       </div>

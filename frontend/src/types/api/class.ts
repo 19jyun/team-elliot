@@ -54,7 +54,16 @@ export interface SessionEnrollment {
   cancelledAt?: string;
 }
 
-export interface ClassDetailsResponse extends Class {}
+export interface ClassDetailsResponse extends Class {
+  classDetail?: {
+    id: number;
+    description: string;
+    locationName: string;
+    mapImageUrl: string;
+    requiredItems: string[];
+    curriculum: string[];
+  };
+}
 export interface AllClassesResponse extends Array<Class> {}
 export interface CreateClassRequest {
   className: string;

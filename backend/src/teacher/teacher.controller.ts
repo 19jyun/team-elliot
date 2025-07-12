@@ -169,6 +169,15 @@ export class TeacherController {
     return this.teacherService.getTeacherProfile(id);
   }
 
+  // 학생/선생님/관리자 모두 접근 가능한 공개 프로필 API
+  @Get(':id/profile')
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @ApiOperation({ summary: '선생님 공개 프로필 조회' })
+  @ApiResponse({ status: 200, description: '선생님 프로필 조회 성공' })
+  async getPublicTeacherProfile(@Param('id', ParseIntPipe) id: number) {
+    return this.teacherService.getTeacherProfile(id);
+  }
+
   @Put(':id/profile')
   @Roles(Role.ADMIN)
   @UseInterceptors(FileInterceptor('photo', multerConfig))

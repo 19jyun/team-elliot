@@ -2,6 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { StudentDashboardPage } from '@/components/dashboard/StudentDashboardPage';
 import { TeacherDashboardPage } from '@/components/dashboard/TeacherDashboardPage';
 import { AdminDashboardPage } from '@/components/dashboard/AdminDashboardPage';
@@ -9,6 +10,12 @@ import { AdminDashboardPage } from '@/components/dashboard/AdminDashboardPage';
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router]);
 
   if (status === 'loading') {
     return (
@@ -18,13 +25,8 @@ export default function DashboardPage() {
     );
   }
 
-  if (!session?.user) {
-    router.push('/login');
-    return null;
-  }
-
   // 사용자 역할에 따른 대시보드 페이지 렌더링
-  const userRole = session.user.role || 'STUDENT';
+  const userRole = session?.user.role || 'STUDENT';
 
   switch (userRole) {
     case 'STUDENT':
