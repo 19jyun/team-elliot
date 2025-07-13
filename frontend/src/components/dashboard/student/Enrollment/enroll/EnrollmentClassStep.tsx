@@ -20,15 +20,14 @@ import { useDashboardNavigation } from '@/contexts/DashboardContext'
 const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
 const daysKor = ['월', '화', '수', '목', '금', '토', '일']
 const timeSlots = [
-  '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', 
-  '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00',
+  '9', '10', '11', '12', '13', '14', '15', '16', 
+  '17', '18', '19', '20', '21', '22', '23',
 ]
 
 function formatTime(date: string | Date) {
   const d = new Date(date)
-  const h = d.getHours().toString().padStart(2, '0')
-  const m = d.getMinutes().toString().padStart(2, '0')
-  return `${h}:${m}`
+  const h = d.getHours().toString()
+  return h
 }
 
 export function EnrollmentClassStep() {
@@ -258,7 +257,7 @@ export function EnrollmentClassStep() {
         }}>
           {/* Sticky Header Row */}
           <div className="sticky top-0 z-30 bg-white border-b border-gray-200">
-            <div className="grid" style={{ gridTemplateColumns: `60px repeat(7, 70px)`, minWidth: '450px' }}>
+            <div className="grid" style={{ gridTemplateColumns: `40px repeat(7, 80px)`, minWidth: '600px' }}>
               <div className="h-10 bg-white" />
               {daysKor.map(day => (
                 <div key={day} className="h-10 flex items-center justify-center font-semibold text-sm text-gray-900">{day}</div>
@@ -268,16 +267,16 @@ export function EnrollmentClassStep() {
 
           {/* Timetable Grid */}
           <div className="grid" style={{
-            gridTemplateColumns: `60px repeat(7, 70px)`,
-            gridTemplateRows: `repeat(${timeSlots.length}, 60px)`,
-            minWidth: '450px',
+            gridTemplateColumns: `40px repeat(7, 80px)`,
+            gridTemplateRows: `repeat(${timeSlots.length}, 90px)`,
+            minWidth: '600px',
             width: '100%',
-            height: `${timeSlots.length * 60}px`
+            height: `${timeSlots.length * 90}px`
           }}>
             {timeSlots.map((time, rowIdx) => (
               <div
                 key={time}
-                className="sticky left-0 z-20 flex items-center justify-center text-xs text-gray-400 border-r border-gray-200 bg-white"
+                className="sticky left-0 z-20 flex items-start justify-start text-sm text-gray-400 border-r border-gray-200 bg-white pt-1 pl-2"
                 style={{ gridRow: rowIdx + 1, gridColumn: 1 }}
               >
                 {time}
