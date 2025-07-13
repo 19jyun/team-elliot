@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { useSession } from 'next-auth/react'
 import { useQuery } from '@tanstack/react-query'
-import { toast } from 'react-hot-toast'
+import { toast } from 'sonner'
 import { getClassCards, getClassDetails } from '@/app/api/classes'
 import { getClassesWithSessionsByMonth } from '@/api/class'
 import { ClassesWithSessionsByMonthResponse } from '@/types/api/class'
@@ -185,7 +185,38 @@ export function EnrollmentClassStep() {
   }
 
   const handleSelect = (id: number) => {
-    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+    // 이미 선택된 클래스라면 선택 해제
+    if (selectedIds.includes(id)) {
+      setSelectedIds(prev => prev.filter(x => x !== id))
+      return
+    }
+
+    // 선택하려는 클래스의 요일 확인
+    const targetClass = filteredClassesWithSessions?.find((classInfo: ClassesWithSessionsByMonthResponse) => classInfo.id === id)
+    if (!targetClass) return
+
+    const targetDayOfWeek = targetClass.dayOfWeek
+
+    // 이미 선택된 클래스들 중 같은 요일이 있는지 확인
+    const hasSameDayClass = selectedIds.some(selectedId => {
+      const selectedClass = filteredClassesWithSessions?.find((classInfo: ClassesWithSessionsByMonthResponse) => classInfo.id === selectedId)
+      return selectedClass?.dayOfWeek === targetDayOfWeek
+    })
+
+    console.log('=== DEBUG: handleSelect ===')
+    console.log('targetClass:', targetClass)
+    console.log('targetDayOfWeek:', targetDayOfWeek)
+    console.log('selectedIds:', selectedIds)
+    console.log('hasSameDayClass:', hasSameDayClass)
+
+    if (hasSameDayClass) {
+      console.log('=== TOAST SHOULD APPEAR ===')
+      toast.error('동일 요일 클래스는 동시에 수강신청을 진행할 수 없어요! 만일 2개이상의 클래스를 신청하고 싶으시면, 수강신청을 다시 반복해주셔야 해요!')
+      return
+    }
+
+    // 같은 요일이 없으면 선택 추가
+    setSelectedIds(prev => [...prev, id])
   }
 
   const handleNextStep = () => {
@@ -215,7 +246,6 @@ export function EnrollmentClassStep() {
       </div>
     )
   }
-
 
 
   return (
