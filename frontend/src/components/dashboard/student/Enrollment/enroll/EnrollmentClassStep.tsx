@@ -44,6 +44,14 @@ export function EnrollmentClassStep() {
   }
   
   const { enrollment, setEnrollmentStep, setSelectedClassIds, setSelectedClassesWithSessions, goBack, navigateToSubPage } = dashboardContext
+
+  // goBack 함수를 래핑하여 환불 동의 상태 초기화
+  const handleGoBack = () => {
+    // 환불 동의 상태 초기화
+    localStorage.removeItem('refundPolicyAgreed')
+    // 원래 goBack 함수 호출
+    goBack()
+  }
   const { selectedMonth, selectedAcademyId } = enrollment
   const { status } = useSession({
     required: true,
@@ -76,7 +84,7 @@ export function EnrollmentClassStep() {
 
     if (!isAccessible) {
       toast.error('해당 월의 수강신청 기간이 아닙니다')
-      goBack()
+      handleGoBack()
       return
     }
   }, [currentMonth, nextMonth, requestedMonth, goBack])
@@ -134,12 +142,15 @@ export function EnrollmentClassStep() {
   }, [classesWithSessions, filteredClassesWithSessions, isLoading])
 
   // localStorage 확인하여 이전에 동의했다면 정책 건너뛰기
+  // selectedAcademyId가 변경될 때마다 다시 확인 (다른 학원을 선택했을 때)
   React.useEffect(() => {
     const hasAgreed = localStorage.getItem('refundPolicyAgreed') === 'true'
     if (hasAgreed) {
       setShowPolicy(false)
+    } else {
+      setShowPolicy(true)
     }
-  }, [])
+  }, [selectedAcademyId])
 
   const statusSteps = [
     {

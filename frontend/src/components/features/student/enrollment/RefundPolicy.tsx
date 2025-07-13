@@ -56,7 +56,9 @@ export const RefundPolicy: React.FC<RefundPolicyProps> = ({ isOpen, onClose, onA
   }
 
   const handleXButtonClick = () => {
-    // X버튼으로 닫을 때는 동의하지 않은 것으로 간주하여 SubPage를 닫음
+    // X버튼으로 닫을 때는 동의하지 않은 것으로 간주하여 환불 동의 상태 초기화
+    localStorage.removeItem('refundPolicyAgreed')
+    // SubPage를 닫음
     goBack()
   }
 
