@@ -222,20 +222,18 @@ export function EnrollmentHistory() {
   }
 
   return (
-    <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full h-full bg-white max-w-[480px] py-5 relative">
+    <div className="flex flex-col h-full bg-white max-w-[480px] mx-auto">
       {/* 헤더 */}
-      <div className="flex items-center justify-between px-5 pb-4">
+      <header className="flex-shrink-0 bg-white border-b border-gray-200 py-5 px-5">
         <div>
           <h1 className="text-2xl font-bold text-stone-700">신청/결제 내역</h1>
           <p className="text-gray-600 mt-1">나의 수강 신청 및 결제 내역을 확인할 수 있습니다.</p>
         </div>
-      </div>
+      </header>
 
-      <Separator className="mx-5" />
-
-      {/* 수강 내역 목록 */}
-      <div className="px-5 pb-6 flex-1 flex flex-col">
-        <Card className="flex-1 flex flex-col">
+      {/* 메인 콘텐츠 */}
+      <main className="flex-1 min-h-0 bg-white px-5 py-4">
+        <Card className="h-full flex flex-col">
           <CardHeader className="pb-3 flex-shrink-0">
             <CardTitle className="flex items-center gap-2 text-lg">
               <Calendar className="h-5 w-5" />
@@ -284,7 +282,7 @@ export function EnrollmentHistory() {
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="flex-1 overflow-hidden">
+          <CardContent className="flex-1 overflow-y-auto">
             {filteredLogs.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-300" />
@@ -292,7 +290,7 @@ export function EnrollmentHistory() {
                 <p className="text-sm">필터를 변경해보세요.</p>
               </div>
             ) : (
-              <div className="space-y-4 h-full overflow-y-auto">
+              <div className="space-y-4">
                 {filteredLogs.map((log) => {
                   const status = getEnrollmentStatus(log);
                   const className = getClassName(log);
@@ -342,7 +340,7 @@ export function EnrollmentHistory() {
             )}
           </CardContent>
         </Card>
-      </div>
+      </main>
     </div>
   );
 } 

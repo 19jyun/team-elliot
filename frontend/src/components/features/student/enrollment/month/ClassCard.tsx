@@ -26,6 +26,7 @@ export const ClassCard: React.FC<ExtendedClassCardProps> = ({
   selected = false,
   onClick,
   onInfoClick,
+  style,
 }) => {
   const baseBg = levelBgColor[level as keyof typeof levelBgColor] || '#F4E7E7'
   const cardBg = selected ? '#573B30' : baseBg
@@ -41,8 +42,13 @@ export const ClassCard: React.FC<ExtendedClassCardProps> = ({
 
   return (
     <div
-      className={`flex flex-col justify-between p-1 min-h-[105px] relative cursor-pointer transition w-full ${textColor}`}
-      style={{ background: cardBg }}
+      className={`flex flex-col justify-between p-1 relative cursor-pointer transition w-full ${textColor}`}
+      style={{ 
+        background: cardBg,
+        minHeight: '110px',
+        overflow: 'hidden', // 넘치는 부분 숨김
+        ...style
+      }}
       onClick={onClick}
     >
       {/* Checkmark for selected */}

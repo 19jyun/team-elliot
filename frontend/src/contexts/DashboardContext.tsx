@@ -267,9 +267,16 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         }));
       }, 300); // CSS transition 시간과 동일
 
-      // 수강신청 탭에서 다른 탭으로 이동할 때 refundPolicyAgreed 초기화
+      // 수강신청 탭에서 다른 탭으로 이동할 때 enrollment 관련 데이터 초기화
       if (prev.subPage === 'enroll') {
         localStorage.removeItem('refundPolicyAgreed');
+        localStorage.removeItem('selectedSessions');
+        localStorage.removeItem('selectedClasses');
+        localStorage.removeItem('existingEnrollments');
+        localStorage.removeItem('modificationChangeAmount');
+        localStorage.removeItem('modificationChangeType');
+        localStorage.removeItem('modificationNetChangeCount');
+        localStorage.removeItem('modificationNewSessionsCount');
       }
 
       return {
@@ -330,6 +337,11 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         const currentIndex = stepOrder.indexOf(prev.enrollment.currentStep);
         const previousStep = currentIndex > 0 ? stepOrder[currentIndex - 1] : 'main';
         
+        // class-selection에서 academy-selection으로 돌아갈 때 환불 동의 상태 초기화
+        if (prev.enrollment.currentStep === 'class-selection' && previousStep === 'academy-selection') {
+          localStorage.removeItem('refundPolicyAgreed');
+        }
+        
         return {
           ...prev,
           enrollment: {
@@ -358,6 +370,14 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       // 수강신청 SubPage인 경우 refundPolicyAgreed 초기화
       if (prev.subPage === 'enroll') {
         localStorage.removeItem('refundPolicyAgreed');
+        // enrollment 관련 localStorage 데이터도 모두 초기화
+        localStorage.removeItem('selectedSessions');
+        localStorage.removeItem('selectedClasses');
+        localStorage.removeItem('existingEnrollments');
+        localStorage.removeItem('modificationChangeAmount');
+        localStorage.removeItem('modificationChangeType');
+        localStorage.removeItem('modificationNetChangeCount');
+        localStorage.removeItem('modificationNewSessionsCount');
       }
       
       return {
@@ -398,11 +418,25 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   // SubPage 초기화
   const clearSubPage = useCallback(() => {
-    setState(prev => ({
-      ...prev,
-      subPage: null,
-      currentFocus: 'dashboard',
-    }));
+    setState(prev => {
+      // 수강신청 SubPage인 경우 관련 데이터 초기화
+      if (prev.subPage === 'enroll') {
+        localStorage.removeItem('refundPolicyAgreed');
+        localStorage.removeItem('selectedSessions');
+        localStorage.removeItem('selectedClasses');
+        localStorage.removeItem('existingEnrollments');
+        localStorage.removeItem('modificationChangeAmount');
+        localStorage.removeItem('modificationChangeType');
+        localStorage.removeItem('modificationNetChangeCount');
+        localStorage.removeItem('modificationNewSessionsCount');
+      }
+      
+      return {
+        ...prev,
+        subPage: null,
+        currentFocus: 'dashboard',
+      };
+    });
   }, []);
 
   // 수강신청 단계 설정
