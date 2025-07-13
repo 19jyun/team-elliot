@@ -12,8 +12,7 @@ import { ClassCard } from '@/components/features/student/enrollment/month/ClassC
 import { TimeSlot } from '@/components/features/student/enrollment/month/TimeSlot'
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep'
 import { ChevronLeftIcon } from '@heroicons/react/24/outline'
-import { ClassDetails } from '@/components/features/student/enrollment/month/ClassDetails'
-import { ClassDetailsResponse } from '@/types/api/class'
+import { ClassDetailModal } from '@/components/features/student/classes/ClassDetailModal'
 import { useState } from 'react'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
 
@@ -25,6 +24,13 @@ const timeSlots = [
 ]
 
 function formatTime(date: string | Date) {
+  const d = new Date(date)
+  const h = d.getHours().toString().padStart(2, '0')
+  const m = d.getMinutes().toString().padStart(2, '0')
+  return `${h}:${m}`
+}
+
+function formatTimeForCalendar(date: string | Date) {
   const d = new Date(date)
   const h = d.getHours().toString()
   return h
@@ -90,8 +96,8 @@ export function EnrollmentClassStep() {
 
   const [showPolicy, setShowPolicy] = React.useState(true)
   const [agreed, setAgreed] = React.useState(false)
-  const [showClassDetails, setShowClassDetails] = React.useState(false)
-  const [selectedClassDetails, setSelectedClassDetails] = React.useState<ClassDetailsResponse | null>(null)
+  const [showClassDetailModal, setShowClassDetailModal] = React.useState(false)
+  const [selectedClassId, setSelectedClassId] = React.useState<number | null>(null)
   const [selectedIds, setSelectedIds] = useState<number[]>([])
 
   const { data: classesWithSessions, isLoading } = useQuery({
@@ -173,18 +179,9 @@ export function EnrollmentClassStep() {
     },
   ]
 
-  const handleClassInfoClick = async (classId: number) => {
-    try {
-      const details = await getClassDetails(classId)
-      if (!details) {
-        throw new Error('No class details returned')
-      }
-      setSelectedClassDetails(details)
-      setShowClassDetails(true)
-    } catch (error) {
-      console.error('Failed to fetch class details:', error)
-      toast.error('클래스 정보를 불러오는데 실패했습니다.')
-    }
+  const handleClassInfoClick = (classId: number) => {
+    setSelectedClassId(classId)
+    setShowClassDetailModal(true)
   }
 
   const handleSelect = (id: number) => {
@@ -219,20 +216,7 @@ export function EnrollmentClassStep() {
     )
   }
 
-  if (showClassDetails && selectedClassDetails) {
-    return (
-      <div className="w-full h-full">
-        <ClassDetails
-          onClose={() => {
-            // 상태 업데이트를 안전하게 처리
-            requestAnimationFrame(() => {
-              setShowClassDetails(false)
-            })
-          }}
-        />
-      </div>
-    )
-  }
+
 
   return (
     <div className="flex flex-col h-full bg-white relative">
@@ -266,13 +250,14 @@ export function EnrollmentClassStep() {
           </div>
 
           {/* Timetable Grid */}
-          <div className="grid" style={{
+          <div className="grid relative" style={{
             gridTemplateColumns: `40px repeat(7, 80px)`,
-            gridTemplateRows: `repeat(${timeSlots.length}, 90px)`,
+            gridTemplateRows: `repeat(${timeSlots.length}, 110px)`,
             minWidth: '600px',
             width: '100%',
-            height: `${timeSlots.length * 90}px`
+            height: `${timeSlots.length * 110}px`
           }}>
+            {/* 시간 표시 */}
             {timeSlots.map((time, rowIdx) => (
               <div
                 key={time}
@@ -283,38 +268,75 @@ export function EnrollmentClassStep() {
               </div>
             ))}
 
+            {/* 빈 Grid cell들 (배경용) */}
             {timeSlots.map((time, rowIdx) => (
               days.map((day, colIdx) => {
                 const cellKey = `${day}-${time}`
                 return (
                   <div
                     key={cellKey}
-                    className="relative border-b border-r border-gray-100 flex flex-col gap-1 p-1"
+                    className="relative border-b border-r border-gray-100"
                     style={{ gridRow: rowIdx + 1, gridColumn: colIdx + 2 }}
-                  >
-                    {filteredClassesWithSessions?.filter((classInfo: ClassesWithSessionsByMonthResponse) =>
-                      classInfo.dayOfWeek === day && formatTime(classInfo.startTime) === time
-                    ).map((classInfo: ClassesWithSessionsByMonthResponse) => (
-                      <ClassCard
-                        key={classInfo.id}
-                        {...classInfo}
-                        className={classInfo.className}
-                        teacher={classInfo.teacher?.name || '선생님'}
-                        startTime={formatTime(classInfo.startTime)}
-                        endTime={formatTime(classInfo.endTime)}
-                        dayIndex={days.indexOf(classInfo.dayOfWeek)}
-                        startHour={Number(formatTime(classInfo.startTime).split(':')[0])}
-                        bgColor={classInfo.backgroundColor ? `bg-${classInfo.backgroundColor}` : 'bg-gray-100'}
-                        selected={selectedIds.includes(classInfo.id)}
-                        onClick={() => handleSelect(classInfo.id)}
-                        onInfoClick={() => handleClassInfoClick(classInfo.id)}
-                        containerWidth="100%"
-                      />
-                    ))}
-                  </div>
+                  />
                 )
               })
             ))}
+
+            {/* ClassCard들을 Grid와 같은 레벨에 배치 */}
+            {filteredClassesWithSessions?.map((classInfo: ClassesWithSessionsByMonthResponse) => {
+              const startDate = new Date(classInfo.startTime)
+              const endDate = new Date(classInfo.endTime)
+              const startHour = startDate.getHours()
+              const durationInMinutes = (endDate.getTime() - startDate.getTime()) / (1000 * 60)
+              const durationInHours = durationInMinutes / 60
+              const gridRowSpan = Math.ceil(durationInHours)
+              const actualHeight = durationInHours * 110
+              
+              // Grid 위치 계산
+              const dayIndex = days.indexOf(classInfo.dayOfWeek)
+              const timeIndex = timeSlots.indexOf(startHour.toString())
+              const gridRow = timeIndex + 1
+              const gridColumn = dayIndex + 2 // 1은 시간 열이므로 +2
+              
+              // 디버깅용 로그
+              console.log(`Class: ${classInfo.className}`, {
+                startTime: classInfo.startTime,
+                endTime: classInfo.endTime,
+                durationInHours,
+                gridRowSpan,
+                actualHeight,
+                gridRow,
+                gridColumn
+              })
+              
+              return (
+                <ClassCard
+                  key={classInfo.id}
+                  {...classInfo}
+                  className={classInfo.className}
+                  teacher={classInfo.teacher?.name || '선생님'}
+                  startTime={formatTime(classInfo.startTime)}
+                  endTime={formatTime(classInfo.endTime)}
+                  dayIndex={days.indexOf(classInfo.dayOfWeek)}
+                  startHour={Number(formatTimeForCalendar(classInfo.startTime))}
+                  bgColor={classInfo.backgroundColor ? `bg-${classInfo.backgroundColor}` : 'bg-gray-100'}
+                  selected={selectedIds.includes(classInfo.id)}
+                  onClick={() => handleSelect(classInfo.id)}
+                  onInfoClick={() => handleClassInfoClick(classInfo.id)}
+                  containerWidth="100%"
+                  style={{ 
+                    position: 'absolute',
+                    gridRow: `${gridRow} / span ${gridRowSpan}`,
+                    gridColumn: gridColumn,
+                    height: `${actualHeight}px`,
+                    maxHeight: `${actualHeight}px`,
+                    width: '72px',
+                    left: '4px',
+                    right: '4px'
+                  }}
+                />
+              )
+            })}
           </div>
         </div>
       </main>
@@ -351,6 +373,18 @@ export function EnrollmentClassStep() {
           }} 
         />
       </div>
+
+      {/* ClassDetailModal */}
+      {selectedClassId && (
+        <ClassDetailModal
+          isOpen={showClassDetailModal}
+          onClose={() => {
+            setShowClassDetailModal(false)
+            setSelectedClassId(null)
+          }}
+          classId={selectedClassId}
+        />
+      )}
     </div>
   )
 }

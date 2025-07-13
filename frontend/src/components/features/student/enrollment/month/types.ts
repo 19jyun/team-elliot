@@ -11,6 +11,7 @@ export interface ClassCardProps {
   onInfoClick?: () => void;
   selected?: boolean;
   onClick?: () => void;
+  style?: React.CSSProperties;
 }
 
 export interface TimeSlotProps {

@@ -12,6 +12,7 @@ import { TeacherProfileCard } from '@/components/common/TeacherProfileCard';
 interface ClassDetailProps {
   classId: number;
   classSessions?: any[];
+  showModificationButton?: boolean;
 }
 
 interface TeacherInfo {
@@ -27,7 +28,7 @@ interface LocationInfo {
   mapImageUrl?: string;
 }
 
-export function ClassDetail({ classId, classSessions }: ClassDetailProps) {
+export function ClassDetail({ classId, classSessions, showModificationButton = true }: ClassDetailProps) {
   const [classDetails, setClassDetails] = useState<ClassDetailsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { navigateToSubPage } = useDashboardNavigation();
@@ -160,20 +161,22 @@ export function ClassDetail({ classId, classSessions }: ClassDetailProps) {
         )}
       </div>
       {/* 하단 고정 버튼 */}
-      <div className="flex-shrink-0 flex flex-col w-full bg-white px-5 pb-4 pt-2">
-        <button
-          onClick={handleModificationRequest}
-          className={cn(
-            'flex-1 shrink gap-2.5 self-stretch px-2.5 py-4 rounded-lg min-w-[240px] size-full text-base font-semibold leading-snug text-white',
-            'bg-[#AC9592] hover:bg-[#8c7a74] transition-colors',
-          )}
-        >
-          수강 변경/취소
-        </button>
-        <div className="flex flex-col items-center px-20 pt-2 pb-3 w-full max-sm:hidden">
-          <div className="flex shrink-0 bg-black h-[5px] rounded-[100px] w-[134px]" />
+      {showModificationButton && (
+        <div className="flex-shrink-0 flex flex-col w-full bg-white px-5 pb-4 pt-2">
+          <button
+            onClick={handleModificationRequest}
+            className={cn(
+              'flex-1 shrink gap-2.5 self-stretch px-2.5 py-4 rounded-lg min-w-[240px] size-full text-base font-semibold leading-snug text-white',
+              'bg-[#AC9592] hover:bg-[#8c7a74] transition-colors',
+            )}
+          >
+            수강 변경/취소
+          </button>
+          <div className="flex flex-col items-center px-20 pt-2 pb-3 w-full max-sm:hidden">
+            <div className="flex shrink-0 bg-black h-[5px] rounded-[100px] w-[134px]" />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 } 
