@@ -143,7 +143,6 @@ model Class {
   classCode             String         @unique @map("class_code") @db.VarChar(50)
   description           String?        @db.Text
   maxStudents           Int            @map("max_students")
-  currentStudents       Int            @default(0) @map("current_students")
   tuitionFee            Decimal        @map("tuition_fee") @db.Decimal(10, 2)
   teacherId             Int            @map("teacher_id")
   academyId             Int            @map("academy_id") // 소속 학원 (필수)
@@ -263,13 +262,15 @@ model WithdrawalHistory {
 }
 
 model ClassSession {
-  id          Int                 @id @default(autoincrement())
-  classId     Int                 @map("class_id")
-  date        DateTime            @map("session_date")
-  startTime   DateTime            @map("start_time")
-  endTime     DateTime            @map("end_time")
-  class       Class               @relation(fields: [classId], references: [id])
-  enrollments SessionEnrollment[]
+  id             Int                 @id @default(autoincrement())
+  classId        Int                 @map("class_id")
+  date           DateTime            @map("session_date")
+  startTime      DateTime            @map("start_time")
+  endTime        DateTime            @map("end_time")
+  maxStudents    Int                 @map("max_students")
+  currentStudents Int                @default(0) @map("current_students")
+  class          Class               @relation(fields: [classId], references: [id])
+  enrollments    SessionEnrollment[]
 
   @@unique([classId, date])
   @@map("class_sessions")

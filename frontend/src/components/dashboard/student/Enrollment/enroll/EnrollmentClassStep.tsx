@@ -102,18 +102,13 @@ export function EnrollmentClassStep() {
 
   const { data: classesWithSessions, isLoading } = useQuery({
     queryKey: ['classesWithSessions', requestedMonth, selectedAcademyId],
-    queryFn: () => {
+    queryFn: async () => {
       const year =
         requestedMonth === 1 && currentMonth === 12
           ? currentDate.getFullYear() + 1
           : currentDate.getFullYear()
 
-      console.log('=== API QUERY DEBUG ===')
-      console.log('Querying for month:', requestedMonth, 'year:', year)
-      console.log('Selected academy ID:', selectedAcademyId)
-      const result = getClassesWithSessionsByMonth(`${requestedMonth}`, year)
-      console.log('API call result:', result)
-      return result
+      return getClassesWithSessionsByMonth(`${requestedMonth}`, year)
     },
     enabled: !!requestedMonth && selectedAcademyId !== null,
   })
@@ -127,24 +122,7 @@ export function EnrollmentClassStep() {
     )
   }, [classesWithSessions, selectedAcademyId])
 
-  // Debug logging for API response
-  React.useEffect(() => {
-    console.log('=== API RESPONSE DEBUG ===')
-    console.log('classCards data:', classesWithSessions)
-    console.log('filteredClassCards data:', filteredClassesWithSessions)
-    console.log('classCards type:', typeof classesWithSessions)
-    console.log('classCards length:', classesWithSessions?.length)
-    console.log('filteredClassCards length:', filteredClassesWithSessions?.length)
-    console.log('isLoading:', isLoading)
-    
-    if (filteredClassesWithSessions && filteredClassesWithSessions.length > 0) {
-      console.log('First filtered class card raw data:', filteredClassesWithSessions[0])
-      console.log('All filtered class cards:', filteredClassesWithSessions)
-    } else {
-      console.log('No filtered class cards found or empty array')
-    }
-    console.log('=== END API RESPONSE DEBUG ===')
-  }, [classesWithSessions, filteredClassesWithSessions, isLoading])
+
 
   // localStorage 확인하여 이전에 동의했다면 정책 건너뛰기
   // selectedAcademyId가 변경될 때마다 다시 확인 (다른 학원을 선택했을 때)
@@ -327,16 +305,7 @@ export function EnrollmentClassStep() {
               const gridRow = timeIndex + 1
               const gridColumn = dayIndex + 2 // 1은 시간 열이므로 +2
               
-              // 디버깅용 로그
-              console.log(`Class: ${classInfo.className}`, {
-                startTime: classInfo.startTime,
-                endTime: classInfo.endTime,
-                durationInHours,
-                gridRowSpan,
-                actualHeight,
-                gridRow,
-                gridColumn
-              })
+
               
               return (
                 <ClassCard

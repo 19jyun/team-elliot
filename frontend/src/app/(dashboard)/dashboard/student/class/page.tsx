@@ -1,5 +1,6 @@
 'use client'
 
+import * as React from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useQuery } from '@tanstack/react-query'
 import Image from 'next/image'
@@ -46,6 +47,8 @@ export default function StudentDashboard() {
 
   // myClasses 객체 로그 출력
   console.log('myClasses:', myClasses)
+
+
 
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {

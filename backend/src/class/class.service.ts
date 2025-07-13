@@ -113,7 +113,6 @@ export class ClassService {
         classCode,
         description: data.description,
         maxStudents: data.maxStudents,
-        currentStudents: 0,
         tuitionFee: data.tuitionFee,
         dayOfWeek: data.dayOfWeek,
         startTime: new Date(`1970-01-01T${data.startTime}:00`),
@@ -235,11 +234,23 @@ export class ClassService {
       throw new BadRequestException('유효하지 않은 요일입니다.');
     }
 
+    // 클래스 정보 조회하여 maxStudents 가져오기
+    const classInfo = await this.prisma.class.findUnique({
+      where: { id: classId },
+      select: { maxStudents: true },
+    });
+
+    if (!classInfo) {
+      throw new NotFoundException('클래스를 찾을 수 없습니다.');
+    }
+
     const sessions: Array<{
       classId: number;
       date: Date;
       startTime: Date;
       endTime: Date;
+      maxStudents: number;
+      currentStudents: number;
     }> = [];
 
     // 시작일부터 종료일까지 해당 요일의 세션들을 생성
@@ -276,6 +287,8 @@ export class ClassService {
           date: sessionDate,
           startTime: sessionStartTime,
           endTime: sessionEndTime,
+          maxStudents: classInfo.maxStudents,
+          currentStudents: 0,
         });
       }
 
@@ -578,7 +591,11 @@ export class ClassService {
     });
   }
 
-  async getClassesWithSessionsByMonth(month: string, year: number) {
+  async getClassesWithSessionsByMonth(
+    month: string,
+    year: number,
+    studentId?: number,
+  ) {
     const targetDate = new Date(`${year}-${month}-01`);
     const nextMonth = new Date(targetDate);
     nextMonth.setMonth(nextMonth.getMonth() + 1);
@@ -619,9 +636,11 @@ export class ClassService {
           },
           include: {
             enrollments: {
+              where: studentId ? { studentId } : undefined,
               select: {
                 id: true,
                 status: true,
+                studentId: true,
               },
             },
           },
@@ -635,21 +654,47 @@ export class ClassService {
     // 응답 데이터 구조화
     return classesWithSessions.map((classInfo) => {
       const sessions = classInfo.classSessions.map((session) => {
-        const confirmedEnrollments = session.enrollments.filter(
-          (enrollment) => enrollment.status === 'CONFIRMED',
-        ).length;
+        // 현재 수강 인원 수 (CONFIRMED 상태만)
+        const currentStudents = session.currentStudents || 0;
+
+        // 학생의 개별 수강 신청 상태
+        const studentEnrollment = session.enrollments.find(
+          (enrollment) => enrollment.studentId === studentId,
+        );
 
         const now = new Date();
-        const sessionStartTime = new Date(session.startTime);
+
+        // session.date와 session.startTime을 조합해서 정확한 날짜시간 생성
+        const sessionDate = new Date(session.date);
+        const sessionStartTimeStr = session.startTime
+          .toTimeString()
+          .slice(0, 5); // "HH:MM" 형식
+        const [hours, minutes] = sessionStartTimeStr.split(':').map(Number);
+
+        const sessionStartTime = new Date(sessionDate);
+        sessionStartTime.setHours(hours, minutes, 0, 0);
+
+        // 수강 가능 여부 판단 (백엔드에서 처리)
+        const isFull = currentStudents >= classInfo.maxStudents;
+        const isPastStartTime = now >= sessionStartTime;
+        const isAlreadyEnrolled =
+          studentEnrollment &&
+          (studentEnrollment.status === 'CONFIRMED' ||
+            studentEnrollment.status === 'PENDING');
+        const isEnrollable = !isPastStartTime && !isFull && !isAlreadyEnrolled;
 
         return {
           id: session.id,
           date: session.date,
           startTime: session.startTime,
           endTime: session.endTime,
-          enrollments: confirmedEnrollments,
+          currentStudents,
           maxStudents: classInfo.maxStudents,
-          isEnrollable: now < sessionStartTime,
+          isEnrollable,
+          isFull,
+          isPastStartTime,
+          isAlreadyEnrolled,
+          studentEnrollmentStatus: studentEnrollment?.status || null,
         };
       });
 

@@ -33,6 +33,13 @@ export interface ClassSession {
   date: string;
   startTime: string;
   endTime: string;
+  currentStudents?: number;
+  maxStudents?: number;
+  isEnrollable?: boolean;
+  isFull?: boolean;
+  isPastStartTime?: boolean;
+  isAlreadyEnrolled?: boolean;
+  studentEnrollmentStatus?: string | null;
   class?: {
     id: number;
     className: string;
@@ -153,9 +160,13 @@ export interface ClassesWithSessionsByMonthResponse {
     date: string;
     startTime: string;
     endTime: string;
-    enrollments: number;
+    currentStudents: number;
     maxStudents: number;
     isEnrollable: boolean;
+    isFull: boolean;
+    isPastStartTime: boolean;
+    isAlreadyEnrolled: boolean;
+    studentEnrollmentStatus: string | null;
   }[];
 }
 

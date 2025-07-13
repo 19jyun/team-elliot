@@ -3,6 +3,92 @@ import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
+// 세션 자동 생성 함수
+async function generateSessionsForClass(classId: number, classData: any) {
+  const { dayOfWeek, startTime, endTime, startDate, endDate, maxStudents } =
+    classData;
+
+  // 요일을 숫자로 변환 (0: 일요일, 1: 월요일, ..., 6: 토요일)
+  const dayOfWeekMap: { [key: string]: number } = {
+    SUNDAY: 0,
+    MONDAY: 1,
+    TUESDAY: 2,
+    WEDNESDAY: 3,
+    THURSDAY: 4,
+    FRIDAY: 5,
+    SATURDAY: 6,
+  };
+
+  const targetDayOfWeek = dayOfWeekMap[dayOfWeek];
+
+  if (targetDayOfWeek === undefined) {
+    throw new Error('유효하지 않은 요일입니다.');
+  }
+
+  const sessions: Array<{
+    classId: number;
+    date: Date;
+    startTime: Date;
+    endTime: Date;
+    maxStudents: number;
+    currentStudents: number;
+  }> = [];
+
+  // 시작일부터 종료일까지 해당 요일의 세션들을 생성
+  const currentDate = new Date(startDate);
+  const endDateTime = new Date(endDate);
+
+  while (currentDate <= endDateTime) {
+    // 현재 날짜가 목표 요일인지 확인
+    if (currentDate.getDay() === targetDayOfWeek) {
+      // 해당 날짜의 시작 시간과 종료 시간 계산
+      const sessionDate = new Date(currentDate);
+
+      // 시간 설정
+      const [startHour, startMinute] = startTime
+        .toTimeString()
+        .slice(0, 5)
+        .split(':')
+        .map(Number);
+      const [endHour, endMinute] = endTime
+        .toTimeString()
+        .slice(0, 5)
+        .split(':')
+        .map(Number);
+
+      // 해당 날짜에 시간 설정
+      const sessionStartTime = new Date(currentDate);
+      sessionStartTime.setHours(startHour, startMinute, 0, 0);
+
+      const sessionEndTime = new Date(currentDate);
+      sessionEndTime.setHours(endHour, endMinute, 0, 0);
+
+      sessions.push({
+        classId,
+        date: sessionDate,
+        startTime: sessionStartTime,
+        endTime: sessionEndTime,
+        maxStudents,
+        currentStudents: 0,
+      });
+    }
+
+    // 다음 날로 이동
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  // 세션들을 데이터베이스에 일괄 생성
+  if (sessions.length > 0) {
+    await prisma.classSession.createMany({
+      data: sessions,
+      skipDuplicates: true,
+    });
+    console.log(
+      `${sessions.length}개의 세션이 클래스 ${classData.className}에 생성되었습니다.`,
+    );
+  }
+}
+
 async function main() {
   const hashedPassword = await bcrypt.hash('admin123', 10);
 
@@ -134,7 +220,6 @@ async function main() {
       classCode: `BALLET-MON-${Math.floor(Math.random() * 1000) + 1}`,
       description: '초급자를 위한 발레 클래스',
       maxStudents: 10,
-      currentStudents: 0,
       tuitionFee: 150000,
       dayOfWeek: 'MONDAY',
       startTime: new Date('2024-01-01T06:00:00Z'),
@@ -144,8 +229,8 @@ async function main() {
       classDetailId: classDetail.id,
       level: 'BEGINNER',
       status: 'OPEN',
-      startDate: new Date('2024-01-01'),
-      endDate: new Date('2024-12-31'),
+      startDate: new Date('2025-07-01'),
+      endDate: new Date('2025-08-31'),
       backgroundColor: 'orange-100',
     },
     {
@@ -153,7 +238,6 @@ async function main() {
       classCode: `BALLET-WED-${Math.floor(Math.random() * 1000) + 1}`,
       description: '고급자를 위한 발레 클래스',
       maxStudents: 8,
-      currentStudents: 0,
       tuitionFee: 200000,
       dayOfWeek: 'WEDNESDAY',
       startTime: new Date('2024-01-01T06:00:00Z'),
@@ -163,8 +247,8 @@ async function main() {
       classDetailId: classDetail.id,
       level: 'ADVANCED',
       status: 'OPEN',
-      startDate: new Date('2024-01-01'),
-      endDate: new Date('2024-12-31'),
+      startDate: new Date('2025-07-01'),
+      endDate: new Date('2025-08-31'),
       backgroundColor: 'slate-300',
     },
     {
@@ -172,7 +256,6 @@ async function main() {
       classCode: `BALLET-FRI-${Math.floor(Math.random() * 1000) + 1}`,
       description: '입문자를 위한 발레 클래스',
       maxStudents: 12,
-      currentStudents: 0,
       tuitionFee: 130000,
       dayOfWeek: 'FRIDAY',
       startTime: new Date('2024-01-01T09:00:00Z'),
@@ -182,19 +265,22 @@ async function main() {
       classDetailId: classDetail.id,
       level: 'BEGINNER',
       status: 'OPEN',
-      startDate: new Date('2024-01-01'),
-      endDate: new Date('2024-12-31'),
+      startDate: new Date('2025-07-01'),
+      endDate: new Date('2025-08-31'),
       backgroundColor: 'rose-100',
     },
   ];
 
-  // 클래스 생성
+  // 클래스 생성 및 세션 자동 생성
   for (const classData of classesData) {
-    await prisma.class.create({
+    const createdClass = await prisma.class.create({
       data: {
         ...classData,
       },
     });
+
+    // 세션 자동 생성
+    await generateSessionsForClass(createdClass.id, classData);
   }
 
   console.log('Seed data created successfully');

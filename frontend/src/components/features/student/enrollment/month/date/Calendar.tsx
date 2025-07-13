@@ -127,6 +127,8 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
     return format(date, 'yyyy-MM-dd')
   }
 
+
+
   // 수강 변경 모드에서 기존 수강 신청 세션들을 미리 선택
   useEffect(() => {
     if (mode === 'modification' && existingEnrollments && existingEnrollments.length > 0) {
@@ -155,7 +157,11 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
           const sessionDateStr = format(sessionDate, 'yyyy-MM-dd')
           return sessionDateStr === dateStr
         })
-        if (availableSessions.length > 0) {
+        
+        // 수강 가능한 세션이 있는지 확인 (백엔드에서 받은 isEnrollable 사용)
+        const hasAvailableSession = availableSessions.some(session => session.isEnrollable)
+        
+        if (hasAvailableSession) {
           dates.push(dateStr)
         }
       }
@@ -197,7 +203,10 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
         return sessionDateStr === date
       });
       
-      availableSessions.forEach(session => {
+      // 수강 가능한 세션만 포함 (백엔드에서 받은 isEnrollable 사용)
+      const enrollableSessions = availableSessions.filter(session => session.isEnrollable);
+      
+      enrollableSessions.forEach(session => {
         const classId = session.classId;
         if (!sessionGroups[classId]) {
           sessionGroups[classId] = {
@@ -239,7 +248,11 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
             const sessionDateStr = format(sessionDate, 'yyyy-MM-dd')
             return sessionDateStr === dateStr
           }) : []
-          const isSelectable = d.isCurrentMonth && availableSessions.length > 0
+          
+          // 수강 가능한 세션들만 필터링 (백엔드에서 받은 isEnrollable 사용)
+          const enrollableSessions = availableSessions.filter(session => session.isEnrollable)
+          
+          const isSelectable = d.isCurrentMonth && enrollableSessions.length > 0
           const isSelected = !!selectedDates[dateStr]
 
           // 수정 모드에서 기존 수강 신청된 세션인지 확인
@@ -270,27 +283,45 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
                     >
                       {d.day}
                     </button>
+                  ) : availableSessions.length > 0 ? (
+                    // 수강 불가능한 세션이 있는 날짜: 회색 배경에 날짜 표시
+                    <div className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-400 text-white text-base font-medium">
+                      {d.day}
+                    </div>
                   ) : (
+                    // 세션이 없는 날짜: 일반 텍스트
                     <span className="w-10 h-10 flex items-center justify-center text-base font-medium text-black">{d.day}</span>
                   )
                 ) : (
                   <span className="w-10 h-10 flex items-center justify-center text-base font-medium text-zinc-300">{d.day}</span>
                 )}
               </div>
-              {/* 클래스명: 선택 가능한 날짜만 아래에 표시, 항상 min-h-5로 고정 */}
+              {/* 클래스명: 모든 세션을 표시하되, 수강 불가능한 세션은 grey out */}
               <div className="min-h-5 flex flex-col items-center justify-center">
-                {isSelectable && availableSessions.map(session => {
+                {availableSessions.map(session => {
                   const classCard = classCards.find(card => card.id === session.classId)
+                  const unavailable = !session.isEnrollable
+                  
                   return (
                     <div 
                       key={session.id} 
-                      className="w-16 h-5 rounded text-xs text-center font-bold -mt-2 flex items-center justify-center"
+                      className={`w-16 h-5 rounded text-xs text-center font-bold -mt-2 flex items-center justify-center ${
+                        unavailable ? 'opacity-50' : ''
+                      }`}
                       style={{ 
-                        backgroundColor: levelBgColor[classCard?.level] || '#AC9592',
-                        color: '#573B30',
+                        backgroundColor: unavailable 
+                          ? '#D3D3D3' 
+                          : levelBgColor[classCard?.level] || '#AC9592',
+                        color: unavailable ? '#666666' : '#573B30',
                         border: 'none',
                         fontFamily: 'Pretendard Variable',
                       }}
+                      title={unavailable ? 
+                        (session.isPastStartTime ? '이미 시작된 수업' : 
+                         session.isFull ? '수강 인원 초과' : 
+                         session.isAlreadyEnrolled ? '이미 수강 중' : '수강 불가') 
+                        : '수강 가능'
+                      }
                     >
                       {classCard?.className || '클래스'}
                     </div>

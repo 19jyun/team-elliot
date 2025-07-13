@@ -110,10 +110,12 @@ export class ClassController {
   async getClassesWithSessionsByMonth(
     @Param('month') month: string,
     @Query('year') year: string,
+    @CurrentUser() user: any,
   ) {
     return this.classService.getClassesWithSessionsByMonth(
       month,
       parseInt(year),
+      user.role === 'STUDENT' ? user.id : undefined,
     );
   }
 
