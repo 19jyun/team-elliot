@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityLogService } from '../activity-log/activity-log.service';
+import { ClassSessionService } from '../class-session/class-session.service';
 import { RefundRequestDto, RefundReason } from './dto/refund-request.dto';
 import { RefundProcessDto, RefundStatus } from './dto/refund-process.dto';
 import {
@@ -18,6 +19,7 @@ export class RefundService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly activityLogService: ActivityLogService,
+    private readonly classSessionService: ClassSessionService,
   ) {}
 
   /**
@@ -261,6 +263,20 @@ export class RefundService {
           status: 'REFUNDED',
         },
       });
+
+      // SessionEnrollment 상태를 CANCELLED로 변경
+      await this.prisma.sessionEnrollment.update({
+        where: { id: refundRequest.sessionEnrollmentId },
+        data: {
+          status: 'CANCELLED',
+          cancelledAt: new Date(),
+        },
+      });
+
+      // 세션의 currentStudents 감소
+      await this.classSessionService.decrementSessionCurrentStudents(
+        refundRequest.sessionEnrollment.sessionId,
+      );
     }
 
     // 환불 처리 로그

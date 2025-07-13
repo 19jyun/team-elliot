@@ -295,8 +295,14 @@ export class ClassSessionController {
   @Get('class/:classId')
   @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
   @ApiOperation({ summary: '클래스별 세션 목록 조회' })
-  async getClassSessions(@Param('classId', ParseIntPipe) classId: number) {
-    return this.classSessionService.getClassSessions(classId);
+  async getClassSessions(
+    @Param('classId', ParseIntPipe) classId: number,
+    @CurrentUser() user: any,
+  ) {
+    return this.classSessionService.getClassSessions(
+      classId,
+      user.role === 'STUDENT' ? user.id : undefined,
+    );
   }
 
   /**
