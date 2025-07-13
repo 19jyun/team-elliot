@@ -247,7 +247,6 @@ export function EnrollmentClassStep() {
     )
   }
 
-
   return (
     <div className="flex flex-col h-full bg-white relative">
       {/* 밑의 페이지 - 항상 렌더링 */}
