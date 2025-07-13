@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import { LogoutModal } from '@/components/user/LogoutModal'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
 import { logout } from '@/api/auth'
+import FooterLinks from '@/components/common/FooterLinks'
 
 export default function TeacherProfilePage() {
   const router = useRouter()
@@ -82,7 +83,7 @@ export default function TeacherProfilePage() {
   }
 
   return (
-    <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px] relative">
+    <div className="flex overflow-hidden flex-col mx-auto w-full bg-white max-w-[480px] relative min-h-screen">
       <StatusBar 
         time="9:41"
         icons={[
@@ -109,19 +110,7 @@ export default function TeacherProfilePage() {
         </button>
       </div>
 
-      <footer className="flex flex-col px-5 pt-3.5 pb-12 mt-6 w-full text-sm font-medium bg-neutral-100 min-h-[80px] text-neutral-400">
-        <nav className="flex gap-6 justify-center items-center max-w-full w-[335px]">
-          <a href="/terms" className="hover:text-neutral-600">
-            이용약관
-          </a>
-          <a href="/privacy" className="hover:text-neutral-600">
-            개인정보처리방침
-          </a>
-          <a href="/withdrawal" className="hover:text-neutral-600">
-            회원탈퇴
-          </a>
-        </nav>
-      </footer>
+      <FooterLinks />
 
       {showLogoutModal && (
         <LogoutModal
