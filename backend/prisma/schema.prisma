@@ -280,7 +280,7 @@ model SessionEnrollment {
   id          Int          @id @default(autoincrement())
   studentId   Int          @map("student_id")
   sessionId   Int          @map("session_id")
-  status      String       @default("PENDING") // PENDING | CONFIRMED | CANCELLED
+  status      String       @default("PENDING") // PENDING | CONFIRMED | CANCELLED | REFUND_REQUESTED
   enrolledAt  DateTime     @default(now())
   cancelledAt DateTime?
   session     ClassSession @relation(fields: [sessionId], references: [id])
@@ -332,6 +332,11 @@ model RefundRequest {
   processedAt         DateTime?         @map("processed_at")
   requestedAt         DateTime          @default(now()) @map("requested_at")
   cancelledAt         DateTime?         @map("cancelled_at")
+  
+  // 계좌 정보 필드 추가
+  bankName            String?           @map("bank_name") @db.VarChar(50)
+  accountNumber       String?           @map("account_number") @db.VarChar(20)
+  accountHolder       String?           @map("account_holder") @db.VarChar(50)
   
   sessionEnrollment   SessionEnrollment @relation(fields: [sessionEnrollmentId], references: [id])
   student             Student           @relation(fields: [studentId], references: [id])

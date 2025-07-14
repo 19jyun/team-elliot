@@ -141,7 +141,10 @@ export function RefundRequestStep({ refundAmount, cancelledSessionsCount, onComp
           sessionEnrollmentId: cancelledSession.enrollment.id,
           reason: refundReason,
           detailedReason: refundReason === RefundReason.OTHER ? detailedReason : undefined,
-          refundAmount: sessionPrice
+          refundAmount: sessionPrice,
+          bankName: accountInfo.bank,
+          accountNumber: accountInfo.accountNumber,
+          accountHolder: accountInfo.accountHolder
         };
 
         try {

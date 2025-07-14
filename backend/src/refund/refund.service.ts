@@ -78,32 +78,52 @@ export class RefundService {
       );
     }
 
-    // 환불 요청 생성
-    const refundRequest = await this.prisma.refundRequest.create({
-      data: {
-        sessionEnrollmentId: dto.sessionEnrollmentId,
-        studentId: studentId,
-        reason: dto.reason,
-        detailedReason: dto.detailedReason,
-        refundAmount: dto.refundAmount,
-        status: 'PENDING',
-      },
-      include: {
-        sessionEnrollment: {
-          include: {
-            session: {
-              include: {
-                class: {
-                  include: {
-                    teacher: true,
+    // 환불 요청 생성과 동시에 enrollment status를 REFUND_REQUESTED로 변경
+    const [refundRequest, updatedEnrollment] = await this.prisma.$transaction([
+      // 환불 요청 생성
+      this.prisma.refundRequest.create({
+        data: {
+          sessionEnrollmentId: dto.sessionEnrollmentId,
+          studentId: studentId,
+          reason: dto.reason,
+          detailedReason: dto.detailedReason,
+          refundAmount: dto.refundAmount,
+          bankName: dto.bankName,
+          accountNumber: dto.accountNumber,
+          accountHolder: dto.accountHolder,
+          status: 'PENDING',
+        },
+        include: {
+          sessionEnrollment: {
+            include: {
+              session: {
+                include: {
+                  class: {
+                    include: {
+                      teacher: true,
+                    },
                   },
                 },
               },
             },
           },
+          student: true,
         },
-        student: true,
-      },
+      }),
+      // enrollment status를 REFUND_REQUESTED로 변경
+      this.prisma.sessionEnrollment.update({
+        where: { id: dto.sessionEnrollmentId },
+        data: {
+          status: 'REFUND_REQUESTED',
+          cancelledAt: new Date(),
+        },
+      }),
+    ]);
+
+    console.log('환불 요청 생성 완료:', {
+      refundRequestId: refundRequest.id,
+      enrollmentId: updatedEnrollment.id,
+      enrollmentStatus: updatedEnrollment.status,
     });
 
     // 환불 요청 로그

@@ -105,14 +105,12 @@ export function EnrollmentModificationDateStep({
 
   // 선택된 날짜들을 배열로 변환
   React.useEffect(() => {
-    if (selectedClasses.length > 0) {
-      const dates = selectedClasses.flatMap(classInfo => 
-        classInfo.sessions?.map((session: any) => 
-          new Date(session.date).toISOString().split('T')[0]
-        ) || []
-      );
-      setSelectedDates([...new Set(dates)]); // 중복 제거
-    }
+    const dates = selectedClasses.flatMap(classInfo => 
+      classInfo.sessions?.map((session: any) => 
+        new Date(session.date).toISOString().split('T')[0]
+      ) || []
+    );
+    setSelectedDates([...new Set(dates)]); // 중복 제거
   }, [selectedClasses]);
 
   // 수강 변경 모드에서 금액 계산
@@ -124,9 +122,9 @@ export function EnrollmentModificationDateStep({
       : 50000
   });
 
-  // 변경된 강의 개수 계산
-  const netChangeCount = React.useMemo(() => {
-    if (!existingEnrollments) return 0;
+  // 변경된 강의 개수 계산 및 변경 사항 여부 확인
+  const { netChangeCount, hasChanges } = React.useMemo(() => {
+    if (!existingEnrollments) return { netChangeCount: 0, hasChanges: false };
     
     // 기존에 신청된 세션들 (CONFIRMED 또는 PENDING 상태)
     const originalEnrolledSessions = existingEnrollments.filter(
@@ -152,16 +150,22 @@ export function EnrollmentModificationDateStep({
     // 순 변경 세션 수 = 새로 선택된 세션 - 기존 신청 세션
     const netChange = newSessionsCount - originalEnrolledSessions.length;
     
+    // 실제 변경 사항이 있는지 확인 (기존 세션과 현재 선택된 세션이 다름)
+    const hasChanges = originalDates.length !== selectedDates.length || 
+                      originalDates.some(date => !selectedDates.includes(date)) ||
+                      selectedDates.some(date => !originalDates.includes(date));
+    
     console.log('수강 변경 계산:', {
       originalEnrolledSessions: originalEnrolledSessions.length,
       originalDates,
       selectedDates,
       newSessionsCount,
       cancelledSessionsCount,
-      netChange
+      netChange,
+      hasChanges
     });
     
-    return netChange;
+    return { netChangeCount: netChange, hasChanges };
   }, [existingEnrollments, selectedDates]);
 
   // 수강 변경 완료 처리
@@ -262,6 +266,7 @@ export function EnrollmentModificationDateStep({
         onGoToPayment={handleModificationComplete}
         mode="modification"
         netChange={netChangeCount}
+        hasChanges={hasChanges}
       />
     </div>
   )
