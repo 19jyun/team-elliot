@@ -6,15 +6,9 @@ import { TotalAmount } from './TotalAmount';
 interface TeacherPaymentBoxProps {
   teacher: TeacherPaymentInfo;
   onCopy: () => void;
-  mode?: 'enrollment' | 'modification';
-  modificationInfo?: {
-    changeAmount: number;
-    changeType: string;
-    netChangeCount: number;
-  } | null;
 }
 
-export function TeacherPaymentBox({ teacher, onCopy, mode, modificationInfo }: TeacherPaymentBoxProps) {
+export function TeacherPaymentBox({ teacher, onCopy }: TeacherPaymentBoxProps) {
   return (
     <div className="border rounded-xl p-5 bg-white shadow flex flex-col items-start min-w-[320px] w-full flex-shrink-0 mx-auto text-sm py-5">
       <BankInfo 

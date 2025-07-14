@@ -6,12 +6,14 @@ import { useState } from 'react'
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
 import { useEnrollmentCalculation } from '@/hooks/useEnrollmentCalculation'
+import { getClassSessionsForModification } from '@/api/class-sessions'
+import { ClassSessionForModification } from '@/types/api/class'
 
 interface EnrollmentModificationDateStepProps {
   classId: number;
   existingEnrollments: any[];
   month?: number | null;
-  onComplete: (selectedDates: string[]) => void;
+  onComplete: (selectedDates: string[], sessionPrice?: number) => void;
 }
 
 export function EnrollmentModificationDateStep({ 
@@ -26,7 +28,27 @@ export function EnrollmentModificationDateStep({
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [selectedClasses, setSelectedClasses] = useState<any[]>([]);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [modificationSessions, setModificationSessions] = useState<ClassSessionForModification[]>([]);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
   
+  // 수강 변경용 세션 데이터 로드
+  React.useEffect(() => {
+    const loadModificationSessions = async () => {
+      setIsLoadingSessions(true);
+      try {
+        const sessions = await getClassSessionsForModification(classId);
+        setModificationSessions(sessions);
+        console.log('수강 변경용 세션 데이터 로드:', sessions);
+      } catch (error) {
+        console.error('수강 변경용 세션 데이터 로드 실패:', error);
+      } finally {
+        setIsLoadingSessions(false);
+      }
+    };
+
+    loadModificationSessions();
+  }, [classId]);
+
   // 수강 변경 모드로 특정 클래스만 선택된 것으로 처리
   React.useEffect(() => {
     const selectedClassCards = [{
@@ -97,7 +119,9 @@ export function EnrollmentModificationDateStep({
   const { change } = useEnrollmentCalculation({
     originalEnrollments: existingEnrollments || [],
     selectedDates,
-    sessionPrice: 50000 // 임시로 5만원으로 설정
+    sessionPrice: modificationSessions.length > 0 
+      ? parseInt(modificationSessions[0].class?.tuitionFee || '50000')
+      : 50000
   });
 
   // 변경된 강의 개수 계산
@@ -183,8 +207,13 @@ export function EnrollmentModificationDateStep({
       // Context에도 저장
       setSelectedSessions(selectedSessions);
       
-      // onComplete 콜백 호출
-      onComplete(selectedDates);
+      // 실제 수강료 계산
+      const actualSessionPrice = modificationSessions.length > 0 
+        ? parseInt(modificationSessions[0].class?.tuitionFee || '50000')
+        : 50000;
+      
+      // onComplete 콜백 호출 (수강료 정보도 함께 전달)
+      onComplete(selectedDates, actualSessionPrice);
     }
   }
     
@@ -205,17 +234,24 @@ export function EnrollmentModificationDateStep({
       </header>
       
       {/* 캘린더 */}
-      <Calendar 
-        onSelectCountChange={setSelectedCount}
-        onSelectableCountChange={setSelectableCount}
-        onSelectAll={handleSelectAll}
-        onDeselectAll={handleDeselectAll}
-        isAllSelected={isAllSelected}
-        onSelectedClassesChange={setSelectedClasses} // Calendar에서 선택 정보 올림
-        month={month || new Date().getMonth() + 1} // props로 받은 월을 우선 사용
-        mode="modification"
-        existingEnrollments={existingEnrollments}
-      />
+      {isLoadingSessions ? (
+        <div className="w-full flex flex-col items-center py-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
+          <p className="mt-2 text-sm text-gray-600">수강 변경 정보를 불러오는 중...</p>
+        </div>
+      ) : (
+        <Calendar 
+          onSelectCountChange={setSelectedCount}
+          onSelectableCountChange={setSelectableCount}
+          onSelectAll={handleSelectAll}
+          onDeselectAll={handleDeselectAll}
+          isAllSelected={isAllSelected}
+          onSelectedClassesChange={setSelectedClasses} // Calendar에서 선택 정보 올림
+          month={month || new Date().getMonth() + 1} // props로 받은 월을 우선 사용
+          mode="modification"
+          modificationSessions={modificationSessions}
+        />
+      )}
       
       {/* 전체선택 체크박스 + 하단 버튼 */}
       <DateSelectFooter 
@@ -225,7 +261,7 @@ export function EnrollmentModificationDateStep({
         isAllSelected={isAllSelected}
         onGoToPayment={handleModificationComplete}
         mode="modification"
-        netChangeCount={netChangeCount}
+        netChange={netChangeCount}
       />
     </div>
   )

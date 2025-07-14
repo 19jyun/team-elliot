@@ -7,8 +7,7 @@ interface Props {
   isAllSelected?: boolean
   onGoToPayment?: () => void
   mode?: 'enrollment' | 'modification';
-  // 수강 변경 모드에서 사용할 props
-  netChangeCount?: number; // 변경된 강의 개수 (양수: 추가, 음수: 취소)
+  netChange?: number;
 }
 
 export default function DateSelectFooter({ 
@@ -16,9 +15,9 @@ export default function DateSelectFooter({
   onSelectAll, 
   onDeselectAll, 
   isAllSelected, 
-  onGoToPayment, 
+  onGoToPayment,
   mode = 'enrollment',
-  netChangeCount = 0
+  netChange = 0
 }: Props) {
   // 전체선택 체크박스 클릭 핸들러
   const handleSelectAllChange = (checked: boolean) => {
@@ -29,19 +28,16 @@ export default function DateSelectFooter({
     }
   }
 
-  const isModificationMode = mode === 'modification';
-  
-  // 수강 변경 모드에서 동적 버튼 텍스트 생성
   let buttonText = '수강일자 선택';
-  let changeCountDisplay = '';
-  
-  if (isModificationMode) {
-    if (netChangeCount >= 0) {
+  let changeCountDisplay = selectedCount;
+
+  if (mode === 'modification') {
+    if (netChange >= 0) {
       buttonText = '추가 금액 결제';
-      changeCountDisplay = netChangeCount > 0 ? `${netChangeCount}` : '0';
+      changeCountDisplay = Math.abs(netChange);
     } else {
       buttonText = '환불 정보 입력';
-      changeCountDisplay = `${Math.abs(netChangeCount)}`;
+      changeCountDisplay = Math.abs(netChange);
     }
   }
 
@@ -68,7 +64,7 @@ export default function DateSelectFooter({
             <span className="inline-flex items-center justify-center w-full">
               {buttonText}
               <span className="ml-2 bg-white text-[#AC9592] rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold p-0 aspect-square">
-                {isModificationMode ? changeCountDisplay : selectedCount}
+                {changeCountDisplay}
               </span>
             </span>
           ) : (

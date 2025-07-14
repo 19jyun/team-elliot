@@ -99,7 +99,6 @@ export function EnrollmentModificationPaymentStep({
       // 수강 변경 모드에서는 변경된 세션만 계산
       if (modificationInfo.changeType === 'additional_payment' && modificationInfo.netChangeCount > 0) {
         // 추가 결제가 필요한 경우: 새로 추가된 세션만 계산
-        const sessionPrice = 50000; // 임시 수강료 (수강 변경에서는 기존 로직 유지)
         
         // 새로 추가된 세션들을 찾기 위해 기존 수강 신청 정보와 비교
         const existingEnrollmentsData = localStorage.getItem('existingEnrollments');
@@ -148,6 +147,8 @@ export function EnrollmentModificationPaymentStep({
             teacher.sessions.push(session);
             
             const className = session.class?.className || '클래스';
+            
+            const sessionPrice = parseInt(session.class?.tuitionFee || '50000');
             
             const existingFee = teacher.classFees.find(fee => fee.name === className);
             if (existingFee) {
@@ -296,8 +297,6 @@ export function EnrollmentModificationPaymentStep({
                 key={idx} 
                 teacher={teacher} 
                 onCopy={handleCopy}
-                mode="modification"
-                modificationInfo={modificationInfo}
               />
             ))}
           </div>

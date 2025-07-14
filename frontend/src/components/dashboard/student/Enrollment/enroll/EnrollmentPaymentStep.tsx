@@ -173,7 +173,6 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
                 key={idx} 
                 teacher={teacher} 
                 onCopy={handleCopy}
-                mode="enrollment"
               />
             ))}
           </div>

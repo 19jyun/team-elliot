@@ -26,6 +26,7 @@ export function EnrollmentModificationContainer({ classId, className, month }: E
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [refundAmount, setRefundAmount] = useState(0);
   const [cancelledSessionsCount, setCancelledSessionsCount] = useState(0);
+  const [sessionPrice, setSessionPrice] = useState(50000); // 기본값
 
   console.log('EnrollmentModificationContainer 렌더링:', { classId, month, currentStep });
 
@@ -47,6 +48,9 @@ export function EnrollmentModificationContainer({ classId, className, month }: E
         setIsLoading(true);
         const response = await getStudentClassEnrollments(classId);
         setExistingEnrollments(response.sessions);
+        
+        // 기본 수강료 사용 (실제로는 EnrollmentModificationDateStep에서 가져옴)
+        setSessionPrice(50000);
       } catch (error) {
         console.error('기존 수강 신청 정보 로드 실패:', error);
         toast.error('수강 변경 정보를 불러오는데 실패했습니다.');
@@ -62,16 +66,24 @@ export function EnrollmentModificationContainer({ classId, className, month }: E
   const { change, isAdditionalPayment, isRefund, isNoChange } = useEnrollmentCalculation({
     originalEnrollments: existingEnrollments,
     selectedDates,
-    sessionPrice: 50000 // 임시로 5만원으로 설정
+    sessionPrice: sessionPrice
   });
 
   // 날짜 선택 완료 시 처리
-  const handleDateSelectionComplete = (dates: string[]) => {
+  const handleDateSelectionComplete = (dates: string[], sessionPrice?: number) => {
     console.log('handleDateSelectionComplete 호출됨:', dates);
     setSelectedDates(dates);
     
+    // 전달받은 sessionPrice가 있으면 사용, 없으면 기존 값 사용
+    const actualSessionPrice = sessionPrice || 50000;
+    
+    // sessionPrice 상태 업데이트
+    if (sessionPrice) {
+      setSessionPrice(sessionPrice);
+    }
+    
     // 즉시 단계 분기 처리 - useEnrollmentCalculation 로직을 직접 구현
-    const sessionPrice = 50000;
+    // 실제 sessionPrice 사용
     
     // 기존에 신청된 세션들 (CONFIRMED 또는 PENDING 상태)
     const originalEnrolledSessions = existingEnrollments.filter(
@@ -98,7 +110,7 @@ export function EnrollmentModificationContainer({ classId, className, month }: E
     const netChange = newSessionsCount - originalEnrolledSessions.length;
 
     // 총 금액 계산
-    const totalAmount = netChange * sessionPrice;
+    const totalAmount = netChange * actualSessionPrice;
 
     // 변경 타입 결정
     let changeType: "additional_payment" | "refund" | "no_change";

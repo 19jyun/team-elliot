@@ -305,6 +305,19 @@ export class ClassSessionController {
     );
   }
 
+  @Get('class/:classId/modification')
+  @Roles(Role.STUDENT)
+  @ApiOperation({ summary: '수강 변경용 클래스 세션 목록 조회' })
+  async getClassSessionsForModification(
+    @Param('classId', ParseIntPipe) classId: number,
+    @CurrentUser() user: any,
+  ) {
+    return this.classSessionService.getClassSessionsForModification(
+      classId,
+      user.id,
+    );
+  }
+
   /**
    * 수강 변경 (기존 수강 취소 + 새로운 수강 신청)
    */
