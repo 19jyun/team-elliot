@@ -44,6 +44,7 @@ export interface ClassSession {
     id: number;
     className: string;
     level: string;
+    tuitionFee: string;
     teacher?: {
       id: number;
       name: string;

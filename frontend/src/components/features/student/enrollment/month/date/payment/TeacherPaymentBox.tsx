@@ -16,7 +16,7 @@ interface TeacherPaymentBoxProps {
 
 export function TeacherPaymentBox({ teacher, onCopy, mode, modificationInfo }: TeacherPaymentBoxProps) {
   return (
-    <div className="border rounded-xl p-5 bg-white shadow flex flex-col items-start min-w-[320px] max-w-[320px] flex-shrink-0 mx-auto text-sm py-5">
+    <div className="border rounded-xl p-5 bg-white shadow flex flex-col items-start min-w-[320px] w-full flex-shrink-0 mx-auto text-sm py-5">
       <BankInfo 
         bankName={teacher.bankName}
         accountNumber={teacher.accountNumber}

@@ -282,21 +282,12 @@ export class ClassSessionService {
       );
       const isEnrollable = !isPastStartTime && !isFull && !isAlreadyEnrolled;
 
-      console.log(
-        `\n--- 세션 ${session.id} (${session.date.toISOString()}) ---`,
-      );
-      console.log('currentStudents:', session.currentStudents);
-      console.log('maxStudents:', session.class.maxStudents);
-      console.log('isFull:', isFull);
-      console.log('sessionStartTime:', sessionStartTime.toISOString());
-      console.log('now:', now.toISOString());
-      console.log('isPastStartTime:', isPastStartTime);
-      console.log('enrollments:', session.enrollments);
-      console.log('isAlreadyEnrolled:', isAlreadyEnrolled);
-      console.log('최종 isEnrollable:', isEnrollable);
-
       return {
         ...session,
+        class: {
+          ...session.class,
+          tuitionFee: session.class.tuitionFee.toString(), // tuitionFee를 문자열로 포함
+        },
         isEnrollable,
         isFull,
         isPastStartTime,

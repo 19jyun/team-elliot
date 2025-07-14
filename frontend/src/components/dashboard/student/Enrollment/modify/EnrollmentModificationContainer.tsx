@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useDashboardNavigation, EnrollmentStep } from '@/contexts/DashboardContext';
-import { EnrollmentDateStep } from '../enroll/EnrollmentDateStep';
-import { EnrollmentPaymentStep } from '../enroll/EnrollmentPaymentStep';
+import { EnrollmentModificationDateStep } from './EnrollmentModificationDateStep';
+import { EnrollmentModificationPaymentStep } from './EnrollmentModificationPaymentStep';
 import { EnrollmentCompleteStep } from '../enroll/EnrollmentCompleteStep';
 import { RefundRequestStep } from './RefundRequestStep';
 import { RefundCompleteStep } from './RefundCompleteStep';
@@ -170,8 +170,7 @@ export function EnrollmentModificationContainer({ classId, className, month }: E
     switch (effectiveStep) {
       case 'date-selection':
         return (
-          <EnrollmentDateStep
-            mode="modification"
+          <EnrollmentModificationDateStep
             classId={classId}
             existingEnrollments={existingEnrollments}
             month={month}
@@ -180,8 +179,7 @@ export function EnrollmentModificationContainer({ classId, className, month }: E
         );
       case 'payment':
         return (
-          <EnrollmentPaymentStep
-            mode="modification"
+          <EnrollmentModificationPaymentStep
             additionalAmount={change.amount}
             newSessionsCount={change.newSessionsCount}
             onComplete={handleModificationComplete}
@@ -209,8 +207,7 @@ export function EnrollmentModificationContainer({ classId, className, month }: E
         return <EnrollmentCompleteStep />;
       default:
         return (
-          <EnrollmentDateStep
-            mode="modification"
+          <EnrollmentModificationDateStep
             classId={classId}
             existingEnrollments={existingEnrollments}
             month={month}
