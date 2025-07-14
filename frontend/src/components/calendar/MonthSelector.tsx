@@ -1,30 +1,48 @@
-import * as React from 'react'
-import { MonthList } from './MonthList'
-import { ActionButtons } from '@/components/ui/ActionButtons'
+'use client'
+
+import React from 'react'
+import { SlideUpModal } from '@/components/common/SlideUpModal'
 
 interface MonthSelectorProps {
-  year: number
+  isOpen: boolean
+  selectedMonth: number
+  onClose: () => void
+  onMonthSelect: (month: number) => void
 }
 
-export function MonthSelector({ year }: MonthSelectorProps) {
+export function MonthSelector({ 
+  isOpen, 
+  selectedMonth, 
+  onClose, 
+  onMonthSelect 
+}: MonthSelectorProps) {
+  const handleMonthClick = (month: number) => {
+    onMonthSelect(month)
+    onClose()
+  }
+
   return (
-    <div className="flex overflow-hidden flex-col mx-auto w-full bg-white max-w-[480px]">
-      <div className="flex flex-col w-full bg-stone-900 bg-opacity-30 pt-[509px]">
-        <div className="flex overflow-hidden flex-col w-full rounded-3xl">
-          <div className="flex items-center px-2 w-full bg-white h-[27px]">
-            <div className="flex gap-2.5 self-stretch py-2.5 my-auto min-h-[36px]" />
-          </div>
-          <div className="flex overflow-hidden flex-col py-3 w-full bg-white">
-            <div className="flex overflow-hidden z-10 flex-col pr-2 pl-2.5 w-full min-h-[141px]">
-              <div className="flex flex-1 w-full bg-white bg-opacity-70 min-h-[51px]" />
-              <div className="flex w-full rounded-lg mix-blend-multiply bg-neutral-100 min-h-[40px]" />
-              <div className="flex flex-1 w-full bg-white bg-opacity-70 min-h-[50px]" />
-            </div>
-            <MonthList year={year} />
-          </div>
-          <ActionButtons />
-        </div>
+    <SlideUpModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="월 선택"
+      contentClassName="pb-6"
+    >
+      <div className="grid grid-cols-4 gap-4">
+        {Array.from({ length: 12 }).map((_, index) => (
+          <button
+            key={index}
+            onClick={() => handleMonthClick(index)}
+            className={`flex items-center justify-center p-4 rounded-lg text-lg font-medium transition-colors ${
+              selectedMonth === index
+                ? 'bg-stone-700 text-white'
+                : 'bg-stone-50 text-stone-700 hover:bg-stone-100'
+            }`}
+          >
+            {index + 1}월
+          </button>
+        ))}
       </div>
-    </div>
+    </SlideUpModal>
   )
 }
