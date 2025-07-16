@@ -17,7 +17,15 @@ import {
 // ClassSession 관련 API 함수들
 export const getClassSessions = (
   classId: number
-): Promise<GetClassSessionsResponse> => get(`/class-sessions/class/${classId}`);
+): Promise<GetClassSessionsResponse> => {
+  return get(`/class-sessions/class/${classId}`);
+};
+
+export const getClassSessionsForModification = (
+  classId: number
+): Promise<GetClassSessionsForModificationResponse> => {
+  return get(`/class-sessions/class/${classId}/modification`);
+};
 
 export const getClassSession = (sessionId: number) =>
   get(`/class-sessions/${sessionId}`);

@@ -331,11 +331,29 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   // 뒤로가기
   const goBack = useCallback(() => {
     setState(prev => {
+      // 수강 변경 중인 경우 (modify-* 형태의 subPage) 단계별로 뒤로가기
+      if (prev.subPage && prev.subPage.startsWith('modify-') && prev.enrollment.currentStep !== 'date-selection') {
+        // 수강 변경은 2단계만 있음: date-selection -> payment
+        const modificationStepOrder: EnrollmentStep[] = ['date-selection', 'payment'];
+        const currentIndex = modificationStepOrder.indexOf(prev.enrollment.currentStep);
+        const previousStep = currentIndex > 0 ? modificationStepOrder[currentIndex - 1] : 'date-selection';
+        
+        console.log('수강 변경 뒤로가기:', { currentStep: prev.enrollment.currentStep, previousStep });
+        
+        return {
+          ...prev,
+          enrollment: {
+            ...prev.enrollment,
+            currentStep: previousStep,
+          },
+        };
+      }
+      
       // 수강신청 중인 경우 단계별로 뒤로가기
-      if (prev.subPage === 'enroll' && prev.enrollment.currentStep !== 'main') {
-        const stepOrder: EnrollmentStep[] = ['main', 'academy-selection', 'class-selection', 'date-selection', 'payment', 'complete'];
+      if (prev.subPage === 'enroll' && prev.enrollment.currentStep !== 'academy-selection') {
+        const stepOrder: EnrollmentStep[] = ['academy-selection', 'class-selection', 'date-selection', 'payment', 'complete'];
         const currentIndex = stepOrder.indexOf(prev.enrollment.currentStep);
-        const previousStep = currentIndex > 0 ? stepOrder[currentIndex - 1] : 'main';
+        const previousStep = currentIndex > 0 ? stepOrder[currentIndex - 1] : 'academy-selection';
         
         // class-selection에서 academy-selection으로 돌아갈 때 환불 동의 상태 초기화
         if (prev.enrollment.currentStep === 'class-selection' && previousStep === 'academy-selection') {

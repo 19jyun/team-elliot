@@ -4,6 +4,9 @@ export interface CreateRefundRequestDto {
   reason: RefundReason;
   detailedReason?: string;
   refundAmount: number;
+  bankName?: string;
+  accountNumber?: string;
+  accountHolder?: string;
 }
 
 // 환불 사유 enum
@@ -74,6 +77,9 @@ export interface RefundRequestResponse {
   processedAt?: string;
   requestedAt: string;
   cancelledAt?: string;
+  bankName?: string;
+  accountNumber?: string;
+  accountHolder?: string;
   sessionEnrollment: {
     session: {
       class: {

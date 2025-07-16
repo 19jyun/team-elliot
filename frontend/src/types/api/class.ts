@@ -44,6 +44,7 @@ export interface ClassSession {
     id: number;
     className: string;
     level: string;
+    tuitionFee: string;
     teacher?: {
       id: number;
       name: string;
@@ -176,6 +177,18 @@ export interface GetClassSessionsRequest {
 }
 
 export interface GetClassSessionsResponse extends Array<ClassSession> {}
+
+export interface ClassSessionForModification extends ClassSession {
+  isSelectable: boolean; // 수강 변경 가능
+  canBeCancelled: boolean; // 환불 신청 가능
+  isModifiable: boolean; // 전체 수정 가능 여부
+  isPastStartTime: boolean;
+  isFull: boolean;
+  isAlreadyEnrolled: boolean;
+}
+
+export interface GetClassSessionsForModificationResponse
+  extends Array<ClassSessionForModification> {}
 
 export interface BatchEnrollSessionsRequest {
   sessionIds: number[];

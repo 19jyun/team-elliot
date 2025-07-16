@@ -1,17 +1,18 @@
 'use client'
 
-import * as React from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useQuery } from '@tanstack/react-query'
-import Image from 'next/image'
 import { useState } from 'react'
 import { ChevronDownIcon } from '@heroicons/react/24/outline'
 import { format } from 'date-fns'
 import { useRouter } from 'next/navigation'
 
 import { getMyClasses } from '@/api/student'
-import { ClassSessionModal } from '@/components/features/student/classes/ClassSessionModal'
 import { EnrolledClassesList } from '@/components/features/student/classes/EnrolledClassesList'
+import { ClassSessionModal } from '@/components/features/student/classes/ClassSessionModal'
+import { DateSessionModal } from '@/components/calendar/DateSessionModal'
+import { StudentSessionDetailModal } from '@/components/features/student/classes/StudentSessionDetailModal'
+import { MonthSelector } from '@/components/calendar/MonthSelector'
 
 // Type for extended session
 type ExtendedSession = {
@@ -36,7 +37,15 @@ export default function StudentDashboard() {
   const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false)
   const [selectedClass, setSelectedClass] = useState<any>(null)
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false)
-
+  
+  // 날짜 클릭 관련 상태 추가
+  const [clickedDate, setClickedDate] = useState<Date | null>(null)
+  const [isDateModalOpen, setIsDateModalOpen] = useState(false)
+  const [selectedDaySessions, setSelectedDaySessions] = useState<any[]>([])
+  
+  // 세션 상세 모달 상태 추가
+  const [selectedSession, setSelectedSession] = useState<any>(null)
+  const [isSessionDetailModalOpen, setIsSessionDetailModalOpen] = useState(false)
 
   const { data: myClasses, isLoading, error } = useQuery({
     queryKey: ['my-classes'],
@@ -47,8 +56,6 @@ export default function StudentDashboard() {
 
   // myClasses 객체 로그 출력
   console.log('myClasses:', myClasses)
-
-
 
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {
@@ -83,7 +90,6 @@ export default function StudentDashboard() {
     const newDate = new Date(selectedDate)
     newDate.setMonth(month)
     setSelectedDate(newDate)
-    setIsMonthPickerOpen(false)
   }
 
   const handleClassClick = (classData: any) => {
@@ -94,6 +100,45 @@ export default function StudentDashboard() {
   const closeSessionModal = () => {
     setIsSessionModalOpen(false)
     setSelectedClass(null)
+  }
+
+  // 날짜 클릭 핸들러 추가
+  const handleDateClick = (day: number, isCurrentMonth: boolean) => {
+    if (!isCurrentMonth) return
+
+    const currentMonth = selectedDate.getMonth()
+    const currentYear = selectedDate.getFullYear()
+    const clickedDateObj = new Date(currentYear, currentMonth, day)
+    
+    // 해당 날짜의 세션들 필터링
+    const daySessions = myClasses?.sessionClasses?.filter((session: any) => {
+      const sessionDate = new Date(session.date)
+      return sessionDate.getDate() === day &&
+             sessionDate.getMonth() === currentMonth &&
+             sessionDate.getFullYear() === currentYear
+    }) || []
+
+    setClickedDate(clickedDateObj)
+    setSelectedDaySessions(daySessions)
+    setIsDateModalOpen(true)
+  }
+
+  const closeDateModal = () => {
+    setIsDateModalOpen(false)
+    setClickedDate(null)
+    setSelectedDaySessions([])
+  }
+
+  // 세션 클릭 핸들러 추가
+  const handleSessionClick = (session: any) => {
+    setSelectedSession(session)
+    setIsSessionDetailModalOpen(true)
+    setIsDateModalOpen(false) // 날짜 모달 닫기
+  }
+
+  const closeSessionDetailModal = () => {
+    setIsSessionDetailModalOpen(false)
+    setSelectedSession(null)
   }
 
   const generateCalendarDays = () => {
@@ -117,10 +162,14 @@ export default function StudentDashboard() {
         isCurrentMonth: true,
         hasEvent: myClasses?.enrollmentClasses?.some((class_: any) => {
           const classDate = new Date(class_.startTime)
-          return classDate.getDate() === i
+          return classDate.getDate() === i &&
+                 classDate.getMonth() === currentMonth &&
+                 classDate.getFullYear() === currentYear
         }) || myClasses?.sessionClasses?.some((session: any) => {
           const sessionDate = new Date(session.date)
-          return sessionDate.getDate() === i
+          return sessionDate.getDate() === i &&
+                 sessionDate.getMonth() === currentMonth &&
+                 sessionDate.getFullYear() === currentYear
         }),
       })
     }
@@ -135,124 +184,81 @@ export default function StudentDashboard() {
   }
 
   return (
-    <div className="flex overflow-hidden flex-col pb-2 w-full bg-white">
+    <div className="flex flex-col h-full bg-white">
+      <header className="flex-shrink-0">
+        {/* 환영 메시지 + 캘린더 */}
+        <div className="flex flex-col px-5 py-6">
+          <h1 className="text-2xl font-bold text-stone-700">
+            안녕하세요, {session?.user?.name}님!
+          </h1>
+          <p className="mt-2 text-stone-500">오늘도 즐거운 학습되세요!</p>
+        </div>
 
-      {/* 환영 메시지 */}
-      <div className="flex flex-col px-5 py-6">
-        <h1 className="text-2xl font-bold text-stone-700">
-          안녕하세요, {session?.user?.name}님!
-        </h1>
-        <p className="mt-2 text-stone-500">오늘도 즐거운 학습되세요!</p>
-      </div>
-
-      {/* 캘린더 섹션 */}
-      <div className="flex flex-col w-full text-center whitespace-nowrap bg-white text-stone-700">
-        <div className="flex items-center justify-between px-7 pt-3 pb-2 w-full text-base font-semibold relative">
-          <div
-            className="flex gap-1.5 items-center cursor-pointer"
-            onClick={() => setIsMonthPickerOpen(!isMonthPickerOpen)}
-          >
-            <span>{format(selectedDate, 'yyyy년')}</span>
-            <span>{format(selectedDate, 'M월')}</span>
-            <ChevronDownIcon className="h-4 w-4 text-stone-700" />
+        {/* 캘린더 섹션 */}
+        <div className="flex flex-col w-full text-center whitespace-nowrap bg-white text-stone-700">
+          <div className="flex items-center justify-between px-7 pt-3 pb-2 w-full text-base font-semibold relative">
+            <div
+              className="flex gap-1.5 items-center cursor-pointer"
+              onClick={() => setIsMonthPickerOpen(true)}
+            >
+              <span>{format(selectedDate, 'yyyy년')}</span>
+              <span>{format(selectedDate, 'M월')}</span>
+              <ChevronDownIcon className="h-4 w-4 text-stone-700" />
+            </div>
           </div>
 
-          {/* 월 선택 드롭다운 */}
-          {isMonthPickerOpen && (
-            <>
-              <div
-                className="fixed inset-0 bg-stone-900 bg-opacity-30 z-50"
-                onClick={() => setIsMonthPickerOpen(false)}
-              />
-              <div className="fixed bottom-0 left-0 right-0 flex flex-col w-full bg-white rounded-t-3xl z-50 transform transition-transform duration-300 ease-out">
-                <div className="flex items-center justify-between px-4 py-3 border-b">
-                  <h3 className="text-lg font-semibold text-stone-700">
-                    월 선택
-                  </h3>
-                  <button
-                    onClick={() => setIsMonthPickerOpen(false)}
-                    className="text-stone-500 hover:text-stone-700"
-                  >
-                    취소
-                  </button>
-                </div>
-                <div className="flex overflow-hidden flex-col py-3 w-full">
-                  <div className="grid grid-cols-4 gap-4 p-4">
-                    {Array.from({ length: 12 }).map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleMonthChange(index)}
-                        className={`flex items-center justify-center p-3 rounded-lg ${
-                          selectedDate.getMonth() === index
-                            ? 'bg-stone-100 text-stone-700'
-                            : 'hover:bg-stone-50 text-stone-600'
-                        }`}
-                      >
-                        {index + 1}월
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2 p-4 border-t">
-                  <button
-                    onClick={() => setIsMonthPickerOpen(false)}
-                    className="px-4 py-2 text-sm font-medium text-stone-700 bg-stone-100 rounded-lg hover:bg-stone-200"
-                  >
-                    확인
-                  </button>
-                </div>
+          {/* 요일 헤더 */}
+          <div className="flex justify-around px-2.5 w-full text-sm font-medium">
+            {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
+              <div key={day} className="w-[50px] py-2">
+                {day}
               </div>
-            </>
-          )}
-        </div>
-
-        {/* 요일 헤더 */}
-        <div className="flex justify-around px-2.5 w-full text-sm font-medium">
-          {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
-            <div key={day} className="w-[50px] py-2">
-              {day}
-            </div>
-          ))}
-        </div>
-
-        {/* 캘린더 그리드 */}
-        <div className="flex flex-col w-full text-base">
-          {Array.from({ length: 5 }).map((_, weekIndex) => (
-            <div key={weekIndex} className="flex justify-around px-2.5 mt-2">
-              {generateCalendarDays()
-                .slice(weekIndex * 7, (weekIndex + 1) * 7)
-                .map((day, dayIndex) => (
-                  <div
-                    key={dayIndex}
-                    className={`w-[50px] h-[50px] flex items-center justify-center relative ${
-                      day.isCurrentMonth ? 'text-stone-700' : 'text-stone-300'
-                    }`}
-                  >
-                    {day.day}
-                    {day.hasEvent && (
-                      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-[#573B30] rounded-full" />
-                    )}
-                  </div>
-                ))}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex mt-4 w-full opacity-50 bg-zinc-100 min-h-[8px]" />
-
-      {/* 수업 목록 섹션 */}
-      <div className="flex flex-col px-5 mt-4 w-full">
-        <div className="flex flex-col mt-5 w-full">
-          <div className="gap-2.5 self-start px-2 py-3 text-base font-semibold tracking-normal leading-snug text-stone-700">
-            수강중인 클래스
+            ))}
           </div>
-          <EnrolledClassesList
-            classes={myClasses?.enrollmentClasses || []}
-            onClassClick={handleClassClick}
-          />
+
+          {/* 캘린더 그리드 */}
+          <div className="flex flex-col w-full text-base">
+            {Array.from({ length: 5 }).map((_, weekIndex) => (
+              <div key={weekIndex} className="flex justify-around px-2.5 mt-2">
+                {generateCalendarDays()
+                  .slice(weekIndex * 7, (weekIndex + 1) * 7)
+                  .map((day, dayIndex) => (
+                    <div
+                      key={dayIndex}
+                      className={`w-[50px] h-[50px] flex items-center justify-center relative cursor-pointer hover:bg-stone-50 rounded-lg transition-colors ${
+                        day.isCurrentMonth ? 'text-stone-700' : 'text-stone-300'
+                      }`}
+                      onClick={() => handleDateClick(day.day, day.isCurrentMonth)}
+                    >
+                      {day.day}
+                      {day.hasEvent && (
+                        <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-[#573B30] rounded-full" />
+                      )}
+                    </div>
+                  ))}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      </header>
+      
+      <main className="flex-1 min-h-0 bg-white px-5">
+                <div className="gap-2.5 self-start px-2 py-3 text-base font-semibold tracking-normal leading-snug text-stone-700 flex-shrink-0 ">
+          수강중인 클래스
+        </div>
+        <div className="w-full overflow-auto" style={{ 
+          maxHeight: 'calc(100vh - 650px)',  // 최대 높이만 설정
+          minHeight: '200px'  // 최소 높이 보장
+        }}>
+          {/* 수강중인 클래스 리스트 */}
+          <div className="flex flex-col mt-4 w-full h-full">
+            <EnrolledClassesList
+              classes={myClasses?.enrollmentClasses || []}
+              onClassClick={handleClassClick}
+            />
+          </div>
+        </div>
+      </main>
 
       {/* Class Session Modal */}
       <ClassSessionModal
@@ -260,6 +266,31 @@ export default function StudentDashboard() {
         selectedClass={selectedClass}
         sessions={myClasses?.sessionClasses || []}
         onClose={closeSessionModal}
+      />
+
+      {/* Date Session Modal */}
+      <DateSessionModal
+        isOpen={isDateModalOpen}
+        selectedDate={clickedDate}
+        sessions={selectedDaySessions}
+        onClose={closeDateModal}
+        onSessionClick={handleSessionClick}
+        userRole="student"
+      />
+
+      {/* Student Session Detail Modal */}
+      <StudentSessionDetailModal
+        isOpen={isSessionDetailModalOpen}
+        session={selectedSession}
+        onClose={closeSessionDetailModal}
+      />
+
+      {/* Month Selector Modal */}
+      <MonthSelector
+        isOpen={isMonthPickerOpen}
+        selectedMonth={selectedDate.getMonth()}
+        onClose={() => setIsMonthPickerOpen(false)}
+        onMonthSelect={handleMonthChange}
       />
     </div>
   )

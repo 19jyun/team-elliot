@@ -3,16 +3,38 @@ import React from 'react';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 
 export function EnrollmentCompleteStep() {
-  const { resetEnrollment } = useDashboardNavigation();
+  const { resetEnrollment, clearSubPage } = useDashboardNavigation();
 
   const handleConfirm = () => {
-    // localStorage에서 선택된 세션 정보 삭제
+    // localStorage에서 모든 enrollment 관련 데이터 삭제
     if (typeof window !== 'undefined') {
+      // 기본 enrollment 관련 데이터
       localStorage.removeItem('selectedSessions');
       localStorage.removeItem('selectedClassCards');
+      localStorage.removeItem('selectedClasses');
+      localStorage.removeItem('existingEnrollments');
+      
+      // 수강 변경 관련 데이터
+      localStorage.removeItem('modificationChangeAmount');
+      localStorage.removeItem('modificationChangeType');
+      localStorage.removeItem('modificationNetChangeCount');
+      localStorage.removeItem('modificationNewSessionsCount');
+      
+      // 환불 정책 동의 상태
+      localStorage.removeItem('refundPolicyAgreed');
+      
+      // 기타 enrollment 관련 데이터들
+      localStorage.removeItem('enrollmentStep');
+      localStorage.removeItem('selectedMonth');
+      localStorage.removeItem('selectedAcademyId');
+      localStorage.removeItem('selectedClassIds');
     }
+    
     // 수강신청 상태 초기화
     resetEnrollment();
+    
+    // enrollment 컨테이너(subpage) 완전히 닫기
+    clearSubPage();
   };
 
   return (

@@ -11,6 +11,9 @@ import { getTeacherClassesWithSessions } from '@/api/teacher'
 import { TeacherClassSessionModal } from '@/components/features/teacher/classes/TeacherClassSessionModal'
 import { TeacherClassesList } from '@/components/features/teacher/classes/TeacherClassesList'
 import { TeacherClassesWithSessionsResponse } from '@/types/api/teacher'
+import { DateSessionModal } from '@/components/calendar/DateSessionModal'
+import { TeacherSessionDetailModal } from '@/components/features/teacher/classes/TeacherSessionDetailModal'
+import { MonthSelector } from '@/components/calendar/MonthSelector'
 
 // Type for extended session
 type ExtendedSession = {
@@ -37,6 +40,15 @@ export default function TeacherDashboard() {
   const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false)
   const [selectedClass, setSelectedClass] = useState<any>(null)
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false)
+  
+  // 날짜 클릭 관련 상태 추가
+  const [clickedDate, setClickedDate] = useState<Date | null>(null)
+  const [isDateModalOpen, setIsDateModalOpen] = useState(false)
+  const [selectedDaySessions, setSelectedDaySessions] = useState<any[]>([])
+  
+  // 세션 상세 모달 상태 추가
+  const [selectedSession, setSelectedSession] = useState<any>(null)
+  const [isSessionDetailModalOpen, setIsSessionDetailModalOpen] = useState(false)
 
   // 선생님 클래스와 세션 정보를 한 번에 조회 (토큰 기반)
   const { data: myData, isLoading, error } = useQuery({
@@ -85,7 +97,6 @@ export default function TeacherDashboard() {
     const newDate = new Date(selectedDate)
     newDate.setMonth(month)
     setSelectedDate(newDate)
-    setIsMonthPickerOpen(false)
   }
 
   const handleClassClick = (classData: any) => {
@@ -96,6 +107,45 @@ export default function TeacherDashboard() {
   const closeSessionModal = () => {
     setIsSessionModalOpen(false)
     setSelectedClass(null)
+  }
+
+  // 날짜 클릭 핸들러 추가
+  const handleDateClick = (day: number, isCurrentMonth: boolean) => {
+    if (!isCurrentMonth) return
+
+    const currentMonth = selectedDate.getMonth()
+    const currentYear = selectedDate.getFullYear()
+    const clickedDateObj = new Date(currentYear, currentMonth, day)
+    
+    // 해당 날짜의 세션들 필터링
+    const daySessions = mySessions?.filter((session: any) => {
+      const sessionDate = new Date(session.date)
+      return sessionDate.getDate() === day &&
+             sessionDate.getMonth() === currentMonth &&
+             sessionDate.getFullYear() === currentYear
+    }) || []
+
+    setClickedDate(clickedDateObj)
+    setSelectedDaySessions(daySessions)
+    setIsDateModalOpen(true)
+  }
+
+  const closeDateModal = () => {
+    setIsDateModalOpen(false)
+    setClickedDate(null)
+    setSelectedDaySessions([])
+  }
+
+  // 세션 클릭 핸들러 추가
+  const handleSessionClick = (session: any) => {
+    setSelectedSession(session)
+    setIsSessionDetailModalOpen(true)
+    setIsDateModalOpen(false) // 날짜 모달 닫기
+  }
+
+  const closeSessionDetailModal = () => {
+    setIsSessionDetailModalOpen(false)
+    setSelectedSession(null)
   }
 
   const generateCalendarDays = () => {
@@ -119,7 +169,9 @@ export default function TeacherDashboard() {
         isCurrentMonth: true,
         hasEvent: mySessions?.some((session: any) => {
           const sessionDate = new Date(session.date)
-          return sessionDate.getDate() === i
+          return sessionDate.getDate() === i &&
+                 sessionDate.getMonth() === currentMonth &&
+                 sessionDate.getFullYear() === currentYear
         }),
       })
     }
@@ -149,60 +201,12 @@ export default function TeacherDashboard() {
         <div className="flex items-center justify-between px-7 pt-3 pb-2 w-full text-base font-semibold relative">
           <div
             className="flex gap-1.5 items-center cursor-pointer"
-            onClick={() => setIsMonthPickerOpen(!isMonthPickerOpen)}
+            onClick={() => setIsMonthPickerOpen(true)}
           >
             <span>{format(selectedDate, 'yyyy년')}</span>
             <span>{format(selectedDate, 'M월')}</span>
             <ChevronDownIcon className="h-4 w-4 text-stone-700" />
           </div>
-
-          {/* 월 선택 드롭다운 */}
-          {isMonthPickerOpen && (
-            <>
-              <div
-                className="fixed inset-0 bg-stone-900 bg-opacity-30 z-50"
-                onClick={() => setIsMonthPickerOpen(false)}
-              />
-              <div className="fixed bottom-0 left-0 right-0 flex flex-col w-full bg-white rounded-t-3xl z-50 transform transition-transform duration-300 ease-out">
-                <div className="flex items-center justify-between px-4 py-3 border-b">
-                  <h3 className="text-lg font-semibold text-stone-700">
-                    월 선택
-                  </h3>
-                  <button
-                    onClick={() => setIsMonthPickerOpen(false)}
-                    className="text-stone-500 hover:text-stone-700"
-                  >
-                    취소
-                  </button>
-                </div>
-                <div className="flex overflow-hidden flex-col py-3 w-full">
-                  <div className="grid grid-cols-4 gap-4 p-4">
-                    {Array.from({ length: 12 }).map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleMonthChange(index)}
-                        className={`flex items-center justify-center p-3 rounded-lg ${
-                          selectedDate.getMonth() === index
-                            ? 'bg-stone-100 text-stone-700'
-                            : 'hover:bg-stone-50 text-stone-600'
-                        }`}
-                      >
-                        {index + 1}월
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2 p-4 border-t">
-                  <button
-                    onClick={() => setIsMonthPickerOpen(false)}
-                    className="px-4 py-2 text-sm font-medium text-stone-700 bg-stone-100 rounded-lg hover:bg-stone-200"
-                  >
-                    확인
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
         </div>
 
         {/* 요일 헤더 */}
@@ -223,9 +227,10 @@ export default function TeacherDashboard() {
                 .map((day, dayIndex) => (
                   <div
                     key={dayIndex}
-                    className={`w-[50px] h-[50px] flex items-center justify-center relative ${
+                    className={`w-[50px] h-[50px] flex items-center justify-center relative cursor-pointer hover:bg-stone-50 rounded-lg transition-colors ${
                       day.isCurrentMonth ? 'text-stone-700' : 'text-stone-300'
                     }`}
+                    onClick={() => handleDateClick(day.day, day.isCurrentMonth)}
                   >
                     {day.day}
                     {day.hasEvent && (
@@ -261,6 +266,31 @@ export default function TeacherDashboard() {
         selectedClass={selectedClass}
         sessions={mySessions}
         onClose={closeSessionModal}
+      />
+
+      {/* Date Session Modal */}
+      <DateSessionModal
+        isOpen={isDateModalOpen}
+        selectedDate={clickedDate}
+        sessions={selectedDaySessions}
+        onClose={closeDateModal}
+        onSessionClick={handleSessionClick}
+        userRole="teacher"
+      />
+
+      {/* Teacher Session Detail Modal */}
+      <TeacherSessionDetailModal
+        isOpen={isSessionDetailModalOpen}
+        session={selectedSession}
+        onClose={closeSessionDetailModal}
+      />
+
+      {/* Month Selector Modal */}
+      <MonthSelector
+        isOpen={isMonthPickerOpen}
+        selectedMonth={selectedDate.getMonth()}
+        onClose={() => setIsMonthPickerOpen(false)}
+        onMonthSelect={handleMonthChange}
       />
     </div>
   )

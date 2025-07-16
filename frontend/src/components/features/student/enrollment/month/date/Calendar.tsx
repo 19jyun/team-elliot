@@ -5,7 +5,7 @@ import { useMemo, useEffect, useState } from 'react'
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, getDate, isSameMonth, format } from 'date-fns'
 import { getClassSessions } from '@/api/class-sessions'
 import { getClassDetails } from '@/app/api/classes'
-import { ClassSession } from '@/types/api/class'
+import { ClassSession, ClassSessionForModification } from '@/types/api/class'
 
 // levelBgColor를 Calendar.tsx 상단에 추가
 const levelBgColor: Record<string, string> = {
@@ -43,10 +43,10 @@ interface CalendarProps {
   onSelectedClassesChange?: (selected: any[]) => void;
   month?: number; // 월 정보를 props로 받을 수 있도록 추가
   mode?: 'enrollment' | 'modification';
-  existingEnrollments?: any[];
+  modificationSessions?: ClassSessionForModification[];
 }
 
-export default function Calendar({ onSelectCountChange, onSelectableCountChange, onSelectAll, onDeselectAll, isAllSelected, onSelectedClassesChange, month: propMonth, mode = 'enrollment', existingEnrollments }: CalendarProps) {
+export default function Calendar({ onSelectCountChange, onSelectableCountChange, onSelectAll, onDeselectAll, isAllSelected, onSelectedClassesChange, month: propMonth, mode = 'enrollment', modificationSessions }: CalendarProps) {
   const params = useParams()
   const month = propMonth || Number(params.month) // props로 받은 월을 우선 사용, 없으면 URL 파라미터 사용
   const year = new Date().getFullYear() // 필요시 쿼리스트링 등에서 받아올 수도 있음
@@ -97,7 +97,16 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
       
       for (const card of cards) {
         try {
-          const sessions = await getClassSessions(card.id)
+          let sessions: ClassSession[];
+          
+          if (mode === 'modification' && modificationSessions) {
+            // 수강 변경 모드: props로 받은 modificationSessions 사용
+            sessions = modificationSessions;
+          } else {
+            // 일반 수강 신청 모드: 기존 API 사용
+            sessions = await getClassSessions(card.id);
+          }
+          
           // 날짜 형식을 통일하고 해당 월의 세션만 필터링
           const filteredSessions = sessions.filter(session => {
             const sessionDate = new Date(session.date)
@@ -105,6 +114,7 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
             const sessionYear = sessionDate.getFullYear()
             return sessionMonth === month && sessionYear === year
           })
+          
           allSessions.push(...filteredSessions)
         } catch (error) {
           console.error(`Failed to load sessions for class ${card.id}:`, error)
@@ -123,21 +133,14 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
   const days = useMemo(() => generateCalendar(year, month), [year, month])
   const [selectedDates, setSelectedDates] = useState<{[key: string]: boolean}>({})
 
-  function formatDate(date: Date) {
-    return format(date, 'yyyy-MM-dd')
-  }
-
-
-
   // 수강 변경 모드에서 기존 수강 신청 세션들을 미리 선택
-  useEffect(() => {
-    if (mode === 'modification' && existingEnrollments && existingEnrollments.length > 0) {
+  React.useEffect(() => {
+    if (mode === 'modification' && modificationSessions && modificationSessions.length > 0) {
       const preSelectedDates: {[key: string]: boolean} = {};
       
-      existingEnrollments.forEach((enrollment: any) => {
-        if (enrollment.enrollment && 
-            (enrollment.enrollment.status === 'CONFIRMED' || enrollment.enrollment.status === 'PENDING')) {
-          const dateStr = format(new Date(enrollment.date), 'yyyy-MM-dd');
+      modificationSessions.forEach((session) => {
+        if (session.canBeCancelled) {
+          const dateStr = format(new Date(session.date), 'yyyy-MM-dd');
           preSelectedDates[dateStr] = true;
         }
       });
@@ -145,7 +148,15 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
       console.log('기존 수강 신청 세션들 미리 선택:', preSelectedDates);
       setSelectedDates(preSelectedDates);
     }
-  }, [mode, existingEnrollments]);
+  }, [mode, modificationSessions]);
+
+  function formatDate(date: Date) {
+    return format(date, 'yyyy-MM-dd')
+  }
+
+
+
+
 
   const selectableDates = useMemo(() => {
     const dates: string[] = []
@@ -158,8 +169,19 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
           return sessionDateStr === dateStr
         })
         
-        // 수강 가능한 세션이 있는지 확인 (백엔드에서 받은 isEnrollable 사용)
-        const hasAvailableSession = availableSessions.some(session => session.isEnrollable)
+        // 수강 가능한 세션이 있는지 확인
+        let hasAvailableSession = false;
+        
+        if (mode === 'modification') {
+          // 수강 변경 모드: isSelectable 또는 canBeCancelled인 세션들 확인
+          hasAvailableSession = availableSessions.some(session => {
+            const modificationSession = session as ClassSessionForModification;
+            return modificationSession.isSelectable || modificationSession.canBeCancelled;
+          });
+        } else {
+          // 일반 수강 신청 모드: 기존 isEnrollable 필드 사용
+          hasAvailableSession = availableSessions.some(session => session.isEnrollable);
+        }
         
         if (hasAvailableSession) {
           dates.push(dateStr)
@@ -171,14 +193,46 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
 
   useEffect(() => {
     if (isAllSelected) {
-      const allSelected = selectableDates.reduce((acc, date) => ({ ...acc, [date]: true }), {})
-      setSelectedDates(allSelected)
-    } else if (mode !== 'modification') {
-      // 수강 변경 모드가 아닐 때만 selectedDates를 초기화
-      setSelectedDates({})
-    }
-    // 수강 변경 모드에서는 기존 선택을 유지
-  }, [isAllSelected, selectableDates, mode])
+      if (mode === 'modification') {
+        // 수강 변경 모드: 기존 수강 신청 세션들 + 선택 가능한 세션들 모두 선택
+        const newSelected: {[key: string]: boolean} = {};
+        
+        // 기존 수강 신청 세션들 추가
+        modificationSessions?.forEach(session => {
+          if (session.canBeCancelled) {
+            const dateStr = format(new Date(session.date), 'yyyy-MM-dd');
+            newSelected[dateStr] = true;
+          }
+        });
+        
+        // 선택 가능한 세션들 추가
+        selectableDates.forEach(date => {
+          newSelected[date] = true;
+        });
+        
+        setSelectedDates(newSelected);
+      } else {
+        // 일반 수강 신청 모드: 모든 선택 가능한 세션 선택
+        const allSelected = selectableDates.reduce((acc, date) => ({ ...acc, [date]: true }), {})
+        setSelectedDates(allSelected)
+      }
+          } else {
+        if (mode === 'modification') {
+          // 수강 변경 모드: 기존 수강 신청 세션들만 유지
+          const newSelected: {[key: string]: boolean} = {};
+          modificationSessions?.forEach(session => {
+            if (session.canBeCancelled) {
+              const dateStr = format(new Date(session.date), 'yyyy-MM-dd');
+              newSelected[dateStr] = true;
+            }
+          });
+          setSelectedDates(newSelected);
+        } else {
+          // 일반 수강 신청 모드: 모든 선택 해제
+          setSelectedDates({})
+        }
+      }
+  }, [isAllSelected, selectableDates, mode, modificationSessions])
 
   useEffect(() => {
     if (onSelectableCountChange) onSelectableCountChange(selectableDates.length)
@@ -203,10 +257,21 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
         return sessionDateStr === date
       });
       
-      // 수강 가능한 세션만 포함 (백엔드에서 받은 isEnrollable 사용)
-      const enrollableSessions = availableSessions.filter(session => session.isEnrollable);
+      // 선택 가능한 세션만 포함
+      let selectableSessions: ClassSession[] = [];
       
-      enrollableSessions.forEach(session => {
+      if (mode === 'modification') {
+        // 수강 변경 모드: isSelectable 또는 canBeCancelled인 세션들 포함
+        selectableSessions = availableSessions.filter(session => {
+          const modificationSession = session as ClassSessionForModification;
+          return modificationSession.isSelectable || modificationSession.canBeCancelled;
+        });
+      } else {
+        // 일반 수강 신청 모드: 기존 isEnrollable 필드 사용
+        selectableSessions = availableSessions.filter(session => session.isEnrollable);
+      }
+      
+      selectableSessions.forEach(session => {
         const classId = session.classId;
         if (!sessionGroups[classId]) {
           sessionGroups[classId] = {
@@ -249,22 +314,33 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
             return sessionDateStr === dateStr
           }) : []
           
-          // 수강 가능한 세션들만 필터링 (백엔드에서 받은 isEnrollable 사용)
-          const enrollableSessions = availableSessions.filter(session => session.isEnrollable)
+                // 선택 가능한 세션들 필터링
+      let selectableSessions: ClassSession[] = [];
+      
+      if (mode === 'modification') {
+        // 수강 변경 모드: isSelectable 또는 canBeCancelled인 세션들 포함
+        selectableSessions = availableSessions.filter(session => {
+          const modificationSession = session as ClassSessionForModification;
+          return modificationSession.isSelectable || modificationSession.canBeCancelled;
+        });
+      } else {
+        // 일반 수강 신청 모드: 기존 isEnrollable 필드 사용
+        selectableSessions = availableSessions.filter(session => session.isEnrollable);
+      }
           
-          const isSelectable = d.isCurrentMonth && enrollableSessions.length > 0
+          const isSelectable = d.isCurrentMonth && selectableSessions.length > 0
           const isSelected = !!selectedDates[dateStr]
 
           // 수정 모드에서 기존 수강 신청된 세션인지 확인
-          const wasOriginallyEnrolled = mode === 'modification' && existingEnrollments?.some((enrollment: any) => {
-            const enrollmentDate = format(new Date(enrollment.date), 'yyyy-MM-dd');
-            return enrollmentDate === dateStr && 
-                   enrollment.enrollment && 
-                   (enrollment.enrollment.status === 'CONFIRMED' || enrollment.enrollment.status === 'PENDING');
+          const wasOriginallyEnrolled = mode === 'modification' && modificationSessions?.some((session) => {
+            const sessionDate = format(new Date(session.date), 'yyyy-MM-dd');
+            return sessionDate === dateStr && session.canBeCancelled;
           });
 
           // 취소될 세션인지 확인 (기존에 신청되었지만 현재 선택되지 않은 경우)
           const willBeCancelled = mode === 'modification' && wasOriginallyEnrolled && !isSelected;
+
+
 
           return (
             <div
@@ -277,7 +353,9 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
                     <button
                       type="button"
                       className={`w-10 h-10 flex items-center justify-center rounded-full border-2 transition-colors duration-150
-                        ${isSelected ? 'bg-[#573B30] border-[#573B30] text-white' : 'border-[#AC9592] bg-white text-black hover:bg-[#E5D6D1]'}
+                        ${willBeCancelled ? 'bg-white border-red-500 text-red-500' :
+                          isSelected ? 'bg-[#573B30] border-[#573B30] text-white' : 
+                          'border-[#AC9592] bg-white text-black hover:bg-[#E5D6D1]'}
                       `}
                       onClick={() => setSelectedDates(prev => ({ ...prev, [dateStr]: !prev[dateStr] }))}
                     >
@@ -300,7 +378,40 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
               <div className="min-h-5 flex flex-col items-center justify-center">
                 {availableSessions.map(session => {
                   const classCard = classCards.find(card => card.id === session.classId)
-                  const unavailable = !session.isEnrollable
+                  let unavailable = false;
+                  let title = '';
+                  
+                  if (mode === 'modification') {
+                    const modificationSession = session as ClassSessionForModification;
+                    unavailable = !(modificationSession.isSelectable || modificationSession.canBeCancelled);
+                    
+                    if (unavailable) {
+                      if (modificationSession.isPastStartTime) {
+                        title = '이미 시작된 수업';
+                      } else if (modificationSession.isFull && !modificationSession.isAlreadyEnrolled) {
+                        title = '수강 인원 초과';
+                      } else if (modificationSession.isAlreadyEnrolled && modificationSession.isPastStartTime) {
+                        title = '이미 시작된 수업';
+                      } else {
+                        title = '수강 불가';
+                      }
+                    } else {
+                      if (modificationSession.isSelectable) {
+                        title = '수강 변경 가능';
+                      } else if (modificationSession.canBeCancelled) {
+                        title = '환불 신청 가능';
+                      } else {
+                        title = '수정 가능';
+                      }
+                    }
+                  } else {
+                    unavailable = !session.isEnrollable;
+                    title = unavailable ? 
+                      (session.isPastStartTime ? '이미 시작된 수업' : 
+                       session.isFull ? '수강 인원 초과' : 
+                       session.isAlreadyEnrolled ? '이미 수강 중' : '수강 불가') 
+                      : '수강 가능';
+                  }
                   
                   return (
                     <div 
@@ -316,12 +427,7 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
                         border: 'none',
                         fontFamily: 'Pretendard Variable',
                       }}
-                      title={unavailable ? 
-                        (session.isPastStartTime ? '이미 시작된 수업' : 
-                         session.isFull ? '수강 인원 초과' : 
-                         session.isAlreadyEnrolled ? '이미 수강 중' : '수강 불가') 
-                        : '수강 가능'
-                      }
+                      title={title}
                     >
                       {classCard?.className || '클래스'}
                     </div>

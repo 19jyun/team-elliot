@@ -7,8 +7,8 @@ interface Props {
   isAllSelected?: boolean
   onGoToPayment?: () => void
   mode?: 'enrollment' | 'modification';
-  // 수강 변경 모드에서 사용할 props
-  netChangeCount?: number; // 변경된 강의 개수 (양수: 추가, 음수: 취소)
+  netChange?: number;
+  hasChanges?: boolean; // 수강 변경에서 실제 변경 사항이 있는지 여부
 }
 
 export default function DateSelectFooter({ 
@@ -16,9 +16,10 @@ export default function DateSelectFooter({
   onSelectAll, 
   onDeselectAll, 
   isAllSelected, 
-  onGoToPayment, 
+  onGoToPayment,
   mode = 'enrollment',
-  netChangeCount = 0
+  netChange = 0,
+  hasChanges = false
 }: Props) {
   // 전체선택 체크박스 클릭 핸들러
   const handleSelectAllChange = (checked: boolean) => {
@@ -29,20 +30,20 @@ export default function DateSelectFooter({
     }
   }
 
-  const isModificationMode = mode === 'modification';
-  
-  // 수강 변경 모드에서 동적 버튼 텍스트 생성
   let buttonText = '수강일자 선택';
-  let changeCountDisplay = '';
-  
-  if (isModificationMode) {
-    if (netChangeCount >= 0) {
+  let changeCountDisplay = selectedCount;
+  let isButtonEnabled = selectedCount > 0;
+
+  if (mode === 'modification') {
+    if (netChange >= 0) {
       buttonText = '추가 금액 결제';
-      changeCountDisplay = netChangeCount > 0 ? `${netChangeCount}` : '0';
+      changeCountDisplay = Math.abs(netChange);
     } else {
       buttonText = '환불 정보 입력';
-      changeCountDisplay = `${Math.abs(netChangeCount)}`;
+      changeCountDisplay = Math.abs(netChange);
     }
+    // 수강 변경 모드에서는 실제 변경 사항이 있는 경우 버튼 활성화
+    isButtonEnabled = hasChanges;
   }
 
   return (
@@ -60,15 +61,15 @@ export default function DateSelectFooter({
       </div>
       <div className="flex gap-3 justify-center px-5 pt-2.5 pb-4 w-full text-base font-semibold leading-snug text-white">
         <button
-          className={`flex-1 shrink self-stretch px-2.5 py-4 rounded-lg min-w-[240px] size-full transition-colors duration-300 text-center ${selectedCount > 0 ? 'bg-[#AC9592] text-white cursor-pointer' : 'bg-zinc-300 text-white cursor-not-allowed'}`}
-          disabled={selectedCount === 0}
-          onClick={selectedCount > 0 && onGoToPayment ? onGoToPayment : undefined}
+          className={`flex-1 shrink self-stretch px-2.5 py-4 rounded-lg min-w-[240px] size-full transition-colors duration-300 text-center ${isButtonEnabled ? 'bg-[#AC9592] text-white cursor-pointer' : 'bg-zinc-300 text-white cursor-not-allowed'}`}
+          disabled={!isButtonEnabled}
+          onClick={isButtonEnabled && onGoToPayment ? onGoToPayment : undefined}
         >
-          {selectedCount > 0 ? (
+          {isButtonEnabled ? (
             <span className="inline-flex items-center justify-center w-full">
               {buttonText}
               <span className="ml-2 bg-white text-[#AC9592] rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold p-0 aspect-square">
-                {isModificationMode ? changeCountDisplay : selectedCount}
+                {changeCountDisplay}
               </span>
             </span>
           ) : (

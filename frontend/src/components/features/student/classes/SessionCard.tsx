@@ -26,11 +26,13 @@ const levelBgColor: Record<LevelType, string> = {
 const getStatusText = (status: string) => {
   switch (status) {
     case 'PENDING':
-      return '대기중'
+      return '수락 대기중'
     case 'CONFIRMED':
       return '확정'
     case 'CANCELLED':
       return '취소'
+    case 'REFUND_REQUESTED':
+      return '환불 대기중'
     default:
       return status
   }

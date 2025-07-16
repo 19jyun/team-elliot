@@ -233,9 +233,6 @@ export class ClassSessionService {
   }
 
   async getClassSessions(classId: number, studentId?: number) {
-    console.log('=== getClassSessions 호출됨 ===');
-    console.log('classId:', classId, 'studentId:', studentId);
-
     const sessions = await this.prisma.classSession.findMany({
       where: { classId },
       include: {
@@ -259,8 +256,6 @@ export class ClassSessionService {
       orderBy: { date: 'asc' },
     });
 
-    console.log('조회된 세션 수:', sessions.length);
-
     // 각 세션에 isEnrollable 정보 추가
     const sessionsWithEnrollableInfo = sessions.map((session) => {
       const now = new Date();
@@ -280,23 +275,15 @@ export class ClassSessionService {
         (enrollment) =>
           enrollment.status === 'CONFIRMED' || enrollment.status === 'PENDING',
       );
-      const isEnrollable = !isPastStartTime && !isFull && !isAlreadyEnrolled;
 
-      console.log(
-        `\n--- 세션 ${session.id} (${session.date.toISOString()}) ---`,
-      );
-      console.log('currentStudents:', session.currentStudents);
-      console.log('maxStudents:', session.class.maxStudents);
-      console.log('isFull:', isFull);
-      console.log('sessionStartTime:', sessionStartTime.toISOString());
-      console.log('now:', now.toISOString());
-      console.log('isPastStartTime:', isPastStartTime);
-      console.log('enrollments:', session.enrollments);
-      console.log('isAlreadyEnrolled:', isAlreadyEnrolled);
-      console.log('최종 isEnrollable:', isEnrollable);
+      const isEnrollable = !isPastStartTime && !isFull && !isAlreadyEnrolled;
 
       return {
         ...session,
+        class: {
+          ...session.class,
+          tuitionFee: session.class.tuitionFee.toString(),
+        },
         isEnrollable,
         isFull,
         isPastStartTime,
@@ -305,6 +292,75 @@ export class ClassSessionService {
     });
 
     return sessionsWithEnrollableInfo;
+  }
+
+  async getClassSessionsForModification(classId: number, studentId: number) {
+    const sessions = await this.prisma.classSession.findMany({
+      where: { classId },
+      include: {
+        class: {
+          include: {
+            teacher: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        enrollments: {
+          where: { studentId },
+          include: {
+            student: true,
+          },
+        },
+      },
+      orderBy: { date: 'asc' },
+    });
+
+    const now = new Date();
+
+    return sessions.map((session) => {
+      // session.date와 session.startTime을 조합해서 정확한 날짜시간 생성
+      const sessionDate = new Date(session.date);
+      const sessionStartTimeStr = session.startTime.toTimeString().slice(0, 5);
+      const [hours, minutes] = sessionStartTimeStr.split(':').map(Number);
+      const sessionStartTime = new Date(sessionDate);
+      sessionStartTime.setHours(hours, minutes, 0, 0);
+
+      // 기본 조건들
+      const isPastStartTime = now >= sessionStartTime;
+      const isFull = session.currentStudents >= session.class.maxStudents;
+      const isAlreadyEnrolled = session.enrollments.some(
+        (enrollment) =>
+          enrollment.status === 'CONFIRMED' || enrollment.status === 'PENDING',
+      );
+
+      // 수강 변경 가능 여부
+      const isSelectable = !isPastStartTime && !isFull && !isAlreadyEnrolled;
+
+      // 환불 신청 가능 여부
+      const canBeCancelled = !isPastStartTime && isAlreadyEnrolled;
+
+      // 전체 선택 가능 여부 (수강 변경 또는 환불 신청 중 하나라도 가능)
+      const isModifiable = isSelectable || canBeCancelled;
+
+      return {
+        ...session,
+        class: {
+          ...session.class,
+          tuitionFee: session.class.tuitionFee.toString(),
+        },
+        isSelectable,
+        canBeCancelled,
+        isModifiable,
+        isPastStartTime,
+        isFull,
+        isAlreadyEnrolled,
+        // 기존 호환성을 위한 필드들
+        isEnrollable: isSelectable,
+      };
+    });
   }
 
   async getClassSession(id: number) {

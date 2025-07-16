@@ -26,4 +26,19 @@ export class RefundRequestDto {
   @ApiProperty({ description: '환불 요청 금액' })
   @IsNumber()
   refundAmount: number;
+
+  @ApiProperty({ description: '은행명 (선택사항)' })
+  @IsOptional()
+  @IsString()
+  bankName?: string;
+
+  @ApiProperty({ description: '계좌번호 (선택사항)' })
+  @IsOptional()
+  @IsString()
+  accountNumber?: string;
+
+  @ApiProperty({ description: '예금주 (선택사항)' })
+  @IsOptional()
+  @IsString()
+  accountHolder?: string;
 }

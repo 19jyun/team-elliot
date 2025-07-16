@@ -131,15 +131,20 @@ export function RefundRequestStep({ refundAmount, cancelledSessionsCount, onComp
       console.log('환불 신청할 세션들:', cancelledSessions);
 
       // 각 취소된 세션에 대해 환불 요청 생성
-      const sessionPrice = 50000; // 임시 수강료
       const refundRequests = [];
 
       for (const cancelledSession of cancelledSessions) {
+        // 실제 수강료 사용 (기본값 50000)
+        const sessionPrice = parseInt(cancelledSession.class?.tuitionFee || '50000');
+        
         const refundRequest = {
           sessionEnrollmentId: cancelledSession.enrollment.id,
           reason: refundReason,
           detailedReason: refundReason === RefundReason.OTHER ? detailedReason : undefined,
-          refundAmount: sessionPrice
+          refundAmount: sessionPrice,
+          bankName: accountInfo.bank,
+          accountNumber: accountInfo.accountNumber,
+          accountHolder: accountInfo.accountHolder
         };
 
         try {
