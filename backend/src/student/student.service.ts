@@ -222,4 +222,179 @@ export class StudentService {
       updatedAt: updatedStudent.updatedAt,
     };
   }
+
+  /**
+   * 학생의 신청/결제 내역 조회 (session_enrollments 기반)
+   */
+  async getEnrollmentHistory(studentId: number) {
+    const enrollments = await this.prisma.sessionEnrollment.findMany({
+      where: {
+        studentId: studentId,
+        status: {
+          in: ['PENDING', 'CONFIRMED', 'REFUND_REQUESTED'],
+        },
+      },
+      include: {
+        session: {
+          include: {
+            class: {
+              include: {
+                teacher: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        payment: true,
+      },
+      orderBy: {
+        enrolledAt: 'desc',
+      },
+    });
+
+    return enrollments.map((enrollment) => ({
+      id: enrollment.id,
+      sessionId: enrollment.sessionId,
+      status: enrollment.status,
+      enrolledAt: enrollment.enrolledAt,
+      cancelledAt: enrollment.cancelledAt,
+      description: `${enrollment.session.class.className} - ${enrollment.status === 'PENDING' ? '수강 신청 대기중' : enrollment.status === 'CONFIRMED' ? '수강 신청 승인됨' : '환불 요청됨'}`,
+      session: {
+        id: enrollment.session.id,
+        date: enrollment.session.date,
+        startTime: enrollment.session.startTime,
+        endTime: enrollment.session.endTime,
+        class: {
+          id: enrollment.session.class.id,
+          className: enrollment.session.class.className,
+          level: enrollment.session.class.level,
+          teacher: enrollment.session.class.teacher,
+        },
+      },
+      payment: enrollment.payment,
+    }));
+  }
+
+  /**
+   * 학생의 환불/취소 내역 조회 (session_enrollments 기반)
+   */
+  async getCancellationHistory(studentId: number) {
+    const enrollments = await this.prisma.sessionEnrollment.findMany({
+      where: {
+        studentId: studentId,
+        status: {
+          in: [
+            'REJECTED',
+            'REFUND_CANCELLED',
+            'REFUND_REQUESTED',
+            'CANCELLED',
+            'TEACHER_CANCELLED',
+          ],
+        },
+      },
+      include: {
+        session: {
+          include: {
+            class: {
+              include: {
+                teacher: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        payment: true,
+        refundRequests: {
+          orderBy: {
+            requestedAt: 'desc',
+          },
+        },
+      },
+      orderBy: {
+        enrolledAt: 'desc',
+      },
+    });
+
+    // 각 enrollment에 대한 거절 사유 정보 조회
+    const enrollmentsWithRejectionDetails = await Promise.all(
+      enrollments.map(async (enrollment) => {
+        // 수강 신청 거절 사유 조회
+        const enrollmentRejection = await this.prisma.rejectionDetail.findFirst(
+          {
+            where: {
+              entityId: enrollment.id,
+              entityType: 'SessionEnrollment',
+              rejectionType: 'SESSION_ENROLLMENT_REJECTION',
+            },
+            include: {
+              rejector: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        );
+
+        // 환불 요청 거절 사유 조회 (환불 요청이 있는 경우)
+        let refundRejection = null;
+        if (enrollment.refundRequests && enrollment.refundRequests.length > 0) {
+          const latestRefundRequest = enrollment.refundRequests[0];
+          refundRejection = await this.prisma.rejectionDetail.findFirst({
+            where: {
+              entityId: latestRefundRequest.id,
+              entityType: 'RefundRequest',
+              rejectionType: 'REFUND_REJECTION',
+            },
+            include: {
+              rejector: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          });
+        }
+
+        return {
+          id: enrollment.id,
+          sessionId: enrollment.sessionId,
+          status: enrollment.status,
+          enrolledAt: enrollment.enrolledAt,
+          cancelledAt: enrollment.cancelledAt,
+          rejectedAt: enrollment.rejectedAt,
+          description: `${enrollment.session.class.className} - ${enrollment.status === 'REJECTED' ? '거절됨' : enrollment.status === 'REFUND_CANCELLED' ? '환불완료' : enrollment.status === 'REFUND_REQUESTED' ? '환불대기' : enrollment.status === 'CANCELLED' ? '학생취소' : '선생님취소'}`,
+          session: {
+            id: enrollment.session.id,
+            date: enrollment.session.date,
+            startTime: enrollment.session.startTime,
+            endTime: enrollment.session.endTime,
+            class: {
+              id: enrollment.session.class.id,
+              className: enrollment.session.class.className,
+              level: enrollment.session.class.level,
+              teacher: enrollment.session.class.teacher,
+            },
+          },
+          payment: enrollment.payment,
+          refundRequests: enrollment.refundRequests,
+          // 거절 사유 정보 추가
+          enrollmentRejection,
+          refundRejection,
+        };
+      }),
+    );
+
+    return enrollmentsWithRejectionDetails;
+  }
 }

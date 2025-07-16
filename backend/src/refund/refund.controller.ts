@@ -109,4 +109,37 @@ export class RefundController {
   ) {
     return this.refundService.getRefundRequest(refundRequestId);
   }
+
+  /**
+   * 환불 요청 승인
+   */
+  @Post(':refundRequestId/approve')
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: '환불 요청 승인' })
+  @ApiResponse({ status: 200, description: '환불 요청 승인 성공' })
+  async approveRefundRequest(
+    @Param('refundRequestId', ParseIntPipe) refundRequestId: number,
+    @CurrentUser() user: any,
+  ) {
+    return this.refundService.approveRefundRequest(refundRequestId, user.id);
+  }
+
+  /**
+   * 환불 요청 거절
+   */
+  @Post(':refundRequestId/reject')
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: '환불 요청 거절' })
+  @ApiResponse({ status: 200, description: '환불 요청 거절 성공' })
+  async rejectRefundRequest(
+    @Param('refundRequestId', ParseIntPipe) refundRequestId: number,
+    @Body() data: { reason: string; detailedReason?: string },
+    @CurrentUser() user: any,
+  ) {
+    return this.refundService.rejectRefundRequest(
+      refundRequestId,
+      data,
+      user.id,
+    );
+  }
 }

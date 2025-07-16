@@ -27,6 +27,13 @@ enum LogLevel {
   DEBUG
 }
 
+// 거절 타입 enum
+enum RejectionType {
+  ENROLLMENT_REJECTION    // 수강 신청 거절
+  REFUND_REJECTION       // 환불 요청 거절
+  SESSION_ENROLLMENT_REJECTION // 세션 수강 신청 거절
+}
+
 // 학원 모델
 model Academy {
   id          Int      @id @default(autoincrement())
@@ -71,6 +78,7 @@ model User {
   notices   Notice[] // 공지사항 작성자 관계
   activityLogs ActivityLog[] // 활동 로그 관계
   processedRefunds RefundRequest[] @relation("RefundProcessor") // 처리한 환불 요청들
+  rejectionDetails RejectionDetail[] // 거절 내역
 
   @@map("users")
 }
@@ -280,9 +288,10 @@ model SessionEnrollment {
   id          Int          @id @default(autoincrement())
   studentId   Int          @map("student_id")
   sessionId   Int          @map("session_id")
-  status      String       @default("PENDING") // PENDING | CONFIRMED | CANCELLED | REFUND_REQUESTED
+  status      String       @default("PENDING") // PENDING | CONFIRMED | REJECTED | CANCELLED | REFUND_REQUESTED | REFUND_CANCELLED | TEACHER_CANCELLED
   enrolledAt  DateTime     @default(now())
   cancelledAt DateTime?
+  rejectedAt  DateTime?    @map("rejected_at") // 환불 요청 거절 시간
   session     ClassSession @relation(fields: [sessionId], references: [id])
   student     Student      @relation(fields: [studentId], references: [id])
   payment     Payment?
@@ -343,4 +352,24 @@ model RefundRequest {
   processor           User?             @relation("RefundProcessor", fields: [processedBy], references: [id])
 
   @@map("refund_requests")
+}
+
+// 거절 상세 정보 모델 - 수강 신청/환불 요청 거절을 통합 관리
+model RejectionDetail {
+  id              Int            @id @default(autoincrement())
+  rejectionType   RejectionType  @map("rejection_type") // 거절 타입
+  entityId        Int            @map("entity_id") // 관련 엔티티 ID (Enrollment.id, RefundRequest.id, SessionEnrollment.id)
+  entityType      String         @map("entity_type") // 관련 엔티티 타입 ("Enrollment", "RefundRequest", "SessionEnrollment")
+  reason          String         @db.Text // 거절 사유
+  detailedReason  String?        @map("detailed_reason") @db.Text // 상세 거절 사유
+  rejectedBy      Int            @map("rejected_by") // 거절한 관리자/강사 ID
+  rejectedAt      DateTime       @default(now()) @map("rejected_at")
+  
+  // 관계 설정
+  rejector        User           @relation(fields: [rejectedBy], references: [id])
+
+  @@index([rejectionType, entityId])
+  @@index([rejectedBy, rejectedAt])
+  @@index([entityType, entityId])
+  @@map("rejection_details")
 }

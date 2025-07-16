@@ -8,23 +8,17 @@ import { Separator } from '@/components/ui/separator';
 import { Calendar, Clock, BookOpen, CheckCircle, XCircle, AlertCircle, Clock as ClockIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
-import { activityLogApi } from '@/api/activityLog';
-import { EnrollmentHistoryItem } from '@/types/api/activityLog';
+import { getEnrollmentHistory } from '@/api/student';
 
 export function EnrollmentHistory() {
   const { pushFocus, popFocus } = useDashboardNavigation();
-  const [enrollmentLogs, setEnrollmentLogs] = useState<EnrollmentHistoryItem[]>([]);
+  const [enrollmentLogs, setEnrollmentLogs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<string>('ALL');
 
   useEffect(() => {
-    // 컴포넌트가 마운트될 때 포커스를 subpage로 설정
     pushFocus('subpage');
-    
-    return () => {
-      // 컴포넌트가 언마운트될 때 이전 포커스로 복원
-      popFocus();
-    };
+    return () => popFocus();
   }, [pushFocus, popFocus]);
 
   useEffect(() => {
@@ -34,32 +28,13 @@ export function EnrollmentHistory() {
   const loadEnrollmentHistory = async () => {
     try {
       setIsLoading(true);
-      console.log('수강 내역 API 호출 시작...');
-      
-      const response = await activityLogApi.getEnrollmentHistory({
-        page: 1,
-        limit: 50, // 충분한 데이터를 가져오기 위해 50개로 설정
-      });
-      
-      console.log('API 응답:', response);
-      
-      // axios 응답 구조: response.data에 실제 데이터가 있음
-      if (response && response.data && response.data.logs) {
-        console.log('수강 내역 로드 성공:', response.data.logs.length, '개');
-        setEnrollmentLogs(response.data.logs);
-      } else {
-        console.warn('API 응답에 logs가 없습니다:', response);
-        setEnrollmentLogs([]);
-      }
+      const response = await getEnrollmentHistory();
+      console.log('Enrollment History Response:', response);
+      setEnrollmentLogs(response);
     } catch (error) {
-      console.error('수강 내역 로드 실패:', error);
-      console.error('에러 상세 정보:', {
-        message: error instanceof Error ? error.message : 'Unknown error',
-        status: (error as any)?.response?.status,
-        data: (error as any)?.response?.data,
-      });
+      console.error('Enrollment History Error:', error);
       toast.error('수강 내역을 불러오는데 실패했습니다.');
-      setEnrollmentLogs([]); // 에러 시 빈 배열로 설정
+      setEnrollmentLogs([]);
     } finally {
       setIsLoading(false);
     }
@@ -71,14 +46,10 @@ export function EnrollmentHistory() {
         return <ClockIcon className="w-4 h-4 text-yellow-500" />;
       case 'CONFIRMED':
         return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'CANCELLED':
-        return <XCircle className="w-4 h-4 text-red-500" />;
-      case 'COMPLETED':
-        return <CheckCircle className="w-4 h-4 text-blue-500" />;
-      case 'ATTENDED':
+      case 'REFUND_REJECTED_CONFIRMED':
         return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'ABSENT':
-        return <XCircle className="w-4 h-4 text-red-500" />;
+      case 'REFUND_REQUESTED':
+        return <ClockIcon className="w-4 h-4 text-blue-500" />;
       default:
         return <AlertCircle className="w-4 h-4 text-gray-500" />;
     }
@@ -90,14 +61,8 @@ export function EnrollmentHistory() {
         return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">대기중</Badge>;
       case 'CONFIRMED':
         return <Badge variant="secondary" className="bg-green-100 text-green-800">승인됨</Badge>;
-      case 'CANCELLED':
-        return <Badge variant="secondary" className="bg-red-100 text-red-800">취소됨</Badge>;
-      case 'COMPLETED':
-        return <Badge variant="secondary" className="bg-blue-100 text-blue-800">완료</Badge>;
-      case 'ATTENDED':
-        return <Badge variant="secondary" className="bg-green-100 text-green-800">출석</Badge>;
-      case 'ABSENT':
-        return <Badge variant="secondary" className="bg-red-100 text-red-800">결석</Badge>;
+      case 'REFUND_REQUESTED':
+        return <Badge variant="secondary" className="bg-blue-100 text-blue-800">환불대기</Badge>;
       default:
         return <Badge variant="secondary" className="bg-gray-100 text-gray-800">{status}</Badge>;
     }
@@ -122,89 +87,23 @@ export function EnrollmentHistory() {
   };
 
   // API 응답에서 상태 정보 추출
-  const getEnrollmentStatus = (log: EnrollmentHistoryItem): string => {
-    try {
-      if (log.newValue) {
-        const parsedValue = typeof log.newValue === 'string' ? JSON.parse(log.newValue) : log.newValue;
-        if (parsedValue.status) {
-          return parsedValue.status;
-        }
-      }
-    } catch (error) {
-      console.warn('newValue 파싱 실패:', error);
-    }
-    
-    // action에 따라 상태 추정
-    switch (log.action) {
-      case 'ENROLL_SESSION':
-        return 'PENDING';
-      case 'CANCEL_ENROLLMENT':
-        return 'CANCELLED';
-      case 'APPROVE_ENROLLMENT':
-        return 'CONFIRMED';
-      case 'REJECT_ENROLLMENT':
-        return 'CANCELLED';
-      default:
-        return 'PENDING';
-    }
+  const getEnrollmentStatus = (log: any): string => {
+    return log.status;
   };
 
   // API 응답에서 클래스명 추출
-  const getClassName = (log: EnrollmentHistoryItem): string => {
-    try {
-      if (log.newValue) {
-        const parsedValue = typeof log.newValue === 'string' ? JSON.parse(log.newValue) : log.newValue;
-        if (parsedValue.className) {
-          return parsedValue.className;
-        }
-        if (parsedValue.sessionName) {
-          return parsedValue.sessionName;
-        }
-      }
-    } catch (error) {
-      console.warn('newValue 파싱 실패:', error);
-    }
-    
-    return log.description || '수강 신청';
+  const getClassName = (log: any): string => {
+    return log.session.class.className;
   };
 
   // API 응답에서 세션 날짜 추출
-  const getSessionDate = (log: EnrollmentHistoryItem): string => {
-    try {
-      if (log.newValue) {
-        const parsedValue = typeof log.newValue === 'string' ? JSON.parse(log.newValue) : log.newValue;
-        if (parsedValue.sessionDate) {
-          return parsedValue.sessionDate;
-        }
-        if (parsedValue.enrolledAt) {
-          return parsedValue.enrolledAt;
-        }
-      }
-    } catch (error) {
-      console.warn('newValue 파싱 실패:', error);
-    }
-    
-    return log.createdAt;
+  const getSessionDate = (log: any): string => {
+    return log.session.date;
   };
 
   // API 응답에서 세션 ID 추출
-  const getSessionId = (log: EnrollmentHistoryItem): number => {
-    try {
-      if (log.newValue) {
-        const parsedValue = typeof log.newValue === 'string' ? JSON.parse(log.newValue) : log.newValue;
-        if (parsedValue.sessionId) {
-          return parsedValue.sessionId;
-        }
-      }
-    } catch (error) {
-      console.warn('newValue 파싱 실패:', error);
-    }
-    
-    if (log.entityId) {
-      return log.entityId;
-    }
-    
-    return 0;
+  const getSessionId = (log: any): number => {
+    return log.id;
   };
 
   const filteredLogs = (enrollmentLogs || []).filter(log => {
@@ -236,8 +135,8 @@ export function EnrollmentHistory() {
         <Card className="h-full flex flex-col">
           <CardHeader className="pb-3 flex-shrink-0">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <Calendar className="h-5 w-5" />
-              수강 내역
+              <BookOpen className="h-5 w-5" />
+              신청/결제 내역
             </CardTitle>
             <div className="flex gap-2 flex-wrap mt-3">
               <Button
@@ -286,7 +185,7 @@ export function EnrollmentHistory() {
             {filteredLogs.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p>수강 내역이 없습니다.</p>
+                <p>신청/결제 내역이 없습니다.</p>
                 <p className="text-sm">필터를 변경해보세요.</p>
               </div>
             ) : (
@@ -310,18 +209,14 @@ export function EnrollmentHistory() {
                               {getStatusBadge(status)}
                             </div>
                             
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
                               <div className="flex items-center gap-2">
                                 <Calendar className="w-4 h-4" />
                                 <span>수업일: {formatDate(sessionDate)}</span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Clock className="w-4 h-4" />
-                                <span>신청일: {formatDateTime(log.createdAt)}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <BookOpen className="w-4 h-4" />
-                                <span>세션 ID: {sessionId}</span>
+                                <span>신청일: {formatDateTime(log.enrolledAt)}</span>
                               </div>
                             </div>
                           </div>

@@ -57,7 +57,14 @@ export interface SessionEnrollment {
   id: number;
   studentId: number;
   sessionId: number;
-  status: "PENDING" | "CONFIRMED" | "CANCELLED";
+  status:
+    | "PENDING"
+    | "CONFIRMED"
+    | "REJECTED"
+    | "CANCELLED"
+    | "REFUND_REQUESTED"
+    | "REFUND_CANCELLED"
+    | "TEACHER_CANCELLED";
   enrolledAt: string;
   cancelledAt?: string;
 }
@@ -211,7 +218,14 @@ export interface StudentClassEnrollmentsResponse {
     endTime: string;
     enrollment?: {
       id: number;
-      status: "PENDING" | "CONFIRMED" | "CANCELLED";
+      status:
+        | "PENDING"
+        | "CONFIRMED"
+        | "REJECTED"
+        | "CANCELLED"
+        | "REFUND_REQUESTED"
+        | "REFUND_CANCELLED"
+        | "TEACHER_CANCELLED";
       enrolledAt: string;
       cancelledAt?: string;
     };

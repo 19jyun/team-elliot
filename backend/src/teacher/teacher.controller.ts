@@ -200,4 +200,21 @@ export class TeacherController {
   async getTeacherClassesWithSessions(@Param('id', ParseIntPipe) id: number) {
     return this.teacherService.getTeacherClassesWithSessions(id);
   }
+
+  // 수강 신청/환불 신청 관리 관련 엔드포인트들
+  @Get('me/sessions-with-enrollment-requests')
+  @Roles(Role.TEACHER)
+  @ApiOperation({ summary: '수강 신청이 대기 중인 세션 목록 조회' })
+  @ApiResponse({ status: 200, description: '수강 신청 대기 세션 목록' })
+  async getSessionsWithEnrollmentRequests(@GetUser() user: any) {
+    return this.teacherService.getSessionsWithEnrollmentRequests(user.id);
+  }
+
+  @Get('me/sessions-with-refund-requests')
+  @Roles(Role.TEACHER)
+  @ApiOperation({ summary: '환불 요청이 대기 중인 세션 목록 조회' })
+  @ApiResponse({ status: 200, description: '환불 요청 대기 세션 목록' })
+  async getSessionsWithRefundRequests(@GetUser() user: any) {
+    return this.teacherService.getSessionsWithRefundRequests(user.id);
+  }
 }

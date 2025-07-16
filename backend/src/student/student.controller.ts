@@ -50,4 +50,14 @@ export class StudentController {
   ) {
     return this.studentService.updateMyProfile(user.id, updateProfileDto);
   }
+
+  @Get('enrollment-history')
+  async getEnrollmentHistory(@CurrentUser() user: any) {
+    return this.studentService.getEnrollmentHistory(user.id);
+  }
+
+  @Get('cancellation-history')
+  async getCancellationHistory(@CurrentUser() user: any) {
+    return this.studentService.getCancellationHistory(user.id);
+  }
 }

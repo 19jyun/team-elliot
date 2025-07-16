@@ -2,10 +2,10 @@
 
 import React from 'react';
 import { useDashboardNavigation, CreateClassStep } from '@/contexts/DashboardContext';
-import { CreateClassStep1 } from '../components/create-class/CreateClassStep1';
-import { CreateClassStep2 } from '../components/create-class/CreateClassStep2';
-import { CreateClassStep3 } from '../components/create-class/CreateClassStep3';
-import { CreateClassComplete } from '../components/create-class/CreateClassComplete';
+import { CreateClassStep1 } from '../components/CreateClassStep1';
+import { CreateClassStep2 } from '../components/CreateClassStep2';
+import { CreateClassStep3 } from '../components/CreateClassStep3';
+import { CreateClassComplete } from '../components/CreateClassComplete';
 
 export function CreateClassContainer() {
   const { createClass } = useDashboardNavigation();

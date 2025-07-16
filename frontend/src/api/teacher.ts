@@ -167,3 +167,57 @@ export const leaveAcademy = async (): Promise<LeaveAcademyResponse> => {
   const response = await axiosInstance.post("/teachers/me/leave-academy");
   return response.data;
 };
+
+// 수강 신청/환불 신청 관리 API
+export const getTeacherSessionsWithPendingRequests = async (
+  requestType: "enrollment" | "refund"
+) => {
+  const response = await axiosInstance.get(
+    `/teachers/me/sessions-with-${requestType}-requests`
+  );
+  return response.data;
+};
+
+export const getSessionRequests = async (
+  sessionId: number,
+  requestType: "enrollment" | "refund"
+) => {
+  const response = await axiosInstance.get(
+    `/class-sessions/${sessionId}/${requestType}-requests`
+  );
+  return response.data;
+};
+
+export const approveEnrollment = async (enrollmentId: number) => {
+  const response = await axiosInstance.post(
+    `/class-sessions/enrollments/${enrollmentId}/approve`
+  );
+  return response.data;
+};
+
+export const rejectEnrollment = async (
+  enrollmentId: number,
+  data: { reason: string; detailedReason?: string }
+) => {
+  const response = await axiosInstance.post(
+    `/class-sessions/enrollments/${enrollmentId}/reject`,
+    data
+  );
+  return response.data;
+};
+
+export const approveRefund = async (refundId: number) => {
+  const response = await axiosInstance.post(`/refunds/${refundId}/approve`);
+  return response.data;
+};
+
+export const rejectRefund = async (
+  refundId: number,
+  data: { reason: string; detailedReason?: string }
+) => {
+  const response = await axiosInstance.post(
+    `/refunds/${refundId}/reject`,
+    data
+  );
+  return response.data;
+};
