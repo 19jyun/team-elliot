@@ -112,18 +112,19 @@ export function ClassSessionModal({
       </div>
 
       {/* Content Container */}
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden" style={{ height: 'calc(100vh - 300px)' }}>
         <div 
           className={`flex transition-transform duration-300 ease-in-out ${
             isTransitioning ? 'pointer-events-none' : ''
           }`}
           style={{
             transform: activeTab === 'sessions' ? 'translateX(0)' : 'translateX(-50%)',
-            width: '200%'
+            width: '200%',
+            height: '100%'
           }}
         >
           {/* Sessions Tab */}
-          <div className="w-1/2 flex-shrink-0">
+          <div className="w-1/2 flex-shrink-0 h-full">
             <SessionCardList
               sessions={filteredSessions}
               onSessionClick={handleSessionClick}
@@ -131,7 +132,7 @@ export function ClassSessionModal({
           </div>
 
           {/* Class Detail Tab */}
-          <div className="w-1/2 flex-shrink-0">
+          <div className="w-1/2 flex-shrink-0 h-full">
             <ClassDetail
               classId={selectedClass.id}
               classSessions={filteredSessions}

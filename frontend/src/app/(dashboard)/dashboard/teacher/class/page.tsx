@@ -186,79 +186,81 @@ export default function TeacherDashboard() {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto pb-2 w-full bg-white">
+    <div className="flex flex-col h-full bg-white">
+      <header className="flex-shrink-0">
+        {/* 환영 메시지 + 캘린더 */}
+        <div className="flex flex-col px-5 py-6">
+          <h1 className="text-2xl font-bold text-stone-700">
+            안녕하세요, {session?.user?.name} 선생님!
+          </h1>
+          <p className="mt-2 text-stone-500">오늘도 즐거운 수업되세요!</p>
+        </div>
 
-      {/* 환영 메시지 */}
-      <div className="flex flex-col px-5 py-6">
-        <h1 className="text-2xl font-bold text-stone-700">
-          안녕하세요, {session?.user?.name} 선생님!
-        </h1>
-        <p className="mt-2 text-stone-500">오늘도 즐거운 수업되세요!</p>
-      </div>
+        {/* 캘린더 섹션 */}
+        <div className="flex flex-col w-full text-center whitespace-nowrap bg-white text-stone-700">
+          <div className="flex items-center justify-between px-7 pt-3 pb-2 w-full text-base font-semibold relative">
+            <div
+              className="flex gap-1.5 items-center cursor-pointer"
+              onClick={() => setIsMonthPickerOpen(true)}
+            >
+              <span>{format(selectedDate, 'yyyy년')}</span>
+              <span>{format(selectedDate, 'M월')}</span>
+              <ChevronDownIcon className="h-4 w-4 text-stone-700" />
+            </div>
+          </div>
 
-      {/* 캘린더 섹션 */}
-      <div className="flex flex-col w-full text-center whitespace-nowrap bg-white text-stone-700">
-        <div className="flex items-center justify-between px-7 pt-3 pb-2 w-full text-base font-semibold relative">
-          <div
-            className="flex gap-1.5 items-center cursor-pointer"
-            onClick={() => setIsMonthPickerOpen(true)}
-          >
-            <span>{format(selectedDate, 'yyyy년')}</span>
-            <span>{format(selectedDate, 'M월')}</span>
-            <ChevronDownIcon className="h-4 w-4 text-stone-700" />
+          {/* 요일 헤더 */}
+          <div className="flex justify-around px-2.5 w-full text-sm font-medium">
+            {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
+              <div key={day} className="w-[50px] py-2">
+                {day}
+              </div>
+            ))}
+          </div>
+
+          {/* 캘린더 그리드 */}
+          <div className="flex flex-col w-full text-base">
+            {Array.from({ length: 5 }).map((_, weekIndex) => (
+              <div key={weekIndex} className="flex justify-around px-2.5 mt-2">
+                {generateCalendarDays()
+                  .slice(weekIndex * 7, (weekIndex + 1) * 7)
+                  .map((day, dayIndex) => (
+                    <div
+                      key={dayIndex}
+                      className={`w-[50px] h-[50px] flex items-center justify-center relative cursor-pointer hover:bg-stone-50 rounded-lg transition-colors ${
+                        day.isCurrentMonth ? 'text-stone-700' : 'text-stone-300'
+                      }`}
+                      onClick={() => handleDateClick(day.day, day.isCurrentMonth)}
+                    >
+                      {day.day}
+                      {day.hasEvent && (
+                        <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-[#573B30] rounded-full" />
+                      )}
+                    </div>
+                  ))}
+              </div>
+            ))}
           </div>
         </div>
-
-        {/* 요일 헤더 */}
-        <div className="flex justify-around px-2.5 w-full text-sm font-medium">
-          {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
-            <div key={day} className="w-[50px] py-2">
-              {day}
-            </div>
-          ))}
+      </header>
+      
+      <main className="flex-1 min-h-0 bg-white px-5">
+        <div className="gap-2.5 self-start px-2 py-3 text-base font-semibold tracking-normal leading-snug text-stone-700 flex-shrink-0 ">
+          담당 클래스
         </div>
-
-        {/* 캘린더 그리드 */}
-        <div className="flex flex-col w-full text-base">
-          {Array.from({ length: 5 }).map((_, weekIndex) => (
-            <div key={weekIndex} className="flex justify-around px-2.5 mt-2">
-              {generateCalendarDays()
-                .slice(weekIndex * 7, (weekIndex + 1) * 7)
-                .map((day, dayIndex) => (
-                  <div
-                    key={dayIndex}
-                    className={`w-[50px] h-[50px] flex items-center justify-center relative cursor-pointer hover:bg-stone-50 rounded-lg transition-colors ${
-                      day.isCurrentMonth ? 'text-stone-700' : 'text-stone-300'
-                    }`}
-                    onClick={() => handleDateClick(day.day, day.isCurrentMonth)}
-                  >
-                    {day.day}
-                    {day.hasEvent && (
-                      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-[#573B30] rounded-full" />
-                    )}
-                  </div>
-                ))}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex mt-4 w-full opacity-50 bg-zinc-100 min-h-[8px]" />
-
-      {/* 수업 목록 섹션 */}
-      <div className="flex flex-col px-5 mt-4 w-full flex-1 overflow-hidden h-full">
-        <div className="flex flex-col mt-5 w-full h-full">
-          <div className="gap-2.5 self-start px-2 py-3 text-base font-semibold tracking-normal leading-snug text-stone-700 flex-shrink-0">
-            담당 클래스
-          </div>
-          <div className="flex-1 overflow-y-auto pb-4">
+        <div className="w-full overflow-auto" style={{ 
+          maxHeight: 'calc(100vh - 650px)',  // 최대 높이만 설정
+          minHeight: '200px'  // 최소 높이 보장
+        }}>
+          {/* 담당 클래스 리스트 */}
+          <div className="flex flex-col mt-4 w-full h-full">
             <TeacherClassesList
               classes={myClasses || []}
               onClassClick={handleClassClick}
             />
           </div>
         </div>
-      </div>
+      </main>
 
       {/* Teacher Class Session Modal */}
       <TeacherClassSessionModal

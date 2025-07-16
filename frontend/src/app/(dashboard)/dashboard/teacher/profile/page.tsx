@@ -83,7 +83,7 @@ export default function TeacherProfilePage() {
   }
 
   return (
-    <div className="flex overflow-hidden flex-col mx-auto w-full bg-white max-w-[480px] relative min-h-screen">
+    <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px] relative">
       <StatusBar 
         time="9:41"
         icons={[
@@ -101,7 +101,7 @@ export default function TeacherProfilePage() {
 
       <MenuLinks links={menuLinks} />
 
-      <div className="flex flex-col px-5 mt-auto">
+      <div className="flex flex-col px-5 py-10 mt-auto">
         <button
           onClick={() => setShowLogoutModal(true)}
           className="mt-6 w-full py-4 text-base font-semibold text-neutral-400 rounded-lg border border-zinc-300"
