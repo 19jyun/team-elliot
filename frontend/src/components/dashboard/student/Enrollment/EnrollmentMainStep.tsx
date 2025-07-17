@@ -1,88 +1,55 @@
-'use client'
+'use client';
 
-import * as React from 'react'
-import { Navigation } from '@/components/navigation/Navigation'
-import { EnrollmentCard } from '@/components/features/student/enrollment/EnrollmentCard'
-import { Notice } from '@/components/features/student/enrollment/Notice'
-import Image from 'next/image'
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
-import { toast } from 'react-hot-toast'
-import { useDashboardNavigation } from '@/contexts/DashboardContext'
+import React from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useDashboardNavigation } from '@/contexts/DashboardContext';
 
 export function EnrollmentMainStep() {
-  const router = useRouter()
-  const { setEnrollmentStep, setSelectedMonth, goBack, navigateToSubPage } = useDashboardNavigation()
+  const router = useRouter();
+  const { setEnrollmentStep, navigateToSubPage } = useDashboardNavigation();
   const { status } = useSession({
     required: true,
     onUnauthenticated() {
-      router.push('/login')
+      router.push('/login');
     },
-  })
+  });
 
-  console.log('EnrollmentMainStep 렌더링됨') // 디버깅용
-
-  // 현재 달과 이전 달 계산
-  const currentDate = new Date()
-  const currentMonth = currentDate.getMonth() + 1 // JavaScript의 월은 0부터 시작
-  const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1
-  const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1
-  const nowMonth = currentMonth
-
-  // 현재가 월말(25일 이후)인지 확인
-  // const isEndOfMonth = currentDate.getDate() >= 25
-  const isEndOfMonth = true
-
-  const handleMonthSelect = (month: number) => {
-    console.log('handleMonthSelect 호출됨, month:', month) // 디버깅용
-    
-    if (!isEndOfMonth) {
-      toast.error('신청 기간이 아닙니다')
-      return
-    }
-    
-    setSelectedMonth(month)
-    setEnrollmentStep('academy-selection')
-    navigateToSubPage('enroll') // SubPage 설정 추가
-  }
+  const handleEnrollmentClick = () => {
+    console.log('수강신청 버튼 클릭됨');
+    // 새로운 수강신청 플로우 시작
+    setEnrollmentStep('academy-selection');
+    navigateToSubPage('enroll');
+    console.log('setEnrollmentStep과 navigateToSubPage 호출 완료');
+  };
 
   if (status === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
       </div>
-    )
+    );
   }
 
   return (
     <div className="flex overflow-hidden flex-col pb-2 w-full bg-white">
-
       {/* 수강신청 카드 섹션 */}
       <div className="flex flex-col self-center mt-5 w-full font-semibold leading-snug text-center max-w-[335px]">
-        {/* 이전 달 수강신청 */}
-        <EnrollmentCard
-          title={`${prevMonth}월 수강신청`}
-          onClick={() => handleMonthSelect(prevMonth)}
-        />
-        {nowMonth === currentMonth && (
-          <div className="mt-3">
-            <EnrollmentCard
-              title={`${nowMonth}월 수강신청`}
-              onClick={() => handleMonthSelect(nowMonth)}
-            />
+        <div 
+          onClick={handleEnrollmentClick}
+          className="flex flex-col justify-center items-center px-6 py-8 w-full bg-white rounded-2xl border-2 border-dashed border-[#AC9592] cursor-pointer hover:bg-gray-50 transition-colors"
+        >
+          <div className="w-16 h-16 bg-[#AC9592] rounded-full flex items-center justify-center mb-4">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
           </div>
-        )}
-
-        {/* 다음 달 수강신청 (월말에만 표시) */}
-        {isEndOfMonth && (
-          <div className="mt-3">
-            <EnrollmentCard
-              title={`${nextMonth}월 수강신청`}
-              isNew
-              onClick={() => handleMonthSelect(nextMonth)}
-            />
-          </div>
-        )}
+          <h2 className="text-xl font-bold text-[#573B30] mb-2">수강신청</h2>
+          <p className="text-sm text-[#595959] leading-relaxed">
+            원하는 클래스를 선택하고<br />
+            수강할 세션을 신청하세요
+          </p>
+        </div>
       </div>
 
       {/* 구분선 */}
@@ -93,14 +60,18 @@ export function EnrollmentMainStep() {
 
       {/* 공지사항 섹션 */}
       <div className="flex flex-col self-center mt-5 w-full text-center max-w-[335px]">
-        <div className="text-lg font-semibold leading-tight text-stone-700">
+        <div className="text-lg font-semibold leading-tight text-stone-700 mb-4">
           공지사항
         </div>
-        <Notice
-          title={`[필독] ${nextMonth}월 수강신청 안내`}
-          content={`${nextMonth}월에 클래스를 1개 이상 수강신청 했으면 ${currentMonth}/15 부터 신청 가능  신규 수강은 ${currentMonth}/18 부터  각 타임당 10명 정원 채워질 시 마감`}
-        />
+        <div className="bg-gray-50 rounded-lg p-4 text-left">
+          <h3 className="font-semibold text-[#573B30] mb-2">수강신청 안내</h3>
+          <ul className="text-sm text-[#595959] space-y-1">
+            <li>• 원하는 클래스를 선택해주세요</li>
+            <li>• 입금 확인 후 수강신청이 최종 승인됩니다</li>
+            <li>• 문의사항은 학원에 직접 연락해주세요</li>
+          </ul>
+        </div>
       </div>
     </div>
-  )
+  );
 } 

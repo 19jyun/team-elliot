@@ -8,23 +8,17 @@ import { Separator } from '@/components/ui/separator';
 import { Calendar, Clock, BookOpen, CheckCircle, XCircle, AlertCircle, Clock as ClockIcon, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
-import { activityLogApi } from '@/api/activityLog';
-import { ActivityLog } from '@/types/api/activityLog';
+import { getCancellationHistory } from '@/api/student';
 
 export function CancellationHistory() {
   const { pushFocus, popFocus } = useDashboardNavigation();
-  const [cancellationLogs, setCancellationLogs] = useState<ActivityLog[]>([]);
+  const [cancellationLogs, setCancellationLogs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<string>('ALL');
 
   useEffect(() => {
-    // 컴포넌트가 마운트될 때 포커스를 subpage로 설정
     pushFocus('subpage');
-    
-    return () => {
-      // 컴포넌트가 언마운트될 때 이전 포커스로 복원
-      popFocus();
-    };
+    return () => popFocus();
   }, [pushFocus, popFocus]);
 
   useEffect(() => {
@@ -34,68 +28,51 @@ export function CancellationHistory() {
   const loadCancellationHistory = async () => {
     try {
       setIsLoading(true);
-      console.log('환불/취소 내역 API 호출 시작...');
-      
-      const response = await activityLogApi.getRefundCancellationHistory({
-        page: 1,
-        limit: 50, // 충분한 데이터를 가져오기 위해 50개로 설정
-      });
-      
-      console.log('API 응답:', response);
-      
-      // axios 응답 구조: response.data에 실제 데이터가 있음
-      if (response && response.data && response.data.logs) {
-        console.log('환불/취소 내역 로드 성공:', response.data.logs.length, '개');
-        setCancellationLogs(response.data.logs);
-      } else {
-        console.warn('API 응답에 logs가 없습니다:', response);
-        setCancellationLogs([]);
-      }
+      const response = await getCancellationHistory();
+      console.log('Cancellation History Response:', response);
+      setCancellationLogs(response);
     } catch (error) {
-      console.error('환불/취소 내역 로드 실패:', error);
-      console.error('에러 상세 정보:', {
-        message: error instanceof Error ? error.message : 'Unknown error',
-        status: (error as any)?.response?.status,
-        data: (error as any)?.response?.data,
-      });
+      console.error('Cancellation History Error:', error);
       toast.error('환불/취소 내역을 불러오는데 실패했습니다.');
-      setCancellationLogs([]); // 에러 시 빈 배열로 설정
+      setCancellationLogs([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const getStatusIcon = (action: string) => {
-    switch (action) {
-      case 'REFUND_REQUEST':
-        return <ClockIcon className="w-4 h-4 text-yellow-500" />;
-      case 'REFUND_COMPLETED':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'REFUND_REJECTED':
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'REJECTED':
         return <XCircle className="w-4 h-4 text-red-500" />;
-      case 'CANCEL_ENROLLMENT':
+      case 'REFUND_CANCELLED':
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'REFUND_REQUESTED':
+        return <ClockIcon className="w-4 h-4 text-blue-500" />;
+      case 'REFUND_REJECTED_CONFIRMED':
+        return <XCircle className="w-4 h-4 text-red-600" />;
+      case 'CANCELLED':
         return <XCircle className="w-4 h-4 text-orange-500" />;
-      case 'PARTIAL_REFUND':
-        return <DollarSign className="w-4 h-4 text-blue-500" />;
+      case 'TEACHER_CANCELLED':
+        return <XCircle className="w-4 h-4 text-purple-500" />;
       default:
         return <AlertCircle className="w-4 h-4 text-gray-500" />;
     }
   };
 
-  const getStatusBadge = (action: string) => {
-    switch (action) {
-      case 'REFUND_REQUEST':
-        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">환불대기</Badge>;
-      case 'REFUND_COMPLETED':
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'REJECTED':
+        return <Badge variant="secondary" className="bg-red-100 text-red-800">거절됨</Badge>;
+      case 'REFUND_CANCELLED':
         return <Badge variant="secondary" className="bg-green-100 text-green-800">환불완료</Badge>;
-      case 'REFUND_REJECTED':
-        return <Badge variant="secondary" className="bg-red-100 text-red-800">환불거부</Badge>;
-      case 'CANCEL_ENROLLMENT':
-        return <Badge variant="secondary" className="bg-orange-100 text-orange-800">환불취소</Badge>;
-      case 'PARTIAL_REFUND':
-        return <Badge variant="secondary" className="bg-blue-100 text-blue-800">부분환불</Badge>;
+      case 'REFUND_REQUESTED':
+        return <Badge variant="secondary" className="bg-blue-100 text-blue-800">환불대기</Badge>;
+      case 'CANCELLED':
+        return <Badge variant="secondary" className="bg-orange-100 text-orange-800">학생취소</Badge>;
+      case 'TEACHER_CANCELLED':
+        return <Badge variant="secondary" className="bg-purple-100 text-purple-800">선생님취소</Badge>;
       default:
-        return <Badge variant="secondary" className="bg-gray-100 text-gray-800">{action}</Badge>;
+        return <Badge variant="secondary" className="bg-gray-100 text-gray-800">{status}</Badge>;
     }
   };
 
@@ -118,82 +95,36 @@ export function CancellationHistory() {
   };
 
   // API 응답에서 상태 정보 추출
-  const getCancellationStatus = (log: ActivityLog): string => {
-    return log.action;
+  const getCancellationStatus = (log: any): string => {
+    return log.status;
   };
 
   // API 응답에서 클래스명 추출
-  const getClassName = (log: ActivityLog): string => {
-    try {
-      if (log.newValue) {
-        const parsedValue = typeof log.newValue === 'string' ? JSON.parse(log.newValue) : log.newValue;
-        if (parsedValue.className) {
-          return parsedValue.className;
-        }
-        if (parsedValue.sessionName) {
-          return parsedValue.sessionName;
-        }
-      }
-    } catch (error) {
-      console.warn('newValue 파싱 실패:', error);
-    }
-    
-    return log.description || '환불/취소 요청';
+  const getClassName = (log: any): string => {
+    return log.session.class.className;
   };
 
   // API 응답에서 세션 날짜 추출
-  const getSessionDate = (log: ActivityLog): string => {
-    try {
-      if (log.newValue) {
-        const parsedValue = typeof log.newValue === 'string' ? JSON.parse(log.newValue) : log.newValue;
-        if (parsedValue.sessionDate) {
-          return parsedValue.sessionDate;
-        }
-        if (parsedValue.enrolledAt) {
-          return parsedValue.enrolledAt;
-        }
-      }
-    } catch (error) {
-      console.warn('newValue 파싱 실패:', error);
-    }
-    
-    return log.createdAt;
+  const getSessionDate = (log: any): string => {
+    return log.session.date;
   };
 
   // API 응답에서 세션 ID 추출
-  const getSessionId = (log: ActivityLog): number => {
-    try {
-      if (log.newValue) {
-        const parsedValue = typeof log.newValue === 'string' ? JSON.parse(log.newValue) : log.newValue;
-        if (parsedValue.sessionId) {
-          return parsedValue.sessionId;
-        }
-      }
-    } catch (error) {
-      console.warn('newValue 파싱 실패:', error);
-    }
-    
-    if (log.entityId) {
-      return log.entityId;
-    }
-    
-    return 0;
+  const getSessionId = (log: any): number => {
+    return log.sessionId;
   };
 
   // API 응답에서 환불 금액 추출
-  const getRefundAmount = (log: ActivityLog): string => {
-    try {
-      if (log.newValue) {
-        const parsedValue = typeof log.newValue === 'string' ? JSON.parse(log.newValue) : log.newValue;
-        if (parsedValue.refundAmount) {
-          return `${parsedValue.refundAmount.toLocaleString()}원`;
-        }
-        if (parsedValue.amount) {
-          return `${parsedValue.amount.toLocaleString()}원`;
-        }
-      }
-    } catch (error) {
-      console.warn('newValue 파싱 실패:', error);
+  const getRefundAmount = (log: any): string => {
+    // 환불 요청이 있는 경우 환불 요청 금액 사용
+    if (log.refundRequests && log.refundRequests.length > 0) {
+      const latestRefundRequest = log.refundRequests[0]; // 가장 최근 환불 요청
+      return `${latestRefundRequest.refundAmount.toLocaleString()}원`;
+    }
+    
+    // 결제 정보가 있는 경우 결제 금액 사용
+    if (log.payment && log.payment.amount) {
+      return `${log.payment.amount.toLocaleString()}원`;
     }
     
     return '금액 정보 없음';
@@ -241,36 +172,44 @@ export function CancellationHistory() {
                 전체
               </Button>
               <Button
-                variant={selectedFilter === 'REFUND_REQUEST' ? 'default' : 'outline'}
+                variant={selectedFilter === 'REFUND_REQUESTED' ? 'default' : 'outline'}
                 size="sm"
                 className="text-xs px-2 py-1 h-7"
-                onClick={() => setSelectedFilter('REFUND_REQUEST')}
+                onClick={() => setSelectedFilter('REFUND_REQUESTED')}
               >
                 환불대기
               </Button>
               <Button
-                variant={selectedFilter === 'REFUND_COMPLETED' ? 'default' : 'outline'}
+                variant={selectedFilter === 'REFUND_CANCELLED' ? 'default' : 'outline'}
                 size="sm"
                 className="text-xs px-2 py-1 h-7"
-                onClick={() => setSelectedFilter('REFUND_COMPLETED')}
+                onClick={() => setSelectedFilter('REFUND_CANCELLED')}
               >
                 환불완료
               </Button>
               <Button
-                variant={selectedFilter === 'CANCEL_ENROLLMENT' ? 'default' : 'outline'}
+                variant={selectedFilter === 'CANCELLED' ? 'default' : 'outline'}
                 size="sm"
                 className="text-xs px-2 py-1 h-7"
-                onClick={() => setSelectedFilter('CANCEL_ENROLLMENT')}
+                onClick={() => setSelectedFilter('CANCELLED')}
               >
-                환불취소
+                학생취소
               </Button>
               <Button
-                variant={selectedFilter === 'REFUND_REJECTED' ? 'default' : 'outline'}
+                variant={selectedFilter === 'REJECTED' ? 'default' : 'outline'}
                 size="sm"
                 className="text-xs px-2 py-1 h-7"
-                onClick={() => setSelectedFilter('REFUND_REJECTED')}
+                onClick={() => setSelectedFilter('REJECTED')}
               >
-                환불거부
+                거절됨
+              </Button>
+              <Button
+                variant={selectedFilter === 'TEACHER_CANCELLED' ? 'default' : 'outline'}
+                size="sm"
+                className="text-xs px-2 py-1 h-7"
+                onClick={() => setSelectedFilter('TEACHER_CANCELLED')}
+              >
+                선생님취소
               </Button>
             </div>
           </CardHeader>
@@ -310,7 +249,7 @@ export function CancellationHistory() {
                               </div>
                               <div className="flex items-center gap-2">
                                 <Clock className="w-4 h-4" />
-                                <span>요청일: {formatDateTime(log.createdAt)}</span>
+                                <span>신청일: {formatDateTime(log.enrolledAt)}</span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <BookOpen className="w-4 h-4" />
@@ -328,6 +267,42 @@ export function CancellationHistory() {
                         
                         <div className="text-sm text-gray-500">
                           <p>{log.description}</p>
+                          
+                          {/* 수강 신청 거절 사유 */}
+                          {log.enrollmentRejection && (
+                            <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                              <div className="flex items-center gap-2 mb-2">
+                                <XCircle className="w-4 h-4 text-red-500" />
+                                <span className="font-medium text-red-800">수강 신청 거절 사유</span>
+                              </div>
+                              <p className="text-red-700 mb-1">{log.enrollmentRejection.reason}</p>
+                              {log.enrollmentRejection.detailedReason && (
+                                <p className="text-red-600 text-xs">{log.enrollmentRejection.detailedReason}</p>
+                              )}
+                              <p className="text-red-500 text-xs mt-1">
+                                거절자: {log.enrollmentRejection.rejector.name} | 
+                                거절일: {formatDateTime(log.enrollmentRejection.rejectedAt)}
+                              </p>
+                            </div>
+                          )}
+                          
+                          {/* 환불 요청 거절 사유 */}
+                          {log.refundRejection && (
+                            <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-md">
+                              <div className="flex items-center gap-2 mb-2">
+                                <XCircle className="w-4 h-4 text-orange-500" />
+                                <span className="font-medium text-orange-800">환불 요청 거절 사유</span>
+                              </div>
+                              <p className="text-orange-700 mb-1">{log.refundRejection.reason}</p>
+                              {log.refundRejection.detailedReason && (
+                                <p className="text-orange-600 text-xs">{log.refundRejection.detailedReason}</p>
+                              )}
+                              <p className="text-orange-500 text-xs mt-1">
+                                거절자: {log.refundRejection.rejector.name} | 
+                                거절일: {formatDateTime(log.refundRejection.rejectedAt)}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </CardContent>
                     </Card>

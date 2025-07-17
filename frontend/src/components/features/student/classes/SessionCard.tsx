@@ -33,6 +33,8 @@ const getStatusText = (status: string) => {
       return '취소'
     case 'REFUND_REQUESTED':
       return '환불 대기중'
+    case 'REFUND_REJECTED_CONFIRMED':
+      return '환불 거절'
     default:
       return status
   }

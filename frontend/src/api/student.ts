@@ -6,6 +6,8 @@ import {
   UnenrollClassResponse,
   StudentProfile,
   UpdateProfileRequest,
+  EnrollmentHistoryResponse,
+  CancellationHistoryResponse,
 } from "../types/api/student";
 
 export const getMyClasses = (): Promise<MyClassesResponse> =>
@@ -28,3 +30,14 @@ export const updateMyProfile = (
 ): Promise<StudentProfile> => {
   return put<StudentProfile>("/student/profile", updateData);
 };
+
+// 수강 내역 조회
+export const getEnrollmentHistory = (): Promise<EnrollmentHistoryResponse> => {
+  return get<EnrollmentHistoryResponse>("/student/enrollment-history");
+};
+
+// 환불/취소 내역 조회
+export const getCancellationHistory =
+  (): Promise<CancellationHistoryResponse> => {
+    return get<CancellationHistoryResponse>("/student/cancellation-history");
+  };

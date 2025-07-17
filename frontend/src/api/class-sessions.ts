@@ -1,11 +1,13 @@
 import { get, post, put } from "./apiClient";
 import {
   GetClassSessionsResponse,
+  GetClassSessionsForEnrollmentResponse,
   BatchEnrollSessionsRequest,
   BatchEnrollSessionsResponse,
   StudentClassEnrollmentsResponse,
   BatchModifyEnrollmentsRequest,
   BatchModifyEnrollmentsResponse,
+  GetClassSessionsForModificationResponse,
 } from "../types/api/class";
 import {
   UpdateEnrollmentStatusRequest,
@@ -25,6 +27,25 @@ export const getClassSessionsForModification = (
   classId: number
 ): Promise<GetClassSessionsForModificationResponse> => {
   return get(`/class-sessions/class/${classId}/modification`);
+};
+
+// 새로운 API 함수들 (enrollment/modification 모드용)
+export const getClassSessionsForEnrollment = (
+  classIds: number[]
+): Promise<GetClassSessionsForEnrollmentResponse> => {
+  const params = new URLSearchParams({
+    classIds: classIds.join(","),
+  });
+  return get(`/class-sessions/classes/enrollment?${params}`);
+};
+
+export const getStudentAvailableSessionsForEnrollment = (
+  academyId: number
+): Promise<GetClassSessionsForEnrollmentResponse> => {
+  const params = new URLSearchParams({
+    academyId: academyId.toString(),
+  });
+  return get(`/class-sessions/student/available-enrollment?${params}`);
 };
 
 export const getClassSession = (sessionId: number) =>

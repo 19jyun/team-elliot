@@ -110,7 +110,7 @@ export default function ProfilePage() {
 
       <MenuLinks links={menuLinks} />
 
-      <div className="flex flex-col px-5 mt-auto">
+      <div className="flex flex-col px-5 py-10 mt-auto">
         <button
           onClick={() => setShowLogoutModal(true)}
           className="mt-6 w-full py-4 text-base font-semibold text-neutral-400 rounded-lg border border-zinc-300"

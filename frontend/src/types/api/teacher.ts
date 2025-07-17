@@ -256,6 +256,10 @@ export interface UpdateClassDetailsResponse {
 export interface TeacherClassesWithSessionsResponse {
   classes: TeacherClassesResponse;
   sessions: TeacherSessionsResponse;
+  calendarRange?: {
+    startDate: string;
+    endDate: string;
+  };
 }
 
 export interface UpdateEnrollmentStatusRequest {

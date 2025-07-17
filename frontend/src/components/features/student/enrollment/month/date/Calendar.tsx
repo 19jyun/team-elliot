@@ -34,6 +34,19 @@ function generateCalendar(year: number, month: number) {
   return days // 42개(6주) 배열
 }
 
+// 날짜 범위의 모든 날짜를 생성하는 함수
+function generateDateRange(startDate: Date, endDate: Date): Date[] {
+  const dates: Date[] = []
+  let currentDate = new Date(startDate)
+  
+  while (currentDate <= endDate) {
+    dates.push(new Date(currentDate))
+    currentDate = addDays(currentDate, 1)
+  }
+  
+  return dates
+}
+
 interface CalendarProps {
   onSelectCountChange?: (count: number) => void;
   onSelectableCountChange?: (count: number) => void;
@@ -42,14 +55,35 @@ interface CalendarProps {
   isAllSelected?: boolean;
   onSelectedClassesChange?: (selected: any[]) => void;
   month?: number; // 월 정보를 props로 받을 수 있도록 추가
+  year?: number; // 년도 정보 추가
   mode?: 'enrollment' | 'modification';
   modificationSessions?: ClassSessionForModification[];
+  // 월 범위 필터 추가
+  dateRange?: {
+    startDate: Date;
+    endDate: Date;
+  };
+  // 현재 보이는 월 표시 (스크롤 기반 캘린더용)
+  onCurrentMonthChange?: (month: number, year: number) => void;
 }
 
-export default function Calendar({ onSelectCountChange, onSelectableCountChange, onSelectAll, onDeselectAll, isAllSelected, onSelectedClassesChange, month: propMonth, mode = 'enrollment', modificationSessions }: CalendarProps) {
+export default function Calendar({ 
+  onSelectCountChange, 
+  onSelectableCountChange, 
+  onSelectAll, 
+  onDeselectAll, 
+  isAllSelected, 
+  onSelectedClassesChange, 
+  month: propMonth, 
+  year: propYear,
+  mode = 'enrollment', 
+  modificationSessions,
+  dateRange,
+  onCurrentMonthChange
+}: CalendarProps) {
   const params = useParams()
   const month = propMonth || Number(params.month) // props로 받은 월을 우선 사용, 없으면 URL 파라미터 사용
-  const year = new Date().getFullYear() // 필요시 쿼리스트링 등에서 받아올 수도 있음
+  const year = propYear || new Date().getFullYear() // props로 받은 년도를 우선 사용
 
   const [classCards, setClassCards] = useState<any[]>([])
   const [classSessions, setClassSessions] = useState<ClassSession[]>([])
@@ -61,10 +95,9 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
       const cards = JSON.parse(stored)
       console.log('classCards in localStorage:', cards)
       
-      // 실제 클래스 정보를 가져오기
-      loadClassDetails(cards)
+       loadClassDetails(cards)
     }
-  }, [])
+  }, [month, year]) // month와 year가 변경될 때마다 다시 로드
 
   const loadClassDetails = async (cards: any[]) => {
     try {
@@ -107,12 +140,19 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
             sessions = await getClassSessions(card.id);
           }
           
-          // 날짜 형식을 통일하고 해당 월의 세션만 필터링
+          // 날짜 범위 필터링 (dateRange가 있으면 사용, 없으면 기존 월 필터 사용)
           const filteredSessions = sessions.filter(session => {
             const sessionDate = new Date(session.date)
-            const sessionMonth = sessionDate.getMonth() + 1 // 0-based index
-            const sessionYear = sessionDate.getFullYear()
-            return sessionMonth === month && sessionYear === year
+            
+            if (dateRange) {
+              // 날짜 범위 필터 사용
+              return sessionDate >= dateRange.startDate && sessionDate <= dateRange.endDate
+            } else {
+              // 기존 월 필터 사용
+              const sessionMonth = sessionDate.getMonth() + 1 // 0-based index
+              const sessionYear = sessionDate.getFullYear()
+              return sessionMonth === month && sessionYear === year
+            }
           })
           
           allSessions.push(...filteredSessions)
@@ -122,7 +162,7 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
       }
       
       setClassSessions(allSessions)
-      console.log('Loaded class sessions:', allSessions)
+      console.log('Loaded class sessions for month', month, ':', allSessions)
     } catch (error) {
       console.error('Failed to load class sessions:', error)
     } finally {
@@ -160,36 +200,45 @@ export default function Calendar({ onSelectCountChange, onSelectableCountChange,
 
   const selectableDates = useMemo(() => {
     const dates: string[] = []
-    days.forEach(d => {
-      if (d.isCurrentMonth) {
-        const dateStr = formatDate(d.date)
-        const availableSessions = classSessions.filter(session => {
-          const sessionDate = new Date(session.date)
-          const sessionDateStr = format(sessionDate, 'yyyy-MM-dd')
-          return sessionDateStr === dateStr
-        })
+    
+    // dateRange가 있으면 해당 범위의 모든 날짜를 확인, 없으면 현재 월만 확인
+    const daysToCheck = dateRange ? 
+      // 날짜 범위의 모든 날짜 생성
+      generateDateRange(dateRange.startDate, dateRange.endDate) :
+      // 기존 로직: 현재 월의 날짜만 확인
+      days.filter(d => d.isCurrentMonth)
+    
+    daysToCheck.forEach(d => {
+      const dateStr = dateRange ? 
+        formatDate(d as Date) : 
+        formatDate((d as { date: Date; day: number; isCurrentMonth: boolean }).date)
         
-        // 수강 가능한 세션이 있는지 확인
-        let hasAvailableSession = false;
-        
-        if (mode === 'modification') {
-          // 수강 변경 모드: isSelectable 또는 canBeCancelled인 세션들 확인
-          hasAvailableSession = availableSessions.some(session => {
-            const modificationSession = session as ClassSessionForModification;
-            return modificationSession.isSelectable || modificationSession.canBeCancelled;
-          });
-        } else {
-          // 일반 수강 신청 모드: 기존 isEnrollable 필드 사용
-          hasAvailableSession = availableSessions.some(session => session.isEnrollable);
-        }
-        
-        if (hasAvailableSession) {
-          dates.push(dateStr)
-        }
+      const availableSessions = classSessions.filter(session => {
+        const sessionDate = new Date(session.date)
+        const sessionDateStr = format(sessionDate, 'yyyy-MM-dd')
+        return sessionDateStr === dateStr
+      })
+      
+      // 수강 가능한 세션이 있는지 확인
+      let hasAvailableSession = false;
+      
+      if (mode === 'modification') {
+        // 수강 변경 모드: isSelectable 또는 canBeCancelled인 세션들 확인
+        hasAvailableSession = availableSessions.some(session => {
+          const modificationSession = session as ClassSessionForModification;
+          return modificationSession.isSelectable || modificationSession.canBeCancelled;
+        });
+      } else {
+        // 일반 수강 신청 모드: 기존 isEnrollable 필드 사용
+        hasAvailableSession = availableSessions.some(session => session.isEnrollable);
+      }
+      
+      if (hasAvailableSession) {
+        dates.push(dateStr)
       }
     })
     return dates
-  }, [days, classSessions])
+  }, [days, classSessions, dateRange, mode])
 
   useEffect(() => {
     if (isAllSelected) {

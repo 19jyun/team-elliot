@@ -6,7 +6,8 @@ import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import TeacherClassPage from '@/app/(dashboard)/dashboard/teacher/class/page';
 import TeacherClassManagementPage from '@/app/(dashboard)/dashboard/teacher/class_management/page';
 import TeacherProfilePage from '@/app/(dashboard)/dashboard/teacher/profile/page';
-import { CreateClassContainer } from './teacher/class_management/containers/CreateClassContainer';
+import { CreateClassContainer } from './teacher/class_management/create-class/containers/CreateClassContainer';
+import { EnrollmentManagementContainer } from './teacher/class_management/enrollment_management/containers/EnrollmentManagementContainer';
 import { TeacherProfileManagement } from './teacher/profile/TeacherProfileManagement/TeacherProfileManagement';
 import { TeacherPersonalInfoManagement } from './teacher/profile/TeacherPersonalInfoManagement/TeacherPersonalInfoManagement';
 import AcademyManagement from './teacher/profile/AcademyManagement/AcademyManagement';
@@ -25,6 +26,8 @@ function TeacherDashboardContent() {
       switch (subPage) {
         case 'create-class':
           return <CreateClassContainer />;
+        case 'enrollment-management':
+          return <EnrollmentManagementContainer />;
         case 'profile':
           return <TeacherProfileManagement />;
         case 'personal-info':

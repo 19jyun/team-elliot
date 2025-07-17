@@ -191,6 +191,76 @@ export class ClassSessionController {
   }
 
   /**
+   * 특정 세션의 수강 신청 요청 목록 조회
+   */
+  @Get(':sessionId/enrollment-requests')
+  @Roles(Role.TEACHER, Role.ADMIN)
+  @ApiOperation({ summary: '특정 세션의 수강 신청 요청 목록 조회' })
+  @ApiResponse({
+    status: 200,
+    description: '세션별 수강 신청 요청 목록 조회 성공',
+  })
+  async getSessionEnrollmentRequests(
+    @Param('sessionId', ParseIntPipe) sessionId: number,
+    @CurrentUser() user: any,
+  ) {
+    return this.classSessionService.getSessionEnrollmentRequests(
+      sessionId,
+      user.id,
+    );
+  }
+
+  /**
+   * 특정 세션의 환불 요청 목록 조회
+   */
+  @Get(':sessionId/refund-requests')
+  @Roles(Role.TEACHER, Role.ADMIN)
+  @ApiOperation({ summary: '특정 세션의 환불 요청 목록 조회' })
+  @ApiResponse({ status: 200, description: '세션별 환불 요청 목록 조회 성공' })
+  async getSessionRefundRequests(
+    @Param('sessionId', ParseIntPipe) sessionId: number,
+    @CurrentUser() user: any,
+  ) {
+    return this.classSessionService.getSessionRefundRequests(
+      sessionId,
+      user.id,
+    );
+  }
+
+  /**
+   * 수강 신청 승인
+   */
+  @Post('enrollments/:enrollmentId/approve')
+  @Roles(Role.TEACHER, Role.ADMIN)
+  @ApiOperation({ summary: '수강 신청 승인' })
+  @ApiResponse({ status: 200, description: '수강 신청 승인 성공' })
+  async approveEnrollment(
+    @Param('enrollmentId', ParseIntPipe) enrollmentId: number,
+    @CurrentUser() user: any,
+  ) {
+    return this.classSessionService.approveEnrollment(enrollmentId, user.id);
+  }
+
+  /**
+   * 수강 신청 거절
+   */
+  @Post('enrollments/:enrollmentId/reject')
+  @Roles(Role.TEACHER, Role.ADMIN)
+  @ApiOperation({ summary: '수강 신청 거절' })
+  @ApiResponse({ status: 200, description: '수강 신청 거절 성공' })
+  async rejectEnrollment(
+    @Param('enrollmentId', ParseIntPipe) enrollmentId: number,
+    @Body() data: { reason: string; detailedReason?: string },
+    @CurrentUser() user: any,
+  ) {
+    return this.classSessionService.rejectEnrollment(
+      enrollmentId,
+      data,
+      user.id,
+    );
+  }
+
+  /**
    * 선생님의 모든 세션 조회 (달력용)
    */
   @Get('teacher/sessions')
@@ -314,6 +384,41 @@ export class ClassSessionController {
   ) {
     return this.classSessionService.getClassSessionsForModification(
       classId,
+      user.id,
+    );
+  }
+
+  /**
+   * 선택된 클래스들의 모든 세션 조회 (enrollment/modification 모드용)
+   */
+  @Get('classes/enrollment')
+  @Roles(Role.STUDENT)
+  @ApiOperation({ summary: '선택된 클래스들의 모든 세션 조회' })
+  @ApiResponse({ status: 200, description: '세션 조회 성공' })
+  async getClassSessionsForEnrollment(
+    @Query('classIds') classIds: string,
+    @CurrentUser() user: any,
+  ) {
+    const classIdArray = classIds.split(',').map((id) => parseInt(id.trim()));
+    return this.classSessionService.getClassSessionsForEnrollment(
+      classIdArray,
+      user.id,
+    );
+  }
+
+  /**
+   * 학생의 수강 가능한 모든 세션 조회 (새로운 수강신청 플로우용)
+   */
+  @Get('student/available-enrollment')
+  @Roles(Role.STUDENT)
+  @ApiOperation({ summary: '학생의 수강 가능한 모든 세션 조회' })
+  @ApiResponse({ status: 200, description: '수강 가능한 세션 조회 성공' })
+  async getStudentAvailableSessionsForEnrollment(
+    @Query('academyId') academyId: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.classSessionService.getStudentAvailableSessionsForEnrollment(
+      parseInt(academyId),
       user.id,
     );
   }

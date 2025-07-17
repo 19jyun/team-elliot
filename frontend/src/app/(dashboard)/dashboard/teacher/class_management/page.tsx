@@ -72,6 +72,16 @@ export default function TeacherClassManagementPage() {
     navigateToSubPage('create-class')
   }
 
+  const handleEnrollmentManagement = () => {
+    // 학원 가입 여부 확인
+    if (!myAcademy) {
+      toast.error('학원을 먼저 가입해주세요!')
+      return
+    }
+    
+    navigateToSubPage('enrollment-management')
+  }
+
   const handleStudentFeedback = () => {
     // TODO: 수강생 피드백 기능 구현
     console.log('수강생 피드백 버튼 클릭됨')
@@ -103,6 +113,13 @@ export default function TeacherClassManagementPage() {
           onClick={handleCreateClass}
         />
         
+        <div className="mt-3">
+          <ClassManagementCard
+            title="수강 신청/환불 신청 관리"
+            onClick={handleEnrollmentManagement}
+          />
+        </div>
+
         <div className="mt-3">
           <ClassManagementCard
             title="수강생 피드백"

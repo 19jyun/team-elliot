@@ -7,6 +7,7 @@ import {
   Param,
   Body,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { StudentService } from './student.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -49,5 +50,15 @@ export class StudentController {
     @Body() updateProfileDto: UpdateProfileDto,
   ) {
     return this.studentService.updateMyProfile(user.id, updateProfileDto);
+  }
+
+  @Get('enrollment-history')
+  async getEnrollmentHistory(@CurrentUser() user: any) {
+    return this.studentService.getEnrollmentHistory(user.id);
+  }
+
+  @Get('cancellation-history')
+  async getCancellationHistory(@CurrentUser() user: any) {
+    return this.studentService.getCancellationHistory(user.id);
   }
 }

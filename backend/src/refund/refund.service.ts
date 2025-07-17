@@ -284,18 +284,21 @@ export class RefundService {
         },
       });
 
-      // SessionEnrollment 상태를 CANCELLED로 변경
+      // SessionEnrollment 상태를 REFUND_CANCELLED로 변경
       await this.prisma.sessionEnrollment.update({
         where: { id: refundRequest.sessionEnrollmentId },
         data: {
-          status: 'CANCELLED',
+          status: 'REFUND_CANCELLED',
           cancelledAt: new Date(),
         },
       });
 
-      // 세션의 currentStudents 감소
-      await this.classSessionService.decrementSessionCurrentStudents(
+      // 세션의 currentStudents 감소 (상태 변경에 따른 자동 처리)
+      await this.classSessionService.updateSessionCurrentStudents(
         refundRequest.sessionEnrollment.sessionId,
+        'CONFIRMED',
+        'REFUND_CANCELLED',
+        refundRequest.sessionEnrollmentId,
       );
     }
 
@@ -418,7 +421,13 @@ export class RefundService {
           },
         },
         student: true,
-        processor: true,
+        processor: {
+          select: {
+            id: true,
+            name: true,
+            role: true,
+          },
+        },
       },
     });
 
@@ -427,5 +436,231 @@ export class RefundService {
     }
 
     return refundRequest;
+  }
+
+  /**
+   * 환불 요청 승인
+   */
+  async approveRefundRequest(refundRequestId: number, processorId: number) {
+    // 환불 요청 정보 조회
+    const refundRequest = await this.prisma.refundRequest.findUnique({
+      where: { id: refundRequestId },
+      include: {
+        sessionEnrollment: {
+          include: {
+            session: {
+              include: {
+                class: {
+                  include: {
+                    teacher: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        student: true,
+      },
+    });
+
+    if (!refundRequest) {
+      throw new NotFoundException('환불 요청을 찾을 수 없습니다.');
+    }
+
+    // 권한 확인 (해당 클래스의 선생님이거나 관리자만 승인 가능)
+    if (
+      refundRequest.sessionEnrollment.session.class.teacherId !== processorId
+    ) {
+      // TODO: 관리자 권한 확인 로직 추가
+      throw new ForbiddenException('해당 환불 요청을 승인할 권한이 없습니다.');
+    }
+
+    // 상태 확인
+    if (refundRequest.status !== 'PENDING') {
+      throw new BadRequestException(
+        '대기 중인 환불 요청만 승인할 수 있습니다.',
+      );
+    }
+
+    // 트랜잭션으로 환불 요청 승인 및 세션 상태 변경
+    const result = await this.prisma.$transaction(async (prisma) => {
+      // 환불 요청 승인
+      const updatedRefundRequest = await prisma.refundRequest.update({
+        where: { id: refundRequestId },
+        data: {
+          status: 'APPROVED',
+          processedBy: processorId,
+          processedAt: new Date(),
+          actualRefundAmount: refundRequest.refundAmount,
+        },
+        include: {
+          sessionEnrollment: {
+            include: {
+              session: {
+                include: {
+                  class: true,
+                },
+              },
+            },
+          },
+          student: true,
+        },
+      });
+
+      // 세션 enrollment 상태를 REFUND_CANCELLED로 변경
+      await prisma.sessionEnrollment.update({
+        where: { id: refundRequest.sessionEnrollmentId },
+        data: {
+          status: 'REFUND_CANCELLED',
+          cancelledAt: new Date(),
+        },
+      });
+
+      return updatedRefundRequest;
+    });
+
+    // 세션 현재 학생 수 감소 (상태 변경에 따른 자동 처리)
+    await this.classSessionService.updateSessionCurrentStudents(
+      refundRequest.sessionEnrollment.sessionId,
+      'CONFIRMED',
+      'REFUND_CANCELLED',
+    );
+
+    // 활동 로그 기록
+    await this.activityLogService.logActivityAsync({
+      userId: processorId,
+      userRole: 'TEACHER',
+      action: ACTIVITY_TYPES.PAYMENT.REFUND_COMPLETED,
+      entityType: ENTITY_TYPES.SESSION_ENROLLMENT,
+      entityId: refundRequest.sessionEnrollmentId,
+      oldValue: { status: 'REFUND_REQUESTED' },
+      newValue: {
+        status: 'REFUND_CANCELLED',
+        refundAmount: refundRequest.refundAmount,
+      },
+      description: `${refundRequest.student.name}의 환불 요청 승인: ${refundRequest.refundAmount.toLocaleString()}원`,
+    });
+
+    return result;
+  }
+
+  /**
+   * 환불 요청 거절
+   */
+  async rejectRefundRequest(
+    refundRequestId: number,
+    data: { reason: string; detailedReason?: string },
+    processorId: number,
+  ) {
+    // 환불 요청 정보 조회
+    const refundRequest = await this.prisma.refundRequest.findUnique({
+      where: { id: refundRequestId },
+      include: {
+        sessionEnrollment: {
+          include: {
+            session: {
+              include: {
+                class: {
+                  include: {
+                    teacher: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        student: true,
+      },
+    });
+
+    if (!refundRequest) {
+      throw new NotFoundException('환불 요청을 찾을 수 없습니다.');
+    }
+
+    // 권한 확인 (해당 클래스의 선생님이거나 관리자만 거절 가능)
+    if (
+      refundRequest.sessionEnrollment.session.class.teacherId !== processorId
+    ) {
+      // TODO: 관리자 권한 확인 로직 추가
+      throw new ForbiddenException('해당 환불 요청을 거절할 권한이 없습니다.');
+    }
+
+    // 상태 확인
+    if (refundRequest.status !== 'PENDING') {
+      throw new BadRequestException(
+        '대기 중인 환불 요청만 거절할 수 있습니다.',
+      );
+    }
+
+    // 트랜잭션으로 환불 요청 거절, 세션 상태 복원, 거절 상세 정보 생성
+    const result = await this.prisma.$transaction(async (prisma) => {
+      // 환불 요청 거절
+      const updatedRefundRequest = await prisma.refundRequest.update({
+        where: { id: refundRequestId },
+        data: {
+          status: 'REJECTED',
+          processedBy: processorId,
+          processedAt: new Date(),
+          processReason: data.reason,
+        },
+        include: {
+          sessionEnrollment: {
+            include: {
+              session: {
+                include: {
+                  class: true,
+                },
+              },
+            },
+          },
+          student: true,
+        },
+      });
+
+      // 세션 enrollment 상태를 REFUND_REJECTED_CONFIRMED로 변경
+      await prisma.sessionEnrollment.update({
+        where: { id: refundRequest.sessionEnrollmentId },
+        data: {
+          status: 'REFUND_REJECTED_CONFIRMED',
+          cancelledAt: null,
+        },
+      });
+
+      // 거절 상세 정보 생성
+      await prisma.rejectionDetail.create({
+        data: {
+          rejectionType: 'REFUND_REJECTION',
+          entityId: refundRequestId,
+          entityType: 'RefundRequest',
+          reason: data.reason,
+          detailedReason: data.detailedReason,
+          rejectedBy: processorId,
+        },
+      });
+
+      return updatedRefundRequest;
+    });
+
+    // 세션 현재 학생 수 증가 (환불 거절로 수강 상태 복원)
+    await this.classSessionService.updateSessionCurrentStudents(
+      refundRequest.sessionEnrollment.sessionId,
+      'REFUND_REQUESTED',
+      'REFUND_REJECTED_CONFIRMED',
+      refundRequest.sessionEnrollmentId,
+    );
+
+    // 활동 로그 기록
+    await this.activityLogService.logActivityAsync({
+      userId: processorId,
+      userRole: 'TEACHER',
+      action: ACTIVITY_TYPES.PAYMENT.REFUND_REJECTED,
+      entityType: ENTITY_TYPES.SESSION_ENROLLMENT,
+      entityId: refundRequest.sessionEnrollmentId,
+      oldValue: { status: 'REFUND_REQUESTED' },
+      newValue: { status: 'CONFIRMED', reason: data.reason },
+      description: `${refundRequest.student.name}의 환불 요청 거절: ${data.reason}`,
+    });
+
+    return result;
   }
 }

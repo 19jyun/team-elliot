@@ -1,40 +1,66 @@
-'use client'
-import * as React from 'react'
-import Calendar from '@/components/features/student/enrollment/month/date/Calendar'
-import DateSelectFooter from '@/components/features/student/enrollment/month/date/DateSelectFooter'
-import { useState } from 'react'
-import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep'
-import { ChevronLeftIcon } from '@heroicons/react/24/outline'
-import { useDashboardNavigation } from '@/contexts/DashboardContext'
+'use client';
 
-interface EnrollmentDateStepProps {
-  month?: number | null;
-}
+import React from 'react';
+import { useSession } from 'next-auth/react';
+import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { getStudentAvailableSessionsForEnrollment } from '@/api/class-sessions';
+import { GetClassSessionsForEnrollmentResponse } from '@/types/api/class';
+import { useDashboardNavigation } from '@/contexts/DashboardContext';
+import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
+import { CalendarProvider } from '@/contexts/CalendarContext';
+import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar';
 
-export function EnrollmentDateStep({ month }: EnrollmentDateStepProps) {
-  const { enrollment, setEnrollmentStep, setSelectedSessions } = useDashboardNavigation()
-  const { selectedMonth, selectedClassIds, selectedClassesWithSessions } = enrollment
-  const [selectedCount, setSelectedCount] = useState(0);
-  const [selectableCount, setSelectableCount] = useState(0);
-  const [isAllSelected, setIsAllSelected] = useState(false);
-  const [selectedClasses, setSelectedClasses] = useState<any[]>([]);
-  
-  // Context에서 선택된 클래스 정보를 localStorage에 저장 (Calendar 컴포넌트가 이를 사용함)
-  React.useEffect(() => {
-    if (selectedClassIds && selectedClassIds.length > 0 && typeof window !== 'undefined') {
-      // 일반 수강 신청 모드: Context에서 가져온 세션 정보 사용
-      const selectedClassCards = selectedClassesWithSessions.map(classInfo => ({
-        id: classInfo.id,
-        sessions: classInfo.sessions,
-        // Calendar 컴포넌트에서 실제 클래스 정보를 로드할 때 사용
-      }));
-      localStorage.setItem('selectedClassCards', JSON.stringify(selectedClassCards));
-    } else {
-      // 선택된 클래스가 없으면 localStorage에서 제거
-      localStorage.removeItem('selectedClassCards');
-    }
-  }, [selectedClassIds, selectedClassesWithSessions]);
+export function EnrollmentDateStep() {
+  const { enrollment, setEnrollmentStep, setSelectedSessions, goBack, navigateToSubPage } = useDashboardNavigation();
+  const { selectedAcademyId, selectedClassIds } = enrollment;
+  const { status } = useSession({
+    required: true,
+    onUnauthenticated() {
+      // 로그인 페이지로 리다이렉트는 상위에서 처리
+    },
+  });
+
+  // SubPage 설정 - 이미 enroll 상태이므로 불필요
+  // React.useEffect(() => {
+  //   navigateToSubPage('enroll');
+  // }, [navigateToSubPage]);
+
+  const [selectedSessionIds, setSelectedSessionIds] = React.useState<Set<number>>(new Set());
+
+  // 새로운 API를 사용하여 선택된 클래스들의 모든 세션 조회
+  const { data: enrollmentData, isLoading } = useQuery({
+    queryKey: ['studentAvailableSessionsForEnrollment', selectedAcademyId],
+    queryFn: () => getStudentAvailableSessionsForEnrollment(selectedAcademyId!),
+    enabled: selectedAcademyId !== null && status === 'authenticated',
+  });
+
+  // 선택된 클래스들의 세션만 필터링
+  const selectedClassSessions = React.useMemo(() => {
+    if (!enrollmentData?.sessions || !selectedClassIds.length) return [];
     
+    const filteredSessions = enrollmentData.sessions.filter(session => 
+      selectedClassIds.includes(session.classId)
+    );
+    
+
+    
+    return filteredSessions;
+  }, [enrollmentData, selectedClassIds]);
+
+  // 백엔드에서 받은 캘린더 범위 사용
+  const calendarRange = React.useMemo(() => {
+    if (!enrollmentData?.calendarRange) {
+      // 백엔드에서 범위를 받지 못한 경우 기본값 사용
+      return { startDate: new Date(), endDate: new Date() };
+    }
+
+    return {
+      startDate: new Date(enrollmentData.calendarRange.startDate),
+      endDate: new Date(enrollmentData.calendarRange.endDate),
+    };
+  }, [enrollmentData?.calendarRange]);
+
   const statusSteps = [
     {
       icon: '/icons/CourseRegistrationsStatusSteps1.svg',
@@ -46,111 +72,151 @@ export function EnrollmentDateStep({ month }: EnrollmentDateStepProps) {
       icon: '/icons/CourseRegistrationsStatusSteps1.svg',
       label: '클래스 선택',
       isActive: false,
-      isCompleted: true, // 완료된 단계
+      isCompleted: true,
     },
     {
-      icon: '/icons/CourseRegistrationsStatusSteps2.svg',
+      icon: '/icons/CourseRegistrationsStatusSteps1.svg',
       label: '일자 선택',
       isActive: true,
-      isCompleted: false,
     },
     {
       icon: '/icons/CourseRegistrationsStatusSteps2.svg',
       label: '결제하기',
-      isActive: false,
-      isCompleted: false,
     },
-  ]
+  ];
 
-  // 전체선택/해제 핸들러
-  const handleSelectAll = () => {
-    setIsAllSelected(true)
-  }
+  const handleSessionSelect = (sessionId: number) => {
+    setSelectedSessionIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sessionId)) {
+        newSet.delete(sessionId);
+      } else {
+        newSet.add(sessionId);
+      }
+      return newSet;
+    });
+  };
 
-  const handleDeselectAll = () => {
-    setIsAllSelected(false)
-  }
-
-  // 선택된 개수와 선택 가능한 개수를 비교하여 전체선택 상태 결정
-  React.useEffect(() => {
-    if (selectableCount > 0 && selectedCount === selectableCount) {
-      setIsAllSelected(true)
-    } else {
-      setIsAllSelected(false)
-    }
-  }, [selectedCount, selectableCount])
-
-  // 결제 페이지로 이동 및 localStorage 저장
-  const handleGoToPayment = () => {
-    if (typeof window !== 'undefined') {
-      // 일반 수강 신청 모드: 기존 로직
-      const selectedSessions = selectedClasses.flatMap(classInfo => 
-        classInfo.sessions || []
-      );
-      
-      localStorage.setItem('selectedSessions', JSON.stringify(selectedSessions));
-      localStorage.setItem('selectedClasses', JSON.stringify(selectedClasses));
-      
-      // Context에도 저장
-      setSelectedSessions(selectedSessions);
+  const handleNextStep = () => {
+    if (selectedSessionIds.size === 0) {
+      toast.error('최소 1개 이상의 세션을 선택해주세요.');
+      return;
     }
     
+    // 선택된 세션들의 정보를 Context에 저장
+    const selectedSessionsData = selectedClassSessions.filter(session => 
+      selectedSessionIds.has(session.id)
+    );
+    
+    setSelectedSessions(selectedSessionsData);
     setEnrollmentStep('payment');
+  };
+
+  if (status === 'loading' || isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
+      </div>
+    );
   }
-    
-  return (
-    <div className="flex flex-col min-h-screen bg-white font-[Pretendard Variable]">
-      {/* 헤더 */}
-      <header className="sticky top-0 z-40 flex flex-col bg-white border-b py-5 border-gray-200">
 
-        <div className="flex gap-10 self-center w-full text-sm font-medium tracking-normal leading-snug max-w-[297px] mt-2 mb-2">
-          {statusSteps.map((step, index) => (
-            <StatusStep key={index} {...step} />
-          ))}
-        </div>
-
-        <div className="self-center pb-4 text-base font-medium tracking-normal leading-snug text-center" style={{ color: '#595959' }}>
-          수강하실 클래스의 일자를 1개 이상 선택해주세요.
-        </div>
-      </header>
-      
-      {/* 선택된 클래스가 없을 때 */}
-      {(!selectedClassIds || selectedClassIds.length === 0) ? (
+  if (!selectedAcademyId || !selectedClassIds.length) {
+    return (
+      <div className="flex flex-col h-full bg-white">
+        <header className="flex-shrink-0 flex flex-col bg-white border-b border-gray-200 py-5 min-h-[120px] relative">
+          <div className="flex gap-10 self-center w-full text-sm font-medium tracking-normal leading-snug max-w-[297px] mt-2 mb-2">
+            {statusSteps.map((step, index) => (
+              <StatusStep key={index} {...step} />
+            ))}
+          </div>
+          <div className="self-center pb-4 text-base font-medium tracking-normal leading-snug text-center text-red-600">
+            클래스를 먼저 선택해주세요.
+          </div>
+        </header>
+        
         <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
           <div className="text-center">
-            <p className="text-lg font-semibold text-gray-900 mb-2">선택된 클래스가 없습니다</p>
+            <p className="text-lg font-semibold text-gray-900 mb-2">클래스가 선택되지 않았습니다</p>
             <p className="text-gray-600 mb-4">먼저 클래스를 선택해주세요</p>
             <button
-              onClick={() => setEnrollmentStep('class-selection')}
+              onClick={goBack}
               className="px-4 py-2 bg-[#AC9592] text-white rounded-lg hover:bg-[#8B7A77] transition-colors"
             >
               클래스 선택으로 돌아가기
             </button>
           </div>
         </div>
-      ) : (
-        /* 캘린더 */
-        <Calendar 
-          onSelectCountChange={setSelectedCount}
-          onSelectableCountChange={setSelectableCount}
-          onSelectAll={handleSelectAll}
-          onDeselectAll={handleDeselectAll}
-          isAllSelected={isAllSelected}
-          onSelectedClassesChange={setSelectedClasses} // Calendar에서 선택 정보 올림
-          month={month || selectedMonth || new Date().getMonth() + 1} // props로 받은 월을 우선 사용
-        />
-      )}
-      
-      {/* 전체선택 체크박스 + 하단 버튼 - 선택된 클래스가 있을 때만 표시 */}
-      {selectedClassIds && selectedClassIds.length > 0 && (
-        <DateSelectFooter 
-          selectedCount={selectedCount}
-          onSelectAll={handleSelectAll}
-          onDeselectAll={handleDeselectAll}
-          isAllSelected={isAllSelected}
-          onGoToPayment={handleGoToPayment}
-        />
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full bg-white relative">
+      {/* Header */}
+      <header className="flex-shrink-0 flex flex-col bg-white border-b border-gray-200 py-5 min-h-[120px] relative">
+        <div className="flex gap-10 self-center w-full text-sm font-medium tracking-normal leading-snug max-w-[297px] mt-2 mb-2">
+          {statusSteps.map((step, index) => (
+            <StatusStep key={index} {...step} />
+          ))}
+        </div>
+        <div className="self-center pb-4 text-base font-medium tracking-normal leading-snug text-center text-zinc-600">
+          수강하실 세션을 선택해주세요.
+        </div>
+      </header>
+
+      {/* Calendar Section */}
+      <main className="flex-1 min-h-0 bg-white" style={{ height: 'calc(100vh - 220px)' }}>
+        {selectedClassSessions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full px-4 py-8">
+            <div className="text-center">
+              <p className="text-lg font-semibold text-gray-900 mb-2">수강 가능한 세션이 없습니다</p>
+              <p className="text-gray-600 mb-4">선택한 클래스에 해당하는 세션이 없습니다</p>
+              <button
+                onClick={goBack}
+                className="px-4 py-2 bg-[#AC9592] text-white rounded-lg hover:bg-[#8B7A77] transition-colors"
+              >
+                클래스 선택으로 돌아가기
+              </button>
+            </div>
+          </div>
+                ) : (
+          <div className="h-full">
+            <CalendarProvider
+              mode="enrollment"
+              sessions={selectedClassSessions}
+              selectedSessionIds={selectedSessionIds}
+              onSessionSelect={handleSessionSelect}
+              initialFocusedMonth={{
+                year: calendarRange.startDate.getFullYear(),
+                month: calendarRange.startDate.getMonth() + 1,
+              }}
+              calendarRange={calendarRange}
+            >
+              <ConnectedCalendar />
+            </CalendarProvider>
+          </div>
+        )}
+      </main>
+
+      {/* Fixed Footer */}
+      <footer className="flex-shrink-0 flex flex-col w-full bg-white border-t border-gray-200 min-h-[100px]">
+        <div className="flex gap-3 justify-center px-5 pt-2.5 pb-4 w-full text-base font-semibold leading-snug text-white">
+          <button
+            className={`flex-1 shrink self-stretch px-2.5 py-4 rounded-lg min-w-[240px] size-full transition-colors duration-300 text-center ${selectedSessionIds.size > 0 ? 'bg-[#AC9592] text-white cursor-pointer' : 'bg-zinc-300 text-white cursor-not-allowed'}`}
+            disabled={selectedSessionIds.size === 0}
+            onClick={handleNextStep}
+          >
+            {selectedSessionIds.size > 0 ? (
+              <span className="inline-flex items-center justify-center w-full">
+                세션 선택 완료
+                <span className="ml-2 bg-white text-[#AC9592] rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold p-0 aspect-square">{selectedSessionIds.size}</span>
+              </span>
+            ) : (
+              '세션을 1개 이상 선택 해 주세요'
+            )}
+          </button>
+        </div>
+      </footer>
     </div>
-  )
+  );
 } 
