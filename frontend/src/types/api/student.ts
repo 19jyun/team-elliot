@@ -98,6 +98,7 @@ export interface CancellationHistory {
   status:
     | "REFUND_REQUESTED"
     | "REFUND_CANCELLED"
+    | "REFUND_REJECTED_CONFIRMED"
     | "REJECTED"
     | "CANCELLED"
     | "TEACHER_CANCELLED";

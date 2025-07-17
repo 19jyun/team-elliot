@@ -64,6 +64,7 @@ export interface SessionEnrollment {
     | "CANCELLED"
     | "REFUND_REQUESTED"
     | "REFUND_CANCELLED"
+    | "REFUND_REJECTED_CONFIRMED"
     | "TEACHER_CANCELLED";
   enrolledAt: string;
   cancelledAt?: string;

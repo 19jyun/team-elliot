@@ -612,11 +612,11 @@ export class RefundService {
         },
       });
 
-      // 세션 enrollment 상태를 CONFIRMED로 복원
+      // 세션 enrollment 상태를 REFUND_REJECTED_CONFIRMED로 변경
       await prisma.sessionEnrollment.update({
         where: { id: refundRequest.sessionEnrollmentId },
         data: {
-          status: 'CONFIRMED',
+          status: 'REFUND_REJECTED_CONFIRMED',
           cancelledAt: null,
         },
       });

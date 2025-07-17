@@ -6,6 +6,7 @@ import {
   StudentClassEnrollmentsResponse,
   BatchModifyEnrollmentsRequest,
   BatchModifyEnrollmentsResponse,
+  GetClassSessionsForModificationResponse,
 } from "../types/api/class";
 import {
   UpdateEnrollmentStatusRequest,

@@ -231,7 +231,12 @@ export class StudentService {
       where: {
         studentId: studentId,
         status: {
-          in: ['PENDING', 'CONFIRMED', 'REFUND_REQUESTED'],
+          in: [
+            'PENDING',
+            'CONFIRMED',
+            'REFUND_REQUESTED',
+            'REFUND_REJECTED_CONFIRMED',
+          ],
         },
       },
       include: {
@@ -250,33 +255,69 @@ export class StudentService {
           },
         },
         payment: true,
+        refundRequests: {
+          orderBy: {
+            requestedAt: 'desc',
+          },
+        },
       },
       orderBy: {
         enrolledAt: 'desc',
       },
     });
 
-    return enrollments.map((enrollment) => ({
-      id: enrollment.id,
-      sessionId: enrollment.sessionId,
-      status: enrollment.status,
-      enrolledAt: enrollment.enrolledAt,
-      cancelledAt: enrollment.cancelledAt,
-      description: `${enrollment.session.class.className} - ${enrollment.status === 'PENDING' ? '수강 신청 대기중' : enrollment.status === 'CONFIRMED' ? '수강 신청 승인됨' : '환불 요청됨'}`,
-      session: {
-        id: enrollment.session.id,
-        date: enrollment.session.date,
-        startTime: enrollment.session.startTime,
-        endTime: enrollment.session.endTime,
-        class: {
-          id: enrollment.session.class.id,
-          className: enrollment.session.class.className,
-          level: enrollment.session.class.level,
-          teacher: enrollment.session.class.teacher,
-        },
-      },
-      payment: enrollment.payment,
-    }));
+    // 각 enrollment에 대한 환불 거절 사유 정보 조회
+    const enrollmentsWithRejectionDetails = await Promise.all(
+      enrollments.map(async (enrollment) => {
+        // 환불 요청 거절 사유 조회 (환불 요청이 있는 경우)
+        let refundRejection = null;
+        if (enrollment.refundRequests && enrollment.refundRequests.length > 0) {
+          const latestRefundRequest = enrollment.refundRequests[0];
+          refundRejection = await this.prisma.rejectionDetail.findFirst({
+            where: {
+              entityId: latestRefundRequest.id,
+              entityType: 'RefundRequest',
+              rejectionType: 'REFUND_REJECTION',
+            },
+            include: {
+              rejector: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          });
+        }
+
+        return {
+          id: enrollment.id,
+          sessionId: enrollment.sessionId,
+          status: enrollment.status,
+          enrolledAt: enrollment.enrolledAt,
+          cancelledAt: enrollment.cancelledAt,
+          description: `${enrollment.session.class.className} - ${enrollment.status === 'PENDING' ? '수강 신청 대기중' : enrollment.status === 'CONFIRMED' ? '수강 신청 승인됨' : enrollment.status === 'REFUND_REQUESTED' ? '환불 요청됨' : '환불 거절됨'}`,
+          session: {
+            id: enrollment.session.id,
+            date: enrollment.session.date,
+            startTime: enrollment.session.startTime,
+            endTime: enrollment.session.endTime,
+            class: {
+              id: enrollment.session.class.id,
+              className: enrollment.session.class.className,
+              level: enrollment.session.class.level,
+              teacher: enrollment.session.class.teacher,
+            },
+          },
+          payment: enrollment.payment,
+          refundRequests: enrollment.refundRequests,
+          // 환불 거절 사유 정보 추가
+          refundRejection,
+        };
+      }),
+    );
+
+    return enrollmentsWithRejectionDetails;
   }
 
   /**

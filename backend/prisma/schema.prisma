@@ -288,7 +288,7 @@ model SessionEnrollment {
   id          Int          @id @default(autoincrement())
   studentId   Int          @map("student_id")
   sessionId   Int          @map("session_id")
-  status      String       @default("PENDING") // PENDING | CONFIRMED | REJECTED | CANCELLED | REFUND_REQUESTED | REFUND_CANCELLED | TEACHER_CANCELLED
+  status      String       @default("PENDING") // PENDING | CONFIRMED | REJECTED | CANCELLED | REFUND_REQUESTED | REFUND_CANCELLED | REFUND_REJECTED_CONFIRMED | TEACHER_CANCELLED
   enrolledAt  DateTime     @default(now())
   cancelledAt DateTime?
   rejectedAt  DateTime?    @map("rejected_at") // 환불 요청 거절 시간
