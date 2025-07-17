@@ -292,6 +292,7 @@ model SessionEnrollment {
   enrolledAt  DateTime     @default(now())
   cancelledAt DateTime?
   rejectedAt  DateTime?    @map("rejected_at") // 환불 요청 거절 시간
+  hasContributedToCurrentStudents Boolean @default(false) @map("has_contributed_to_current_students") // current_students에 기여했는지 여부
   session     ClassSession @relation(fields: [sessionId], references: [id])
   student     Student      @relation(fields: [studentId], references: [id])
   payment     Payment?

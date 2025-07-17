@@ -62,25 +62,35 @@ export class StudentService {
       throw new NotFoundException('학생을 찾을 수 없습니다.');
     }
 
-    // Get unique classes where student is enrolled in at least one session
+    // 활성 상태의 수강 신청만 필터링 (수강 중인 클래스)
+    const activeEnrollmentStatuses = [
+      'PENDING',
+      'CONFIRMED',
+      'REFUND_REQUESTED',
+      'REFUND_REJECTED_CONFIRMED',
+    ];
+
+    const activeEnrollments = student.sessionEnrollments.filter((enrollment) =>
+      activeEnrollmentStatuses.includes(enrollment.status),
+    );
+
+    // Get unique classes where student has active enrollments
     const enrolledClassIds = new Set(
-      student.sessionEnrollments.map(
-        (enrollment) => enrollment.session.class.id,
-      ),
+      activeEnrollments.map((enrollment) => enrollment.session.class.id),
     );
 
     const enrollmentClasses = Array.from(enrolledClassIds).map((classId) => {
-      const enrollment = student.sessionEnrollments.find(
+      const enrollment = activeEnrollments.find(
         (e) => e.session.class.id === classId,
       );
       return enrollment.session.class;
     });
 
-    // Get individual sessions with session_id and status
-    const sessionClasses = student.sessionEnrollments.map((enrollment) => ({
+    // Get individual sessions with session_id and status (활성 상태만)
+    const sessionClasses = activeEnrollments.map((enrollment) => ({
       ...enrollment.session,
       session_id: enrollment.session.id,
-      enrollment_status: enrollment.status || 'PENDING', // Assuming status field exists
+      enrollment_status: enrollment.status || 'PENDING',
       enrollment_id: enrollment.id,
     }));
 

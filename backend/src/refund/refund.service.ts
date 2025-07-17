@@ -284,18 +284,21 @@ export class RefundService {
         },
       });
 
-      // SessionEnrollment 상태를 CANCELLED로 변경
+      // SessionEnrollment 상태를 REFUND_CANCELLED로 변경
       await this.prisma.sessionEnrollment.update({
         where: { id: refundRequest.sessionEnrollmentId },
         data: {
-          status: 'CANCELLED',
+          status: 'REFUND_CANCELLED',
           cancelledAt: new Date(),
         },
       });
 
-      // 세션의 currentStudents 감소
-      await this.classSessionService.decrementSessionCurrentStudents(
+      // 세션의 currentStudents 감소 (상태 변경에 따른 자동 처리)
+      await this.classSessionService.updateSessionCurrentStudents(
         refundRequest.sessionEnrollment.sessionId,
+        'CONFIRMED',
+        'REFUND_CANCELLED',
+        refundRequest.sessionEnrollmentId,
       );
     }
 
@@ -516,9 +519,11 @@ export class RefundService {
       return updatedRefundRequest;
     });
 
-    // 세션 현재 학생 수 감소
-    await this.classSessionService.decrementSessionCurrentStudentsForRefund(
+    // 세션 현재 학생 수 감소 (상태 변경에 따른 자동 처리)
+    await this.classSessionService.updateSessionCurrentStudents(
       refundRequest.sessionEnrollment.sessionId,
+      'CONFIRMED',
+      'REFUND_CANCELLED',
     );
 
     // 활동 로그 기록
@@ -635,6 +640,14 @@ export class RefundService {
 
       return updatedRefundRequest;
     });
+
+    // 세션 현재 학생 수 증가 (환불 거절로 수강 상태 복원)
+    await this.classSessionService.updateSessionCurrentStudents(
+      refundRequest.sessionEnrollment.sessionId,
+      'REFUND_REQUESTED',
+      'REFUND_REJECTED_CONFIRMED',
+      refundRequest.sessionEnrollmentId,
+    );
 
     // 활동 로그 기록
     await this.activityLogService.logActivityAsync({

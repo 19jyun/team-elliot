@@ -333,7 +333,9 @@ export class ClassSessionService {
       const isFull = session.currentStudents >= session.class.maxStudents;
       const isAlreadyEnrolled = session.enrollments.some(
         (enrollment) =>
-          enrollment.status === 'CONFIRMED' || enrollment.status === 'PENDING',
+          enrollment.status === 'CONFIRMED' ||
+          enrollment.status === 'PENDING' ||
+          enrollment.status === 'REFUND_REJECTED_CONFIRMED',
       );
 
       // 수강 변경 가능 여부
@@ -571,6 +573,7 @@ export class ClassSessionService {
       enrollment.sessionId,
       oldStatus,
       newStatus,
+      enrollmentId,
     );
 
     // 활동 로그 기록
@@ -920,7 +923,12 @@ export class ClassSessionService {
 
     // CONFIRMED 상태에서 취소할 때 currentStudents 감소
     if (oldStatus === SessionEnrollmentStatus.CONFIRMED) {
-      await this.decrementSessionCurrentStudents(enrollment.sessionId);
+      await this.updateSessionCurrentStudents(
+        enrollment.sessionId,
+        oldStatus,
+        SessionEnrollmentStatus.CANCELLED,
+        enrollmentId,
+      );
     }
 
     // 수강 취소 로그
@@ -1534,7 +1542,12 @@ export class ClassSessionService {
     // CONFIRMED 상태에서 취소된 수강 신청들의 currentStudents 감소
     for (const enrollment of enrollmentsToCancel) {
       if (enrollment.status === SessionEnrollmentStatus.CONFIRMED) {
-        await this.decrementSessionCurrentStudents(enrollment.sessionId);
+        await this.updateSessionCurrentStudents(
+          enrollment.sessionId,
+          enrollment.status,
+          SessionEnrollmentStatus.CANCELLED,
+          enrollment.id,
+        );
       }
     }
 
@@ -1639,29 +1652,67 @@ export class ClassSessionService {
   }
 
   /**
-   * 세션의 currentStudents 업데이트
+   * 세션의 currentStudents 업데이트 (기여 여부 기반)
    */
-  private async updateSessionCurrentStudents(
+  async updateSessionCurrentStudents(
     sessionId: number,
     oldStatus: string,
     newStatus: string,
+    enrollmentId?: number,
   ) {
-    // 상태 변경에 따른 currentStudents 증감 계산
-    if (oldStatus === 'PENDING' && newStatus === 'CONFIRMED') {
-      // PENDING → CONFIRMED: +1
-      await this.incrementSessionCurrentStudents(sessionId);
-    } else if (oldStatus === 'CONFIRMED' && newStatus === 'CANCELLED') {
-      // CONFIRMED → CANCELLED: -1 (학생 취소)
-      await this.decrementSessionCurrentStudents(sessionId);
-    } else if (oldStatus === 'CONFIRMED' && newStatus === 'TEACHER_CANCELLED') {
-      // CONFIRMED → TEACHER_CANCELLED: -1 (선생님 사유 취소)
-      await this.decrementSessionCurrentStudents(sessionId);
-    } else if (oldStatus === 'CONFIRMED' && newStatus === 'REFUND_CANCELLED') {
-      // CONFIRMED → REFUND_CANCELLED: -1 (환불 승인)
-      await this.decrementSessionCurrentStudents(sessionId);
+    // 기존 기여 여부 확인
+    let wasContributing = false;
+    if (enrollmentId) {
+      const enrollment = await this.prisma.sessionEnrollment.findUnique({
+        where: { id: enrollmentId },
+        select: { hasContributedToCurrentStudents: true },
+      });
+      wasContributing = enrollment?.hasContributedToCurrentStudents || false;
+    } else {
+      // enrollmentId가 없는 경우 oldStatus로 판단
+      wasContributing = this.shouldContributeToCurrentStudents(oldStatus);
     }
-    // PENDING → REJECTED: 변화 없음 (처리하지 않음)
-    // REFUND_REQUESTED → CONFIRMED: 변화 없음 (환불 거절로 원래 상태 복원)
+
+    // 새로운 기여 여부 확인
+    const willContribute = this.shouldContributeToCurrentStudents(newStatus);
+
+    // 기여 여부 변화에 따른 currentStudents 증감
+    if (!wasContributing && willContribute) {
+      // 기여하지 않았는데 기여하게 됨: +1
+      await this.incrementSessionCurrentStudents(sessionId);
+      if (enrollmentId) {
+        await this.updateEnrollmentContributionStatus(enrollmentId, true);
+      }
+    } else if (wasContributing && !willContribute) {
+      // 기여했는데 기여하지 않게 됨: -1
+      await this.decrementSessionCurrentStudents(sessionId);
+      if (enrollmentId) {
+        await this.updateEnrollmentContributionStatus(enrollmentId, false);
+      }
+    }
+    // wasContributing === willContribute인 경우: 변화 없음
+  }
+
+  /**
+   * 상태가 currentStudents에 기여하는지 확인
+   */
+  private shouldContributeToCurrentStudents(status: string): boolean {
+    return status === 'CONFIRMED' || status === 'REFUND_REJECTED_CONFIRMED';
+  }
+
+  /**
+   * Enrollment의 currentStudents 기여 여부 업데이트
+   */
+  private async updateEnrollmentContributionStatus(
+    enrollmentId: number,
+    hasContributed: boolean,
+  ) {
+    await this.prisma.sessionEnrollment.update({
+      where: { id: enrollmentId },
+      data: {
+        hasContributedToCurrentStudents: hasContributed,
+      },
+    });
   }
 
   /**
@@ -1832,7 +1883,12 @@ export class ClassSessionService {
     });
 
     // 세션 현재 학생 수 증가
-    await this.incrementSessionCurrentStudents(enrollment.sessionId);
+    await this.updateSessionCurrentStudents(
+      enrollment.sessionId,
+      'PENDING',
+      'CONFIRMED',
+      enrollmentId,
+    );
 
     // 활동 로그 기록
     await this.activityLogService.logActivityAsync({
