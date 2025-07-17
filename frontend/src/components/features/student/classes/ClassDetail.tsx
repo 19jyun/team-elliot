@@ -80,18 +80,28 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
   };
 
   const handleModificationRequest = () => {
+    console.log('수강 변경 요청 - classSessions:', classSessions);
+    
     // 기존 수강 신청된 세션들의 월 정보를 분석
     let targetMonth = null;
     
     if (classSessions && classSessions.length > 0) {
       const enrolledSessions = classSessions.filter((session: any) => 
-        session.enrollment_status === 'CONFIRMED' || session.enrollment_status === 'PENDING'
+        session.enrollment_status === 'CONFIRMED' || 
+        session.enrollment_status === 'PENDING' ||
+        session.enrollment_status === 'REFUND_REJECTED_CONFIRMED'
       );
+      
+      console.log('기존 수강 신청된 세션들:', enrolledSessions);
       
       if (enrolledSessions.length > 0) {
         const sessionDates = enrolledSessions.map((session: any) => new Date(session.date));
         const months = sessionDates.map(date => date.getMonth() + 1); // 0-based index
         const uniqueMonths = [...new Set(months)];
+        
+        console.log('세션 날짜들:', sessionDates);
+        console.log('월들:', months);
+        console.log('고유 월들:', uniqueMonths);
         
         // 가장 많은 세션이 있는 월을 targetMonth로 설정
         const monthCounts = uniqueMonths.map(month => ({
@@ -103,12 +113,38 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
         );
         
         targetMonth = mostFrequentMonth.month;
+        console.log('월별 세션 수:', monthCounts);
         console.log('분석된 targetMonth:', targetMonth);
       }
     }
     
+    // 기존 수강 신청이 없는 경우 가장 가까운 미래 세션의 월을 우선 선택
+    if (!targetMonth) {
+      const currentDate = new Date();
+      const futureSessions = classSessions?.filter((session: any) => {
+        const sessionDate = new Date(session.date);
+        return sessionDate > currentDate;
+      }) || [];
+      
+      if (futureSessions.length > 0) {
+        // 가장 가까운 미래 세션의 월을 선택
+        const closestSession = futureSessions.reduce((closest, current) => {
+          const closestDate = new Date(closest.date);
+          const currentDate = new Date(current.date);
+          return currentDate < closestDate ? current : closest;
+        });
+        
+        targetMonth = new Date(closestSession.date).getMonth() + 1;
+        console.log('가장 가까운 미래 세션의 월을 사용:', targetMonth);
+      } else {
+        // 미래 세션이 없으면 현재 월 사용
+        targetMonth = currentDate.getMonth() + 1;
+        console.log('미래 세션이 없어 현재 월을 사용:', targetMonth);
+      }
+    }
+    
     // 수강 변경 SubPage로 이동 (월 정보 포함)
-    const subPagePath = targetMonth ? `modify-${classId}-${targetMonth}` : `modify-${classId}`;
+    const subPagePath = `modify-${classId}-${targetMonth}`;
     console.log('수강 변경 SubPage 경로:', subPagePath);
     navigateToSubPage(subPagePath);
   };

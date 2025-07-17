@@ -160,12 +160,7 @@ export default function StudentDashboard() {
       days.push({
         day: i,
         isCurrentMonth: true,
-        hasEvent: myClasses?.enrollmentClasses?.some((class_: any) => {
-          const classDate = new Date(class_.startTime)
-          return classDate.getDate() === i &&
-                 classDate.getMonth() === currentMonth &&
-                 classDate.getFullYear() === currentYear
-        }) || myClasses?.sessionClasses?.some((session: any) => {
+        hasEvent: myClasses?.sessionClasses?.some((session: any) => {
           const sessionDate = new Date(session.date)
           return sessionDate.getDate() === i &&
                  sessionDate.getMonth() === currentMonth &&

@@ -389,6 +389,41 @@ export class ClassSessionController {
   }
 
   /**
+   * 선택된 클래스들의 모든 세션 조회 (enrollment/modification 모드용)
+   */
+  @Get('classes/enrollment')
+  @Roles(Role.STUDENT)
+  @ApiOperation({ summary: '선택된 클래스들의 모든 세션 조회' })
+  @ApiResponse({ status: 200, description: '세션 조회 성공' })
+  async getClassSessionsForEnrollment(
+    @Query('classIds') classIds: string,
+    @CurrentUser() user: any,
+  ) {
+    const classIdArray = classIds.split(',').map((id) => parseInt(id.trim()));
+    return this.classSessionService.getClassSessionsForEnrollment(
+      classIdArray,
+      user.id,
+    );
+  }
+
+  /**
+   * 학생의 수강 가능한 모든 세션 조회 (새로운 수강신청 플로우용)
+   */
+  @Get('student/available-enrollment')
+  @Roles(Role.STUDENT)
+  @ApiOperation({ summary: '학생의 수강 가능한 모든 세션 조회' })
+  @ApiResponse({ status: 200, description: '수강 가능한 세션 조회 성공' })
+  async getStudentAvailableSessionsForEnrollment(
+    @Query('academyId') academyId: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.classSessionService.getStudentAvailableSessionsForEnrollment(
+      parseInt(academyId),
+      user.id,
+    );
+  }
+
+  /**
    * 수강 변경 (기존 수강 취소 + 새로운 수강 신청)
    */
   @Put('enrollments/:enrollmentId/change')

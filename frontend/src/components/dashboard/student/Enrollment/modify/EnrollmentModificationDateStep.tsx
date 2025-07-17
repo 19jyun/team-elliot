@@ -22,6 +22,7 @@ export function EnrollmentModificationDateStep({
   month, 
   onComplete 
 }: EnrollmentModificationDateStepProps) {
+  console.log('EnrollmentModificationDateStep 렌더링:', { classId, month, existingEnrollmentsCount: existingEnrollments?.length });
   const { setSelectedSessions } = useDashboardNavigation()
   const [selectedCount, setSelectedCount] = useState(0);
   const [selectableCount, setSelectableCount] = useState(0);
@@ -126,12 +127,13 @@ export function EnrollmentModificationDateStep({
   const { netChangeCount, hasChanges } = React.useMemo(() => {
     if (!existingEnrollments) return { netChangeCount: 0, hasChanges: false };
     
-    // 기존에 신청된 세션들 (CONFIRMED 또는 PENDING 상태)
+    // 기존에 신청된 세션들 (활성 상태)
     const originalEnrolledSessions = existingEnrollments.filter(
       (enrollment: any) =>
         enrollment.enrollment &&
         (enrollment.enrollment.status === "CONFIRMED" ||
-          enrollment.enrollment.status === "PENDING")
+          enrollment.enrollment.status === "PENDING" ||
+          enrollment.enrollment.status === "REFUND_REJECTED_CONFIRMED")
     );
 
     // 기존 신청 세션의 날짜들
@@ -175,12 +177,13 @@ export function EnrollmentModificationDateStep({
       const changeAmount = Math.abs(change.amount);
       const changeType = change.type;
       
-      // 기존에 신청된 세션들 (CONFIRMED 또는 PENDING 상태)
+      // 기존에 신청된 세션들 (활성 상태)
       const originalEnrolledSessions = existingEnrollments?.filter(
         (enrollment: any) =>
           enrollment.enrollment &&
           (enrollment.enrollment.status === "CONFIRMED" ||
-            enrollment.enrollment.status === "PENDING")
+            enrollment.enrollment.status === "PENDING" ||
+            enrollment.enrollment.status === "REFUND_REJECTED_CONFIRMED")
       ) || [];
 
       // 기존 신청 세션의 날짜들

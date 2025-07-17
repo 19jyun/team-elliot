@@ -28,7 +28,7 @@ export function EnrollmentModificationContainer({ classId, className, month }: E
   const [cancelledSessionsCount, setCancelledSessionsCount] = useState(0);
   const [sessionPrice, setSessionPrice] = useState(50000); // 기본값
 
-  console.log('EnrollmentModificationContainer 렌더링:', { classId, month, currentStep });
+  console.log('EnrollmentModificationContainer 렌더링:', { classId, month, currentStep, className });
 
   // 수강 변경 모드로 설정 - 즉시 설정
   useEffect(() => {
@@ -85,12 +85,13 @@ export function EnrollmentModificationContainer({ classId, className, month }: E
     // 즉시 단계 분기 처리 - useEnrollmentCalculation 로직을 직접 구현
     // 실제 sessionPrice 사용
     
-    // 기존에 신청된 세션들 (CONFIRMED 또는 PENDING 상태)
+    // 기존에 신청된 세션들 (활성 상태)
     const originalEnrolledSessions = existingEnrollments.filter(
       (enrollment: any) =>
         enrollment.enrollment &&
         (enrollment.enrollment.status === "CONFIRMED" ||
-          enrollment.enrollment.status === "PENDING")
+          enrollment.enrollment.status === "PENDING" ||
+          enrollment.enrollment.status === "REFUND_REJECTED_CONFIRMED")
     );
 
     // 기존 신청 세션의 날짜들

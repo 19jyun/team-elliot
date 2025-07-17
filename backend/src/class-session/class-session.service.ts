@@ -273,7 +273,9 @@ export class ClassSessionService {
       const isPastStartTime = now >= sessionStartTime;
       const isAlreadyEnrolled = session.enrollments.some(
         (enrollment) =>
-          enrollment.status === 'CONFIRMED' || enrollment.status === 'PENDING',
+          enrollment.status === 'CONFIRMED' ||
+          enrollment.status === 'PENDING' ||
+          enrollment.status === 'REFUND_REJECTED_CONFIRMED',
       );
 
       const isEnrollable = !isPastStartTime && !isFull && !isAlreadyEnrolled;
@@ -294,7 +296,38 @@ export class ClassSessionService {
     return sessionsWithEnrollableInfo;
   }
 
+  /**
+   * 수강 변경용 모든 세션 조회
+   * 클래스의 startDate/endDate를 기준으로 캘린더 범위를 계산
+   */
   async getClassSessionsForModification(classId: number, studentId: number) {
+    // 클래스 정보 조회 (startDate, endDate 포함)
+    const classInfo = await this.prisma.class.findUnique({
+      where: { id: classId },
+      select: {
+        id: true,
+        className: true,
+        startDate: true,
+        endDate: true,
+        maxStudents: true,
+        tuitionFee: true,
+        teacher: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!classInfo || !classInfo.startDate || !classInfo.endDate) {
+      return {
+        sessions: [],
+        calendarRange: null,
+      };
+    }
+
+    // 클래스의 모든 세션 조회
     const sessions = await this.prisma.classSession.findMany({
       where: { classId },
       include: {
@@ -320,7 +353,7 @@ export class ClassSessionService {
 
     const now = new Date();
 
-    return sessions.map((session) => {
+    const sessionsWithMetadata = sessions.map((session) => {
       // session.date와 session.startTime을 조합해서 정확한 날짜시간 생성
       const sessionDate = new Date(session.date);
       const sessionStartTimeStr = session.startTime.toTimeString().slice(0, 5);
@@ -363,6 +396,228 @@ export class ClassSessionService {
         isEnrollable: isSelectable,
       };
     });
+
+    return {
+      sessions: sessionsWithMetadata,
+      calendarRange: {
+        startDate: classInfo.startDate,
+        endDate: classInfo.endDate,
+      },
+    };
+  }
+
+  /**
+   * 선택된 클래스들의 모든 세션 조회 (enrollment/modification 모드용)
+   * 클래스의 startDate/endDate를 기준으로 캘린더 범위를 계산
+   */
+  async getClassSessionsForEnrollment(classIds: number[], studentId?: number) {
+    // 선택된 클래스들의 정보 조회 (startDate, endDate 포함)
+    const classes = await this.prisma.class.findMany({
+      where: { id: { in: classIds } },
+      select: {
+        id: true,
+        className: true,
+        startDate: true,
+        endDate: true,
+        maxStudents: true,
+        tuitionFee: true,
+        teacher: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (classes.length === 0) {
+      return {
+        sessions: [],
+        calendarRange: null,
+      };
+    }
+
+    // 캘린더 범위 계산 (가장 빠른 startDate ~ 가장 늦은 endDate)
+    const startDates = classes.map((cls) => cls.startDate).filter(Boolean);
+    const endDates = classes.map((cls) => cls.endDate).filter(Boolean);
+
+    if (startDates.length === 0 || endDates.length === 0) {
+      return {
+        sessions: [],
+        calendarRange: null,
+      };
+    }
+
+    const earliestStartDate = new Date(
+      Math.min(...startDates.map((d) => d.getTime())),
+    );
+    const latestEndDate = new Date(
+      Math.max(...endDates.map((d) => d.getTime())),
+    );
+
+    // 선택된 클래스들의 모든 세션 조회
+    const sessions = await this.prisma.classSession.findMany({
+      where: {
+        classId: { in: classIds },
+      },
+      include: {
+        class: {
+          include: {
+            teacher: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        enrollments: {
+          where: studentId ? { studentId } : undefined,
+          include: {
+            student: true,
+          },
+        },
+      },
+      orderBy: { date: 'asc' },
+    });
+
+    return {
+      sessions: this.addSessionMetadata(sessions, studentId),
+      calendarRange: {
+        startDate: earliestStartDate,
+        endDate: latestEndDate,
+      },
+    };
+  }
+
+  /**
+   * 학생의 수강 가능한 모든 세션 조회 (새로운 수강신청 플로우용)
+   * 학원 내 모든 클래스의 startDate/endDate를 기준으로 캘린더 범위를 계산
+   */
+  async getStudentAvailableSessionsForEnrollment(
+    academyId: number,
+    studentId: number,
+  ) {
+    // 해당 학원의 모든 클래스 조회
+    const classes = await this.prisma.class.findMany({
+      where: { academyId },
+      select: {
+        id: true,
+        className: true,
+        startDate: true,
+        endDate: true,
+        maxStudents: true,
+        tuitionFee: true,
+        teacher: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (classes.length === 0) {
+      return {
+        sessions: [],
+        calendarRange: null,
+      };
+    }
+
+    // 캘린더 범위 계산 (가장 빠른 startDate ~ 가장 늦은 endDate)
+    const startDates = classes.map((cls) => cls.startDate).filter(Boolean);
+    const endDates = classes.map((cls) => cls.endDate).filter(Boolean);
+
+    if (startDates.length === 0 || endDates.length === 0) {
+      return {
+        sessions: [],
+        calendarRange: null,
+      };
+    }
+
+    const earliestStartDate = new Date(
+      Math.min(...startDates.map((d) => d.getTime())),
+    );
+    const latestEndDate = new Date(
+      Math.max(...endDates.map((d) => d.getTime())),
+    );
+
+    const classIds = classes.map((cls) => cls.id);
+
+    // 해당 클래스들의 모든 세션 조회
+    const sessions = await this.prisma.classSession.findMany({
+      where: {
+        classId: { in: classIds },
+      },
+      include: {
+        class: {
+          include: {
+            teacher: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        enrollments: {
+          where: { studentId },
+          include: {
+            student: true,
+          },
+        },
+      },
+      orderBy: { date: 'asc' },
+    });
+
+    return {
+      sessions: this.addSessionMetadata(sessions, studentId),
+      calendarRange: {
+        startDate: earliestStartDate,
+        endDate: latestEndDate,
+      },
+    };
+  }
+
+  /**
+   * 세션 메타데이터 추가 헬퍼 메서드
+   */
+  private addSessionMetadata(sessions: any[], studentId?: number) {
+    const now = new Date();
+
+    return sessions.map((session) => {
+      // session.date와 session.startTime을 조합해서 정확한 날짜시간 생성
+      const sessionDate = new Date(session.date);
+      const sessionStartTimeStr = session.startTime.toTimeString().slice(0, 5); // "HH:MM" 형식
+      const [hours, minutes] = sessionStartTimeStr.split(':').map(Number);
+
+      const sessionStartTime = new Date(sessionDate);
+      sessionStartTime.setHours(hours, minutes, 0, 0);
+
+      // 수강 가능 여부 판단
+      const isFull = session.currentStudents >= session.class.maxStudents;
+      const isPastStartTime = now >= sessionStartTime;
+      const isAlreadyEnrolled = session.enrollments.some(
+        (enrollment) =>
+          enrollment.status === 'CONFIRMED' ||
+          enrollment.status === 'PENDING' ||
+          enrollment.status === 'REFUND_REJECTED_CONFIRMED',
+      );
+
+      const isEnrollable = !isPastStartTime && !isFull && !isAlreadyEnrolled;
+
+      return {
+        ...session,
+        class: {
+          ...session.class,
+          tuitionFee: session.class.tuitionFee.toString(),
+        },
+        isEnrollable,
+        isFull,
+        isPastStartTime,
+        isAlreadyEnrolled,
+      };
+    });
   }
 
   async getClassSession(id: number) {
@@ -402,7 +657,7 @@ export class ClassSessionService {
       throw new NotFoundException('세션을 찾을 수 없습니다.');
     }
 
-    // 이미 수강 신청했는지 확인
+    // 기존 수강 신청 확인 (모든 상태)
     const existingEnrollment = await this.prisma.sessionEnrollment.findUnique({
       where: {
         studentId_sessionId: {
@@ -413,17 +668,78 @@ export class ClassSessionService {
     });
 
     if (existingEnrollment) {
-      throw new BadRequestException('이미 수강 신청한 세션입니다.');
+      // 활성 상태인 경우 중복 신청 불가
+      if (
+        ['PENDING', 'CONFIRMED', 'REFUND_REJECTED_CONFIRMED'].includes(
+          existingEnrollment.status,
+        )
+      ) {
+        throw new BadRequestException('이미 수강 신청한 세션입니다.');
+      }
+
+      // 비활성 상태(CANCELLED, REJECTED 등)인 경우 기존 수강신청을 PENDING으로 업데이트
+      const updatedEnrollment = await this.prisma.sessionEnrollment.update({
+        where: {
+          studentId_sessionId: {
+            studentId,
+            sessionId,
+          },
+        },
+        data: {
+          status: 'PENDING',
+          enrolledAt: new Date(),
+          cancelledAt: null,
+          rejectedAt: null,
+        },
+        include: {
+          session: {
+            include: {
+              class: {
+                include: {
+                  teacher: true,
+                },
+              },
+            },
+          },
+          student: true,
+        },
+      });
+
+      this.activityLogService.logActivityAsync({
+        userId: studentId,
+        userRole: 'STUDENT',
+        action: ACTIVITY_TYPES.ENROLLMENT.ENROLL_SESSION,
+        entityType: ENTITY_TYPES.SESSION_ENROLLMENT,
+        entityId: updatedEnrollment.id,
+        oldValue: {
+          status: existingEnrollment.status,
+        },
+        newValue: {
+          sessionId,
+          status: 'PENDING',
+          className: session.class.className,
+          sessionDate: session.date,
+        },
+        description: `수강 신청 재신청: ${session.class.className} - ${session.date.toLocaleDateString()}`,
+      });
+
+      return updatedEnrollment;
     }
 
-    // 수강 인원 초과 체크
     if (session.currentStudents >= session.class.maxStudents) {
       throw new BadRequestException('수강 인원이 초과되었습니다.');
     }
 
-    // 이미 시작된 수업인지 체크
     const now = new Date();
-    const sessionStartTime = new Date(session.startTime);
+
+    // session.date와 session.startTime을 조합해서 정확한 날짜시간 생성
+    const sessionDate = new Date(session.date);
+    const sessionStartTimeStr = session.startTime.toTimeString().slice(0, 5); // "HH:MM" 형식
+    const [hours, minutes] = sessionStartTimeStr.split(':').map(Number);
+
+    const sessionStartTime = new Date(sessionDate);
+    sessionStartTime.setHours(hours, minutes, 0, 0);
+
     if (now >= sessionStartTime) {
       throw new BadRequestException('이미 시작된 수업은 신청할 수 없습니다.');
     }
@@ -1435,7 +1751,17 @@ export class ClassSessionService {
 
         // 이미 시작된 수업은 취소 불가
         const now = new Date();
-        const sessionStartTime = new Date(enrollment.session.startTime);
+
+        // session.date와 session.startTime을 조합해서 정확한 날짜시간 생성
+        const sessionDate = new Date(enrollment.session.date);
+        const sessionStartTimeStr = enrollment.session.startTime
+          .toTimeString()
+          .slice(0, 5); // "HH:MM" 형식
+        const [hours, minutes] = sessionStartTimeStr.split(':').map(Number);
+
+        const sessionStartTime = new Date(sessionDate);
+        sessionStartTime.setHours(hours, minutes, 0, 0);
+
         if (now >= sessionStartTime) {
           throw new BadRequestException(
             `이미 시작된 수업은 취소할 수 없습니다: ${enrollment.session.class.className}`,
@@ -1467,7 +1793,7 @@ export class ClassSessionService {
 
       // 2. 새로운 수강 신청 생성
       for (const sessionId of newEnrollments) {
-        // 이미 신청했는지 확인
+        // 기존 수강 신청 확인 (모든 상태)
         const existingEnrollment = await prisma.sessionEnrollment.findUnique({
           where: {
             studentId_sessionId: {
@@ -1478,9 +1804,47 @@ export class ClassSessionService {
         });
 
         if (existingEnrollment) {
-          throw new BadRequestException(
-            `이미 신청한 세션입니다: 세션 ID ${sessionId}`,
-          );
+          // 활성 상태인 경우 중복 신청 불가
+          if (
+            ['PENDING', 'CONFIRMED', 'REFUND_REJECTED_CONFIRMED'].includes(
+              existingEnrollment.status,
+            )
+          ) {
+            throw new BadRequestException(
+              `이미 신청한 세션입니다: 세션 ID ${sessionId}`,
+            );
+          }
+
+          // 비활성 상태인 경우 기존 수강신청을 PENDING으로 업데이트
+          const updatedEnrollment = await prisma.sessionEnrollment.update({
+            where: {
+              studentId_sessionId: {
+                studentId,
+                sessionId,
+              },
+            },
+            data: {
+              status: SessionEnrollmentStatus.PENDING,
+              enrolledAt: new Date(),
+              cancelledAt: null,
+              rejectedAt: null,
+            },
+            include: {
+              session: {
+                include: {
+                  class: {
+                    include: {
+                      teacher: true,
+                    },
+                  },
+                },
+              },
+              student: true,
+            },
+          });
+
+          newEnrollmentResults.push(updatedEnrollment);
+          continue; // 다음 세션으로 넘어감
         }
 
         // 세션 정보 조회
@@ -1503,7 +1867,17 @@ export class ClassSessionService {
 
         // 이미 시작된 수업은 신청 불가
         const now = new Date();
-        const sessionStartTime = new Date(session.startTime);
+
+        // session.date와 session.startTime을 조합해서 정확한 날짜시간 생성
+        const sessionDate = new Date(session.date);
+        const sessionStartTimeStr = session.startTime
+          .toTimeString()
+          .slice(0, 5); // "HH:MM" 형식
+        const [hours, minutes] = sessionStartTimeStr.split(':').map(Number);
+
+        const sessionStartTime = new Date(sessionDate);
+        sessionStartTime.setHours(hours, minutes, 0, 0);
+
         if (now >= sessionStartTime) {
           throw new BadRequestException(
             `이미 시작된 수업은 신청할 수 없습니다: ${session.class.className}`,

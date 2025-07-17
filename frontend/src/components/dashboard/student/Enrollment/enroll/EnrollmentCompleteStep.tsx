@@ -8,26 +8,24 @@ export function EnrollmentCompleteStep() {
   const handleConfirm = () => {
     // localStorage에서 모든 enrollment 관련 데이터 삭제
     if (typeof window !== 'undefined') {
-      // 기본 enrollment 관련 데이터
+      // 새로운 enrollment 관련 데이터
       localStorage.removeItem('selectedSessions');
       localStorage.removeItem('selectedClassCards');
       localStorage.removeItem('selectedClasses');
       localStorage.removeItem('existingEnrollments');
       
-      // 수강 변경 관련 데이터
+      // 새로운 수강신청 관련 데이터
+      localStorage.removeItem('selectedAcademyId');
+      localStorage.removeItem('selectedClassIds');
+      
+      // 기존 enrollment 관련 데이터들
       localStorage.removeItem('modificationChangeAmount');
       localStorage.removeItem('modificationChangeType');
       localStorage.removeItem('modificationNetChangeCount');
       localStorage.removeItem('modificationNewSessionsCount');
-      
-      // 환불 정책 동의 상태
       localStorage.removeItem('refundPolicyAgreed');
-      
-      // 기타 enrollment 관련 데이터들
       localStorage.removeItem('enrollmentStep');
       localStorage.removeItem('selectedMonth');
-      localStorage.removeItem('selectedAcademyId');
-      localStorage.removeItem('selectedClassIds');
     }
     
     // 수강신청 상태 초기화

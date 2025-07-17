@@ -12,7 +12,7 @@ interface EnrollmentPaymentStepProps {
   onComplete?: () => void;
 }
 
-// 일반 수강신청 전용 결제 페이지
+// 새로운 수강신청 플로우 전용 결제 페이지
 export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps) {
   const { enrollment, setEnrollmentStep } = useDashboardNavigation();
   const { selectedSessions: contextSessions } = enrollment;
@@ -24,12 +24,18 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
   const statusSteps = [
     {
       icon: '/icons/CourseRegistrationsStatusSteps1.svg',
+      label: '학원 선택',
+      isActive: false,
+      isCompleted: true,
+    },
+    {
+      icon: '/icons/CourseRegistrationsStatusSteps1.svg',
       label: '클래스 선택',
       isActive: false,
       isCompleted: true,
     },
     {
-      icon: '/icons/CourseRegistrationsStatusSteps2.svg',
+      icon: '/icons/CourseRegistrationsStatusSteps1.svg',
       label: '일자 선택',
       isActive: false,
       isCompleted: true,
@@ -60,7 +66,7 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
     if (sessions.length > 0) {
       setSelectedSessions(sessions);
       
-      // 일반 수강 신청 모드: 실제 tuitionFee 사용
+      // 새로운 수강 신청 모드: 실제 tuitionFee 사용
       const teacherMap = new Map<number, TeacherPaymentInfo>();
       
       sessions.forEach(session => {
@@ -124,7 +130,7 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
     setIsProcessing(true);
     
     try {
-      // 일반 수강 신청 모드: 기존 로직
+      // 새로운 수강 신청 모드: 기존 로직
       const sessionIds = selectedSessions.map(session => session.id);
       
       // 백엔드에 세션별 수강 신청 요청

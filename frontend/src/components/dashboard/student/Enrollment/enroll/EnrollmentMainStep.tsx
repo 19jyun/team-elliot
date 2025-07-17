@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 
-export function EnrollmentMainStep() {
+export function NewEnrollmentMainStep() {
   const router = useRouter();
   const { setEnrollmentStep, navigateToSubPage } = useDashboardNavigation();
   const { status } = useSession({
@@ -16,11 +16,9 @@ export function EnrollmentMainStep() {
   });
 
   const handleEnrollmentClick = () => {
-    console.log('수강신청 버튼 클릭됨');
     // 새로운 수강신청 플로우 시작
     setEnrollmentStep('academy-selection');
-    navigateToSubPage('enroll');
-    console.log('setEnrollmentStep과 navigateToSubPage 호출 완료');
+    navigateToSubPage('new-enroll');
   };
 
   if (status === 'loading') {

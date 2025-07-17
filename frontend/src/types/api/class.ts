@@ -186,6 +186,15 @@ export interface GetClassSessionsRequest {
 
 export interface GetClassSessionsResponse extends Array<ClassSession> {}
 
+// 새로운 enrollment/modification 모드용 응답 타입
+export interface GetClassSessionsForEnrollmentResponse {
+  sessions: ClassSession[];
+  calendarRange: {
+    startDate: string;
+    endDate: string;
+  } | null;
+}
+
 export interface ClassSessionForModification extends ClassSession {
   isSelectable: boolean; // 수강 변경 가능
   canBeCancelled: boolean; // 환불 신청 가능
@@ -195,8 +204,13 @@ export interface ClassSessionForModification extends ClassSession {
   isAlreadyEnrolled: boolean;
 }
 
-export interface GetClassSessionsForModificationResponse
-  extends Array<ClassSessionForModification> {}
+export interface GetClassSessionsForModificationResponse {
+  sessions: ClassSessionForModification[];
+  calendarRange: {
+    startDate: string;
+    endDate: string;
+  } | null;
+}
 
 export interface BatchEnrollSessionsRequest {
   sessionIds: number[];

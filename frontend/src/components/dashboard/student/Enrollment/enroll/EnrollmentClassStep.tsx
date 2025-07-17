@@ -1,139 +1,103 @@
-'use client'
+'use client';
 
-import * as React from 'react'
-import { useSession } from 'next-auth/react'
-import { useQuery } from '@tanstack/react-query'
-import { toast } from 'sonner'
-import { getClassCards, getClassDetails } from '@/app/api/classes'
-import { getClassesWithSessionsByMonth } from '@/api/class'
-import { ClassesWithSessionsByMonthResponse } from '@/types/api/class'
-import { RefundPolicy } from '@/components/features/student/enrollment/RefundPolicy'
-import { ClassCard } from '@/components/features/student/enrollment/month/ClassCard'
-import { TimeSlot } from '@/components/features/student/enrollment/month/TimeSlot'
-import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep'
-import { ChevronLeftIcon } from '@heroicons/react/24/outline'
-import { ClassDetailModal } from '@/components/features/student/classes/ClassDetailModal'
-import { useState } from 'react'
-import { useDashboardNavigation } from '@/contexts/DashboardContext'
+import React from 'react';
+import { useSession } from 'next-auth/react';
+import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { getStudentAvailableSessionsForEnrollment } from '@/api/class-sessions';
+import { GetClassSessionsForEnrollmentResponse } from '@/types/api/class';
+import { useDashboardNavigation } from '@/contexts/DashboardContext';
+import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
+import { ClassCard } from '@/components/features/student/enrollment/month/ClassCard';
+import { ClassDetailModal } from '@/components/features/student/classes/ClassDetailModal';
+import { RefundPolicy } from '@/components/features/student/enrollment/RefundPolicy';
+import { useState } from 'react';
 
-const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
-const daysKor = ['월', '화', '수', '목', '금', '토', '일']
+const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+const daysKor = ['월', '화', '수', '목', '금', '토', '일'];
 const timeSlots = [
   '9', '10', '11', '12', '13', '14', '15', '16', 
   '17', '18', '19', '20', '21', '22', '23',
-]
+];
 
 function formatTime(date: string | Date) {
-  const d = new Date(date)
-  const h = d.getHours().toString().padStart(2, '0')
-  const m = d.getMinutes().toString().padStart(2, '0')
-  return `${h}:${m}`
+  const d = new Date(date);
+  const h = d.getHours().toString().padStart(2, '0');
+  const m = d.getMinutes().toString().padStart(2, '0');
+  return `${h}:${m}`;
 }
 
 function formatTimeForCalendar(date: string | Date) {
-  const d = new Date(date)
-  const h = d.getHours().toString()
-  return h
+  const d = new Date(date);
+  const h = d.getHours().toString();
+  return h;
 }
 
 export function EnrollmentClassStep() {
-  const dashboardContext = useDashboardNavigation()
-  
-  // Context가 undefined인 경우를 처리
-  if (!dashboardContext) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
-      </div>
-    )
-  }
-  
-  const { enrollment, setEnrollmentStep, setSelectedClassIds, setSelectedClassesWithSessions, goBack, navigateToSubPage } = dashboardContext
-
-  // goBack 함수를 래핑하여 환불 동의 상태 초기화
-  const handleGoBack = () => {
-    // 환불 동의 상태 초기화
-    localStorage.removeItem('refundPolicyAgreed')
-    // 원래 goBack 함수 호출
-    goBack()
-  }
-  const { selectedMonth, selectedAcademyId } = enrollment
+  const { enrollment, setEnrollmentStep, setSelectedClassIds, goBack, navigateToSubPage } = useDashboardNavigation();
+  const { selectedAcademyId } = enrollment;
   const { status } = useSession({
     required: true,
     onUnauthenticated() {
-      // 로그인 페이지로 리다이렉트는 상위에서 처리
     },
-  })
+  });
 
-  // SubPage 설정 - EnrollmentClassStep이 실제 SubPage
-  React.useEffect(() => {
-    // 수강신청 페이지에서는 슬라이드 애니메이션을 허용하기 위해 
-    // 포커스를 dashboard로 유지하되, subPage 상태만 설정
-    navigateToSubPage('enroll')
-  }, [navigateToSubPage])
+    // SubPage 설정 - 이미 enroll 상태이므로 불필요
+  // React.useEffect(() => {
+  //   navigateToSubPage('enroll');
+  // }, [navigateToSubPage]);
 
-  const currentDate = new Date()
-  const currentMonth = currentDate.getMonth() + 1
-  const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1
-  const requestedMonth = selectedMonth || currentMonth
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [showClassDetailModal, setShowClassDetailModal] = useState(false);
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
+  const [showPolicy, setShowPolicy] = useState(true);
 
-  React.useEffect(() => {
-    // const isEndOfMonth = currentDate.getDate() >= 25
-    const isEndOfMonth = true
+  // 새로운 API를 사용하여 학원 내 모든 클래스와 세션 조회
+  const { data: enrollmentData, isLoading } = useQuery({
+    queryKey: ['studentAvailableSessionsForEnrollment', selectedAcademyId],
+    queryFn: () => getStudentAvailableSessionsForEnrollment(selectedAcademyId!),
+    enabled: selectedAcademyId !== null && status === 'authenticated',
+  });
 
-    const isAccessible =
-      requestedMonth === currentMonth ||
-      (isEndOfMonth &&
-        ((currentMonth === 12 && requestedMonth === 1) ||
-          (currentMonth !== 12 && requestedMonth === nextMonth)))
+  // 클래스별로 그룹핑하고 타임테이블 형식으로 변환
+  const classesWithSessions = React.useMemo(() => {
+    if (!enrollmentData?.sessions) return [];
 
-    if (!isAccessible) {
-      toast.error('해당 월의 수강신청 기간이 아닙니다')
-      handleGoBack()
-      return
-    }
-  }, [currentMonth, nextMonth, requestedMonth, goBack])
+    const classMap = new Map();
+    enrollmentData.sessions.forEach(session => {
+      if (session.class && !classMap.has(session.class.id)) {
+        // 각 세션의 시간 정보를 사용하여 클래스 정보 구성
+        const sessionDate = new Date(session.date);
+        const dayOfWeek = days[sessionDate.getDay() === 0 ? 6 : sessionDate.getDay() - 1]; // 일요일을 7번째로 변환
+        
+        classMap.set(session.class.id, {
+          id: session.class.id,
+          className: session.class.className,
+          level: session.class.level,
+          tuitionFee: session.class.tuitionFee,
+          teacher: session.class.teacher,
+          dayOfWeek: dayOfWeek,
+          startTime: session.startTime,
+          endTime: session.endTime,
+          backgroundColor: (session.class as any).backgroundColor,
+          sessionCount: enrollmentData.sessions.filter(s => s.classId === session.class?.id).length,
+        });
+      }
+    });
 
-  const [showPolicy, setShowPolicy] = React.useState(true)
-  const [agreed, setAgreed] = React.useState(false)
-  const [showClassDetailModal, setShowClassDetailModal] = React.useState(false)
-  const [selectedClassId, setSelectedClassId] = React.useState<number | null>(null)
-  const [selectedIds, setSelectedIds] = useState<number[]>([])
-
-  const { data: classesWithSessions, isLoading } = useQuery({
-    queryKey: ['classesWithSessions', requestedMonth, selectedAcademyId],
-    queryFn: async () => {
-      const year =
-        requestedMonth === 1 && currentMonth === 12
-          ? currentDate.getFullYear() + 1
-          : currentDate.getFullYear()
-
-      return getClassesWithSessionsByMonth(`${requestedMonth}`, year)
-    },
-    enabled: !!requestedMonth && selectedAcademyId !== null,
-  })
-
-  // 선택된 학원에 속한 클래스만 필터링
-  const filteredClassesWithSessions = React.useMemo(() => {
-    if (!classesWithSessions || selectedAcademyId === null) return []
-    
-    return classesWithSessions.filter((classInfo: ClassesWithSessionsByMonthResponse) => 
-      classInfo.academyId === selectedAcademyId
-    )
-  }, [classesWithSessions, selectedAcademyId])
-
-
+    return Array.from(classMap.values());
+  }, [enrollmentData]);
 
   // localStorage 확인하여 이전에 동의했다면 정책 건너뛰기
   // selectedAcademyId가 변경될 때마다 다시 확인 (다른 학원을 선택했을 때)
   React.useEffect(() => {
-    const hasAgreed = localStorage.getItem('refundPolicyAgreed') === 'true'
+    const hasAgreed = localStorage.getItem('refundPolicyAgreed') === 'true';
     if (hasAgreed) {
-      setShowPolicy(false)
+      setShowPolicy(false);
     } else {
-      setShowPolicy(true)
+      setShowPolicy(true);
     }
-  }, [selectedAcademyId])
+  }, [selectedAcademyId]);
 
   const statusSteps = [
     {
@@ -155,79 +119,92 @@ export function EnrollmentClassStep() {
       icon: '/icons/CourseRegistrationsStatusSteps2.svg',
       label: '결제하기',
     },
-  ]
+  ];
 
   const handleClassInfoClick = (classId: number) => {
-    setSelectedClassId(classId)
-    setShowClassDetailModal(true)
-  }
+    setSelectedClassId(classId);
+    setShowClassDetailModal(true);
+  };
 
   const handleSelect = (id: number) => {
     // 이미 선택된 클래스라면 선택 해제
     if (selectedIds.includes(id)) {
-      setSelectedIds(prev => prev.filter(x => x !== id))
-      return
+      setSelectedIds(prev => prev.filter(x => x !== id));
+      return;
     }
 
     // 선택하려는 클래스의 요일 확인
-    const targetClass = filteredClassesWithSessions?.find((classInfo: ClassesWithSessionsByMonthResponse) => classInfo.id === id)
-    if (!targetClass) return
+    const targetClass = classesWithSessions.find((classInfo: any) => classInfo.id === id);
+    if (!targetClass) return;
 
-    const targetDayOfWeek = targetClass.dayOfWeek
+    const targetDayOfWeek = targetClass.dayOfWeek;
 
     // 이미 선택된 클래스들 중 같은 요일이 있는지 확인
     const hasSameDayClass = selectedIds.some(selectedId => {
-      const selectedClass = filteredClassesWithSessions?.find((classInfo: ClassesWithSessionsByMonthResponse) => classInfo.id === selectedId)
-      return selectedClass?.dayOfWeek === targetDayOfWeek
-    })
-
-    console.log('=== DEBUG: handleSelect ===')
-    console.log('targetClass:', targetClass)
-    console.log('targetDayOfWeek:', targetDayOfWeek)
-    console.log('selectedIds:', selectedIds)
-    console.log('hasSameDayClass:', hasSameDayClass)
+      const selectedClass = classesWithSessions.find((classInfo: any) => classInfo.id === selectedId);
+      return selectedClass?.dayOfWeek === targetDayOfWeek;
+    });
 
     if (hasSameDayClass) {
-      console.log('=== TOAST SHOULD APPEAR ===')
-      toast.error('동일 요일 클래스는 동시에 수강신청을 진행할 수 없어요! 만일 2개이상의 클래스를 신청하고 싶으시면, 수강신청을 다시 반복해주셔야 해요!')
-      return
+      toast.error('동일 요일 클래스는 동시에 수강신청을 진행할 수 없어요! 만일 2개이상의 클래스를 신청하고 싶으시면, 수강신청을 다시 반복해주셔야 해요!');
+      return;
     }
 
     // 같은 요일이 없으면 선택 추가
-    setSelectedIds(prev => [...prev, id])
-  }
+    setSelectedIds(prev => [...prev, id]);
+  };
 
   const handleNextStep = () => {
     if (selectedIds.length === 0) {
-      toast.error('최소 1개 이상의 클래스를 선택해주세요.')
-      return
+      toast.error('최소 1개 이상의 클래스를 선택해주세요.');
+      return;
     }
     
-    // 선택된 클래스들의 세션 정보를 Context에 저장
-    const selectedClassesData = filteredClassesWithSessions?.filter((classInfo: ClassesWithSessionsByMonthResponse) => 
-      selectedIds.includes(classInfo.id)
-    ) || []
-    
-    setSelectedClassIds(selectedIds)
-    setSelectedClassesWithSessions(selectedClassesData)
-    setEnrollmentStep('date-selection')
-  }
-
-  // For horizontal scroll, show only 5 days at a time
-  const visibleDays = days.slice(0, 5)
-  const visibleDaysKor = daysKor.slice(0, 5)
+    setSelectedClassIds(selectedIds);
+    setEnrollmentStep('date-selection');
+  };
 
   if (status === 'loading' || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
       </div>
-    )
+    );
+  }
+
+  if (!selectedAcademyId) {
+    return (
+      <div className="flex flex-col h-full bg-white">
+        <header className="flex-shrink-0 flex flex-col bg-white border-b border-gray-200 py-5 min-h-[120px] relative">
+          <div className="flex gap-10 self-center w-full text-sm font-medium tracking-normal leading-snug max-w-[297px] mt-2 mb-2">
+            {statusSteps.map((step, index) => (
+              <StatusStep key={index} {...step} />
+            ))}
+          </div>
+          <div className="self-center pb-4 text-base font-medium tracking-normal leading-snug text-center text-red-600">
+            학원을 먼저 선택해주세요.
+          </div>
+        </header>
+        
+        <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
+          <div className="text-center">
+            <p className="text-lg font-semibold text-gray-900 mb-2">학원이 선택되지 않았습니다</p>
+            <p className="text-gray-600 mb-4">먼저 학원을 선택해주세요</p>
+            <button
+              onClick={goBack}
+              className="px-4 py-2 bg-[#AC9592] text-white rounded-lg hover:bg-[#8B7A77] transition-colors"
+            >
+              학원 선택으로 돌아가기
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="flex flex-col h-full bg-white relative">
-      {/* 밑의 페이지 - 항상 렌더링 */}
+      {/* Header */}
       <header className="flex-shrink-0 flex flex-col bg-white border-b border-gray-200 py-5 min-h-[120px] relative">
         <div className="flex gap-10 self-center w-full text-sm font-medium tracking-normal leading-snug max-w-[297px] mt-2 mb-2">
           {statusSteps.map((step, index) => (
@@ -278,34 +255,32 @@ export function EnrollmentClassStep() {
             {/* 빈 Grid cell들 (배경용) */}
             {timeSlots.map((time, rowIdx) => (
               days.map((day, colIdx) => {
-                const cellKey = `${day}-${time}`
+                const cellKey = `${day}-${time}`;
                 return (
                   <div
                     key={cellKey}
                     className="relative border-b border-r border-gray-100"
                     style={{ gridRow: rowIdx + 1, gridColumn: colIdx + 2 }}
                   />
-                )
+                );
               })
             ))}
 
             {/* ClassCard들을 Grid와 같은 레벨에 배치 */}
-            {filteredClassesWithSessions?.map((classInfo: ClassesWithSessionsByMonthResponse) => {
-              const startDate = new Date(classInfo.startTime)
-              const endDate = new Date(classInfo.endTime)
-              const startHour = startDate.getHours()
-              const durationInMinutes = (endDate.getTime() - startDate.getTime()) / (1000 * 60)
-              const durationInHours = durationInMinutes / 60
-              const gridRowSpan = Math.ceil(durationInHours)
-              const actualHeight = durationInHours * 110
+            {classesWithSessions?.map((classInfo: any) => {
+              const startDate = new Date(classInfo.startTime);
+              const endDate = new Date(classInfo.endTime);
+              const startHour = startDate.getHours();
+              const durationInMinutes = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
+              const durationInHours = durationInMinutes / 60;
+              const gridRowSpan = Math.ceil(durationInHours);
+              const actualHeight = durationInHours * 110;
               
               // Grid 위치 계산
-              const dayIndex = days.indexOf(classInfo.dayOfWeek)
-              const timeIndex = timeSlots.indexOf(startHour.toString())
-              const gridRow = timeIndex + 1
-              const gridColumn = dayIndex + 2 // 1은 시간 열이므로 +2
-              
-
+              const dayIndex = days.indexOf(classInfo.dayOfWeek);
+              const timeIndex = timeSlots.indexOf(startHour.toString());
+              const gridRow = timeIndex + 1;
+              const gridColumn = dayIndex + 2; // 1은 시간 열이므로 +2
               
               return (
                 <ClassCard
@@ -333,7 +308,7 @@ export function EnrollmentClassStep() {
                     right: '4px'
                   }}
                 />
-              )
+              );
             })}
           </div>
         </div>
@@ -366,8 +341,8 @@ export function EnrollmentClassStep() {
           onClose={() => {
             // 상태 업데이트를 안전하게 처리
             requestAnimationFrame(() => {
-              setShowPolicy(false)
-            })
+              setShowPolicy(false);
+            });
           }} 
         />
       </div>
@@ -377,12 +352,12 @@ export function EnrollmentClassStep() {
         <ClassDetailModal
           isOpen={showClassDetailModal}
           onClose={() => {
-            setShowClassDetailModal(false)
-            setSelectedClassId(null)
+            setShowClassDetailModal(false);
+            setSelectedClassId(null);
           }}
           classId={selectedClassId}
         />
       )}
     </div>
-  )
-}
+  );
+} 
