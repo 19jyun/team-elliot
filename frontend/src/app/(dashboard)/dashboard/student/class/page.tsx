@@ -2,9 +2,7 @@
 
 import { useSession, signOut } from 'next-auth/react'
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
-import { ChevronDownIcon } from '@heroicons/react/24/outline'
-import { format } from 'date-fns'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { getMyClasses } from '@/api/student'
@@ -12,7 +10,9 @@ import { EnrolledClassesList } from '@/components/features/student/classes/Enrol
 import { ClassSessionModal } from '@/components/features/student/classes/ClassSessionModal'
 import { DateSessionModal } from '@/components/calendar/DateSessionModal'
 import { StudentSessionDetailModal } from '@/components/features/student/classes/StudentSessionDetailModal'
-import { MonthSelector } from '@/components/calendar/MonthSelector'
+import { CalendarProvider } from '@/contexts/CalendarContext'
+import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
+import { ClassSession } from '@/types/api/class'
 
 // Type for extended session
 type ExtendedSession = {
@@ -33,8 +33,7 @@ export default function StudentDashboard() {
     },
   })
 
-  const [selectedDate, setSelectedDate] = useState(new Date())
-  const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false)
+
   const [selectedClass, setSelectedClass] = useState<any>(null)
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false)
   
@@ -53,6 +52,65 @@ export default function StudentDashboard() {
     enabled: status === 'authenticated' && !!session?.user && !!session?.accessToken,
     retry: false,
   })
+
+  // ConnectedCalendar용 데이터 변환
+  const convertedSessions = useMemo(() => {
+    if (!myClasses?.sessionClasses) return [];
+    
+    return myClasses.sessionClasses.map((session: any) => ({
+      id: session.id,
+      classId: session.classId || session.id,
+      date: session.date,
+      startTime: session.startTime,
+      endTime: session.endTime,
+      currentStudents: session.currentStudents || 0,
+      maxStudents: session.maxStudents || 0,
+      isEnrollable: false, // student-view에서는 선택 불가
+      isFull: session.currentStudents >= session.maxStudents,
+      isPastStartTime: new Date(session.date + ' ' + session.startTime) < new Date(),
+      isAlreadyEnrolled: true, // 이미 수강 중인 세션
+      studentEnrollmentStatus: 'CONFIRMED',
+      class: {
+        id: session.class?.id || session.classId || session.id,
+        className: session.class?.className || '클래스',
+        level: session.class?.level || 'BEGINNER',
+        tuitionFee: session.class?.tuitionFee?.toString() || '50000',
+        teacher: {
+          id: session.class?.teacher?.id || 0,
+          name: session.class?.teacher?.name || '선생님',
+        },
+      },
+    })) as ClassSession[];
+  }, [myClasses?.sessionClasses]);
+
+  // 캘린더 범위 계산 (학생의 수강 기간)
+  const calendarRange = useMemo(() => {
+    if (!convertedSessions.length) {
+      const now = new Date();
+      return {
+        startDate: new Date(now.getFullYear(), now.getMonth(), 1),
+        endDate: new Date(now.getFullYear(), now.getMonth() + 2, 0),
+      };
+    }
+
+    const dates = convertedSessions.map(session => new Date(session.date));
+    const startDate = new Date(Math.min(...dates.map(d => d.getTime())));
+    const endDate = new Date(Math.max(...dates.map(d => d.getTime())));
+
+    // 시작일을 해당 월의 1일로, 종료일을 해당 월의 마지막 날로 설정
+    // 최소 3개월 범위 보장
+    const rangeStartDate = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+    const rangeEndDate = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0);
+    
+    // 최소 3개월 범위 보장
+    const minEndDate = new Date(rangeStartDate.getFullYear(), rangeStartDate.getMonth() + 2, 0);
+    const finalEndDate = rangeEndDate > minEndDate ? rangeEndDate : minEndDate;
+    
+    return {
+      startDate: rangeStartDate,
+      endDate: finalEndDate,
+    };
+  }, [convertedSessions]);
 
   // myClasses 객체 로그 출력
   console.log('myClasses:', myClasses)
@@ -86,11 +144,7 @@ export default function StudentDashboard() {
     )
   }
 
-  const handleMonthChange = (month: number) => {
-    const newDate = new Date(selectedDate)
-    newDate.setMonth(month)
-    setSelectedDate(newDate)
-  }
+
 
   const handleClassClick = (classData: any) => {
     setSelectedClass(classData)
@@ -102,21 +156,19 @@ export default function StudentDashboard() {
     setSelectedClass(null)
   }
 
-  // 날짜 클릭 핸들러 추가
-  const handleDateClick = (day: number, isCurrentMonth: boolean) => {
-    if (!isCurrentMonth) return
-
-    const currentMonth = selectedDate.getMonth()
-    const currentYear = selectedDate.getFullYear()
-    const clickedDateObj = new Date(currentYear, currentMonth, day)
+  // 날짜 클릭 핸들러 추가 (ConnectedCalendar용)
+  const handleDateClick = (date: string) => {
+    const clickedDateObj = new Date(date)
     
-    // 해당 날짜의 세션들 필터링
-    const daySessions = myClasses?.sessionClasses?.filter((session: any) => {
+    // 해당 날짜의 세션들 필터링 (로컬 시간대로 비교)
+    const daySessions = convertedSessions.filter((session) => {
       const sessionDate = new Date(session.date)
-      return sessionDate.getDate() === day &&
-             sessionDate.getMonth() === currentMonth &&
-             sessionDate.getFullYear() === currentYear
-    }) || []
+      const sessionYear = sessionDate.getFullYear();
+      const sessionMonth = String(sessionDate.getMonth() + 1).padStart(2, '0');
+      const sessionDay = String(sessionDate.getDate()).padStart(2, '0');
+      const sessionDateString = `${sessionYear}-${sessionMonth}-${sessionDay}`;
+      return sessionDateString === date;
+    })
 
     setClickedDate(clickedDateObj)
     setSelectedDaySessions(daySessions)
@@ -141,43 +193,6 @@ export default function StudentDashboard() {
     setSelectedSession(null)
   }
 
-  const generateCalendarDays = () => {
-    const days = []
-    const totalDays = 35
-    const currentMonth = selectedDate.getMonth()
-    const currentYear = selectedDate.getFullYear()
-    const firstDay = new Date(currentYear, currentMonth, 1).getDay()
-    const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate()
-
-    // 이전 달의 날짜 채우기
-    const prevMonthLastDay = new Date(currentYear, currentMonth, 0).getDate()
-    for (let i = firstDay - 1; i >= 0; i--) {
-      days.push({ day: prevMonthLastDay - i, isCurrentMonth: false })
-    }
-
-    // 현재 달의 날짜 채우기
-    for (let i = 1; i <= lastDay; i++) {
-      days.push({
-        day: i,
-        isCurrentMonth: true,
-        hasEvent: myClasses?.sessionClasses?.some((session: any) => {
-          const sessionDate = new Date(session.date)
-          return sessionDate.getDate() === i &&
-                 sessionDate.getMonth() === currentMonth &&
-                 sessionDate.getFullYear() === currentYear
-        }),
-      })
-    }
-
-    // 다음 달의 날짜 채우기
-    const remainingDays = 35 - days.length
-    for (let i = 1; i <= remainingDays; i++) {
-      days.push({ day: i, isCurrentMonth: false })
-    }
-
-    return days
-  }
-
   return (
     <div className="flex flex-col h-full bg-white">
       <header className="flex-shrink-0">
@@ -186,54 +201,21 @@ export default function StudentDashboard() {
           <h1 className="text-2xl font-bold text-stone-700">
             안녕하세요, {session?.user?.name}님!
           </h1>
-          <p className="mt-2 text-stone-500">오늘도 즐거운 학습되세요!</p>
+          {/* <p className="mt-2 text-stone-500">오늘도 즐거운 학습되세요!</p> */}
         </div>
 
         {/* 캘린더 섹션 */}
-        <div className="flex flex-col w-full text-center whitespace-nowrap bg-white text-stone-700">
-          <div className="flex items-center justify-between px-7 pt-3 pb-2 w-full text-base font-semibold relative">
-            <div
-              className="flex gap-1.5 items-center cursor-pointer"
-              onClick={() => setIsMonthPickerOpen(true)}
-            >
-              <span>{format(selectedDate, 'yyyy년')}</span>
-              <span>{format(selectedDate, 'M월')}</span>
-              <ChevronDownIcon className="h-4 w-4 text-stone-700" />
-            </div>
-          </div>
-
-          {/* 요일 헤더 */}
-          <div className="flex justify-around px-2.5 w-full text-sm font-medium">
-            {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
-              <div key={day} className="w-[50px] py-2">
-                {day}
-              </div>
-            ))}
-          </div>
-
-          {/* 캘린더 그리드 */}
-          <div className="flex flex-col w-full text-base">
-            {Array.from({ length: 5 }).map((_, weekIndex) => (
-              <div key={weekIndex} className="flex justify-around px-2.5 mt-2">
-                {generateCalendarDays()
-                  .slice(weekIndex * 7, (weekIndex + 1) * 7)
-                  .map((day, dayIndex) => (
-                    <div
-                      key={dayIndex}
-                      className={`w-[50px] h-[50px] flex items-center justify-center relative cursor-pointer hover:bg-stone-50 rounded-lg transition-colors ${
-                        day.isCurrentMonth ? 'text-stone-700' : 'text-stone-300'
-                      }`}
-                      onClick={() => handleDateClick(day.day, day.isCurrentMonth)}
-                    >
-                      {day.day}
-                      {day.hasEvent && (
-                        <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-[#573B30] rounded-full" />
-                      )}
-                    </div>
-                  ))}
-              </div>
-            ))}
-          </div>
+        <div className="flex flex-col w-full bg-white text-stone-700" style={{ height: 'calc(100vh - 400px)' }}>
+          <CalendarProvider
+            mode="student-view"
+            sessions={convertedSessions}
+            selectedSessionIds={new Set()}
+            onSessionSelect={() => {}} // student-view에서는 선택 기능 없음
+            onDateClick={handleDateClick}
+            calendarRange={calendarRange}
+          >
+            <ConnectedCalendar />
+          </CalendarProvider>
         </div>
       </header>
       
@@ -242,8 +224,7 @@ export default function StudentDashboard() {
           수강중인 클래스
         </div>
         <div className="w-full overflow-auto" style={{ 
-          maxHeight: 'calc(100vh - 650px)',  // 최대 높이만 설정
-          minHeight: '200px'  // 최소 높이 보장
+          maxHeight: '150px',  // 최대 높이만 설정
         }}>
           {/* 수강중인 클래스 리스트 */}
           <div className="flex flex-col mt-4 w-full h-full">
@@ -280,13 +261,7 @@ export default function StudentDashboard() {
         onClose={closeSessionDetailModal}
       />
 
-      {/* Month Selector Modal */}
-      <MonthSelector
-        isOpen={isMonthPickerOpen}
-        selectedMonth={selectedDate.getMonth()}
-        onClose={() => setIsMonthPickerOpen(false)}
-        onMonthSelect={handleMonthChange}
-      />
+
     </div>
   )
 }

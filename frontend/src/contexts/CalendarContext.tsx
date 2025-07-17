@@ -116,7 +116,8 @@ export function CalendarProvider({
                ('canBeCancelled' in session && Boolean(session.canBeCancelled));
       case 'student-view':
       case 'teacher-view':
-        return false;
+        // student-view와 teacher-view에서는 세션이 있으면 클릭 가능 (모달 표시용)
+        return true;
       default:
         return false;
     }
@@ -205,6 +206,36 @@ export function CalendarProvider({
           isSelectable: true,
           isSelected: false,
           displayText,
+          backgroundColor: 'bg-blue-50',
+          textColor: 'text-blue-700',
+          borderColor: 'border-blue-200',
+        };
+
+      case 'student-view':
+        // student-view 모드: 모든 세션이 클릭 가능 (모달 표시용)
+        if (isSelected) {
+          return {
+            isSelectable: true,
+            isSelected: true,
+            displayText: '수강 중',
+            backgroundColor: 'bg-[#573B30]',
+            textColor: 'text-white',
+            borderColor: 'border-[#573B30]',
+          };
+        }
+        
+        // student-view 모드: 일반 세션 표시 (클릭 가능)
+        let sessionStatus = '수강 예정';
+        if (session.isPastStartTime) {
+          sessionStatus = '수강 완료';
+        } else if (session.isFull) {
+          sessionStatus = '수강 인원 초과';
+        }
+        
+        return {
+          isSelectable: true,
+          isSelected: false,
+          displayText: sessionStatus,
           backgroundColor: 'bg-blue-50',
           textColor: 'text-blue-700',
           borderColor: 'border-blue-200',

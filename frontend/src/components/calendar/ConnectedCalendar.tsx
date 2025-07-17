@@ -4,11 +4,17 @@ import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { useCalendarContext } from '@/contexts/CalendarContext';
 import { ClassSession } from '@/types/api/class';
 
-// levelBgColor를 추가 (기존 캘린더와 동일)
+// levelBgColor와 levelTextColor를 추가 (기존 캘린더와 동일)
 const levelBgColor: Record<string, string> = {
   BEGINNER: '#F4E7E7',
   INTERMEDIATE: '#FBF4D8',
   ADVANCED: '#CBDFE3',
+};
+
+const levelTextColor: Record<string, string> = {
+  BEGINNER: '#8B4513', // 진한 갈색
+  INTERMEDIATE: '#DAA520', // 골든로드
+  ADVANCED: '#2F4F4F', // 다크슬레이트그레이
 };
 
 export function ConnectedCalendar() {
@@ -21,6 +27,7 @@ export function ConnectedCalendar() {
     onMonthChange,
     updateFocusedMonth,
     onSessionSelect,
+    onDateClick,
     getSessionDisplayInfo,
   } = useCalendarContext();
 
@@ -228,7 +235,20 @@ export function ConnectedCalendar() {
   const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
 
   const handleDateClick = (dayInfo: any) => {
-    // 날짜 클릭 시 해당 날짜의 모든 선택 가능한 세션 선택/해제
+    // student-view 모드에서는 날짜 클릭 시 모달 열기
+    if (mode === 'student-view' || mode === 'teacher-view') {
+      if (dayInfo.sessions.length > 0) {
+        // 로컬 시간대로 날짜 문자열 생성 (YYYY-MM-DD 형식)
+        const year = dayInfo.date.getFullYear();
+        const month = String(dayInfo.date.getMonth() + 1).padStart(2, '0');
+        const day = String(dayInfo.date.getDate()).padStart(2, '0');
+        const dateString = `${year}-${month}-${day}`;
+        onDateClick(dateString);
+      }
+      return;
+    }
+    
+    // enrollment/modification 모드에서는 기존 로직 유지
     if (dayInfo.sessions.length > 0) {
       const selectableSessions = dayInfo.sessions.filter((session: ClassSession) => {
         const displayInfo = getSessionDisplayInfo(session);
@@ -245,6 +265,16 @@ export function ConnectedCalendar() {
 
   const handleSessionClick = (session: ClassSession, event: React.MouseEvent) => {
     event.stopPropagation(); // 이벤트 버블링 방지
+    
+    // student-view/teacher-view 모드에서는 세션 클릭 시 모달 열기
+    if (mode === 'student-view' || mode === 'teacher-view') {
+      // 해당 날짜의 모든 세션을 모달에 전달하기 위해 날짜 클릭 핸들러 호출
+      const dateString = session.date;
+      onDateClick(dateString);
+      return;
+    }
+    
+    // enrollment/modification 모드에서는 기존 로직 유지
     onSessionSelect(session.id);
   };
 
@@ -364,10 +394,21 @@ export function ConnectedCalendar() {
                               {dayInfo.day}
                             </button>
                           ) : hasSessions ? (
-                            // 수강 불가능한 세션이 있는 날짜: 회색 배경에 날짜 표시
-                            <div className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-400 text-white text-base font-medium">
-                              {dayInfo.day}
-                            </div>
+                            // student-view/teacher-view 모드에서는 클릭 가능한 버튼으로 표시 (채워지지 않은 원)
+                            mode === 'student-view' || mode === 'teacher-view' ? (
+                              <button
+                                type="button"
+                                className="w-10 h-10 flex items-center justify-center rounded-full border-2 border-[#573B30] text-[#573B30] text-base font-medium hover:bg-[#573B30] hover:text-white transition-all duration-150 cursor-pointer"
+                                onClick={() => handleDateClick(dayInfo)}
+                              >
+                                {dayInfo.day}
+                              </button>
+                            ) : (
+                              // enrollment/modification 모드에서는 기존처럼 회색 배경
+                              <div className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-400 text-white text-base font-medium">
+                                {dayInfo.day}
+                              </div>
+                            )
                           ) : (
                             // 세션이 없는 날짜: focused month에 따라 색상 변경
                             <span className={`w-10 h-10 flex items-center justify-center text-base font-medium transition-colors duration-300 ${
@@ -394,14 +435,18 @@ export function ConnectedCalendar() {
                           return (
                             <div 
                               key={session.id} 
-                              className={`w-16 h-5 rounded text-xs text-center font-bold -mt-2 flex items-center justify-center cursor-pointer ${
+                              className={`w-16 h-5 rounded text-xs text-center font-bold -mt-2 flex items-center justify-center ${
                                 unavailable ? 'opacity-50' : ''
+                              } ${
+                                mode === 'student-view' || mode === 'teacher-view' ? 'cursor-pointer hover:opacity-80' : 'cursor-pointer'
                               }`}
                               style={{ 
                                 backgroundColor: unavailable 
                                   ? '#D3D3D3' 
                                   : levelBgColor[session.class?.level || ''] || '#AC9592',
-                                color: unavailable ? '#666666' : '#573B30',
+                                color: unavailable 
+                                  ? '#666666' 
+                                  : levelTextColor[session.class?.level || ''] || '#573B30',
                                 border: 'none',
                                 fontFamily: 'Pretendard Variable',
                                 opacity: isCurrentFocusedMonth ? 1 : 0.5, // focused month가 아닌 경우 투명도 적용
