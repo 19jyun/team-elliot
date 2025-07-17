@@ -1,6 +1,7 @@
 'use client'
 import * as React from 'react'
-import Calendar from '@/components/features/student/enrollment/month/date/Calendar'
+import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
+import { CalendarProvider } from '@/contexts/CalendarContext'
 import DateSelectFooter from '@/components/features/student/enrollment/month/date/DateSelectFooter'
 import { useState } from 'react'
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep'
@@ -25,21 +26,31 @@ export function EnrollmentModificationDateStep({
   console.log('EnrollmentModificationDateStep 렌더링:', { classId, month, existingEnrollmentsCount: existingEnrollments?.length });
   const { setSelectedSessions } = useDashboardNavigation()
   const [selectedCount, setSelectedCount] = useState(0);
-  const [selectableCount, setSelectableCount] = useState(0);
-  const [isAllSelected, setIsAllSelected] = useState(false);
   const [selectedClasses, setSelectedClasses] = useState<any[]>([]);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [modificationSessions, setModificationSessions] = useState<ClassSessionForModification[]>([]);
+  const [calendarRange, setCalendarRange] = useState<{startDate: string, endDate: string} | null>(null);
   const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+  const [selectedSessionIds, setSelectedSessionIds] = useState<Set<number>>(new Set());
   
   // 수강 변경용 세션 데이터 로드
   React.useEffect(() => {
     const loadModificationSessions = async () => {
       setIsLoadingSessions(true);
       try {
-        const sessions = await getClassSessionsForModification(classId);
-        setModificationSessions(sessions);
-        console.log('수강 변경용 세션 데이터 로드:', sessions);
+        const response = await getClassSessionsForModification(classId);
+        setModificationSessions(response.sessions);
+        setCalendarRange(response.calendarRange);
+        console.log('수강 변경용 세션 데이터 로드:', response);
+        
+        // 기존 수강 신청 세션들을 미리 선택
+        const preSelectedSessionIds = new Set<number>();
+        response.sessions.forEach((session) => {
+          if (session.canBeCancelled) {
+            preSelectedSessionIds.add(session.id);
+          }
+        });
+        setSelectedSessionIds(preSelectedSessionIds);
       } catch (error) {
         console.error('수강 변경용 세션 데이터 로드 실패:', error);
       } finally {
@@ -86,23 +97,7 @@ export function EnrollmentModificationDateStep({
     },
   ]
 
-  // 전체선택/해제 핸들러
-  const handleSelectAll = () => {
-    setIsAllSelected(true)
-  }
 
-  const handleDeselectAll = () => {
-    setIsAllSelected(false)
-  }
-
-  // 선택된 개수와 선택 가능한 개수를 비교하여 전체선택 상태 결정
-  React.useEffect(() => {
-    if (selectableCount > 0 && selectedCount === selectableCount) {
-      setIsAllSelected(true)
-    } else {
-      setIsAllSelected(false)
-    }
-  }, [selectedCount, selectableCount])
 
   // 선택된 날짜들을 배열로 변환
   React.useEffect(() => {
@@ -170,6 +165,36 @@ export function EnrollmentModificationDateStep({
     return { netChangeCount: netChange, hasChanges };
   }, [existingEnrollments, selectedDates]);
 
+  // 세션 선택 핸들러
+  const handleSessionSelect = (sessionId: number) => {
+    setSelectedSessionIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sessionId)) {
+        newSet.delete(sessionId);
+      } else {
+        newSet.add(sessionId);
+      }
+      return newSet;
+    });
+  };
+
+  // 선택된 세션들을 selectedClasses 형태로 변환
+  React.useEffect(() => {
+    const selectedSessions = modificationSessions.filter(session => 
+      selectedSessionIds.has(session.id)
+    );
+    
+    const selectedClassInfo = {
+      id: classId,
+      sessions: selectedSessions,
+    };
+    
+    setSelectedClasses([selectedClassInfo]);
+    
+    // 선택된 개수 업데이트
+    setSelectedCount(selectedSessions.length);
+  }, [selectedSessionIds, modificationSessions, classId]);
+
   // 수강 변경 완료 처리
   const handleModificationComplete = () => {
     if (typeof window !== 'undefined') {
@@ -225,52 +250,54 @@ export function EnrollmentModificationDateStep({
   }
     
   return (
-    <div className="flex flex-col min-h-screen bg-white font-[Pretendard Variable]">
-      {/* 헤더 */}
-      <header className="sticky top-0 z-40 flex flex-col bg-white border-b py-5 border-gray-200">
-
+    <div className="flex flex-col h-full bg-white relative">
+      {/* Header */}
+      <header className="flex-shrink-0 flex flex-col bg-white border-b border-gray-200 py-5 min-h-[120px] relative">
         <div className="flex gap-10 self-center w-full text-sm font-medium tracking-normal leading-snug max-w-[297px] mt-2 mb-2">
           {statusSteps.map((step, index) => (
             <StatusStep key={index} {...step} />
           ))}
         </div>
-
-        <div className="self-center pb-4 text-base font-medium tracking-normal leading-snug text-center" style={{ color: '#595959' }}>
+        <div className="self-center pb-4 text-base font-medium tracking-normal leading-snug text-center text-zinc-600">
           수강 변경하실 세션을 선택해주세요.
         </div>
       </header>
-      
-      {/* 캘린더 */}
-      {isLoadingSessions ? (
-        <div className="w-full flex flex-col items-center py-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
-          <p className="mt-2 text-sm text-gray-600">수강 변경 정보를 불러오는 중...</p>
-        </div>
-      ) : (
-        <Calendar 
-          onSelectCountChange={setSelectedCount}
-          onSelectableCountChange={setSelectableCount}
-          onSelectAll={handleSelectAll}
-          onDeselectAll={handleDeselectAll}
-          isAllSelected={isAllSelected}
-          onSelectedClassesChange={setSelectedClasses} // Calendar에서 선택 정보 올림
-          month={month || new Date().getMonth() + 1} // props로 받은 월을 우선 사용
+
+      {/* Calendar Section */}
+      <main className="flex-1 min-h-0 bg-white" style={{ height: 'calc(100vh - 220px)' }}>
+        {isLoadingSessions ? (
+          <div className="w-full flex flex-col items-center py-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
+            <p className="mt-2 text-sm text-gray-600">수강 변경 정보를 불러오는 중...</p>
+          </div>
+        ) : (
+          <div className="h-full">
+            <CalendarProvider
+              mode="modification"
+              sessions={modificationSessions}
+              selectedSessionIds={selectedSessionIds}
+              onSessionSelect={handleSessionSelect}
+              calendarRange={calendarRange ? {
+                startDate: new Date(calendarRange.startDate),
+                endDate: new Date(calendarRange.endDate)
+              } : undefined}
+            >
+              <ConnectedCalendar />
+            </CalendarProvider>
+          </div>
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="flex-shrink-0">
+        <DateSelectFooter 
+          selectedCount={selectedCount}
+          onGoToPayment={handleModificationComplete}
           mode="modification"
-          modificationSessions={modificationSessions}
+          netChange={netChangeCount}
+          hasChanges={hasChanges}
         />
-      )}
-      
-      {/* 전체선택 체크박스 + 하단 버튼 */}
-      <DateSelectFooter 
-        selectedCount={selectedCount}
-        onSelectAll={handleSelectAll}
-        onDeselectAll={handleDeselectAll}
-        isAllSelected={isAllSelected}
-        onGoToPayment={handleModificationComplete}
-        mode="modification"
-        netChange={netChangeCount}
-        hasChanges={hasChanges}
-      />
+      </footer>
     </div>
   )
 } 

@@ -48,17 +48,20 @@ export default function DateSelectFooter({
 
   return (
     <footer className="sticky bottom-0 flex flex-col w-full bg-white z-50">
-      <div className="flex justify-center items-center px-5 pt-2 pb-2 w-full">
-        <label className="flex items-center gap-2 text-sm" style={{ color: isAllSelected ? '#262626' : '#8C8C8C' }}>
-          <input 
-            type="checkbox" 
-            checked={isAllSelected || false}
-            onChange={(e) => handleSelectAllChange(e.target.checked)}
-            style={{ accentColor: isAllSelected ? '#262626' : '#8C8C8C' }}
-          /> 
-          전체선택
-        </label>
-      </div>
+      {/* 전체선택은 enrollment 모드에서만 표시 */}
+      {mode === 'enrollment' && (
+        <div className="flex justify-center items-center px-5 pt-2 pb-2 w-full">
+          <label className="flex items-center gap-2 text-sm" style={{ color: isAllSelected ? '#262626' : '#8C8C8C' }}>
+            <input 
+              type="checkbox" 
+              checked={isAllSelected || false}
+              onChange={(e) => handleSelectAllChange(e.target.checked)}
+              style={{ accentColor: isAllSelected ? '#262626' : '#8C8C8C' }}
+            /> 
+            전체선택
+          </label>
+        </div>
+      )}
       <div className="flex gap-3 justify-center px-5 pt-2.5 pb-4 w-full text-base font-semibold leading-snug text-white">
         <button
           className={`flex-1 shrink self-stretch px-2.5 py-4 rounded-lg min-w-[240px] size-full transition-colors duration-300 text-center ${isButtonEnabled ? 'bg-[#AC9592] text-white cursor-pointer' : 'bg-zinc-300 text-white cursor-not-allowed'}`}

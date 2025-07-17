@@ -13,6 +13,7 @@ const levelBgColor: Record<string, string> = {
 
 export function ConnectedCalendar() {
   const {
+    mode,
     sessions,
     selectedSessionIds,
     focusedMonth,
@@ -44,9 +45,9 @@ export function ConnectedCalendar() {
     const allDays = [];
     
     if (calendarBounds) {
-      // 7월과 8월을 하나의 연속된 캘린더로 생성
-      const startDate = new Date(calendarBounds.startYear, calendarBounds.startMonth - 1, 1); // 7월 1일
-      const endDate = new Date(calendarBounds.endYear, calendarBounds.endMonth, 0); // 8월 31일
+      // 실제 캘린더 범위를 사용하여 연속된 캘린더 생성
+      const startDate = new Date(calendarBounds.startYear, calendarBounds.startMonth - 1, 1);
+      const endDate = new Date(calendarBounds.endYear, calendarBounds.endMonth, 0);
       
       // 7월 1일의 주 시작 날짜 계산 (일요일부터 시작)
       const startPadding = startDate.getDay();
@@ -65,8 +66,9 @@ export function ConnectedCalendar() {
         const currentMonth = currentDate.getMonth() + 1;
         const currentDay = currentDate.getDate();
         
-        // 현재 날짜가 7월 또는 8월인지 확인
-        const isInRangeMonth = (currentMonth === 7 && currentYear === 2025) || (currentMonth === 8 && currentYear === 2025);
+        // 현재 날짜가 캘린더 범위 내인지 확인
+        const isInRangeMonth = (currentMonth >= calendarBounds.startMonth && currentMonth <= calendarBounds.endMonth && currentYear === calendarBounds.startYear) ||
+                              (currentMonth >= calendarBounds.startMonth && currentMonth <= calendarBounds.endMonth && currentYear === calendarBounds.endYear);
         
         // 세션 데이터에서 해당 날짜의 세션들 필터링 (시간대 문제 해결)
         const daySessions = sessions.filter(session => {
@@ -155,18 +157,22 @@ export function ConnectedCalendar() {
         
         // 캘린더 범위 내에서만 월 변경 허용
         if (calendarBounds) {
-          // 7월과 8월을 구분하는 기준점 계산
-          // 7월은 대략 0-3주, 8월은 4-8주 정도
+          // 실제 캘린더 범위를 기반으로 월 계산
+          const totalWeeks = Math.ceil((calendarBounds.endMonth - calendarBounds.startMonth + 1) * 4.33); // 월당 약 4.33주
+          const weekRatio = weekIndex / totalWeeks;
+          
           let newMonth, newYear;
           
-          if (weekIndex < 4) {
-            // 7월 영역
-            newMonth = 7;
-            newYear = 2025;
+          if (calendarBounds.startYear === calendarBounds.endYear) {
+            // 같은 년도 내에서
+            const monthDiff = calendarBounds.endMonth - calendarBounds.startMonth;
+            const targetMonthIndex = Math.floor(weekRatio * (monthDiff + 1));
+            newMonth = calendarBounds.startMonth + targetMonthIndex;
+            newYear = calendarBounds.startYear;
           } else {
-            // 8월 영역
-            newMonth = 8;
-            newYear = 2025;
+            // 년도가 다른 경우 (복잡한 경우는 나중에 처리)
+            newMonth = calendarBounds.startMonth;
+            newYear = calendarBounds.startYear;
           }
           
           if (newMonth !== currentVisibleMonth.month || newYear !== currentVisibleMonth.year) {
@@ -248,7 +254,8 @@ export function ConnectedCalendar() {
       const currentMonthIndex = (currentVisibleMonth.year - calendarBounds.startYear) * 12 + (currentVisibleMonth.month - calendarBounds.startMonth);
       const newMonthIndex = direction === 'prev' ? currentMonthIndex - 1 : currentMonthIndex + 1;
       
-      if (newMonthIndex >= 0 && newMonthIndex < 2) { // 7월, 8월만 허용
+      const totalMonths = (calendarBounds.endYear - calendarBounds.startYear) * 12 + (calendarBounds.endMonth - calendarBounds.startMonth + 1);
+      if (newMonthIndex >= 0 && newMonthIndex < totalMonths) {
         onMonthChange(direction);
       }
     } else {
@@ -327,6 +334,15 @@ export function ConnectedCalendar() {
                     selectedSessionIds.has(session.id)
                   );
 
+                  // modification 모드에서 취소될 예정인 세션 확인 (기존에 신청되었지만 현재 선택되지 않은 경우)
+                  const willBeCancelled = mode === 'modification' && dayInfo.sessions.some((session: ClassSession) => {
+                    if ('canBeCancelled' in session && session.canBeCancelled) {
+                      // 기존에 신청된 세션이지만 현재 선택되지 않은 경우
+                      return !selectedSessionIds.has(session.id);
+                    }
+                    return false;
+                  });
+
                   return (
                     <div
                       key={dayIndex}
@@ -339,7 +355,8 @@ export function ConnectedCalendar() {
                             <button
                               type="button"
                               className={`w-10 h-10 flex items-center justify-center rounded-full border-2 transition-colors duration-150
-                                ${isSelected ? 'bg-[#573B30] border-[#573B30] text-white' : 
+                                ${willBeCancelled ? 'bg-white border-red-500 text-red-500' :
+                                  isSelected ? 'bg-[#573B30] border-[#573B30] text-white' : 
                                   'border-[#AC9592] bg-white text-black hover:bg-[#E5D6D1]'}
                               `}
                               onClick={() => handleDateClick(dayInfo)}

@@ -111,7 +111,9 @@ export function CalendarProvider({
       case 'enrollment':
         return session.isEnrollable || false;
       case 'modification':
-        return 'isModifiable' in session && Boolean(session.isModifiable);
+        // 기존 로직과 동일: isSelectable 또는 canBeCancelled인 경우 선택 가능
+        return ('isSelectable' in session && Boolean(session.isSelectable)) ||
+               ('canBeCancelled' in session && Boolean(session.canBeCancelled));
       case 'student-view':
       case 'teacher-view':
         return false;
@@ -152,6 +154,57 @@ export function CalendarProvider({
           isSelectable: true,
           isSelected: false,
           displayText: '신청 가능',
+          backgroundColor: 'bg-blue-50',
+          textColor: 'text-blue-700',
+          borderColor: 'border-blue-200',
+        };
+
+      case 'modification':
+        // modification 모드에서 선택 불가능한 경우
+        if (!isSelectable) {
+          let displayText = '수강 불가';
+          if ('isPastStartTime' in session && session.isPastStartTime) {
+            displayText = '이미 시작된 수업';
+          } else if ('isFull' in session && session.isFull && !('isAlreadyEnrolled' in session && session.isAlreadyEnrolled)) {
+            displayText = '수강 인원 초과';
+          } else if ('isAlreadyEnrolled' in session && session.isAlreadyEnrolled && 'isPastStartTime' in session && session.isPastStartTime) {
+            displayText = '이미 시작된 수업';
+          }
+          
+          return {
+            isSelectable: false,
+            isSelected: false,
+            displayText,
+            backgroundColor: 'bg-gray-200',
+            textColor: 'text-gray-500',
+            borderColor: 'border-gray-300',
+          };
+        }
+        
+        // modification 모드에서 선택 가능한 경우
+        if (isSelected) {
+          return {
+            isSelectable: true,
+            isSelected: true,
+            displayText: '선택됨',
+            backgroundColor: 'bg-[#573B30]',
+            textColor: 'text-white',
+            borderColor: 'border-[#573B30]',
+          };
+        }
+        
+        // modification 모드에서 선택 가능하지만 선택되지 않은 경우
+        let displayText = '수정 가능';
+        if ('isSelectable' in session && session.isSelectable) {
+          displayText = '수강 변경 가능';
+        } else if ('canBeCancelled' in session && session.canBeCancelled) {
+          displayText = '환불 신청 가능';
+        }
+        
+        return {
+          isSelectable: true,
+          isSelected: false,
+          displayText,
           backgroundColor: 'bg-blue-50',
           textColor: 'text-blue-700',
           borderColor: 'border-blue-200',
