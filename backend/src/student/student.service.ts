@@ -94,9 +94,51 @@ export class StudentService {
       enrollment_id: enrollment.id,
     }));
 
+    // 캘린더 범위 계산 (학생의 수강 기간)
+    let calendarRange = null;
+
+    if (sessionClasses.length > 0) {
+      const sessionDates = sessionClasses.map(
+        (session) => new Date(session.date),
+      );
+      const earliestDate = new Date(
+        Math.min(...sessionDates.map((d) => d.getTime())),
+      );
+      const latestDate = new Date(
+        Math.max(...sessionDates.map((d) => d.getTime())),
+      );
+
+      // 시작일을 해당 월의 1일로, 종료일을 해당 월의 마지막 날로 설정
+      const rangeStartDate = new Date(
+        earliestDate.getFullYear(),
+        earliestDate.getMonth(),
+        1,
+      );
+      const rangeEndDate = new Date(
+        latestDate.getFullYear(),
+        latestDate.getMonth() + 1,
+        0,
+      );
+
+      // 최소 3개월 범위 보장
+      const minEndDate = new Date(
+        rangeStartDate.getFullYear(),
+        rangeStartDate.getMonth() + 2,
+        0,
+      );
+      const finalEndDate =
+        rangeEndDate > minEndDate ? rangeEndDate : minEndDate;
+
+      calendarRange = {
+        startDate: rangeStartDate,
+        endDate: finalEndDate,
+      };
+    }
+
     return {
       enrollmentClasses,
       sessionClasses,
+      calendarRange,
     };
   }
 

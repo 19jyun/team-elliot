@@ -83,9 +83,10 @@ export default function StudentDashboard() {
     })) as ClassSession[];
   }, [myClasses?.sessionClasses]);
 
-  // 캘린더 범위 계산 (학생의 수강 기간)
+  // 백엔드에서 받은 캘린더 범위 사용
   const calendarRange = useMemo(() => {
-    if (!convertedSessions.length) {
+    if (!myClasses?.calendarRange) {
+      // 백엔드에서 범위를 받지 못한 경우 기본값 사용
       const now = new Date();
       return {
         startDate: new Date(now.getFullYear(), now.getMonth(), 1),
@@ -93,24 +94,11 @@ export default function StudentDashboard() {
       };
     }
 
-    const dates = convertedSessions.map(session => new Date(session.date));
-    const startDate = new Date(Math.min(...dates.map(d => d.getTime())));
-    const endDate = new Date(Math.max(...dates.map(d => d.getTime())));
-
-    // 시작일을 해당 월의 1일로, 종료일을 해당 월의 마지막 날로 설정
-    // 최소 3개월 범위 보장
-    const rangeStartDate = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
-    const rangeEndDate = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0);
-    
-    // 최소 3개월 범위 보장
-    const minEndDate = new Date(rangeStartDate.getFullYear(), rangeStartDate.getMonth() + 2, 0);
-    const finalEndDate = rangeEndDate > minEndDate ? rangeEndDate : minEndDate;
-    
     return {
-      startDate: rangeStartDate,
-      endDate: finalEndDate,
+      startDate: new Date(myClasses.calendarRange.startDate),
+      endDate: new Date(myClasses.calendarRange.endDate),
     };
-  }, [convertedSessions]);
+  }, [myClasses?.calendarRange]);
 
   // myClasses 객체 로그 출력
   console.log('myClasses:', myClasses)
@@ -201,11 +189,11 @@ export default function StudentDashboard() {
           <h1 className="text-2xl font-bold text-stone-700">
             안녕하세요, {session?.user?.name}님!
           </h1>
-          {/* <p className="mt-2 text-stone-500">오늘도 즐거운 학습되세요!</p> */}
+          <p className="mt-2 text-stone-500">오늘도 즐거운 학습되세요!</p>
         </div>
 
         {/* 캘린더 섹션 */}
-        <div className="flex flex-col w-full bg-white text-stone-700" style={{ height: 'calc(100vh - 400px)' }}>
+        <div className="flex flex-col w-full bg-white text-stone-700" style={{ height: 'calc(100vh - 450px)' }}>
           <CalendarProvider
             mode="student-view"
             sessions={convertedSessions}

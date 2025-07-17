@@ -2,6 +2,7 @@
 
 import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { useCalendarContext } from '@/contexts/CalendarContext';
+import type { CalendarMode } from '@/contexts/CalendarContext';
 import { ClassSession } from '@/types/api/class';
 
 // levelBgColor와 levelTextColor를 추가 (기존 캘린더와 동일)
@@ -30,6 +31,9 @@ export function ConnectedCalendar() {
     onDateClick,
     getSessionDisplayInfo,
   } = useCalendarContext();
+
+  // 타입 오류 방지용
+  const calendarMode: CalendarMode = mode;
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [currentVisibleMonth, setCurrentVisibleMonth] = useState(focusedMonth);
@@ -236,7 +240,7 @@ export function ConnectedCalendar() {
 
   const handleDateClick = (dayInfo: any) => {
     // student-view 모드에서는 날짜 클릭 시 모달 열기
-    if (mode === 'student-view' || mode === 'teacher-view') {
+    if (calendarMode === 'student-view' || calendarMode === 'teacher-view') {
       if (dayInfo.sessions.length > 0) {
         // 로컬 시간대로 날짜 문자열 생성 (YYYY-MM-DD 형식)
         const year = dayInfo.date.getFullYear();
@@ -267,7 +271,7 @@ export function ConnectedCalendar() {
     event.stopPropagation(); // 이벤트 버블링 방지
     
     // student-view/teacher-view 모드에서는 세션 클릭 시 모달 열기
-    if (mode === 'student-view' || mode === 'teacher-view') {
+    if (calendarMode === 'student-view' || calendarMode === 'teacher-view') {
       // 해당 날짜의 모든 세션을 모달에 전달하기 위해 날짜 클릭 핸들러 호출
       const dateString = session.date;
       onDateClick(dateString);
@@ -346,7 +350,7 @@ export function ConnectedCalendar() {
       >
         <div className="flex flex-col w-full text-base pb-4">
           {Array.from({ length: Math.ceil(continuousCalendarDays.length / 7) }).map((_, weekIndex) => (
-            <div key={weekIndex} className="flex justify-around px-2.5 mt-2">
+            <div key={weekIndex} className="flex justify-around px-2.5 mt-1">
               {continuousCalendarDays
                 .slice(weekIndex * 7, (weekIndex + 1) * 7)
                 .map((dayInfo, dayIndex) => {
@@ -365,7 +369,7 @@ export function ConnectedCalendar() {
                   );
 
                   // modification 모드에서 취소될 예정인 세션 확인 (기존에 신청되었지만 현재 선택되지 않은 경우)
-                  const willBeCancelled = mode === 'modification' && dayInfo.sessions.some((session: ClassSession) => {
+                  const willBeCancelled = calendarMode === 'modification' && dayInfo.sessions.some((session: ClassSession) => {
                     if ('canBeCancelled' in session && session.canBeCancelled) {
                       // 기존에 신청된 세션이지만 현재 선택되지 않은 경우
                       return !selectedSessionIds.has(session.id);
@@ -387,7 +391,9 @@ export function ConnectedCalendar() {
                               className={`w-10 h-10 flex items-center justify-center rounded-full border-2 transition-colors duration-150
                                 ${willBeCancelled ? 'bg-white border-red-500 text-red-500' :
                                   isSelected ? 'bg-[#573B30] border-[#573B30] text-white' : 
-                                  'border-[#AC9592] bg-white text-black hover:bg-[#E5D6D1]'}
+                                  isCurrentFocusedMonth 
+                                    ? 'border-[#AC9592] bg-white text-black hover:bg-[#E5D6D1]'
+                                    : 'border-gray-300 bg-white text-gray-400 hover:bg-gray-200'}
                               `}
                               onClick={() => handleDateClick(dayInfo)}
                             >
@@ -395,12 +401,16 @@ export function ConnectedCalendar() {
                             </button>
                           ) : hasSessions ? (
                             // student-view/teacher-view 모드에서는 클릭 가능한 버튼으로 표시 (채워지지 않은 원)
-                            mode === 'student-view' || mode === 'teacher-view' ? (
-                              <button
-                                type="button"
-                                className="w-10 h-10 flex items-center justify-center rounded-full border-2 border-[#573B30] text-[#573B30] text-base font-medium hover:bg-[#573B30] hover:text-white transition-all duration-150 cursor-pointer"
-                                onClick={() => handleDateClick(dayInfo)}
-                              >
+                            calendarMode === 'student-view' || calendarMode === 'teacher-view' ? (
+                                                          <button
+                              type="button"
+                              className={`w-10 h-10 flex items-center justify-center rounded-full border-2 text-base font-medium transition-all duration-150 cursor-pointer ${
+                                isCurrentFocusedMonth 
+                                  ? 'border-[#573B30] text-[#573B30] hover:bg-[#573B30] hover:text-white' 
+                                  : 'border-gray-300 text-gray-400 hover:bg-gray-300 hover:text-white'
+                              }`}
+                              onClick={() => handleDateClick(dayInfo)}
+                            >
                                 {dayInfo.day}
                               </button>
                             ) : (
@@ -425,9 +435,9 @@ export function ConnectedCalendar() {
                         )}
                       </div>
                       
-                      {/* 클래스명 - 기존 캘린더와 동일한 디자인 */}
+                      {/* 클래스명 - teacher-view에서는 표시하지 않음, 나머지는 기존 방식 */}
                       <div className="min-h-5 flex flex-col items-center justify-center">
-                        {dayInfo.sessions.map(session => {
+                        {String(calendarMode) !== 'teacher-view' && dayInfo.sessions.map(session => {
                           const displayInfo = getSessionDisplayInfo(session);
                           const unavailable = !displayInfo.isSelectable;
                           const title = displayInfo.displayText;
@@ -438,7 +448,7 @@ export function ConnectedCalendar() {
                               className={`w-16 h-5 rounded text-xs text-center font-bold -mt-2 flex items-center justify-center ${
                                 unavailable ? 'opacity-50' : ''
                               } ${
-                                mode === 'student-view' || mode === 'teacher-view' ? 'cursor-pointer hover:opacity-80' : 'cursor-pointer'
+                                calendarMode === 'student-view' ? 'cursor-pointer hover:opacity-80' : 'cursor-pointer'
                               }`}
                               style={{ 
                                 backgroundColor: unavailable 

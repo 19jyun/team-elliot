@@ -102,12 +102,13 @@ export function RefundRequestStep({ refundAmount, cancelledSessionsCount, onComp
       const existingEnrollments = JSON.parse(existingEnrollmentsData);
       const selectedSessions = JSON.parse(selectedSessionsData);
 
-      // 기존에 신청된 세션들 (CONFIRMED 또는 PENDING 상태)
+      // 기존에 신청된 세션들 (CONFIRMED, PENDING, REFUND_REJECTED_CONFIRMED 상태)
       const originalEnrolledSessions = existingEnrollments.filter(
         (enrollment: any) =>
           enrollment.enrollment &&
           (enrollment.enrollment.status === "CONFIRMED" ||
-            enrollment.enrollment.status === "PENDING")
+            enrollment.enrollment.status === "PENDING" ||
+            enrollment.enrollment.status === "REFUND_REJECTED_CONFIRMED")
       );
 
       // 기존 신청 세션의 날짜들

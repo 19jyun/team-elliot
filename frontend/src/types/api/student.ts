@@ -12,6 +12,10 @@ export interface StudentClass {
 export interface MyClassesResponse {
   enrollmentClasses: StudentClass[];
   sessionClasses: StudentClass[];
+  calendarRange?: {
+    startDate: string;
+    endDate: string;
+  };
 }
 export interface ClassDetailResponse extends StudentClass {}
 export interface EnrollClassResponse {

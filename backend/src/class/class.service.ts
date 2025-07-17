@@ -680,7 +680,8 @@ export class ClassService {
         const isAlreadyEnrolled =
           studentEnrollment &&
           (studentEnrollment.status === 'CONFIRMED' ||
-            studentEnrollment.status === 'PENDING');
+            studentEnrollment.status === 'PENDING' ||
+            studentEnrollment.status === 'REFUND_REJECTED_CONFIRMED');
         const isEnrollable = !isPastStartTime && !isFull && !isAlreadyEnrolled;
 
         return {

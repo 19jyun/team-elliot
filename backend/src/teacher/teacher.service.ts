@@ -235,6 +235,48 @@ export class TeacherService {
       throw new NotFoundException('선생님을 찾을 수 없습니다.');
     }
 
+    // 캘린더 범위 계산 (선생님이 담당하는 클래스들의 startDate/endDate 기준)
+    const allSessions = teacher.classes.flatMap(
+      (class_) => class_.classSessions,
+    );
+    let calendarRange = null;
+
+    if (allSessions.length > 0) {
+      const sessionDates = allSessions.map((session) => session.date);
+      const earliestDate = new Date(
+        Math.min(...sessionDates.map((d) => d.getTime())),
+      );
+      const latestDate = new Date(
+        Math.max(...sessionDates.map((d) => d.getTime())),
+      );
+
+      // 시작일을 해당 월의 1일로, 종료일을 해당 월의 마지막 날로 설정
+      const rangeStartDate = new Date(
+        earliestDate.getFullYear(),
+        earliestDate.getMonth(),
+        1,
+      );
+      const rangeEndDate = new Date(
+        latestDate.getFullYear(),
+        latestDate.getMonth() + 1,
+        0,
+      );
+
+      // 최소 3개월 범위 보장
+      const minEndDate = new Date(
+        rangeStartDate.getFullYear(),
+        rangeStartDate.getMonth() + 2,
+        0,
+      );
+      const finalEndDate =
+        rangeEndDate > minEndDate ? rangeEndDate : minEndDate;
+
+      calendarRange = {
+        startDate: rangeStartDate,
+        endDate: finalEndDate,
+      };
+    }
+
     // 클래스와 세션 정보를 분리하여 반환
     const classes = teacher.classes.map((class_) => ({
       id: class_.id,
@@ -279,6 +321,7 @@ export class TeacherService {
     return {
       classes,
       sessions,
+      calendarRange,
     };
   }
 
