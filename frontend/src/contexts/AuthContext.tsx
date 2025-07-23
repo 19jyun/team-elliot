@@ -40,6 +40,12 @@ interface AuthContextType {
   authMode: AuthMode;
   setAuthMode: (mode: AuthMode) => void;
   
+  // 서브페이지 관리 (대시보드와 유사한 구조)
+  authSubPage: string | null;
+  navigateToAuthSubPage: (page: string) => void;
+  goBackFromAuth: () => void;
+  clearAuthSubPage: () => void;
+  
   // 회원가입 관련
   signup: SignupState;
   setSignupStep: (step: SignupStep) => void;
@@ -59,6 +65,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [authMode, setAuthMode] = useState<AuthMode>('login');
+  const [authSubPage, setAuthSubPage] = useState<string | null>(null);
   const [signup, setSignup] = useState<SignupState>({
     currentStep: 'role-selection',
     role: null,
@@ -80,6 +87,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       resetLogin();
     }
+  }, []);
+
+  // 서브페이지 네비게이션
+  const navigateToAuthSubPage = useCallback((page: string) => {
+    setAuthSubPage(page);
+  }, []);
+
+  // 뒤로가기
+  const goBackFromAuth = useCallback(() => {
+    // 현재 서브페이지에 따라 이전 단계로 이동
+    switch (authSubPage) {
+      case 'signup-terms':
+        // 약관 동의 → 계정 정보
+        setAuthSubPage('signup-account');
+        break;
+      case 'signup-account':
+        // 계정 정보 → 개인정보
+        setAuthSubPage('signup-personal');
+        break;
+      case 'signup-personal':
+        // 개인정보 → 역할 선택
+        setAuthSubPage('signup-role');
+        break;
+      case 'signup-role':
+        // 역할 선택 → 로그인 페이지
+        setAuthSubPage(null);
+        break;
+      default:
+        // 기본적으로 로그인 페이지로
+        setAuthSubPage(null);
+        break;
+    }
+  }, [authSubPage]);
+
+  // 서브페이지 초기화
+  const clearAuthSubPage = useCallback(() => {
+    setAuthSubPage(null);
   }, []);
 
   // 회원가입 관련 메서드들
@@ -126,6 +170,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{
       authMode,
       setAuthMode: handleSetAuthMode,
+      authSubPage,
+      navigateToAuthSubPage,
+      goBackFromAuth,
+      clearAuthSubPage,
       signup,
       setSignupStep,
       setRole,

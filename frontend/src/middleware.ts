@@ -8,7 +8,7 @@ export function middleware(request: NextRequest) {
   const protectedPaths = ["/dashboard", "/profile", "/enrollment"];
 
   // 인증이 필요하지 않은 경로들
-  const publicPaths = ["/login", "/signup", "/api"];
+  const publicPaths = ["/auth", "/api"];
 
   // 현재 경로가 보호된 경로인지 확인
   const isProtectedPath = protectedPaths.some((path) =>
@@ -25,11 +25,11 @@ export function middleware(request: NextRequest) {
 
   // 보호된 경로에 접근하려고 하는데 토큰이 없는 경우
   if (isProtectedPath && !token) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL("/auth", request.url));
   }
 
-  // 이미 로그인된 사용자가 로그인/회원가입 페이지에 접근하려는 경우
-  if (token && (pathname === "/login" || pathname === "/signup")) {
+  // 이미 로그인된 사용자가 인증 페이지에 접근하려는 경우
+  if (token && pathname === "/auth") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 

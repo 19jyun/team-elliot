@@ -38,7 +38,7 @@ axiosInstance.interceptors.response.use(
     ) {
       // 세션 만료 또는 권한 없음 (무시할 엔드포인트 제외)
       await signOut({ redirect: false });
-      window.location.href = "/login";
+      window.location.href = "/auth";
     }
     return Promise.reject(error);
   }

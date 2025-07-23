@@ -20,7 +20,7 @@ export default function ClassesManagementPage() {
   const { data: session, status } = useSession({
     required: true,
     onUnauthenticated() {
-      router.push('/login')
+      router.push('/auth')
     },
   })
 

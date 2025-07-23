@@ -29,7 +29,7 @@ export default function StudentDashboard() {
   const { data: session, status } = useSession({
     required: true,
     onUnauthenticated() {
-      router.push('/login')
+      router.push('/auth')
     },
   })
 
@@ -115,7 +115,7 @@ export default function StudentDashboard() {
   // 에러 처리
   if (error) {
     if ((error as any)?.response?.status === 401) {
-      signOut({ redirect: true, callbackUrl: '/login' });
+              signOut({ redirect: true, callbackUrl: '/auth' });
       return null;
     }
     

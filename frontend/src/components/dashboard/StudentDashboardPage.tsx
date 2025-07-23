@@ -92,7 +92,7 @@ export function StudentDashboardPage() {
 
   useEffect(() => {
     if (status !== 'loading' && !session?.user) {
-      router.push('/login');
+              router.push('/auth');
     }
   }, [session, status, router]);
 

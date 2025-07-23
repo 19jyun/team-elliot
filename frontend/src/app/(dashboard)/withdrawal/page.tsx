@@ -34,7 +34,7 @@ export default function WithdrawalPage() {
   const { data: session } = useSession({
     required: true,
     onUnauthenticated() {
-      router.push('/login')
+      router.push('/auth')
     },
   })
   const [selectedReason, setSelectedReason] = useState<number | null>(null)
@@ -75,7 +75,7 @@ export default function WithdrawalPage() {
 
       await signOut({ redirect: false })
       toast.success('회원 탈퇴가 완료되었습니다')
-      router.push('/login')
+      router.push('/auth')
     } catch (error) {
       if (axios.isAxiosError(error)) {
         toast.error(

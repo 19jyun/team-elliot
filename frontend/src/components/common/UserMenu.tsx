@@ -12,7 +12,7 @@ export function UserMenu() {
 
   const handleSignOut = async () => {
     await signOut({ redirect: false })
-    router.push('/login')
+          router.push('/auth')
   }
 
   return (
