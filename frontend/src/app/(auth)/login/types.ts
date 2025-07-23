@@ -1,24 +1,18 @@
-export interface InputFieldProps {
-  label: string
-  icon?: string
-  type?: string
-  id: string
-  value?: string
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
-  required?: boolean
-  onIconClick?: () => void
-  showPassword?: boolean
-  error?: boolean
-  errorMessage?: string
+export interface LoginFormData {
+  userId: string;
+  password: string;
 }
 
-export interface ButtonProps {
-  children: React.ReactNode
-  disabled?: boolean
-  onClick?: () => void
+export interface LoginResponse {
+  access_token: string;
+  user: {
+    id: number;
+    userId: string;
+    name: string;
+    role: string;
+  };
 }
 
-export interface StatusBarIconProps {
-  src: string
-  alt: string
+export interface LoginError {
+  message: string;
 }

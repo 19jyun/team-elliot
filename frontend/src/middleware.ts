@@ -1,31 +1,36 @@
 import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
-import { NextRequestWithAuth } from "next-auth/middleware";
+import type { NextRequest } from "next/server";
 
-export default async function middleware(req: NextRequestWithAuth) {
-  const token = await getToken({ req });
-  const path = req.nextUrl.pathname;
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
 
-  console.log("Middleware - Current path:", path);
-  console.log("Middleware - Token:", token);
+  // 인증이 필요한 경로들
+  const protectedPaths = ["/dashboard", "/profile", "/enrollment"];
 
-  // 로그인이 필요한 페이지에 대한 체크
-  if (!token && path !== "/login" && !path.startsWith("/signup")) {
-    return NextResponse.redirect(new URL("/login", req.url));
+  // 인증이 필요하지 않은 경로들
+  const publicPaths = ["/login", "/signup", "/api"];
+
+  // 현재 경로가 보호된 경로인지 확인
+  const isProtectedPath = protectedPaths.some((path) =>
+    pathname.startsWith(path)
+  );
+
+  // 현재 경로가 공개 경로인지 확인
+  const isPublicPath = publicPaths.some((path) => pathname.startsWith(path));
+
+  // 토큰 확인
+  const token =
+    request.cookies.get("next-auth.session-token")?.value ||
+    request.cookies.get("__Secure-next-auth.session-token")?.value;
+
+  // 보호된 경로에 접근하려고 하는데 토큰이 없는 경우
+  if (isProtectedPath && !token) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // 이미 로그인한 사용자의 접근 제한
-  if (
-    token &&
-    (path === "/" || path === "/login" || path.startsWith("/signup"))
-  ) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
-  }
-
-  // 권한별 접근 제어 - 모든 사용자가 /dashboard에 접근 가능
-  if (token && path.startsWith("/dashboard/")) {
-    // 역할별 하위 경로 접근 제어는 제거하고 모든 사용자가 /dashboard에 접근 가능
-    return NextResponse.next();
+  // 이미 로그인된 사용자가 로그인/회원가입 페이지에 접근하려는 경우
+  if (token && (pathname === "/login" || pathname === "/signup")) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   return NextResponse.next();
@@ -39,8 +44,7 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - images (public images folder)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|images).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico).*)",
   ],
 };

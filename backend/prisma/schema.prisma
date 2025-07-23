@@ -34,6 +34,13 @@ enum RejectionType {
   SESSION_ENROLLMENT_REJECTION // 세션 수강 신청 거절
 }
 
+// 학원 요청 상태 enum
+enum AcademyRequestStatus {
+  PENDING   // 대기중
+  APPROVED  // 승인됨
+  REJECTED  // 거절됨
+}
+
 // 학원 모델
 model Academy {
   id          Int      @id @default(autoincrement())
@@ -49,6 +56,7 @@ model Academy {
   classes     Class[] // 소속 수업들
   students    StudentAcademy[] // 가입한 학생들
   admin       Teacher? @relation("AcademyAdmin", fields: [adminId], references: [id])
+  joinRequests AcademyJoinRequest[] // 학원 가입 신청들
 
   @@map("academies")
 }
@@ -128,6 +136,8 @@ model Teacher {
   updatedAt         DateTime      @updatedAt
   academy           Academy?      @relation(fields: [academyId], references: [id])
   managedAcademy    Academy?      @relation("AcademyAdmin") // 관리하는 학원 (1:1 관계)
+  joinRequests      AcademyJoinRequest[] // 학원 가입 신청들
+  creationRequests  AcademyCreationRequest[] // 학원 생성 신청들
 
   @@map("teachers")
 }
@@ -373,4 +383,42 @@ model RejectionDetail {
   @@index([rejectedBy, rejectedAt])
   @@index([entityType, entityId])
   @@map("rejection_details")
+}
+
+// 학원 가입 신청 모델
+model AcademyJoinRequest {
+  id        Int                 @id @default(autoincrement())
+  teacherId Int                 @map("teacher_id")
+  academyId Int                 @map("academy_id")
+  status    AcademyRequestStatus @default(PENDING)
+  message   String?             @db.Text // 신청 메시지
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  
+  teacher   Teacher             @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  academy   Academy             @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  
+  @@unique([teacherId, academyId])
+  @@index([academyId, status])
+  @@index([teacherId, status])
+  @@map("academy_join_requests")
+}
+
+// 학원 생성 신청 모델
+model AcademyCreationRequest {
+  id          Int                 @id @default(autoincrement())
+  teacherId   Int                 @map("teacher_id")
+  name        String              @db.VarChar(100) // 학원 이름
+  phoneNumber String              @map("phone_number") @db.VarChar(20) // 학원 연락처
+  address     String              @db.Text // 학원 주소
+  description String              @db.Text // 학원 설명
+  status      AcademyRequestStatus @default(PENDING)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  
+  teacher     Teacher             @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  
+  @@index([teacherId, status])
+  @@index([status, createdAt])
+  @@map("academy_creation_requests")
 }

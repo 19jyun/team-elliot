@@ -1,54 +1,50 @@
 'use client';
 
-import * as React from 'react'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { toast } from 'sonner'
-import { StatusBar } from '@/components/ui/StatusBar'
-import { InputField } from '@/components/auth/InputField'
-import { Button } from '@/components/auth/Button'
+import React from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { InputField } from '@/components/auth/InputField';
+import { Button } from '@/components/auth/Button';
+import { StatusBar } from '@/components/ui/StatusBar';
 
-export default function LoginPage() {
-  const router = useRouter()
-  const [formData, setFormData] = useState({
-    userId: '',
-    password: '',
-  })
-  const [isLoading, setIsLoading] = useState(false)
+export function LoginForm() {
+  const { login, setLoginInfo, setAuthMode } = useAuth();
+  const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    if (!formData.userId || !formData.password) {
-      toast.error('아이디와 비밀번호를 입력해주세요')
-      return
+    if (!login.userId || !login.password) {
+      toast.error('아이디와 비밀번호를 입력해주세요');
+      return;
     }
 
-    setIsLoading(true)
-
     try {
+      // 로그인 API 호출
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      })
+        body: JSON.stringify(login),
+      });
 
       if (response.ok) {
-        toast.success('로그인되었습니다')
-        router.push('/dashboard')
+        const data = await response.json();
+        // 로그인 성공 처리
+        toast.success('로그인되었습니다');
+        router.push('/dashboard');
       } else {
-        const error = await response.json()
-        toast.error(error.message || '로그인에 실패했습니다')
+        const error = await response.json();
+        toast.error(error.message || '로그인에 실패했습니다');
       }
     } catch (error) {
-      toast.error('로그인 중 오류가 발생했습니다')
-    } finally {
-      setIsLoading(false)
+      toast.error('로그인 중 오류가 발생했습니다');
     }
-  }
+  };
 
   return (
-    <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px]">
+    <div className="flex flex-col w-full">
+      {/* StatusBar */}
       <StatusBar 
         time="9:41"
         icons={[
@@ -59,6 +55,7 @@ export default function LoginPage() {
         logoSrc="/icons/logo.svg"
       />
 
+      {/* 뒤로가기 버튼 */}
       <div className="flex gap-2.5 items-center px-2.5 py-2">
         <div className="flex gap-2.5 items-center self-stretch p-2.5 my-auto w-11">
           <img
@@ -70,7 +67,9 @@ export default function LoginPage() {
         </div>
       </div>
 
+      {/* 메인 컨텐츠 */}
       <div className="flex flex-col px-5 w-full">
+        {/* 로고 */}
         <img
           loading="lazy"
           src="https://cdn.builder.io/api/v1/image/assets/TEMP/97130cde9aeee244b068f8f7ae85c80577a223db166a059a272277cf5c389cd?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f"
@@ -82,30 +81,30 @@ export default function LoginPage() {
           로그인
         </h1>
 
-        <form onSubmit={handleSubmit} className="flex flex-col mt-5 w-full">
+        <form onSubmit={handleLogin} className="flex flex-col mt-5 w-full">
           <InputField
             label="아이디"
-            value={formData.userId}
-            onChange={(value: string) => setFormData({ ...formData, userId: value })}
+            value={login.userId}
+            onChange={(value: string) => setLoginInfo({ ...login, userId: value })}
             placeholder="아이디를 입력하세요"
           />
           
           <InputField
             label="비밀번호"
             type="password"
-            value={formData.password}
-            onChange={(value: string) => setFormData({ ...formData, password: value })}
+            value={login.password}
+            onChange={(value: string) => setLoginInfo({ ...login, password: value })}
             placeholder="비밀번호를 입력하세요"
           />
 
-          <Button type="submit" className="mt-6" disabled={isLoading}>
-            {isLoading ? '로그인 중...' : '로그인'}
+          <Button type="submit" className="mt-6">
+            로그인
           </Button>
         </form>
 
         <div className="flex justify-center mt-6">
           <button
-            onClick={() => router.push('/signup')}
+            onClick={() => setAuthMode('signup')}
             className="text-blue-600 hover:text-blue-800"
           >
             회원가입하기
@@ -113,5 +112,5 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
-  )
+  );
 } 

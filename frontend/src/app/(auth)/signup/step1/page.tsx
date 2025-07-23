@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import * as React from 'react'
 import { useState, useEffect } from 'react'
@@ -29,7 +29,9 @@ export default function SignupPage() {
   })
 
   useEffect(() => {
-    const savedData = JSON.parse(sessionStorage.getItem('signupData') || '{}')
+    const savedData = JSON.parse(
+      sessionStorage.getItem('signupData') || '{}',
+    )
     if (savedData.name || savedData.phoneNumber) {
       setFormData({
         name: savedData.name || '',
@@ -105,92 +107,50 @@ export default function SignupPage() {
             />
           </svg>
         </button>
+        <div className="flex gap-1 w-20">
+          <ProgressBarItem isActive={currentStep >= 1} />
+          <ProgressBarItem isActive={currentStep >= 2} />
+          <ProgressBarItem isActive={currentStep >= 3} />
+        </div>
+        <div className="w-10"></div>
       </div>
 
-      <form
-        className="flex flex-col px-5 mt-8 w-full"
-        onSubmit={(e) => e.preventDefault()}
-      >
+      <div className="flex flex-col px-5 w-full">
         <Image
-          src="/images/logo/team-eliot-1.png"
-          alt="Team Eliot Logo"
+          src="/images/logo/team-eliot-3.png"
+          alt="Logo"
           width={220}
           height={49}
-          priority
-          className="object-contain max-w-full w-[220px]"
+          className="object-contain max-w-full aspect-[4.48] w-[220px] mx-auto"
         />
 
-        <div className="flex flex-col self-center mt-6 w-full">
-          <div className="flex gap-2 items-center w-full">
-            {[1, 2, 3].map((step) => (
-              <ProgressBarItem key={step} isActive={step === currentStep} />
-            ))}
-          </div>
-          <div className="flex gap-10 justify-between items-start mt-2 w-full text-sm font-medium text-stone-700">
-            <div>회원가입까지 {4 - currentStep}단계 남았어요!</div>
-            <div className="flex items-center whitespace-nowrap">
-              <span>{currentStep}/3</span>
-            </div>
-          </div>
+        <h1 className="self-start mt-6 text-xl font-medium leading-tight text-stone-700">
+          기본 정보를 입력해주세요
+        </h1>
+
+        <div className="flex flex-col mt-5 w-full gap-4">
+          <InputField
+            label="이름"
+            value={formData.name}
+            onChange={(value: string) => setFormData({ ...formData, name: value })}
+            placeholder="이름을 입력하세요"
+          />
+          
+          <InputField
+            label="전화번호"
+            value={formData.phoneNumber}
+            onChange={(value: string) => setFormData({ ...formData, phoneNumber: value })}
+            placeholder="전화번호를 입력하세요"
+          />
         </div>
 
-        <div className="self-start mt-6 text-xl font-medium leading-tight text-stone-700">
-          이름과 전화번호를 입력해주세요
-        </div>
-
-        <div className="flex flex-col mt-16 w-full whitespace-nowrap">
-          <div className="flex flex-col w-full">
-            <InputField
-              label="이름"
-              id="name"
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              required
-              error={!!errors.name}
-              errorMessage={errors.name}
-            />
-
-            <div className="flex gap-2.5 items-start mt-3 w-full text-base">
-              <InputField
-                label="전화번호"
-                id="phoneNumber"
-                type="tel"
-                value={formData.phoneNumber}
-                onChange={(e) => {
-                  const onlyNumbers = e.target.value.replace(/[^0-9]/g, '')
-                  setFormData({ ...formData, phoneNumber: onlyNumbers })
-                }}
-                required
-                error={!!errors.phoneNumber}
-                errorMessage={errors.phoneNumber}
-              />
-              <button
-                type="button"
-                onClick={handleSendVerification}
-                className="gap-2.5 self-stretch p-4 font-semibold text-white rounded-lg bg-stone-400 hover:bg-stone-500"
-              >
-                인증
-              </button>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleNextStep}
-              className={cn(
-                'mt-6 w-full h-11 px-8 inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                verificationSent
-                  ? 'bg-primary text-white hover:bg-primary/90'
-                  : 'bg-stone-300 text-white cursor-not-allowed',
-              )}
-              disabled={!verificationSent}
-            >
-              다음으로
-            </button>
-          </div>
-        </div>
-      </form>
+        <button
+          onClick={handleNextStep}
+          className="mt-6 w-full py-4 text-base font-semibold text-white bg-stone-700 rounded-lg hover:bg-stone-800 transition-colors"
+        >
+          다음
+        </button>
+      </div>
     </div>
   )
-}
+} 
