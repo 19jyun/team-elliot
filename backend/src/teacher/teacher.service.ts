@@ -64,8 +64,13 @@ export class TeacherService {
       certifications: teacher.certifications,
       yearsOfExperience: teacher.yearsOfExperience,
       availableTimes: teacher.availableTimes,
-      academyId: teacher.academy.id,
-      academyName: teacher.academy.name,
+      academyId: teacher.academy?.id || null,
+      academy: teacher.academy
+        ? {
+            id: teacher.academy.id,
+            name: teacher.academy.name,
+          }
+        : null,
       createdAt: teacher.createdAt,
       updatedAt: teacher.updatedAt,
     };
@@ -139,8 +144,13 @@ export class TeacherService {
       certifications: updatedTeacher.certifications,
       yearsOfExperience: updatedTeacher.yearsOfExperience,
       availableTimes: updatedTeacher.availableTimes,
-      academyId: updatedTeacher.academy.id,
-      academyName: updatedTeacher.academy.name,
+      academyId: updatedTeacher.academy?.id || null,
+      academy: updatedTeacher.academy
+        ? {
+            id: updatedTeacher.academy.id,
+            name: updatedTeacher.academy.name,
+          }
+        : null,
       createdAt: updatedTeacher.createdAt,
       updatedAt: updatedTeacher.updatedAt,
     };

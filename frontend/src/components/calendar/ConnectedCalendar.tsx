@@ -409,6 +409,9 @@ export function ConnectedCalendar() {
                                   ? 'border-[#573B30] text-[#573B30] hover:bg-[#573B30] hover:text-white' 
                                   : 'border-gray-300 text-gray-400 hover:bg-gray-300 hover:text-white'
                               }`}
+                              style={{
+                                opacity: isCurrentFocusedMonth ? 1 : 0.2, // focused month가 아닌 경우 투명도 적용
+                              }}
                               onClick={() => handleDateClick(dayInfo)}
                             >
                                 {dayInfo.day}
@@ -421,15 +424,21 @@ export function ConnectedCalendar() {
                             )
                           ) : (
                             // 세션이 없는 날짜: focused month에 따라 색상 변경
-                            <span className={`w-10 h-10 flex items-center justify-center text-base font-medium transition-colors duration-300 ${
+                            <span className={`w-10 h-10 flex items-center justify-center text-base font-medium transition-all duration-300 ${
                               isCurrentFocusedMonth ? 'text-black' : 'text-gray-400'
-                            }`}>
+                            }`}
+                            style={{
+                              opacity: isCurrentFocusedMonth ? 1 : 0.2, // focused month가 아닌 경우 투명도 적용
+                            }}>
                               {dayInfo.day}
                             </span>
                           )
                         ) : (
                           // 범위 밖의 날짜: 회색으로 표시
-                          <span className="w-10 h-10 flex items-center justify-center text-base font-medium text-gray-300 transition-colors duration-300">
+                          <span className="w-10 h-10 flex items-center justify-center text-base font-medium text-gray-300 transition-all duration-300"
+                          style={{
+                            opacity: 0.2, // 범위 밖 날짜는 더 투명하게
+                          }}>
                             {dayInfo.day}
                           </span>
                         )}
@@ -446,7 +455,7 @@ export function ConnectedCalendar() {
                             <div 
                               key={session.id} 
                               className={`w-16 h-5 rounded text-xs text-center font-bold -mt-2 flex items-center justify-center ${
-                                unavailable ? 'opacity-50' : ''
+                                unavailable ? 'opacity-20' : ''
                               } ${
                                 calendarMode === 'student-view' ? 'cursor-pointer hover:opacity-80' : 'cursor-pointer'
                               }`}
@@ -459,7 +468,7 @@ export function ConnectedCalendar() {
                                   : levelTextColor[session.class?.level || ''] || '#573B30',
                                 border: 'none',
                                 fontFamily: 'Pretendard Variable',
-                                opacity: isCurrentFocusedMonth ? 1 : 0.5, // focused month가 아닌 경우 투명도 적용
+                                opacity: isCurrentFocusedMonth ? 1 : 0.2, // focused month가 아닌 경우 투명도 적용 (더 낮게 조정)
                                 transition: 'opacity 0.3s ease-in-out', // transition 추가
                               }}
                               title={title}

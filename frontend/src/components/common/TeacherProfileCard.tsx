@@ -93,8 +93,6 @@ export function TeacherProfileCard({
     if (!profile) return;
     
     setFormData({
-      name: profile.name,
-      phoneNumber: profile.phoneNumber,
       introduction: profile.introduction,
       yearsOfExperience: profile.yearsOfExperience,
     });
@@ -301,25 +299,12 @@ export function TeacherProfileCard({
           </Avatar>
           
           <div className="flex-1 space-y-3">
-            {isEditing ? (
-              <>
-                <Input
-                  value={formData.name || ''}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="이름"
-                  className="text-lg font-semibold"
-                />
-                <Input
-                  value={formData.phoneNumber || ''}
-                  onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                  placeholder="전화번호"
-                />
-              </>
-            ) : (
-              <>
-                <h3 className="text-lg font-semibold">{profile.name}</h3>
-                <p className="text-gray-600">{profile.phoneNumber}</p>
-              </>
+            <h3 className="text-lg font-semibold">{profile.name}</h3>
+            <p className="text-gray-600">{profile.phoneNumber}</p>
+            {isEditing && (
+              <div className="text-xs text-gray-500 space-y-1">
+                <p>• 이름 및 전화번호는 개인정보 관리 페이지에서 수정하실 수 있습니다.</p>
+              </div>
             )}
           </div>
         </div>

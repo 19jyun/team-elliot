@@ -154,6 +154,13 @@ export function SignupPersonalPage() {
     phoneNumber: '',
   })
 
+  // 전화번호 인증 관련 상태
+  const [isPhoneVerificationRequired, setIsPhoneVerificationRequired] = useState(false);
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [timeLeft, setTimeLeft] = useState(180); // 3분 = 180초
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+
   useEffect(() => {
     const savedData = JSON.parse(sessionStorage.getItem('signupData') || '{}')
     if (savedData.name || savedData.phoneNumber) {
@@ -163,6 +170,66 @@ export function SignupPersonalPage() {
       })
     }
   }, [])
+
+  // 타이머 효과
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (isTimerRunning && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            setIsTimerRunning(false);
+            setIsPhoneVerificationRequired(false);
+            setIsPhoneVerified(false);
+            setVerificationSent(false);
+            return 180;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isTimerRunning, timeLeft]);
+
+  // 전화번호 포맷팅 함수
+  const formatPhoneNumber = (input: string) => {
+    const numbers = input.replace(/[^\d]/g, '');
+    const limited = numbers.slice(0, 11);
+    
+    if (limited.length <= 3) {
+      return limited;
+    } else if (limited.length <= 7) {
+      return `${limited.slice(0, 3)}-${limited.slice(3)}`;
+    } else {
+      return `${limited.slice(0, 3)}-${limited.slice(3, 7)}-${limited.slice(7)}`;
+    }
+  };
+
+  // 전화번호 변경 감지
+  useEffect(() => {
+    const cleanPhoneNumber = formData.phoneNumber.replace(/-/g, '');
+    const phoneRegex = /^01[0|1|6|7|8|9][0-9]{7,8}$/;
+    
+    if (phoneRegex.test(cleanPhoneNumber)) {
+      setIsPhoneVerificationRequired(true);
+      setIsPhoneVerified(false);
+      setTimeLeft(180);
+      setIsTimerRunning(false);
+    } else {
+      setIsPhoneVerificationRequired(false);
+      setIsPhoneVerified(false);
+      setIsTimerRunning(false);
+      setTimeLeft(180);
+      setVerificationCode('');
+      setVerificationSent(false);
+    }
+  }, [formData.phoneNumber]);
 
   const handleSendVerification = async () => {
     const cleanPhoneNumber = formData.phoneNumber.replace(/-/g, '')
@@ -176,20 +243,97 @@ export function SignupPersonalPage() {
       return
     }
 
-    toast.info('현재 SMS 인증을 지원하지 않습니다. 다음 단계로 진행해 주세요.')
-    setVerificationSent(true)
+    // 인증번호 발송 로직 (실제 API 호출)
+    try {
+      const response = await fetch('/api/auth/send-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phoneNumber: cleanPhoneNumber,
+        }),
+      });
+
+      if (response.ok) {
+        setIsTimerRunning(true);
+        setTimeLeft(180);
+        setVerificationSent(true);
+        toast.success('인증번호가 발송되었습니다.');
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.message || '인증번호 발송에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('인증번호 발송 실패:', error);
+      toast.error('인증번호 발송에 실패했습니다.');
+    }
   }
+
+  const handleVerifyCode = async () => {
+    if (verificationCode.length !== 6) {
+      toast.error('인증번호 6자리를 입력해주세요.');
+      return;
+    }
+
+    try {
+      const cleanPhoneNumber = formData.phoneNumber.replace(/-/g, '');
+      const response = await fetch('/api/auth/verify-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phoneNumber: cleanPhoneNumber,
+          code: verificationCode,
+        }),
+      });
+
+      if (response.ok) {
+        setIsPhoneVerified(true);
+        setIsTimerRunning(false);
+        setVerificationCode('');
+        toast.success('전화번호 인증이 완료되었습니다.');
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.message || '인증에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('인증 실패:', error);
+      toast.error('인증에 실패했습니다.');
+    }
+  }
+
+  const handleClearVerificationCode = () => {
+    setVerificationCode('');
+  }
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
 
   const handleNextStep = () => {
     if (!formData.name || !formData.phoneNumber) {
       toast.error('이름과 전화번호를 입력해주세요')
       return
     }
+
+    if (isPhoneVerificationRequired && !isPhoneVerified) {
+      toast.error('전화번호 인증을 완료해주세요.')
+      return
+    }
+
+    // 세션 스토리지에서 기존 데이터 가져오기
+    const existingData = JSON.parse(sessionStorage.getItem('signupData') || '{}')
+    
     sessionStorage.setItem(
       'signupData',
       JSON.stringify({
+        ...existingData,
         name: formData.name,
-        phoneNumber: formData.phoneNumber,
+        phoneNumber: formData.phoneNumber, // 숫자만 저장 (하이픈 제거)
       }),
     )
     navigateToAuthSubPage('signup-account')
@@ -243,7 +387,7 @@ export function SignupPersonalPage() {
               label="전화번호"
               id="phoneNumber"
               type="tel"
-              value={formData.phoneNumber}
+              value={formatPhoneNumber(formData.phoneNumber)}
               onChange={(e) => {
                 const onlyNumbers = e.target.value.replace(/[^0-9]/g, '')
                 setFormData({ ...formData, phoneNumber: onlyNumbers })
@@ -255,22 +399,100 @@ export function SignupPersonalPage() {
             <button
               type="button"
               onClick={handleSendVerification}
-              className="gap-2.5 self-stretch p-4 font-semibold text-white rounded-lg bg-stone-400 hover:bg-stone-500"
+              disabled={!isPhoneVerificationRequired || isTimerRunning}
+              className={cn(
+                "gap-2.5 self-stretch p-4 font-semibold text-white rounded-lg transition-colors",
+                isPhoneVerificationRequired && !isTimerRunning
+                  ? "bg-stone-400 hover:bg-stone-500"
+                  : "bg-stone-300 cursor-not-allowed"
+              )}
             >
               인증
             </button>
           </div>
+
+          {/* 인증번호 입력 필드 */}
+          {isPhoneVerificationRequired && isTimerRunning && !isPhoneVerified && (
+            <div className="flex gap-2.5 items-start mt-3 w-full text-base">
+              <div className="flex-1">
+                <div className="flex justify-between items-center p-4 w-full bg-white rounded-lg border border-solid border-zinc-300">
+                  <div className="flex gap-4 items-center self-stretch my-auto">
+                    <label className="self-stretch my-auto w-[55px] text-[#595959] font-['Pretendard_Variable'] text-base font-medium leading-[140%] tracking-[-0.16px]">
+                      인증번호
+                    </label>
+                    <div className="shrink-0 self-stretch my-auto w-0 h-6 border border-solid bg-[#D9D9D9] border-[#D9D9D9]" />
+                  </div>
+                  <input
+                    type="text"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value.replace(/[^0-9]/g, ''))}
+                    placeholder="인증번호 6자리"
+                    maxLength={6}
+                    className="ml-4 w-full bg-transparent border-none outline-none text-[#595959] font-['Pretendard_Variable'] text-base font-medium leading-[140%] tracking-[-0.16px]"
+                  />
+                  <div className="flex items-center gap-2">
+                    {verificationCode && (
+                      <button
+                        type="button"
+                        onClick={handleClearVerificationCode}
+                        className="p-1 text-gray-400 hover:text-gray-600"
+                      >
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="15" y1="9" x2="9" y2="15" />
+                          <line x1="9" y1="9" x2="15" y2="15" />
+                        </svg>
+                      </button>
+                    )}
+                    <div className="text-sm font-mono" style={{ color: '#573B30', fontFamily: 'Pretendard Variable' }}>
+                      {formatTime(timeLeft)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleVerifyCode}
+                disabled={verificationCode.length < 6}
+                className={cn(
+                  "gap-2.5 self-stretch p-4 font-semibold text-white rounded-lg transition-colors",
+                  verificationCode.length === 6
+                    ? "bg-stone-400 hover:bg-stone-500"
+                    : "bg-stone-300 cursor-not-allowed"
+                )}
+              >
+                확인
+              </button>
+            </div>
+          )}
+
+          {/* 인증완료 표시 */}
+          {isPhoneVerified && (
+            <div className="mt-3 flex items-center px-4 py-3 text-sm text-green-600 bg-green-50 rounded-lg">
+              <span className="mr-2">✓</span>
+              <span>전화번호 인증이 완료되었습니다.</span>
+            </div>
+          )}
 
           <button
             type="button"
             onClick={handleNextStep}
             className={cn(
               'mt-6 w-full h-11 px-8 inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-              verificationSent
+              formData.name && formData.phoneNumber && (!isPhoneVerificationRequired || isPhoneVerified)
                 ? 'bg-primary text-white hover:bg-primary/90'
                 : 'bg-stone-300 text-white cursor-not-allowed',
             )}
-            disabled={!verificationSent}
+            disabled={!formData.name || !formData.phoneNumber || (isPhoneVerificationRequired && !isPhoneVerified)}
           >
             다음으로
           </button>

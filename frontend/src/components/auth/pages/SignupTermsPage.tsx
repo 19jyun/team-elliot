@@ -72,6 +72,7 @@ export function SignupTermsPage() {
         userId: signupData.userId,
         password: signupData.password,
         phoneNumber: signupData.phoneNumber,
+        role: signupData.role,
         marketing: agreements.marketing,
       })
 
