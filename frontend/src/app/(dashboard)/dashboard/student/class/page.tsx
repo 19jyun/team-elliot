@@ -6,13 +6,12 @@ import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { getMyClasses } from '@/api/student'
-import { EnrolledClassesList } from '@/components/features/student/classes/EnrolledClassesList'
-import { ClassSessionModal } from '@/components/features/student/classes/ClassSessionModal'
-import { DateSessionModal } from '@/components/calendar/DateSessionModal'
-import { StudentSessionDetailModal } from '@/components/features/student/classes/StudentSessionDetailModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
+import { DateSessionModal } from '@/components/calendar/DateSessionModal'
+import { StudentSessionDetailModal } from '@/components/features/student/classes/StudentSessionDetailModal'
 import { ClassSession } from '@/types/api/class'
+import { useDashboardNavigation } from '@/contexts/DashboardContext'
 
 // Type for extended session
 type ExtendedSession = {
@@ -33,10 +32,8 @@ export default function StudentDashboard() {
     },
   })
 
+  const { navigateToSubPage } = useDashboardNavigation()
 
-  const [selectedClass, setSelectedClass] = useState<any>(null)
-  const [isSessionModalOpen, setIsSessionModalOpen] = useState(false)
-  
   // 날짜 클릭 관련 상태 추가
   const [clickedDate, setClickedDate] = useState<Date | null>(null)
   const [isDateModalOpen, setIsDateModalOpen] = useState(false)
@@ -132,18 +129,6 @@ export default function StudentDashboard() {
     )
   }
 
-
-
-  const handleClassClick = (classData: any) => {
-    setSelectedClass(classData)
-    setIsSessionModalOpen(true)
-  }
-
-  const closeSessionModal = () => {
-    setIsSessionModalOpen(false)
-    setSelectedClass(null)
-  }
-
   // 날짜 클릭 핸들러 추가 (ConnectedCalendar용)
   const handleDateClick = (date: string) => {
     const clickedDateObj = new Date(date)
@@ -181,18 +166,47 @@ export default function StudentDashboard() {
     setSelectedSession(null)
   }
 
+  // 수강중인 클래스 SubPage로 이동
+  const handleEnrolledClassesClick = () => {
+    navigateToSubPage('enrolled-classes')
+  }
+
   return (
     <div className="flex flex-col h-full bg-white">
       <header className="flex-shrink-0">
-        {/* 환영 메시지 + 캘린더 */}
+        {/* 환영 메시지 + 캘린더 아이콘 버튼 */}
         <div className="flex flex-col px-5 py-6">
-          <h1 className="text-2xl font-bold text-stone-700">
-            안녕하세요, {session?.user?.name}님!
-          </h1>
-          <p className="mt-2 text-stone-500">오늘도 즐거운 학습되세요!</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-stone-700">
+                안녕하세요, {session?.user?.name}님!
+              </h1>
+              <p className="mt-2 text-stone-500">오늘도 즐거운 학습되세요!</p>
+            </div>
+            {/* 캘린더 아이콘 버튼 */}
+            <button
+              onClick={handleEnrolledClassesClick}
+              className="flex items-center justify-center w-12 h-12 bg-stone-100 rounded-full hover:bg-stone-200 transition-colors"
+              aria-label="수강중인 클래스 보기"
+            >
+              <svg
+                className="w-6 h-6 text-stone-700"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
 
-        {/* 캘린더 섹션 */}
+        {/* 캘린더 섹션 - 기존 크기 복원 */}
         <div className="flex flex-col w-full bg-white text-stone-700" style={{ height: 'calc(100vh - 450px)' }}>
           <CalendarProvider
             mode="student-view"
@@ -206,31 +220,6 @@ export default function StudentDashboard() {
           </CalendarProvider>
         </div>
       </header>
-      
-      <main className="flex-1 min-h-0 bg-white px-5">
-                <div className="gap-2.5 self-start px-2 py-3 text-base font-semibold tracking-normal leading-snug text-stone-700 flex-shrink-0 ">
-          수강중인 클래스
-        </div>
-        <div className="w-full overflow-auto" style={{ 
-          maxHeight: '150px',  // 최대 높이만 설정
-        }}>
-          {/* 수강중인 클래스 리스트 */}
-          <div className="flex flex-col mt-4 w-full h-full">
-            <EnrolledClassesList
-              classes={myClasses?.enrollmentClasses || []}
-              onClassClick={handleClassClick}
-            />
-          </div>
-        </div>
-      </main>
-
-      {/* Class Session Modal */}
-      <ClassSessionModal
-        isOpen={isSessionModalOpen}
-        selectedClass={selectedClass}
-        sessions={myClasses?.sessionClasses || []}
-        onClose={closeSessionModal}
-      />
 
       {/* Date Session Modal */}
       <DateSessionModal
@@ -248,8 +237,6 @@ export default function StudentDashboard() {
         session={selectedSession}
         onClose={closeSessionDetailModal}
       />
-
-
     </div>
   )
 }

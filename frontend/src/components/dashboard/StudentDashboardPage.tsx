@@ -12,6 +12,7 @@ import { AcademyManagement } from './student/Profile/AcademyManagement';
 import { PersonalInfoManagement } from './student/Profile/PersonalInfoManagement';
 import { EnrollmentHistory } from './student/Profile/EnrollmentHistory';
 import { CancellationHistory } from './student/Profile/CancellationHistory';
+import { EnrolledClassesContainer } from './student/EnrolledClasses/EnrolledClassesContainer';
 import { DashboardContainer } from './DashboardContainer';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -37,6 +38,8 @@ function StudentDashboardContent() {
       switch (subPage) {
         case 'enroll':
           return <EnrollmentContainer />;
+        case 'enrolled-classes':
+          return <EnrolledClassesContainer />;
         case 'academy':
           return <AcademyManagement />;
         case 'personal-info':
