@@ -119,16 +119,6 @@ export default function AcademyManagement({ onBack }: AcademyManagementProps) {
 
   return (
     <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px] py-5 relative">
-      {/* 헤더 */}
-      <div className="flex items-center justify-between px-5 pb-4">
-        <div>
-          <h1 className="text-2xl font-bold text-stone-700">내 학원 관리</h1>
-          <p className="text-gray-600 mt-1">소속된 학원을 관리하고 새로운 학원에 가입하거나 생성할 수 있습니다.</p>
-        </div>
-      </div>
-
-      <Separator className="mx-5" />
-
       {/* 학원 생성/수정 섹션 */}
       <div className="px-5 py-4">
         <AnimatedCard

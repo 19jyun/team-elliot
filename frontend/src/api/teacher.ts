@@ -215,9 +215,72 @@ export const rejectRefund = async (
   refundId: number,
   data: { reason: string; detailedReason?: string }
 ) => {
+  const response = await axiosInstance.put(`/refunds/${refundId}/reject`, data);
+  return response.data;
+};
+
+// === 새로운 학원 관리 API들 ===
+
+// 1. 학원 소속 선생님 목록 조회
+export const getAcademyTeachers = async () => {
+  const response = await axiosInstance.get("/teachers/academy/teachers");
+  return response.data;
+};
+
+// 2. 학원 소속 수강생 목록 조회
+export const getAcademyStudents = async () => {
+  const response = await axiosInstance.get("/teachers/academy/students");
+  return response.data;
+};
+
+// 3. 특정 선생님을 학원에서 제거
+export const removeTeacherFromAcademy = async (teacherId: number) => {
+  const response = await axiosInstance.delete(
+    `/teachers/academy/teachers/${teacherId}`
+  );
+  return response.data;
+};
+
+// 4. 관리자 권한 부여
+export const assignAdminRole = async (teacherId: number) => {
   const response = await axiosInstance.post(
-    `/refunds/${refundId}/reject`,
+    `/teachers/academy/teachers/${teacherId}/assign-admin`
+  );
+  return response.data;
+};
+
+// 5. 관리자 권한 제거
+export const removeAdminRole = async (teacherId: number) => {
+  const response = await axiosInstance.delete(
+    `/teachers/academy/teachers/${teacherId}/remove-admin`
+  );
+  return response.data;
+};
+
+// 6. 수강생의 세션 수강 현황 조회
+export const getStudentSessionHistory = async (studentId: number) => {
+  const response = await axiosInstance.get(
+    `/teachers/academy/students/${studentId}/sessions`
+  );
+  return response.data;
+};
+
+// 7. 선생님 지정하여 강의 개설
+export const createClassWithTeacher = async (data: {
+  classData: any;
+  assignedTeacherId: number;
+}) => {
+  const response = await axiosInstance.post(
+    "/teachers/academy/classes/with-teacher",
     data
+  );
+  return response.data;
+};
+
+// 8. 수강생을 학원에서 제거
+export const removeStudentFromAcademy = async (studentId: number) => {
+  const response = await axiosInstance.delete(
+    `/student/academy/students/${studentId}`
   );
   return response.data;
 };

@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { MapPin, Phone, Calendar, Settings } from 'lucide-react';
 import { Academy } from '@/types/api/teacher';
 import { formatDate } from '@/utils/academyUtils';
+import { ExpandableText } from '@/components/common/ExpandableText';
 
 interface AcademyCardProps {
   academy: Academy;
@@ -48,9 +49,12 @@ export function AcademyCard({ academy, isAdmin, onEdit }: AcademyCardProps) {
         </div>
         
         {academy.description && (
-          <p className="text-sm text-gray-600 line-clamp-3">
-            {academy.description}
-          </p>
+          <ExpandableText
+            text={academy.description}
+            lineClamp={3}
+            className="text-sm text-gray-600"
+            buttonText={{ expand: '더보기', collapse: '접기' }}
+          />
         )}
 
         <Separator />

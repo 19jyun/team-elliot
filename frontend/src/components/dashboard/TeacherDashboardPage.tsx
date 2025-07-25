@@ -10,7 +10,7 @@ import { CreateClassContainer } from './teacher/class_management/create-class/co
 import { EnrollmentManagementContainer } from './teacher/class_management/enrollment_management/containers/EnrollmentManagementContainer';
 import { TeacherProfileManagement } from './teacher/profile/TeacherProfileManagement/TeacherProfileManagement';
 import { TeacherPersonalInfoManagement } from './teacher/profile/TeacherPersonalInfoManagement/TeacherPersonalInfoManagement';
-import AcademyManagement from './teacher/profile/AcademyManagement/AcademyManagement';
+import AcademyManagementContainer from './teacher/profile/AcademyManagement/AcademyManagementContainer';
 import { TeacherClassesContainer } from './teacher/TeacherClasses/TeacherClassesContainer';
 import { DashboardContainer } from './DashboardContainer';
 import { useSession } from 'next-auth/react';
@@ -37,7 +37,7 @@ function TeacherDashboardContent() {
       case 'personal-info':
         return <TeacherPersonalInfoManagement />;
       case 'academy-management':
-        return <AcademyManagement onBack={clearSubPage} />;
+        return <AcademyManagementContainer onBack={clearSubPage} />;
       default:
         return null;
     }

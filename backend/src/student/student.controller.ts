@@ -8,12 +8,18 @@ import {
   Body,
   UseGuards,
   Query,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { StudentService } from './student.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { Role } from '@prisma/client';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
+@ApiTags('Student')
 @Controller('student')
 @UseGuards(JwtAuthGuard)
 export class StudentController {
@@ -60,5 +66,23 @@ export class StudentController {
   @Get('cancellation-history')
   async getCancellationHistory(@CurrentUser() user: any) {
     return this.studentService.getCancellationHistory(user.id);
+  }
+
+  // === 학원 관리 API (선생님용) ===
+
+  // 수강생을 학원에서 제거
+  @Delete('academy/students/:studentId')
+  @UseGuards(RolesGuard)
+  @Roles(Role.TEACHER)
+  @ApiOperation({ summary: '수강생을 학원에서 제거' })
+  @ApiResponse({
+    status: 200,
+    description: '수강생이 학원에서 제거되었습니다.',
+  })
+  async removeStudentFromAcademy(
+    @CurrentUser() user: any,
+    @Param('studentId', ParseIntPipe) studentId: number,
+  ) {
+    return this.studentService.removeStudentFromAcademy(user.id, studentId);
   }
 }
