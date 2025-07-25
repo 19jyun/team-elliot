@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { Plus, MapPin, Phone, Calendar, Users, Building2, AlertTriangle, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
+import { ExpandableText } from '@/components/common';
 
 interface LeaveAcademyModalProps {
   isOpen: boolean;
@@ -300,9 +301,10 @@ export function AcademyManagement() {
                       </div>
                       
                       {academy.description && (
-                        <p className="text-sm text-gray-600 line-clamp-3">
-                          {academy.description}
-                        </p>
+                        <ExpandableText 
+                          text={academy.description} 
+                          lineClamp={3}
+                        />
                       )}
 
                       <Separator />

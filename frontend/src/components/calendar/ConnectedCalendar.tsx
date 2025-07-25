@@ -291,9 +291,72 @@ export function ConnectedCalendar() {
       const totalMonths = (calendarBounds.endYear - calendarBounds.startYear) * 12 + (calendarBounds.endMonth - calendarBounds.startMonth + 1);
       if (newMonthIndex >= 0 && newMonthIndex < totalMonths) {
         onMonthChange(direction);
+        // 월 변경 후 해당 월로 스크롤
+        setTimeout(() => {
+          scrollToMonth(direction === 'prev' ? 'prev' : 'next');
+        }, 100);
       }
     } else {
       onMonthChange(direction);
+      // 월 변경 후 해당 월로 스크롤
+      setTimeout(() => {
+        scrollToMonth(direction === 'prev' ? 'prev' : 'next');
+      }, 100);
+    }
+  };
+
+  // 특정 월로 스크롤하는 함수
+  const scrollToMonth = (direction: 'prev' | 'next') => {
+    if (!scrollContainerRef.current || isScrolling) return;
+    
+    const container = scrollContainerRef.current;
+    const weekHeight = 80; // 주당 높이 (스크롤 계산과 동일)
+    
+    // 다음/이전 월 계산
+    let targetYear = currentVisibleMonth.year;
+    let targetMonth = currentVisibleMonth.month;
+    
+    if (direction === 'prev') {
+      if (targetMonth === 1) {
+        targetMonth = 12;
+        targetYear--;
+      } else {
+        targetMonth--;
+      }
+    } else {
+      if (targetMonth === 12) {
+        targetMonth = 1;
+        targetYear++;
+      } else {
+        targetMonth++;
+      }
+    }
+    
+    // continuousCalendarDays에서 해당 월의 첫 번째 날짜 찾기
+    const targetDayIndex = continuousCalendarDays.findIndex(day => 
+      day.year === targetYear && day.month === targetMonth && day.day === 1
+    );
+    
+    if (targetDayIndex !== -1) {
+      // 해당 월의 첫 번째 날짜가 있는 주 인덱스 계산
+      const targetWeekIndex = Math.floor(targetDayIndex / 7);
+      
+      // 스크롤 위치 계산 (해당 주의 시작 부분으로 스크롤)
+      const targetScrollTop = targetWeekIndex * weekHeight;
+      
+      // 스크롤 중 상태 설정
+      setIsScrolling(true);
+      
+      // 부드러운 스크롤 애니메이션
+      container.scrollTo({
+        top: targetScrollTop,
+        behavior: 'smooth'
+      });
+      
+      // 스크롤 완료 후 상태 초기화
+      setTimeout(() => {
+        setIsScrolling(false);
+      }, 500);
     }
   };
 

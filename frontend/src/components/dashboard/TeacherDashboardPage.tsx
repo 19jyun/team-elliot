@@ -6,7 +6,7 @@ import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import TeacherClassPage from '@/app/(dashboard)/dashboard/teacher/class/page';
 import TeacherClassManagementPage from '@/app/(dashboard)/dashboard/teacher/class_management/page';
 import TeacherProfilePage from '@/app/(dashboard)/dashboard/teacher/profile/page';
-import { CreateClassContainer } from './teacher/class_management/create_class/containers/CreateClassContainer';
+import { CreateClassContainer } from './teacher/class_management/create-class/containers/CreateClassContainer';
 import { EnrollmentManagementContainer } from './teacher/class_management/enrollment_management/containers/EnrollmentManagementContainer';
 import { TeacherProfileManagement } from './teacher/profile/TeacherProfileManagement/TeacherProfileManagement';
 import { TeacherPersonalInfoManagement } from './teacher/profile/TeacherPersonalInfoManagement/TeacherPersonalInfoManagement';
@@ -21,38 +21,27 @@ function TeacherDashboardContent() {
   const { activeTab, handleTabChange } = useTeacherContext();
   const { subPage, clearSubPage, isTransitioning } = useDashboardNavigation();
 
-  // SubPage가 있는 경우 SubPage 렌더링
-  if (subPage) {
-    const renderSubPage = () => {
-      switch (subPage) {
-        case 'create-class':
-          return <CreateClassContainer />;
-        case 'enrollment-management':
-          return <EnrollmentManagementContainer />;
-        case 'teacher-classes':
-          return <TeacherClassesContainer />;
-        case 'profile':
-          return <TeacherProfileManagement />;
-        case 'personal-info':
-          return <TeacherPersonalInfoManagement />;
-        case 'academy-management':
-          return <AcademyManagement onBack={clearSubPage} />;
-        default:
-          return null;
-      }
-    };
+  // SubPage 렌더링 함수
+  const renderSubPage = () => {
+    if (!subPage) return null;
 
-    return (
-      <div className="flex flex-col h-screen bg-gray-50">
-        <CommonHeader />
-        <main className="flex-1 overflow-hidden">
-          <div className="w-full h-full overflow-y-auto overflow-x-hidden">
-            {renderSubPage()}
-          </div>
-        </main>
-      </div>
-    );
-  }
+    switch (subPage) {
+      case 'create-class':
+        return <CreateClassContainer />;
+      case 'enrollment-management':
+        return <EnrollmentManagementContainer />;
+      case 'teacher-classes':
+        return <TeacherClassesContainer />;
+      case 'profile':
+        return <TeacherProfileManagement />;
+      case 'personal-info':
+        return <TeacherPersonalInfoManagement />;
+      case 'academy-management':
+        return <AcademyManagement onBack={clearSubPage} />;
+      default:
+        return null;
+    }
+  };
 
   // 메인 탭 페이지들을 배열로 준비
   const tabPages = [
@@ -64,7 +53,8 @@ function TeacherDashboardContent() {
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       <CommonHeader />
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-hidden relative">
+        {/* DashboardContainer - 항상 렌더링 */}
         <DashboardContainer
           activeTab={activeTab}
           onTabChange={handleTabChange}
@@ -73,6 +63,15 @@ function TeacherDashboardContent() {
         >
           {tabPages}
         </DashboardContainer>
+
+        {/* SubPage 오버레이 */}
+        {subPage && (
+          <div className="absolute inset-0 bg-white z-10">
+            <div className="w-full h-full overflow-y-auto overflow-x-hidden">
+              {renderSubPage()}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
