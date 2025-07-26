@@ -8,6 +8,7 @@ import { getStudentSessionHistory } from '@/api/teacher';
 import { AcademyStudent, StudentSessionHistory } from '@/types/api/teacher';
 import { format } from 'date-fns';
 import { CheckCircle, XCircle, AlertCircle, Clock } from 'lucide-react';
+import { SlideUpModal } from '@/components/common/SlideUpModal';
 
 interface StudentSessionHistoryModalProps {
   student: AcademyStudent;
@@ -102,87 +103,63 @@ export default function StudentSessionHistoryModal({ student, onClose }: Student
     }
   };
 
-  if (!history) {
-    return null; // 모달이 열리지 않은 경우
-  }
-
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black bg-opacity-40">
-      <div className="relative w-full max-w-2xl mx-auto bg-white rounded-t-2xl shadow-xl animate-slideup overflow-y-auto max-h-[80vh]">
-        <button
-          className="absolute top-3 right-4 text-gray-400 hover:text-gray-600 text-xl"
-          onClick={onClose}
-          aria-label="닫기"
-        >
-          ×
-        </button>
-        <div className="pt-6 pb-4 px-4">
-          <h3 className="text-lg font-semibold mb-2 text-center">
-            {student.name}님의 수강 현황
-          </h3>
-          <p className="text-sm text-gray-600 mb-4 text-center">
-            이 수강생의 모든 수강 기록을 확인할 수 있습니다.
-          </p>
+    <SlideUpModal
+      isOpen={!!history}
+      onClose={onClose}
+      title={`${student.name}님의 수강 현황`}
+      contentClassName="pb-6"
+    >
+      <div className="space-y-4">
+        <p className="text-sm text-gray-600 text-center py-4">
+          이 수강생의 모든 수강 기록을 확인할 수 있습니다.
+        </p>
 
-          {isLoading ? (
-            <div className="text-center py-8 text-gray-500">
-              <p>수강 현황을 불러오는 중...</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      강의명
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      수강일
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      수강 상태
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      등록일
-                    </th>
+        {isLoading ? (
+          <div className="text-center py-8 text-gray-500">
+            <p>수강 현황을 불러오는 중...</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    강의명
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    수강일
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    수강 상태
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    등록일
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {history?.map((session) => (
+                  <tr key={session.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {session.session.class.className}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatDate(session.session.date)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {getStatusBadge(session.status)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatDate(session.enrolledAt)}
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {history.map((session) => (
-                    <tr key={session.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {session.session.class.className}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(session.session.date)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {getStatusBadge(session.status)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(session.enrolledAt)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
-      <style jsx>{`
-        .animate-slideup {
-          animation: slideup 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        @keyframes slideup {
-          from {
-            transform: translateY(100%);
-          }
-          to {
-            transform: translateY(0);
-          }
-        }
-      `}</style>
-    </div>
+    </SlideUpModal>
   );
 }

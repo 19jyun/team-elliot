@@ -29,8 +29,21 @@ export interface Academy {
     id: number;
     name: string;
   };
+  admins?: AcademyAdmin[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AcademyAdmin {
+  id: number;
+  academyId: number;
+  teacherId: number;
+  role: "OWNER" | "ADMIN";
+  createdAt: string;
+  teacher: {
+    id: number;
+    name: string;
+  };
 }
 
 export interface CreateAcademyRequest {

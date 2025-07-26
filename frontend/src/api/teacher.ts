@@ -277,6 +277,30 @@ export const createClassWithTeacher = async (data: {
   return response.data;
 };
 
+// 8. DRAFT 상태 강의 목록 조회
+export const getDraftClasses = async () => {
+  const response = await axiosInstance.get("/classes/academy/draft");
+  return response.data;
+};
+
+// 9. 학원의 모든 활성 클래스 조회
+export const getActiveClasses = async () => {
+  const response = await axiosInstance.get("/classes/academy/active");
+  return response.data;
+};
+
+// 9. 강의 상태 변경 (승인/거절)
+export const updateClassStatus = async (
+  classId: number,
+  data: {
+    status: "DRAFT" | "OPEN" | "CLOSED";
+    reason?: string;
+  }
+) => {
+  const response = await axiosInstance.put(`/classes/${classId}/status`, data);
+  return response.data;
+};
+
 // 8. 수강생을 학원에서 제거
 export const removeStudentFromAcademy = async (studentId: number) => {
   const response = await axiosInstance.delete(

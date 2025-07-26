@@ -12,6 +12,7 @@ import { Plus, MapPin, Phone, Calendar, Users, Building2, AlertTriangle, X } fro
 import { toast } from 'sonner';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { ExpandableText } from '@/components/common';
+import { AcademyCard } from '@/components/common/AcademyCard';
 
 interface LeaveAcademyModalProps {
   isOpen: boolean;
@@ -273,54 +274,15 @@ export function AcademyManagement() {
             ) : (
               <div className="space-y-4 max-h-96 overflow-y-auto">
                 {myAcademies.map((academy) => (
-                  <Card key={academy.id} className="hover:shadow-md transition-shadow">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg">{academy.name}</CardTitle>
-                          <Badge variant="secondary" className="mt-2">
-                            {academy.code}
-                          </Badge>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="space-y-2 text-sm">
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <MapPin className="h-4 w-4" />
-                          <span className="truncate">{academy.address}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <Phone className="h-4 w-4" />
-                          <span>{academy.phoneNumber}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <Calendar className="h-4 w-4" />
-                          <span>가입일: {formatDate(academy.createdAt)}</span>
-                        </div>
-                      </div>
-                      
-                      {academy.description && (
-                        <ExpandableText 
-                          text={academy.description} 
-                          lineClamp={3}
-                        />
-                      )}
-
-                      <Separator />
-
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="flex-1 text-red-500 hover:text-red-600 hover:bg-red-50"
-                          onClick={() => handleLeaveAcademyClick(academy.id, academy.name)}
-                        >
-                          탈퇴하기
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <AcademyCard
+                    key={academy.id}
+                    academy={academy}
+                    variant="student"
+                    showActionButton={true}
+                    actionText="탈퇴하기"
+                    actionVariant="outline"
+                    onAction={() => handleLeaveAcademyClick(academy.id, academy.name)}
+                  />
                 ))}
               </div>
             )}

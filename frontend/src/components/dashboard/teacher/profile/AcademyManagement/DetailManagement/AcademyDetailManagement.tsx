@@ -13,7 +13,7 @@ import { AcademyStudent } from '@/types/api/teacher';
 // 분리된 컴포넌트들 import
 import TeacherManagementSection from './TeacherManagementSection';
 import StudentManagementSection from './StudentManagementSection';
-import ClassCreationSection from './ClassCreationSection';
+import ClassManagementSection from './ClassManagementSection';
 import AcademyInfoSection from './AcademyInfoSection';
 import StudentSessionHistoryModal from './StudentSessionHistoryModal';
 
@@ -121,8 +121,8 @@ export default function AcademyDetailManagement({ onBack }: AcademyDetailManagem
     },
     {
       id: 'classes' as ManagementSection,
-      label: '강의 개설',
-      description: '선생님 지정하여 강의 개설',
+      label: '강의 관리',
+      description: '강의 개설 요청 승인/거절',
     },
     {
       id: 'info' as ManagementSection,
@@ -153,9 +153,9 @@ export default function AcademyDetailManagement({ onBack }: AcademyDetailManagem
           />
         );
       case 'classes':
-        return <ClassCreationSection academy={academy} />;
+        return <ClassManagementSection />;
       case 'info':
-        return <AcademyInfoSection academy={academy} />;
+        return <AcademyInfoSection academy={academy || undefined} />;
       default:
         return (
           <TeacherManagementSection 

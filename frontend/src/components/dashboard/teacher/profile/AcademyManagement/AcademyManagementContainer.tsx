@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { Building2, Settings } from 'lucide-react';
 import AcademyManagement from './BasicManagement/AcademyManagement';
 import AcademyDetailManagement from './DetailManagement/AcademyDetailManagement';
+import { useAcademyAdminPermission } from '@/hooks/useAcademyAdminPermission';
 
 type TabType = 'basic' | 'detail';
 
@@ -15,6 +16,7 @@ interface AcademyManagementContainerProps {
 
 export default function AcademyManagementContainer({ onBack }: AcademyManagementContainerProps) {
   const [activeTab, setActiveTab] = useState<TabType>('basic');
+  const { hasAdminPermission, isLoading } = useAcademyAdminPermission();
 
   const tabs = [
     {
@@ -41,6 +43,17 @@ export default function AcademyManagementContainer({ onBack }: AcademyManagement
         return <AcademyManagement onBack={onBack} />;
     }
   };
+
+  // 로딩 중이거나 권한이 없는 경우 기본 관리만 렌더링
+  if (isLoading || !hasAdminPermission()) {
+    return (
+      <div className="flex flex-col h-full bg-white max-w-[480px] mx-auto">
+        <div className="flex-1 overflow-y-auto">
+          <AcademyManagement onBack={onBack} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-white max-w-[480px] mx-auto">

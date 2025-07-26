@@ -17,7 +17,7 @@ import { usePhoneVerification } from '@/hooks/usePhoneVerification';
 import { CreateAcademyModal } from './CreateAcademyModal';
 import { WithdrawalConfirmModal } from './WithdrawalConfirmModal';
 import { AcademyForm } from './AcademyForm';
-import { AcademyCard } from './AcademyCard';
+import { AcademyCard } from '@/components/common/AcademyCard';
 import { JoinAcademyCard } from './JoinAcademyCard';
 
 interface AcademyManagementProps {
@@ -39,8 +39,6 @@ export default function AcademyManagement({ onBack }: AcademyManagementProps) {
     handleJoinAcademy,
     handleWithdrawalConfirm,
     handleCreateAcademy,
-    handleUpdateAcademy,
-    isAcademyAdmin,
   } = useAcademyManagement();
 
   const {
@@ -100,11 +98,8 @@ export default function AcademyManagement({ onBack }: AcademyManagementProps) {
       return;
     }
     
-    if (isEditMode) {
-      handleUpdateAcademy(formData);
-    } else {
-      handleCreateAcademy(formData);
-    }
+    // 기본 관리에서는 학원 생성만 가능
+    handleCreateAcademy(formData);
     
     // 성공 시 폼 초기화
     setIsExpanded(false);
@@ -112,15 +107,10 @@ export default function AcademyManagement({ onBack }: AcademyManagementProps) {
     resetVerification();
   };
 
-  const handleEditClick = () => {
-    if (!currentAcademy) return;
-    handleEditAcademy(currentAcademy);
-  };
-
   return (
-    <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px] py-5 relative">
-      {/* 학원 생성/수정 섹션 */}
-      <div className="px-5 py-4">
+    <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px] py-2 relative">
+      {/* 학원 생성 섹션 */}
+      <div className="px-5 py-2">
         <AnimatedCard
           isExpanded={isExpanded}
           onToggle={handleToggleExpand}
@@ -139,7 +129,7 @@ export default function AcademyManagement({ onBack }: AcademyManagementProps) {
       </div>
 
       {/* 새 학원 가입 섹션 */}
-      <div className="px-5 py-4">
+      <div className="px-5 py-2">
         <JoinAcademyCard
           joinCode={joinCode}
           setJoinCode={setJoinCode}
@@ -149,7 +139,7 @@ export default function AcademyManagement({ onBack }: AcademyManagementProps) {
       </div>
 
       {/* 내 학원 섹션 */}
-      <div className="px-5 pb-6">
+      <div className="px-5 pb-6 py-2">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
@@ -174,8 +164,8 @@ export default function AcademyManagement({ onBack }: AcademyManagementProps) {
             ) : (
               <AcademyCard
                 academy={currentAcademy}
-                isAdmin={isAcademyAdmin()}
-                onEdit={handleEditClick}
+                variant="teacher"
+                showTeamCode={true}
               />
             )}
           </CardContent>
