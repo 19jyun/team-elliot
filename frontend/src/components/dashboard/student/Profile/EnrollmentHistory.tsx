@@ -130,60 +130,55 @@ export function EnrollmentHistory() {
           <h1 className="text-2xl font-bold text-stone-700">신청/결제 내역</h1>
           <p className="text-gray-600 mt-1">나의 수강 신청 및 결제 내역을 확인할 수 있습니다.</p>
         </div>
+        
+        {/* 필터 버튼들 */}
+        <div className="flex gap-2 flex-wrap mt-4">
+          <Button
+            variant={selectedFilter === 'ALL' ? 'default' : 'outline'}
+            size="sm"
+            className="text-xs px-2 py-1 h-7"
+            onClick={() => setSelectedFilter('ALL')}
+          >
+            전체
+          </Button>
+          <Button
+            variant={selectedFilter === 'PENDING' ? 'default' : 'outline'}
+            size="sm"
+            className="text-xs px-2 py-1 h-7"
+            onClick={() => setSelectedFilter('PENDING')}
+          >
+            대기중
+          </Button>
+          <Button
+            variant={selectedFilter === 'CONFIRMED' ? 'default' : 'outline'}
+            size="sm"
+            className="text-xs px-2 py-1 h-7"
+            onClick={() => setSelectedFilter('CONFIRMED')}
+          >
+            승인됨
+          </Button>
+          <Button
+            variant={selectedFilter === 'REFUND_REQUESTED' ? 'default' : 'outline'}
+            size="sm"
+            className="text-xs px-2 py-1 h-7"
+            onClick={() => setSelectedFilter('REFUND_REQUESTED')}
+          >
+            환불대기
+          </Button>
+          <Button
+            variant={selectedFilter === 'REFUND_REJECTED_CONFIRMED' ? 'default' : 'outline'}
+            size="sm"
+            className="text-xs px-2 py-1 h-7"
+            onClick={() => setSelectedFilter('REFUND_REJECTED_CONFIRMED')}
+          >
+            환불거절
+          </Button>
+        </div>
       </header>
 
       {/* 메인 콘텐츠 */}
       <main className="flex-1 min-h-0 bg-white px-5 py-4">
-        <Card className="h-full flex flex-col">
-          <CardHeader className="pb-3 flex-shrink-0">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <BookOpen className="h-5 w-5" />
-              신청/결제 내역
-            </CardTitle>
-            <div className="flex gap-2 flex-wrap mt-3">
-              <Button
-                variant={selectedFilter === 'ALL' ? 'default' : 'outline'}
-                size="sm"
-                className="text-xs px-2 py-1 h-7"
-                onClick={() => setSelectedFilter('ALL')}
-              >
-                전체
-              </Button>
-              <Button
-                variant={selectedFilter === 'PENDING' ? 'default' : 'outline'}
-                size="sm"
-                className="text-xs px-2 py-1 h-7"
-                onClick={() => setSelectedFilter('PENDING')}
-              >
-                대기중
-              </Button>
-              <Button
-                variant={selectedFilter === 'CONFIRMED' ? 'default' : 'outline'}
-                size="sm"
-                className="text-xs px-2 py-1 h-7"
-                onClick={() => setSelectedFilter('CONFIRMED')}
-              >
-                승인됨
-              </Button>
-              <Button
-                variant={selectedFilter === 'REFUND_REQUESTED' ? 'default' : 'outline'}
-                size="sm"
-                className="text-xs px-2 py-1 h-7"
-                onClick={() => setSelectedFilter('REFUND_REQUESTED')}
-              >
-                환불대기
-              </Button>
-              <Button
-                variant={selectedFilter === 'REFUND_REJECTED_CONFIRMED' ? 'default' : 'outline'}
-                size="sm"
-                className="text-xs px-2 py-1 h-7"
-                onClick={() => setSelectedFilter('REFUND_REJECTED_CONFIRMED')}
-              >
-                환불거절
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-y-auto">
+        <div className="h-full overflow-y-auto">
             {filteredLogs.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-300" />
@@ -253,8 +248,7 @@ export function EnrollmentHistory() {
                 })}
               </div>
             )}
-          </CardContent>
-        </Card>
+        </div>
       </main>
     </div>
   );

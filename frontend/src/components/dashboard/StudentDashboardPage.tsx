@@ -12,6 +12,7 @@ import { AcademyManagement } from './student/Profile/AcademyManagement';
 import { PersonalInfoManagement } from './student/Profile/PersonalInfoManagement';
 import { EnrollmentHistory } from './student/Profile/EnrollmentHistory';
 import { CancellationHistory } from './student/Profile/CancellationHistory';
+import { EnrolledClassesContainer } from './student/EnrolledClasses/EnrolledClassesContainer';
 import { DashboardContainer } from './DashboardContainer';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -21,46 +22,37 @@ function StudentDashboardContent() {
   const { activeTab, handleTabChange } = useStudentContext();
   const { subPage, isTransitioning } = useDashboardNavigation();
 
-  // SubPage가 있는 경우 SubPage 렌더링
-  if (subPage) {
-    const renderSubPage = () => {
-      // 수강 변경 관련 SubPage (modify-*)
-      if (subPage.startsWith('modify-')) {
-        return <EnrollmentSubPageRenderer page={subPage} />;
-      }
-      
-      // 월별 수강신청 SubPage (enroll-*)
-      if (subPage.startsWith('enroll-')) {
-        return <EnrollmentSubPageRenderer page={subPage} />;
-      }
-      
-      switch (subPage) {
-        case 'enroll':
-          return <EnrollmentContainer />;
-        case 'academy':
-          return <AcademyManagement />;
-        case 'personal-info':
-          return <PersonalInfoManagement />;
-        case 'enrollment-history':
-          return <EnrollmentHistory />;
-        case 'cancellation-history':
-          return <CancellationHistory />;
-        default:
-          return null;
-      }
-    };
+  // SubPage 렌더링 함수
+  const renderSubPage = () => {
+    if (!subPage) return null;
 
-    return (
-      <div className="flex flex-col h-screen bg-gray-50">
-        <CommonHeader />
-        <main className="flex-1 overflow-hidden">
-          <div className="w-full h-full overflow-y-auto overflow-x-hidden">
-            {renderSubPage()}
-          </div>
-        </main>
-      </div>
-    );
-  }
+    // 수강 변경 관련 SubPage (modify-*)
+    if (subPage.startsWith('modify-')) {
+      return <EnrollmentSubPageRenderer page={subPage} />;
+    }
+    
+    // 월별 수강신청 SubPage (enroll-*)
+    if (subPage.startsWith('enroll-')) {
+      return <EnrollmentSubPageRenderer page={subPage} />;
+    }
+    
+    switch (subPage) {
+      case 'enroll':
+        return <EnrollmentContainer />;
+      case 'enrolled-classes':
+        return <EnrolledClassesContainer />;
+      case 'academy':
+        return <AcademyManagement />;
+      case 'personal-info':
+        return <PersonalInfoManagement />;
+      case 'enrollment-history':
+        return <EnrollmentHistory />;
+      case 'cancellation-history':
+        return <CancellationHistory />;
+      default:
+        return null;
+    }
+  };
 
   // 메인 탭 페이지들을 배열로 준비
   const tabPages = [
@@ -72,7 +64,8 @@ function StudentDashboardContent() {
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       <CommonHeader />
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-hidden relative">
+        {/* DashboardContainer - 항상 렌더링 */}
         <DashboardContainer
           activeTab={activeTab}
           onTabChange={handleTabChange}
@@ -81,6 +74,15 @@ function StudentDashboardContent() {
         >
           {tabPages}
         </DashboardContainer>
+
+        {/* SubPage 오버레이 */}
+        {subPage && (
+          <div className="absolute inset-0 bg-white z-10">
+            <div className="w-full h-full overflow-y-auto overflow-x-hidden">
+              {renderSubPage()}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
@@ -92,7 +94,7 @@ export function StudentDashboardPage() {
 
   useEffect(() => {
     if (status !== 'loading' && !session?.user) {
-      router.push('/login');
+              router.push('/auth');
     }
   }, [session, status, router]);
 

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { User, Building2 } from 'lucide-react';
 import { TeacherPersonalInfoManagement } from './profile/TeacherPersonalInfoManagement/TeacherPersonalInfoManagement';
-import AcademyManagement from './profile/AcademyManagement/AcademyManagement';
+import AcademyManagementContainer from './profile/AcademyManagement/AcademyManagementContainer';
 
 type TabType = 'personal' | 'academy';
 
@@ -32,7 +32,7 @@ export function TeacherProfilePage() {
       case 'personal':
         return <TeacherPersonalInfoManagement />;
       case 'academy':
-        return <AcademyManagement onBack={() => setActiveTab('personal')} />;
+        return <AcademyManagementContainer onBack={() => setActiveTab('personal')} />;
       default:
         return <TeacherPersonalInfoManagement />;
     }

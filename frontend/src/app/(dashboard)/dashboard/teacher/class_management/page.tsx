@@ -50,7 +50,7 @@ export default function TeacherClassManagementPage() {
   const { data: session, status } = useSession({
     required: true,
     onUnauthenticated() {
-      router.push('/login')
+      router.push('/auth')
     },
   })
   const { navigateToSubPage } = useDashboardNavigation()

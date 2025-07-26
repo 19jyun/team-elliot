@@ -1,4 +1,4 @@
-import { IsString, MinLength, MaxLength, Matches } from 'class-validator';
+import { IsString, MinLength, MaxLength, Matches, IsIn } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 export class SignupDto {
   @ApiProperty({ example: 'student001' })
@@ -28,4 +28,9 @@ export class SignupDto {
     message: '올바른 전화번호 형식이 아닙니다.',
   })
   phoneNumber: string;
+
+  @ApiProperty({ example: 'STUDENT', enum: ['STUDENT', 'TEACHER'] })
+  @IsString()
+  @IsIn(['STUDENT', 'TEACHER'])
+  role: 'STUDENT' | 'TEACHER';
 }

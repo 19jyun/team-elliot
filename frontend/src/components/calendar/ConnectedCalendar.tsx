@@ -291,9 +291,72 @@ export function ConnectedCalendar() {
       const totalMonths = (calendarBounds.endYear - calendarBounds.startYear) * 12 + (calendarBounds.endMonth - calendarBounds.startMonth + 1);
       if (newMonthIndex >= 0 && newMonthIndex < totalMonths) {
         onMonthChange(direction);
+        // 월 변경 후 해당 월로 스크롤
+        setTimeout(() => {
+          scrollToMonth(direction === 'prev' ? 'prev' : 'next');
+        }, 100);
       }
     } else {
       onMonthChange(direction);
+      // 월 변경 후 해당 월로 스크롤
+      setTimeout(() => {
+        scrollToMonth(direction === 'prev' ? 'prev' : 'next');
+      }, 100);
+    }
+  };
+
+  // 특정 월로 스크롤하는 함수
+  const scrollToMonth = (direction: 'prev' | 'next') => {
+    if (!scrollContainerRef.current || isScrolling) return;
+    
+    const container = scrollContainerRef.current;
+    const weekHeight = 80; // 주당 높이 (스크롤 계산과 동일)
+    
+    // 다음/이전 월 계산
+    let targetYear = currentVisibleMonth.year;
+    let targetMonth = currentVisibleMonth.month;
+    
+    if (direction === 'prev') {
+      if (targetMonth === 1) {
+        targetMonth = 12;
+        targetYear--;
+      } else {
+        targetMonth--;
+      }
+    } else {
+      if (targetMonth === 12) {
+        targetMonth = 1;
+        targetYear++;
+      } else {
+        targetMonth++;
+      }
+    }
+    
+    // continuousCalendarDays에서 해당 월의 첫 번째 날짜 찾기
+    const targetDayIndex = continuousCalendarDays.findIndex(day => 
+      day.year === targetYear && day.month === targetMonth && day.day === 1
+    );
+    
+    if (targetDayIndex !== -1) {
+      // 해당 월의 첫 번째 날짜가 있는 주 인덱스 계산
+      const targetWeekIndex = Math.floor(targetDayIndex / 7);
+      
+      // 스크롤 위치 계산 (해당 주의 시작 부분으로 스크롤)
+      const targetScrollTop = targetWeekIndex * weekHeight;
+      
+      // 스크롤 중 상태 설정
+      setIsScrolling(true);
+      
+      // 부드러운 스크롤 애니메이션
+      container.scrollTo({
+        top: targetScrollTop,
+        behavior: 'smooth'
+      });
+      
+      // 스크롤 완료 후 상태 초기화
+      setTimeout(() => {
+        setIsScrolling(false);
+      }, 500);
     }
   };
 
@@ -409,6 +472,9 @@ export function ConnectedCalendar() {
                                   ? 'border-[#573B30] text-[#573B30] hover:bg-[#573B30] hover:text-white' 
                                   : 'border-gray-300 text-gray-400 hover:bg-gray-300 hover:text-white'
                               }`}
+                              style={{
+                                opacity: isCurrentFocusedMonth ? 1 : 0.2, // focused month가 아닌 경우 투명도 적용
+                              }}
                               onClick={() => handleDateClick(dayInfo)}
                             >
                                 {dayInfo.day}
@@ -421,15 +487,21 @@ export function ConnectedCalendar() {
                             )
                           ) : (
                             // 세션이 없는 날짜: focused month에 따라 색상 변경
-                            <span className={`w-10 h-10 flex items-center justify-center text-base font-medium transition-colors duration-300 ${
+                            <span className={`w-10 h-10 flex items-center justify-center text-base font-medium transition-all duration-300 ${
                               isCurrentFocusedMonth ? 'text-black' : 'text-gray-400'
-                            }`}>
+                            }`}
+                            style={{
+                              opacity: isCurrentFocusedMonth ? 1 : 0.2, // focused month가 아닌 경우 투명도 적용
+                            }}>
                               {dayInfo.day}
                             </span>
                           )
                         ) : (
                           // 범위 밖의 날짜: 회색으로 표시
-                          <span className="w-10 h-10 flex items-center justify-center text-base font-medium text-gray-300 transition-colors duration-300">
+                          <span className="w-10 h-10 flex items-center justify-center text-base font-medium text-gray-300 transition-all duration-300"
+                          style={{
+                            opacity: 0.2, // 범위 밖 날짜는 더 투명하게
+                          }}>
                             {dayInfo.day}
                           </span>
                         )}
@@ -446,7 +518,7 @@ export function ConnectedCalendar() {
                             <div 
                               key={session.id} 
                               className={`w-16 h-5 rounded text-xs text-center font-bold -mt-2 flex items-center justify-center ${
-                                unavailable ? 'opacity-50' : ''
+                                unavailable ? 'opacity-20' : ''
                               } ${
                                 calendarMode === 'student-view' ? 'cursor-pointer hover:opacity-80' : 'cursor-pointer'
                               }`}
@@ -459,7 +531,7 @@ export function ConnectedCalendar() {
                                   : levelTextColor[session.class?.level || ''] || '#573B30',
                                 border: 'none',
                                 fontFamily: 'Pretendard Variable',
-                                opacity: isCurrentFocusedMonth ? 1 : 0.5, // focused month가 아닌 경우 투명도 적용
+                                opacity: isCurrentFocusedMonth ? 1 : 0.2, // focused month가 아닌 경우 투명도 적용 (더 낮게 조정)
                                 transition: 'opacity 0.3s ease-in-out', // transition 추가
                               }}
                               title={title}

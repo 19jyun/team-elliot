@@ -9,12 +9,14 @@ import {
   Query,
   UseGuards,
   ParseIntPipe,
+  NotFoundException,
 } from '@nestjs/common';
 import { ClassService } from './class.service';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateClassDto } from '../admin/dto/create-class.dto';
+import { UpdateClassStatusDto } from './dto/update-class-status.dto';
 import { Role } from '@prisma/client';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -76,6 +78,59 @@ export class ClassController {
   @Roles(Role.ADMIN)
   async deleteClass(@Param('id', ParseIntPipe) id: number) {
     return this.classService.deleteClass(id);
+  }
+
+  @Put(':id/status')
+  @Roles(Role.TEACHER)
+  @ApiOperation({ summary: '강의 상태 변경 (승인/거절)' })
+  @ApiResponse({ status: 200, description: '강의 상태 변경 성공' })
+  async updateClassStatus(
+    @Param('id', ParseIntPipe) classId: number,
+    @Body() updateStatusDto: UpdateClassStatusDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.classService.updateClassStatus(
+      classId,
+      user.id,
+      updateStatusDto.status,
+      updateStatusDto.reason,
+    );
+  }
+
+  @Get('academy/draft')
+  @Roles(Role.TEACHER)
+  @ApiOperation({ summary: '학원의 DRAFT 상태 강의 목록 조회' })
+  @ApiResponse({ status: 200, description: 'DRAFT 상태 강의 목록 조회 성공' })
+  async getDraftClasses(@CurrentUser() user: any) {
+    // 사용자의 학원 정보 조회
+    const teacher = await this.classService['prisma'].teacher.findUnique({
+      where: { id: user.id },
+      select: { academyId: true },
+    });
+
+    if (!teacher?.academyId) {
+      throw new NotFoundException('소속된 학원이 없습니다.');
+    }
+
+    return this.classService.getDraftClasses(teacher.academyId);
+  }
+
+  @Get('academy/active')
+  @Roles(Role.TEACHER)
+  @ApiOperation({ summary: '학원의 활성 강의 목록 조회' })
+  @ApiResponse({ status: 200, description: '활성 강의 목록 조회 성공' })
+  async getActiveClasses(@CurrentUser() user: any) {
+    // 사용자의 학원 정보 조회
+    const teacher = await this.classService['prisma'].teacher.findUnique({
+      where: { id: user.id },
+      select: { academyId: true },
+    });
+
+    if (!teacher?.academyId) {
+      throw new NotFoundException('소속된 학원이 없습니다.');
+    }
+
+    return this.classService.getActiveClasses(teacher.academyId);
   }
 
   @Post(':id/enroll')

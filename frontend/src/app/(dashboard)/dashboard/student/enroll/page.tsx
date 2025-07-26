@@ -10,7 +10,7 @@ export default function EnrollPage() {
   const { status } = useSession({
     required: true,
     onUnauthenticated() {
-      router.push('/login')
+      router.push('/auth')
     },
   })
 

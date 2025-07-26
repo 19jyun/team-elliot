@@ -152,68 +152,63 @@ export function CancellationHistory() {
           <h1 className="text-2xl font-bold text-stone-700">환불/취소 내역</h1>
           <p className="text-gray-600 mt-1">나의 환불 요청 및 취소 내역을 확인할 수 있습니다.</p>
         </div>
+        
+        {/* 필터 버튼들 */}
+        <div className="flex gap-2 flex-wrap mt-4">
+          <Button
+            variant={selectedFilter === 'ALL' ? 'default' : 'outline'}
+            size="sm"
+            className="text-xs px-2 py-1 h-7"
+            onClick={() => setSelectedFilter('ALL')}
+          >
+            전체
+          </Button>
+          <Button
+            variant={selectedFilter === 'REFUND_REQUESTED' ? 'default' : 'outline'}
+            size="sm"
+            className="text-xs px-2 py-1 h-7"
+            onClick={() => setSelectedFilter('REFUND_REQUESTED')}
+          >
+            환불대기
+          </Button>
+          <Button
+            variant={selectedFilter === 'REFUND_CANCELLED' ? 'default' : 'outline'}
+            size="sm"
+            className="text-xs px-2 py-1 h-7"
+            onClick={() => setSelectedFilter('REFUND_CANCELLED')}
+          >
+            환불완료
+          </Button>
+          <Button
+            variant={selectedFilter === 'CANCELLED' ? 'default' : 'outline'}
+            size="sm"
+            className="text-xs px-2 py-1 h-7"
+            onClick={() => setSelectedFilter('CANCELLED')}
+          >
+            학생취소
+          </Button>
+          <Button
+            variant={selectedFilter === 'REJECTED' ? 'default' : 'outline'}
+            size="sm"
+            className="text-xs px-2 py-1 h-7"
+            onClick={() => setSelectedFilter('REJECTED')}
+          >
+            거절됨
+          </Button>
+          <Button
+            variant={selectedFilter === 'TEACHER_CANCELLED' ? 'default' : 'outline'}
+            size="sm"
+            className="text-xs px-2 py-1 h-7"
+            onClick={() => setSelectedFilter('TEACHER_CANCELLED')}
+          >
+            선생님취소
+          </Button>
+        </div>
       </header>
 
       {/* 메인 콘텐츠 */}
       <main className="flex-1 min-h-0 bg-white px-5 py-4">
-        <Card className="h-full flex flex-col">
-          <CardHeader className="pb-3 flex-shrink-0">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <DollarSign className="h-5 w-5" />
-              환불/취소 내역
-            </CardTitle>
-            <div className="flex gap-2 flex-wrap mt-3">
-              <Button
-                variant={selectedFilter === 'ALL' ? 'default' : 'outline'}
-                size="sm"
-                className="text-xs px-2 py-1 h-7"
-                onClick={() => setSelectedFilter('ALL')}
-              >
-                전체
-              </Button>
-              <Button
-                variant={selectedFilter === 'REFUND_REQUESTED' ? 'default' : 'outline'}
-                size="sm"
-                className="text-xs px-2 py-1 h-7"
-                onClick={() => setSelectedFilter('REFUND_REQUESTED')}
-              >
-                환불대기
-              </Button>
-              <Button
-                variant={selectedFilter === 'REFUND_CANCELLED' ? 'default' : 'outline'}
-                size="sm"
-                className="text-xs px-2 py-1 h-7"
-                onClick={() => setSelectedFilter('REFUND_CANCELLED')}
-              >
-                환불완료
-              </Button>
-              <Button
-                variant={selectedFilter === 'CANCELLED' ? 'default' : 'outline'}
-                size="sm"
-                className="text-xs px-2 py-1 h-7"
-                onClick={() => setSelectedFilter('CANCELLED')}
-              >
-                학생취소
-              </Button>
-              <Button
-                variant={selectedFilter === 'REJECTED' ? 'default' : 'outline'}
-                size="sm"
-                className="text-xs px-2 py-1 h-7"
-                onClick={() => setSelectedFilter('REJECTED')}
-              >
-                거절됨
-              </Button>
-              <Button
-                variant={selectedFilter === 'TEACHER_CANCELLED' ? 'default' : 'outline'}
-                size="sm"
-                className="text-xs px-2 py-1 h-7"
-                onClick={() => setSelectedFilter('TEACHER_CANCELLED')}
-              >
-                선생님취소
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-y-auto">
+        <div className="h-full overflow-y-auto">
             {filteredLogs.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <DollarSign className="h-12 w-12 mx-auto mb-4 text-gray-300" />
@@ -310,8 +305,7 @@ export function CancellationHistory() {
                 })}
               </div>
             )}
-          </CardContent>
-        </Card>
+        </div>
       </main>
     </div>
   );

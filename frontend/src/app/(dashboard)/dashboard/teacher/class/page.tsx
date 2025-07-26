@@ -6,14 +6,13 @@ import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { getTeacherClassesWithSessions } from '@/api/teacher'
-import { TeacherClassSessionModal } from '@/components/features/teacher/classes/TeacherClassSessionModal'
-import { TeacherClassesList } from '@/components/features/teacher/classes/TeacherClassesList'
 import { TeacherClassesWithSessionsResponse } from '@/types/api/teacher'
 import { DateSessionModal } from '@/components/calendar/DateSessionModal'
 import { TeacherSessionDetailModal } from '@/components/features/teacher/classes/TeacherSessionDetailModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
 import { ClassSession } from '@/types/api/class'
+import { useDashboardNavigation } from '@/contexts/DashboardContext'
 
 // Type for extended session
 type ExtendedSession = {
@@ -25,19 +24,16 @@ type ExtendedSession = {
   } & { name?: string | null | undefined; email?: string | null | undefined; image?: string | null | undefined }
 }
 
-type ClassData = TeacherClassesWithSessionsResponse['classes'][0]
-
 export default function TeacherDashboard() {
   const router = useRouter()
   const { data: session, status } = useSession({
     required: true,
     onUnauthenticated() {
-      router.push('/login')
+      router.push('/auth')
     },
   })
 
-  const [selectedClass, setSelectedClass] = useState<any>(null)
-  const [isSessionModalOpen, setIsSessionModalOpen] = useState(false)
+  const { navigateToSubPage } = useDashboardNavigation()
   
   // 날짜 클릭 관련 상태 추가
   const [clickedDate, setClickedDate] = useState<Date | null>(null)
@@ -56,10 +52,6 @@ export default function TeacherDashboard() {
     retry: false,
   })
 
-  console.log("log", myData)
-  console.log("sessions", myData?.sessions)
-
-  const myClasses = (myData as TeacherClassesWithSessionsResponse)?.classes || []
   const mySessions = (myData as TeacherClassesWithSessionsResponse)?.sessions || []
 
   // ConnectedCalendar용 데이터 변환
@@ -121,7 +113,7 @@ export default function TeacherDashboard() {
   // 에러 처리
   if (error) {
     if ((error as any)?.response?.status === 401) {
-      signOut({ redirect: true, callbackUrl: '/login' });
+              signOut({ redirect: true, callbackUrl: '/auth' });
       return null;
     }
     
@@ -136,16 +128,6 @@ export default function TeacherDashboard() {
         </button>
       </div>
     )
-  }
-
-  const handleClassClick = (classData: any) => {
-    setSelectedClass(classData)
-    setIsSessionModalOpen(true)
-  }
-
-  const closeSessionModal = () => {
-    setIsSessionModalOpen(false)
-    setSelectedClass(null)
   }
 
   // 날짜 클릭 핸들러 (ConnectedCalendar용)
@@ -181,18 +163,47 @@ export default function TeacherDashboard() {
     setSelectedSession(null)
   }
 
+  // 담당 클래스 SubPage로 이동
+  const handleTeacherClassesClick = () => {
+    navigateToSubPage('teacher-classes')
+  }
+
   return (
     <div className="flex flex-col h-full bg-white">
       <header className="flex-shrink-0">
-        {/* 환영 메시지 + 캘린더 */}
+        {/* 환영 메시지 + 캘린더 아이콘 버튼 */}
         <div className="flex flex-col px-5 py-6">
-          <h1 className="text-2xl font-bold text-stone-700">
-            안녕하세요, {session?.user?.name} 선생님!
-          </h1>
-          <p className="mt-2 text-stone-500">오늘도 즐거운 수업되세요!</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-stone-700">
+                안녕하세요, {session?.user?.name} 선생님!
+              </h1>
+              <p className="mt-2 text-stone-500">오늘도 즐거운 수업되세요!</p>
+            </div>
+            {/* 캘린더 아이콘 버튼 */}
+            <button
+              onClick={handleTeacherClassesClick}
+              className="flex items-center justify-center w-12 h-12 bg-stone-100 rounded-full hover:bg-stone-200 transition-colors"
+              aria-label="담당 클래스 보기"
+            >
+              <svg
+                className="w-6 h-6 text-stone-700"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
 
-        {/* 캘린더 섹션 */}
+        {/* 캘린더 섹션 - 기존 크기 복원 */}
         <div className="flex flex-col w-full bg-white text-stone-700" style={{ height: 'calc(100vh - 450px)' }}>
           <CalendarProvider
             mode="teacher-view"
@@ -206,31 +217,6 @@ export default function TeacherDashboard() {
           </CalendarProvider>
         </div>
       </header>
-      
-      <main className="flex-1 min-h-0 bg-white px-5">
-        <div className="gap-2.5 self-start px-2 py-3 text-base font-semibold tracking-normal leading-snug text-stone-700 flex-shrink-0 ">
-          담당 클래스
-        </div>
-        <div className="w-full overflow-auto" style={{ 
-          maxHeight: '150px',  // 최대 높이만 설정
-        }}>
-          {/* 담당 클래스 리스트 */}
-          <div className="flex flex-col mt-4 w-full h-full">
-            <TeacherClassesList
-              classes={myClasses || []}
-              onClassClick={handleClassClick}
-            />
-          </div>
-        </div>
-      </main>
-
-      {/* Teacher Class Session Modal */}
-      <TeacherClassSessionModal
-        isOpen={isSessionModalOpen}
-        selectedClass={selectedClass}
-        sessions={mySessions}
-        onClose={closeSessionModal}
-      />
 
       {/* Date Session Modal */}
       <DateSessionModal

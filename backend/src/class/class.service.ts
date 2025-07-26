@@ -65,11 +65,26 @@ export class ClassService {
 
     const teacher = await this.prisma.teacher.findUnique({
       where: { id: data.teacherId },
+      include: {
+        academy: {
+          include: {
+            admins: true,
+          },
+        },
+      },
     });
 
     if (!teacher) {
       throw new NotFoundException('선생님을 찾을 수 없습니다.');
     }
+
+    // 선생님의 권한 확인 (OWNER/ADMIN인지 확인)
+    const isAdmin = teacher.academy?.admins.some(
+      (admin) => admin.teacherId === data.teacherId,
+    );
+
+    // 권한에 따른 status 결정
+    const classStatus = isAdmin ? 'OPEN' : 'DRAFT';
 
     // 요일 유효성 검증
     const validDays = [
@@ -120,7 +135,7 @@ export class ClassService {
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),
         level: data.level,
-        status: 'DRAFT',
+        status: classStatus,
         teacher: {
           connect: {
             id: data.teacherId,
@@ -336,6 +351,91 @@ export class ClassService {
         ...(data.endTime && {
           endTime: new Date(`1970-01-01T${data.endTime}:00`),
         }),
+      },
+    });
+  }
+
+  async updateClassStatus(
+    classId: number,
+    teacherId: number,
+    status: string,
+    reason?: string,
+  ) {
+    // 강의 정보 조회
+    const classInfo = await this.prisma.class.findUnique({
+      where: { id: classId },
+      include: {
+        academy: {
+          include: {
+            admins: true,
+          },
+        },
+      },
+    });
+
+    if (!classInfo) {
+      throw new NotFoundException('강의를 찾을 수 없습니다.');
+    }
+
+    // 권한 확인 (OWNER/ADMIN만 상태 변경 가능)
+    const isAdmin = classInfo.academy.admins.some(
+      (admin) => admin.teacherId === teacherId,
+    );
+
+    if (!isAdmin) {
+      throw new ForbiddenException('강의 상태 변경 권한이 없습니다.');
+    }
+
+    // 상태 변경
+    const updatedClass = await this.prisma.class.update({
+      where: { id: classId },
+      data: { status },
+    });
+
+    return updatedClass;
+  }
+
+  async getDraftClasses(academyId: number) {
+    return this.prisma.class.findMany({
+      where: {
+        academyId,
+        status: 'DRAFT',
+      },
+      include: {
+        teacher: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        id: 'desc',
+      },
+    });
+  }
+
+  async getActiveClasses(academyId: number) {
+    return this.prisma.class.findMany({
+      where: {
+        academyId,
+        status: 'OPEN',
+      },
+      include: {
+        teacher: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        classSessions: {
+          orderBy: {
+            date: 'asc',
+          },
+        },
+      },
+      orderBy: {
+        id: 'desc',
       },
     });
   }

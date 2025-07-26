@@ -12,7 +12,10 @@ import { SignupDto } from './dto/signup.dto';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService, private jwtService: JwtService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+  ) {}
 
   async validateUser(userId: string, password: string) {
     // admin 체크
@@ -77,44 +80,77 @@ export class AuthService {
   }
 
   async signup(signupDto: SignupDto) {
-    // 아이디 중복 체크
-    const existingUser = await this.prisma.student.findUnique({
+    // 아이디 중복 체크 (학생 + 선생님 테이블 모두 확인)
+    const existingStudent = await this.prisma.student.findUnique({
+      where: { userId: signupDto.userId },
+    });
+    const existingTeacher = await this.prisma.teacher.findUnique({
       where: { userId: signupDto.userId },
     });
 
-    if (existingUser) {
+    if (existingStudent || existingTeacher) {
       throw new ConflictException('이미 사용중인 아이디입니다.');
     }
 
     // 비밀번호 해싱
     const hashedPassword = await bcrypt.hash(signupDto.password, 10);
 
-    // 학생 생성
-    const student = await this.prisma.student.create({
-      data: {
-        userId: signupDto.userId,
-        password: hashedPassword,
-        name: signupDto.name,
-        phoneNumber: signupDto.phoneNumber,
-      },
-    });
+    if (signupDto.role === 'STUDENT') {
+      // 학생 생성
+      const student = await this.prisma.student.create({
+        data: {
+          userId: signupDto.userId,
+          password: hashedPassword,
+          name: signupDto.name,
+          phoneNumber: signupDto.phoneNumber,
+        },
+      });
 
-    // JWT 토큰 생성
-    const token = this.jwtService.sign({
-      id: student.id,
-      userId: student.userId,
-      role: 'STUDENT',
-    });
-
-    return {
-      access_token: token,
-      user: {
+      // JWT 토큰 생성
+      const token = this.jwtService.sign({
         id: student.id,
         userId: student.userId,
-        name: student.name,
         role: 'STUDENT',
-      },
-    };
+      });
+
+      return {
+        access_token: token,
+        user: {
+          id: student.id,
+          userId: student.userId,
+          name: student.name,
+          role: 'STUDENT',
+        },
+      };
+    } else {
+      // 선생님 생성 (academyId는 null로 시작)
+      const teacher = await this.prisma.teacher.create({
+        data: {
+          userId: signupDto.userId,
+          password: hashedPassword,
+          name: signupDto.name,
+          phoneNumber: signupDto.phoneNumber,
+          academyId: null, // 학원 소속 없이 시작
+        },
+      });
+
+      // JWT 토큰 생성
+      const token = this.jwtService.sign({
+        id: teacher.id,
+        userId: teacher.userId,
+        role: 'TEACHER',
+      });
+
+      return {
+        access_token: token,
+        user: {
+          id: teacher.id,
+          userId: teacher.userId,
+          name: teacher.name,
+          role: 'TEACHER',
+        },
+      };
+    }
   }
 
   async withdrawal(userId: number, reason: string) {

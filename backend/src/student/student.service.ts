@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ClassService } from '../class/class.service';
@@ -184,6 +185,121 @@ export class StudentService {
 
   async leaveAcademy(studentId: number, leaveAcademyDto: LeaveAcademyDto) {
     return this.academyService.leaveAcademy(studentId, leaveAcademyDto);
+  }
+
+  // 수강생을 학원에서 제거 (관리자용)
+  async removeStudentFromAcademy(adminTeacherId: number, studentId: number) {
+    // 권한 확인
+    const adminTeacher = await this.prisma.teacher.findUnique({
+      where: { id: adminTeacherId },
+      include: {
+        academy: {
+          include: {
+            admins: true,
+          },
+        },
+      },
+    });
+
+    if (!adminTeacher?.academy) {
+      throw new NotFoundException('소속된 학원이 없습니다.');
+    }
+
+    const isAdmin = adminTeacher.academy.admins.some(
+      (admin) => admin.teacherId === adminTeacherId,
+    );
+    if (!isAdmin) {
+      throw new ForbiddenException('학원 관리 권한이 없습니다.');
+    }
+
+    // 수강생이 해당 학원에 속하는지 확인
+    const studentAcademy = await this.prisma.studentAcademy.findUnique({
+      where: {
+        studentId_academyId: {
+          studentId: studentId,
+          academyId: adminTeacher.academy.id,
+        },
+      },
+    });
+
+    if (!studentAcademy) {
+      throw new NotFoundException('해당 수강생을 찾을 수 없습니다.');
+    }
+
+    // 수강생의 모든 세션 수강 내역과 관련 데이터 삭제
+    await this.prisma.$transaction(async (tx) => {
+      // 1. 수강생의 세션 수강 신청 내역 삭제
+      await tx.sessionEnrollment.deleteMany({
+        where: {
+          studentId: studentId,
+          session: {
+            class: {
+              academyId: adminTeacher.academy.id,
+            },
+          },
+        },
+      });
+
+      // 2. 수강생의 클래스 수강 신청 내역 삭제
+      await tx.enrollment.deleteMany({
+        where: {
+          studentId: studentId,
+          class: {
+            academyId: adminTeacher.academy.id,
+          },
+        },
+      });
+
+      // 3. 수강생의 출석 기록 삭제
+      await tx.attendance.deleteMany({
+        where: {
+          studentId: studentId,
+          class: {
+            academyId: adminTeacher.academy.id,
+          },
+        },
+      });
+
+      // 4. 수강생의 결제 내역 삭제
+      await tx.payment.deleteMany({
+        where: {
+          studentId: studentId,
+          sessionEnrollment: {
+            session: {
+              class: {
+                academyId: adminTeacher.academy.id,
+              },
+            },
+          },
+        },
+      });
+
+      // 5. 수강생의 환불 요청 내역 삭제
+      await tx.refundRequest.deleteMany({
+        where: {
+          studentId: studentId,
+          sessionEnrollment: {
+            session: {
+              class: {
+                academyId: adminTeacher.academy.id,
+              },
+            },
+          },
+        },
+      });
+
+      // 6. 수강생을 학원에서 제거
+      await tx.studentAcademy.delete({
+        where: {
+          studentId_academyId: {
+            studentId: studentId,
+            academyId: adminTeacher.academy.id,
+          },
+        },
+      });
+    });
+
+    return { message: '수강생이 학원에서 제거되었습니다.' };
   }
 
   async getMyProfile(studentId: number) {

@@ -47,7 +47,7 @@ export function withAuthorization(
 
     useEffect(() => {
       if (!isLoading && !isAuthenticated) {
-        router.push('/login');
+        router.push('/auth');
         return;
       }
 

@@ -23,7 +23,7 @@ export default function AdminDashboard() {
   const { data: session, status } = useSession({
     required: true,
     onUnauthenticated() {
-      router.push('/login')
+      router.push('/auth')
     },
   })
 
@@ -42,12 +42,12 @@ export default function AdminDashboard() {
       await signOut({ redirect: false })
 
       toast.success('로그아웃되었습니다')
-      router.push('/login')
+      router.push('/auth')
     } catch (error) {
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
           await signOut({ redirect: false })
-          router.push('/login')
+          router.push('/auth')
           return
         }
         console.error('API Error:', error.response?.data)

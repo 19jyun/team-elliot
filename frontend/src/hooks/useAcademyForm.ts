@@ -49,7 +49,7 @@ export function useAcademyForm() {
   };
 
   const getButtonText = () => {
-    return isEditMode ? "학원 수정하기" : "학원 생성하기";
+    return "학원 생성하기";
   };
 
   return {

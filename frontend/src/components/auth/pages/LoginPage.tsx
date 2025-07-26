@@ -10,6 +10,7 @@ import { cva } from 'class-variance-authority'
 import { Box, Button, Typography } from '@mui/material'
 import { Visibility, VisibilityOff } from '@mui/icons-material'
 import Image from 'next/image'
+import { useAuth } from '@/contexts/AuthContext'
 
 const buttonVariants = cva(
   'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
@@ -40,7 +41,21 @@ const buttonVariants = cva(
   },
 )
 
-const InputField = ({
+interface InputFieldProps {
+  label: string
+  icon?: string
+  type?: string
+  id: string
+  value: string
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  required?: boolean
+  onIconClick?: () => void
+  showPassword?: boolean
+  error?: boolean
+  errorMessage?: string
+}
+
+const InputField: React.FC<InputFieldProps> = ({
   label,
   icon,
   type = 'text',
@@ -61,6 +76,9 @@ const InputField = ({
     onChange(event)
   }
 
+  // 비밀번호 라벨의 경우 더 넓은 공간 할당
+  const labelWidth = label === '비밀번호' ? 'w-[70px]' : 'w-[55px]'
+
   return (
     <div className="relative">
       {errorMessage && (
@@ -77,7 +95,10 @@ const InputField = ({
         <div className="flex gap-4 items-center self-stretch my-auto">
           <label
             htmlFor={id}
-            className="self-stretch my-auto w-[55px] text-[#595959] font-['Pretendard_Variable'] text-base font-medium leading-[140%] tracking-[-0.16px]"
+            className={cn(
+              'self-stretch my-auto text-[#595959] font-["Pretendard_Variable"] text-base font-medium leading-[140%] tracking-[-0.16px]',
+              labelWidth
+            )}
           >
             {label}
           </label>
@@ -122,7 +143,7 @@ const InputField = ({
               </svg>
             </button>
           )}
-          {icon && (
+          {icon && onIconClick && (
             <button
               type="button"
               onClick={onIconClick}
@@ -141,18 +162,9 @@ const InputField = ({
   )
 }
 
-const StatusBar = () => {
-  return (
-    <div className="flex justify-center items-center w-full bg-white min-h-[60px] max-sm:hidden">
-      <div className="flex overflow-hidden flex-1 shrink gap-1 justify-center items-center self-stretch px-9 py-6 my-auto text-lg tracking-tight leading-none text-center text-black whitespace-nowrap basis-0 font-[590] min-h-[60px]">
-        <div className="self-stretch my-auto w-[35px]">9:41</div>
-      </div>
-    </div>
-  )
-}
-
-export default function LoginPage() {
+export function LoginPage() {
   const router = useRouter()
+  const { navigateToAuthSubPage } = useAuth()
   const [formData, setFormData] = useState({
     userId: '',
     password: '',
@@ -207,7 +219,7 @@ export default function LoginPage() {
         return
       }
 
-      if (result.ok) {
+      if (result?.ok) {
         router.push('/dashboard')
       }
     } catch (error) {
@@ -221,8 +233,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px]">
-      <main className="flex flex-col px-5 mt-24 w-full">
+    <div className="flex overflow-hidden flex-col mx-auto w-full bg-white max-w-[480px] h-full">
+      <main className="flex flex-col px-5 mt-24 w-full flex-1 overflow-hidden">
         <Box
           sx={{
             display: 'flex',
@@ -298,10 +310,10 @@ export default function LoginPage() {
           sx={{
             display: 'flex',
             flexDirection: 'column',
-            alignSelf: 'center',
+            alignItems: 'center',
             mt: '32px',
             maxWidth: '100%',
-            width: '124px',
+            width: '100%',
           }}
         >
           <Typography
@@ -311,12 +323,13 @@ export default function LoginPage() {
               lineHeight: '140%',
               color: '#9F9F9F',
               whiteSpace: 'nowrap',
+              textAlign: 'center',
             }}
           >
             계정이 아직 없으신가요?
           </Typography>
           <Button
-            onClick={() => router.push('/signup/step1')}
+            onClick={() => navigateToAuthSubPage('signup-role')}
             sx={{
               fontSize: '16px',
               fontWeight: 500,
@@ -338,28 +351,29 @@ export default function LoginPage() {
           px: '20px',
           pt: '14px',
           pb: '48px',
-          mt: '40px',
           width: '100%',
           fontWeight: 500,
           lineHeight: '140%',
           bgcolor: '#F7F7F7',
           minHeight: '87px',
+          mt: 'auto',
         }}
       >
         <Box
           sx={{
             display: 'flex',
-            gap: '40px',
-            justifyContent: 'space-between',
+            flexDirection: 'column',
             alignItems: 'center',
+            gap: '8px',
             maxWidth: '100%',
-            width: '335px',
+            width: '100%',
           }}
         >
           <Typography
             sx={{
               fontSize: '14px',
               color: '#9F9F9F',
+              textAlign: 'center',
             }}
           >
             로그인에 문제가 있나요?
@@ -371,7 +385,7 @@ export default function LoginPage() {
             sx={{
               fontSize: '16px',
               color: '#404040',
-              textAlign: 'right',
+              textAlign: 'center',
             }}
           >
             고객센터 연락
@@ -380,4 +394,4 @@ export default function LoginPage() {
       </Box>
     </div>
   )
-}
+} 

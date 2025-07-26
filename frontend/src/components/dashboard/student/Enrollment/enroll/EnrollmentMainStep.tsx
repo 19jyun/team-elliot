@@ -11,7 +11,7 @@ export function NewEnrollmentMainStep() {
   const { status } = useSession({
     required: true,
     onUnauthenticated() {
-      router.push('/login');
+      router.push('/auth');
     },
   });
 

@@ -19,7 +19,7 @@ export default function TeacherProfilePage() {
   const { data: session, status } = useSession({
     required: true,
     onUnauthenticated() {
-      router.push('/login')
+      router.push('/auth')
     },
   })
 
@@ -34,12 +34,12 @@ export default function TeacherProfilePage() {
       await signOut({ redirect: false })
 
       toast.success('로그아웃되었습니다')
-      router.push('/login')
+      router.push('/auth')
     } catch (error) {
       console.error('Logout error:', error)
       // API 호출 실패 시에도 next-auth 로그아웃은 진행
       await signOut({ redirect: false })
-      router.push('/login')
+      router.push('/auth')
       toast.error('로그아웃 중 오류가 발생했습니다')
     }
   }
