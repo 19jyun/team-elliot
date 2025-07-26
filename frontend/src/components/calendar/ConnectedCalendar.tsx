@@ -39,6 +39,16 @@ export function ConnectedCalendar() {
   const [currentVisibleMonth, setCurrentVisibleMonth] = useState(focusedMonth);
   const [isScrolling, setIsScrolling] = useState(false);
 
+  // 오늘 날짜 계산 (로컬 기준)
+  const today = useMemo(() => {
+    const now = new Date();
+    return {
+      year: now.getFullYear(),
+      month: now.getMonth() + 1,
+      day: now.getDate()
+    };
+  }, []);
+
   // 캘린더 범위 제한 계산
   const calendarBounds = useMemo(() => {
     if (!calendarRange) return null;
@@ -77,9 +87,12 @@ export function ConnectedCalendar() {
         const currentMonth = currentDate.getMonth() + 1;
         const currentDay = currentDate.getDate();
         
-        // 현재 날짜가 캘린더 범위 내인지 확인
-        const isInRangeMonth = (currentMonth >= calendarBounds.startMonth && currentMonth <= calendarBounds.endMonth && currentYear === calendarBounds.startYear) ||
-                              (currentMonth >= calendarBounds.startMonth && currentMonth <= calendarBounds.endMonth && currentYear === calendarBounds.endYear);
+        // 현재 날짜가 캘린더 범위 내인지 확인 (연도 경계 고려)
+        const currentDateForComparison = new Date(currentYear, currentMonth - 1, 1);
+        const startDateForComparison = new Date(calendarBounds.startYear, calendarBounds.startMonth - 1, 1);
+        const endDateForComparison = new Date(calendarBounds.endYear, calendarBounds.endMonth, 0);
+        
+        const isInRangeMonth = currentDateForComparison >= startDateForComparison && currentDateForComparison <= endDateForComparison;
         
         // 세션 데이터에서 해당 날짜의 세션들 필터링 (시간대 문제 해결)
         const daySessions = sessions.filter(session => {
@@ -420,6 +433,13 @@ export function ConnectedCalendar() {
                   const hasSessions = dayInfo.sessions.length > 0;
                   const isCurrentFocusedMonth = dayInfo.month === currentVisibleMonth.month && dayInfo.year === currentVisibleMonth.year;
                   
+                  // 오늘 날짜 확인
+                  const isToday = dayInfo.year === today.year && 
+                                 dayInfo.month === today.month && 
+                                 dayInfo.day === today.day;
+                  
+
+                  
                   // 선택 가능한 세션들 필터링
                   const selectableSessions = dayInfo.sessions.filter((session: ClassSession) => {
                     const displayInfo = getSessionDisplayInfo(session);
@@ -454,6 +474,7 @@ export function ConnectedCalendar() {
                               className={`w-10 h-10 flex items-center justify-center rounded-full border-2 transition-colors duration-150
                                 ${willBeCancelled ? 'bg-white border-red-500 text-red-500' :
                                   isSelected ? 'bg-[#573B30] border-[#573B30] text-white' : 
+                                  isToday ? 'border-[#573B30] bg-[#573B30] text-white' :
                                   isCurrentFocusedMonth 
                                     ? 'border-[#AC9592] bg-white text-black hover:bg-[#E5D6D1]'
                                     : 'border-gray-300 bg-white text-gray-400 hover:bg-gray-200'}
@@ -468,6 +489,7 @@ export function ConnectedCalendar() {
                                                           <button
                               type="button"
                               className={`w-10 h-10 flex items-center justify-center rounded-full border-2 text-base font-medium transition-all duration-150 cursor-pointer ${
+                                isToday ? 'border-[#573B30] bg-[#573B30] text-white' :
                                 isCurrentFocusedMonth 
                                   ? 'border-[#573B30] text-[#573B30] hover:bg-[#573B30] hover:text-white' 
                                   : 'border-gray-300 text-gray-400 hover:bg-gray-300 hover:text-white'
@@ -488,6 +510,7 @@ export function ConnectedCalendar() {
                           ) : (
                             // 세션이 없는 날짜: focused month에 따라 색상 변경
                             <span className={`w-10 h-10 flex items-center justify-center text-base font-medium transition-all duration-300 ${
+                              isToday ? 'text-[#573B30] font-bold' :
                               isCurrentFocusedMonth ? 'text-black' : 'text-gray-400'
                             }`}
                             style={{
@@ -509,6 +532,11 @@ export function ConnectedCalendar() {
                       
                       {/* 클래스명 - teacher-view에서는 표시하지 않음, 나머지는 기존 방식 */}
                       <div className="min-h-5 flex flex-col items-center justify-center">
+                        {/* 오늘 날짜 표시 점 */}
+                        {isToday && dayInfo.isCurrentMonth && (
+                          <div className="w-1.5 h-1.5 bg-[#573B30] rounded-full mb-1"></div>
+                        )}
+                        
                         {String(calendarMode) !== 'teacher-view' && dayInfo.sessions.map(session => {
                           const displayInfo = getSessionDisplayInfo(session);
                           const unavailable = !displayInfo.isSelectable;

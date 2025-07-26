@@ -14,6 +14,8 @@ import { SmsModule } from './sms/sms.module';
 import { BankingModule } from './banking/banking.module';
 import { ActivityLogModule } from './activity-log/activity-log.module';
 import { RefundModule } from './refund/refund.module';
+import { BalletPoseModule } from './ballet-pose/ballet-pose.module';
+import { SessionContentModule } from './session-content/session-content.module';
 
 @Module({
   imports: [
@@ -35,6 +37,8 @@ import { RefundModule } from './refund/refund.module';
     BankingModule,
     ActivityLogModule,
     RefundModule,
+    BalletPoseModule,
+    SessionContentModule,
   ],
   providers: [PrismaService],
 })

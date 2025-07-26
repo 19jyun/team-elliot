@@ -283,6 +283,235 @@ async function main() {
     await generateSessionsForClass(createdClass.id, classData);
   }
 
+  // 발레 자세 더미 데이터 생성
+  const balletPosesData = [
+    {
+      name: '플리에 (Plie)',
+      imageUrl: '/images/poses/plie.jpg',
+      description:
+        '무릎을 구부리는 기본 동작으로, 모든 발레 동작의 기초가 됩니다. 다리의 근육을 강화하고 균형감각을 향상시킵니다.',
+      difficulty: 'BEGINNER' as const,
+    },
+    {
+      name: '탠듀 (Tendu)',
+      imageUrl: '/images/poses/tendu.jpg',
+      description:
+        '발을 바닥에서 떼지 않고 미끄러뜨리는 동작으로, 다리의 힘과 컨트롤을 기릅니다. 발의 아치와 발목의 유연성을 향상시킵니다.',
+      difficulty: 'BEGINNER' as const,
+    },
+    {
+      name: '데가제 (Degage)',
+      imageUrl: '/images/poses/degage.jpg',
+      description:
+        '탠듀에서 발을 바닥에서 떼는 동작입니다. 다리의 근육을 강화하고 발의 민감도를 향상시킵니다.',
+      difficulty: 'BEGINNER' as const,
+    },
+    {
+      name: '론드드잠 (Rond de Jambe)',
+      imageUrl: '/images/poses/rond-de-jambe.jpg',
+      description:
+        '다리를 원을 그리며 움직이는 동작으로, 고관절의 유연성과 다리의 컨트롤을 기릅니다.',
+      difficulty: 'INTERMEDIATE' as const,
+    },
+    {
+      name: '바트망 (Battement)',
+      imageUrl: '/images/poses/battement.jpg',
+      description:
+        '다리를 차는 동작으로, 다리의 힘과 스피드를 기릅니다. 다양한 높이와 방향으로 수행할 수 있습니다.',
+      difficulty: 'INTERMEDIATE' as const,
+    },
+    {
+      name: '아다지오 (Adagio)',
+      imageUrl: '/images/poses/adagio.jpg',
+      description:
+        '느린 템포로 수행하는 동작 조합으로, 균형감각과 다리의 컨트롤을 기릅니다.',
+      difficulty: 'INTERMEDIATE' as const,
+    },
+    {
+      name: '피루엣 (Pirouette)',
+      imageUrl: '/images/poses/pirouette.jpg',
+      description:
+        '한 발로 회전하는 동작으로, 균형감각과 회전 기술을 기릅니다. 발레의 대표적인 동작 중 하나입니다.',
+      difficulty: 'ADVANCED' as const,
+    },
+    {
+      name: '그랑 쥬테 (Grand Jete)',
+      imageUrl: '/images/poses/grand-jete.jpg',
+      description:
+        '공중에서 다리를 벌리는 점프 동작으로, 높이와 아름다움을 추구하는 고급 동작입니다.',
+      difficulty: 'ADVANCED' as const,
+    },
+    {
+      name: '푸테 (Passe)',
+      imageUrl: '/images/poses/passe.jpg',
+      description:
+        '한 다리를 다른 다리의 무릎 높이로 올리는 동작으로, 다리의 유연성과 균형을 기릅니다.',
+      difficulty: 'INTERMEDIATE' as const,
+    },
+    {
+      name: '아라베스크 (Arabesque)',
+      imageUrl: '/images/poses/arabesque.jpg',
+      description:
+        '한 다리를 뒤로 올리고 팔을 앞으로 뻗는 자세로, 발레의 대표적인 자세 중 하나입니다.',
+      difficulty: 'INTERMEDIATE' as const,
+    },
+    {
+      name: '아티튜드 (Attitude)',
+      imageUrl: '/images/poses/attitude.jpg',
+      description:
+        '한 다리를 무릎을 구부려 뒤로 올리는 자세로, 우아함과 균형감각을 기릅니다.',
+      difficulty: 'ADVANCED' as const,
+    },
+    {
+      name: '포드브라 (Port de Bras)',
+      imageUrl: '/images/poses/port-de-bras.jpg',
+      description:
+        '팔의 움직임을 통한 표현 동작으로, 우아함과 표현력을 기릅니다.',
+      difficulty: 'BEGINNER' as const,
+    },
+  ];
+
+  // 발레 자세 데이터 생성
+  for (const poseData of balletPosesData) {
+    await prisma.balletPose.upsert({
+      where: { name: poseData.name },
+      update: {},
+      create: poseData,
+    });
+  }
+
+  // AcademyAdmin 관계 설정 - 선생님을 학원의 OWNER로 설정
+  await prisma.academyAdmin.upsert({
+    where: {
+      academyId_teacherId: {
+        academyId: academy.id,
+        teacherId: teacher.id,
+      },
+    },
+    update: {
+      role: 'OWNER',
+    },
+    create: {
+      academyId: academy.id,
+      teacherId: teacher.id,
+      role: 'OWNER',
+    },
+  });
+
+  // 테스트용 세션 콘텐츠 생성 (첫 번째 클래스의 첫 번째 세션에)
+  const firstClass = await prisma.class.findFirst({
+    where: { academyId: academy.id },
+    include: {
+      classSessions: {
+        take: 1,
+        orderBy: { date: 'asc' },
+      },
+    },
+  });
+
+  if (firstClass && firstClass.classSessions.length > 0) {
+    const firstSession = firstClass.classSessions[0];
+
+    // 발레 자세들을 가져와서 세션 콘텐츠로 추가
+    const poses = await prisma.balletPose.findMany({
+      take: 5, // 처음 5개 자세만 추가
+      orderBy: { difficulty: 'asc' },
+    });
+
+    for (let i = 0; i < poses.length; i++) {
+      await prisma.sessionContent.upsert({
+        where: {
+          sessionId_poseId_order: {
+            sessionId: firstSession.id,
+            poseId: poses[i].id,
+            order: i,
+          },
+        },
+        update: {},
+        create: {
+          sessionId: firstSession.id,
+          poseId: poses[i].id,
+          order: i,
+          notes: `테스트용 노트 - ${poses[i].name}`,
+        },
+      });
+    }
+  }
+
+  // 테스트용 활동 로그 생성
+  await prisma.activityLog.createMany({
+    data: [
+      {
+        userId: teacher.id,
+        userRole: 'TEACHER',
+        action: 'LOGIN',
+        description: '강사 로그인',
+        level: 'NORMAL',
+        ipAddress: '127.0.0.1',
+        userAgent: 'Test Browser',
+      },
+      {
+        userId: student.id,
+        userRole: 'STUDENT',
+        action: 'ENROLLMENT',
+        description: '클래스 수강 신청',
+        level: 'IMPORTANT',
+        ipAddress: '127.0.0.1',
+        userAgent: 'Test Browser',
+      },
+      {
+        userId: teacher.id,
+        userRole: 'TEACHER',
+        action: 'SESSION_CREATION',
+        description: '세션 생성',
+        level: 'IMPORTANT',
+        ipAddress: '127.0.0.1',
+        userAgent: 'Test Browser',
+      },
+    ],
+    skipDuplicates: true,
+  });
+
+  // 테스트용 세션 등록 및 결제 생성
+  if (firstClass && firstClass.classSessions.length > 0) {
+    const firstSession = firstClass.classSessions[0];
+
+    // 세션 등록 생성
+    const sessionEnrollment = await prisma.sessionEnrollment.create({
+      data: {
+        sessionId: firstSession.id,
+        studentId: student.id,
+        status: 'CONFIRMED',
+      },
+    });
+
+    // 결제 생성
+    const testPayment = await prisma.payment.create({
+      data: {
+        sessionEnrollmentId: sessionEnrollment.id,
+        studentId: student.id,
+        amount: 150000,
+        status: 'COMPLETED',
+        method: 'CARD',
+        paidAt: new Date(),
+      },
+    });
+
+    // 환불 요청 생성
+    await prisma.refundRequest.create({
+      data: {
+        sessionEnrollmentId: sessionEnrollment.id,
+        studentId: student.id,
+        reason: '개인 사정으로 인한 수강 취소',
+        refundAmount: 150000,
+        status: 'PENDING',
+        bankName: '신한은행',
+        accountNumber: '110-123-456789',
+        accountHolder: '이학생',
+      },
+    });
+  }
+
   console.log('Seed data created successfully');
 }
 

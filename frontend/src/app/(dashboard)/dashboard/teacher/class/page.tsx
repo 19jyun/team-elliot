@@ -84,14 +84,14 @@ export default function TeacherDashboard() {
     })) as ClassSession[];
   }, [mySessions]);
 
-  // 백엔드에서 받은 캘린더 범위 사용
+  // 백엔드에서 받은 캘린더 범위 사용 (새로운 정책 적용)
   const calendarRange = useMemo(() => {
     if (!myData?.calendarRange) {
-      // 백엔드에서 범위를 받지 못한 경우 기본값 사용
+      // 백엔드에서 범위를 받지 못한 경우 기본값 사용 (현재 월부터 3개월)
       const now = new Date();
       return {
         startDate: new Date(now.getFullYear(), now.getMonth(), 1),
-        endDate: new Date(now.getFullYear(), now.getMonth() + 3, 0),
+        endDate: new Date(now.getFullYear(), now.getMonth() + 2, 0), // 현재 월 + 2개월 = 3개월 범위
       };
     }
 
@@ -155,7 +155,7 @@ export default function TeacherDashboard() {
   const handleSessionClick = (session: any) => {
     setSelectedSession(session)
     setIsSessionDetailModalOpen(true)
-    setIsDateModalOpen(false) // 날짜 모달 닫기
+    // setIsDateModalOpen(false) 제거 - 날짜 모달이 닫히지 않도록 함
   }
 
   const closeSessionDetailModal = () => {

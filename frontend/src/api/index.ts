@@ -27,6 +27,25 @@ export {
   checkAttendance,
 } from "./class-sessions";
 
+// Ballet Pose API
+export {
+  getBalletPoses,
+  getBalletPose,
+  createBalletPose,
+  updateBalletPose,
+  deleteBalletPose,
+} from "./ballet-pose";
+
+// Session Content API
+export {
+  getSessionContents,
+  getSessionContent,
+  addSessionContent,
+  updateSessionContent,
+  deleteSessionContent,
+  reorderSessionContents,
+} from "./session-content";
+
 // Refund API
 export { refundApi } from "./refund";
 

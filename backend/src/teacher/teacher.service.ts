@@ -245,47 +245,67 @@ export class TeacherService {
       throw new NotFoundException('선생님을 찾을 수 없습니다.');
     }
 
-    // 캘린더 범위 계산 (선생님이 담당하는 클래스들의 startDate/endDate 기준)
+    // 1. KST 기준 오늘 날짜 추출
+    const now = new Date();
+    const kstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+
+    // 2. 시작일: 현재 월의 1일 (KST 기준)
+    const startDate = new Date(kstNow.getFullYear(), kstNow.getMonth(), 1);
+
+    // 3. 종료일: 3개월 후의 마지막 날 (KST 기준)
+    const threeMonthEnd = new Date(
+      kstNow.getFullYear(),
+      kstNow.getMonth() + 3,
+      0,
+    );
+
+    // 4. 유저 세션 중 가장 마지막 날짜 구하기 (KST 변환)
     const allSessions = teacher.classes.flatMap(
       (class_) => class_.classSessions,
     );
-    let calendarRange = null;
-
+    let latestSessionDate: Date | null = null;
     if (allSessions.length > 0) {
-      const sessionDates = allSessions.map((session) => session.date);
-      const earliestDate = new Date(
-        Math.min(...sessionDates.map((d) => d.getTime())),
+      latestSessionDate = new Date(
+        Math.max(
+          ...allSessions.map((s) => {
+            const sessionDate = new Date(s.date);
+            return sessionDate.getTime() + 9 * 60 * 60 * 1000;
+          }),
+        ),
       );
-      const latestDate = new Date(
-        Math.max(...sessionDates.map((d) => d.getTime())),
-      );
-
-      // 시작일을 해당 월의 1일로, 종료일을 해당 월의 마지막 날로 설정
-      const rangeStartDate = new Date(
-        earliestDate.getFullYear(),
-        earliestDate.getMonth(),
-        1,
-      );
-      const rangeEndDate = new Date(
-        latestDate.getFullYear(),
-        latestDate.getMonth() + 1,
-        0,
-      );
-
-      // 최소 3개월 범위 보장
-      const minEndDate = new Date(
-        rangeStartDate.getFullYear(),
-        rangeStartDate.getMonth() + 2,
-        0,
-      );
-      const finalEndDate =
-        rangeEndDate > minEndDate ? rangeEndDate : minEndDate;
-
-      calendarRange = {
-        startDate: rangeStartDate,
-        endDate: finalEndDate,
-      };
     }
+
+    // 5. 종료일 결정: 3개월 뒤 or 유저 세션 마지막 날짜 중 더 나중
+    let endDate = threeMonthEnd;
+    if (latestSessionDate && latestSessionDate > threeMonthEnd) {
+      // latestSessionDate가 속한 달의 마지막 날로 확장
+      endDate = new Date(
+        latestSessionDate.getFullYear(),
+        latestSessionDate.getMonth() + 1,
+        0,
+      );
+    }
+
+    // 6. 세션 필터링: 오늘 이후(KST)만 포함
+    const todayKST = new Date(
+      kstNow.getFullYear(),
+      kstNow.getMonth(),
+      kstNow.getDate(),
+    );
+    const futureSessions = teacher.classes.flatMap((class_) =>
+      class_.classSessions.filter((session) => {
+        const sessionDate = new Date(session.date);
+        const kstSessionDate = new Date(
+          sessionDate.getTime() + 9 * 60 * 60 * 1000,
+        );
+        return kstSessionDate >= todayKST;
+      }),
+    );
+
+    let calendarRange = {
+      startDate,
+      endDate,
+    };
 
     // 클래스와 세션 정보를 분리하여 반환
     const classes = teacher.classes.map((class_) => ({
@@ -305,27 +325,38 @@ export class TeacherService {
       enrollments: class_.enrollments,
     }));
 
+    // 미래/오늘 세션만 필터링하여 반환 (지난 세션 제외)
     const sessions = teacher.classes.flatMap((class_) =>
-      class_.classSessions.map((session) => ({
-        id: session.id,
-        date: session.date,
-        startTime: session.startTime,
-        endTime: session.endTime,
-        class: {
-          id: class_.id,
-          className: class_.className,
-          maxStudents: class_.maxStudents,
-          level: class_.level,
-          teacher: {
-            id: teacher.id,
-            name: teacher.name,
+      class_.classSessions
+        .filter((session) => {
+          const sessionDate = new Date(session.date);
+          sessionDate.setHours(0, 0, 0, 0); // UTC 기준으로 0시 설정
+          // KST로 변환하여 today와 비교
+          const kstSessionDate = new Date(
+            sessionDate.getTime() + 9 * 60 * 60 * 1000,
+          );
+          return kstSessionDate >= todayKST;
+        })
+        .map((session) => ({
+          id: session.id,
+          date: session.date,
+          startTime: session.startTime,
+          endTime: session.endTime,
+          class: {
+            id: class_.id,
+            className: class_.className,
+            maxStudents: class_.maxStudents,
+            level: class_.level,
+            teacher: {
+              id: teacher.id,
+              name: teacher.name,
+            },
           },
-        },
-        enrollmentCount: session.currentStudents || 0,
-        confirmedCount: session.enrollments.filter(
-          (enrollment) => enrollment.status === 'CONFIRMED',
-        ).length,
-      })),
+          enrollmentCount: session.currentStudents || 0,
+          confirmedCount: session.enrollments.filter(
+            (enrollment) => enrollment.status === 'CONFIRMED',
+          ).length,
+        })),
     );
 
     return {
