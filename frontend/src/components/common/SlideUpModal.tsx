@@ -130,7 +130,7 @@ export function SlideUpModal({
           </header>
 
           {/* Content */}
-          <main className={`px-5 ${contentClassName}`}>
+          <main className={`px-5 flex flex-col flex-1 min-h-0 ${contentClassName}`}>
             {children}
           </main>
         </div>
