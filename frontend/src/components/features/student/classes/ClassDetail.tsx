@@ -13,6 +13,7 @@ interface ClassDetailProps {
   classId: number;
   classSessions?: any[];
   showModificationButton?: boolean;
+  onModificationClick?: () => void;
 }
 
 interface TeacherInfo {
@@ -28,7 +29,7 @@ interface LocationInfo {
   mapImageUrl?: string;
 }
 
-export function ClassDetail({ classId, classSessions, showModificationButton = true }: ClassDetailProps) {
+export function ClassDetail({ classId, classSessions, showModificationButton = true, onModificationClick }: ClassDetailProps) {
   const [classDetails, setClassDetails] = useState<ClassDetailsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { navigateToSubPage } = useDashboardNavigation();
@@ -146,6 +147,12 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
     // 수강 변경 SubPage로 이동 (월 정보 포함)
     const subPagePath = `modify-${classId}-${targetMonth}`;
     console.log('수강 변경 SubPage 경로:', subPagePath);
+    
+    // 모달 닫기 콜백 호출
+    if (onModificationClick) {
+      onModificationClick();
+    }
+    
     navigateToSubPage(subPagePath);
   };
 
@@ -166,51 +173,46 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* 스크롤 가능한 본문 */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-5 pt-6 pb-2 font-pretendard">
-        {/* 수업 제목 */}
-        <div className="text-[20px] font-semibold text-[#262626] leading-[130%]">
-          {classDetails?.className}
-        </div>
-        {/* 요일 및 시간 */}
-        <div className="mt-2 text-base text-[#262626]">
-          {formatDayOfWeek(classDetails?.dayOfWeek ?? '')} {formatTime(classDetails?.startTime ?? '')} - {formatTime(classDetails?.endTime ?? '')}
-        </div>
-        {/* 구분선 */}
-        <div className="my-3 border-b border-gray-200" />
-        {/* 수업 설명 */}
-        <div className="text-base text-[#262626] whitespace-pre-line">
-          {classDetails?.classDetail?.description || classDetails?.description || '클래스 설명이 없습니다.'}
-        </div>
-        
-        {/* 선생님 프로필 카드 */}
-        {classDetails?.teacher && (
-          <div className="mt-6">
-            <TeacherProfileCard 
-              teacherId={classDetails.teacherId} 
-              isEditable={false}
-              showHeader={false}
-              compact={true}
-            />
-          </div>
-        )}
+    <div className="space-y-4">
+      {/* 수업 제목 */}
+      <div className="text-[20px] font-semibold text-[#262626] leading-[130%]">
+        {classDetails?.className}
       </div>
+      {/* 요일 및 시간 */}
+      <div className="text-base text-[#262626]">
+        {formatDayOfWeek(classDetails?.dayOfWeek ?? '')} {formatTime(classDetails?.startTime ?? '')} - {formatTime(classDetails?.endTime ?? '')}
+      </div>
+      {/* 구분선 */}
+      <div className="border-b border-gray-200" />
+      {/* 수업 설명 */}
+      <div className="text-base text-[#262626] whitespace-pre-line">
+        {classDetails?.classDetail?.description || classDetails?.description || '클래스 설명이 없습니다.'}
+      </div>
+      
+      {/* 선생님 프로필 카드 */}
+      {classDetails?.teacher && (
+        <div className="mt-6">
+          <TeacherProfileCard 
+            teacherId={classDetails.teacherId} 
+            isEditable={false}
+            showHeader={false}
+            compact={true}
+          />
+        </div>
+      )}
+
       {/* 하단 고정 버튼 */}
       {showModificationButton && (
-        <div className="flex-shrink-0 flex flex-col w-full bg-white px-5 pb-4 pt-2">
+        <div className="mt-6">
           <button
             onClick={handleModificationRequest}
             className={cn(
-              'flex-1 shrink gap-2.5 self-stretch px-2.5 py-4 rounded-lg min-w-[240px] size-full text-base font-semibold leading-snug text-white',
+              'w-full px-2.5 py-4 rounded-lg text-base font-semibold leading-snug text-white',
               'bg-[#AC9592] hover:bg-[#8c7a74] transition-colors',
             )}
           >
             수강 변경/취소
           </button>
-          <div className="flex flex-col items-center px-20 pt-2 pb-3 w-full max-sm:hidden">
-            <div className="flex shrink-0 bg-black h-[5px] rounded-[100px] w-[134px]" />
-          </div>
         </div>
       )}
     </div>

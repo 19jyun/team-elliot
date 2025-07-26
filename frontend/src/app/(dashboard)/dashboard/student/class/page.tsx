@@ -158,12 +158,16 @@ export default function StudentDashboard() {
   const handleSessionClick = (session: any) => {
     setSelectedSession(session)
     setIsSessionDetailModalOpen(true)
-    setIsDateModalOpen(false) // 날짜 모달 닫기
+    // setIsDateModalOpen(false) 제거 - 날짜 모달이 닫히지 않도록 함
   }
 
   const closeSessionDetailModal = () => {
     setIsSessionDetailModalOpen(false)
     setSelectedSession(null)
+    // 세션 상세 모달이 닫힐 때 날짜 모달도 함께 닫기
+    setIsDateModalOpen(false)
+    setClickedDate(null)
+    setSelectedDaySessions([])
   }
 
   // 수강중인 클래스 SubPage로 이동

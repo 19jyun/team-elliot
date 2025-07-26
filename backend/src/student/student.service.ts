@@ -87,54 +87,69 @@ export class StudentService {
       return enrollment.session.class;
     });
 
-    // Get individual sessions with session_id and status (활성 상태만)
-    const sessionClasses = activeEnrollments.map((enrollment) => ({
-      ...enrollment.session,
-      session_id: enrollment.session.id,
-      enrollment_status: enrollment.status || 'PENDING',
-      enrollment_id: enrollment.id,
-    }));
+    // 1. KST 기준 오늘 날짜 추출
+    const now = new Date();
+    const kstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
 
-    // 캘린더 범위 계산 (학생의 수강 기간)
-    let calendarRange = null;
+    // 2. 시작일: 현재 월의 1일 (KST 기준)
+    const startDate = new Date(kstNow.getFullYear(), kstNow.getMonth(), 1);
 
-    if (sessionClasses.length > 0) {
-      const sessionDates = sessionClasses.map(
-        (session) => new Date(session.date),
-      );
-      const earliestDate = new Date(
-        Math.min(...sessionDates.map((d) => d.getTime())),
-      );
-      const latestDate = new Date(
-        Math.max(...sessionDates.map((d) => d.getTime())),
-      );
+    // 3. 종료일: 3개월 후의 마지막 날 (KST 기준)
+    const threeMonthEnd = new Date(
+      kstNow.getFullYear(),
+      kstNow.getMonth() + 3,
+      0,
+    );
 
-      // 시작일을 해당 월의 1일로, 종료일을 해당 월의 마지막 날로 설정
-      const rangeStartDate = new Date(
-        earliestDate.getFullYear(),
-        earliestDate.getMonth(),
-        1,
+    // 4. 유저 세션 중 가장 마지막 날짜 구하기 (KST 변환)
+    let latestSessionDate: Date | null = null;
+    if (activeEnrollments.length > 0) {
+      latestSessionDate = new Date(
+        Math.max(
+          ...activeEnrollments.map((e) => {
+            const sessionDate = new Date(e.session.date);
+            return sessionDate.getTime() + 9 * 60 * 60 * 1000;
+          }),
+        ),
       );
-      const rangeEndDate = new Date(
-        latestDate.getFullYear(),
-        latestDate.getMonth() + 1,
-        0,
-      );
-
-      // 최소 3개월 범위 보장
-      const minEndDate = new Date(
-        rangeStartDate.getFullYear(),
-        rangeStartDate.getMonth() + 2,
-        0,
-      );
-      const finalEndDate =
-        rangeEndDate > minEndDate ? rangeEndDate : minEndDate;
-
-      calendarRange = {
-        startDate: rangeStartDate,
-        endDate: finalEndDate,
-      };
     }
+
+    // 5. 종료일 결정: 3개월 뒤 or 유저 세션 마지막 날짜 중 더 나중
+    let endDate = threeMonthEnd;
+    if (latestSessionDate && latestSessionDate > threeMonthEnd) {
+      // latestSessionDate가 속한 달의 마지막 날로 확장
+      endDate = new Date(
+        latestSessionDate.getFullYear(),
+        latestSessionDate.getMonth() + 1,
+        0,
+      );
+    }
+
+    // 6. 세션 필터링: 오늘 이후(KST)만 포함
+    const todayKST = new Date(
+      kstNow.getFullYear(),
+      kstNow.getMonth(),
+      kstNow.getDate(),
+    );
+    const sessionClasses = activeEnrollments
+      .filter((enrollment) => {
+        const sessionDate = new Date(enrollment.session.date);
+        const kstSessionDate = new Date(
+          sessionDate.getTime() + 9 * 60 * 60 * 1000,
+        );
+        return kstSessionDate >= todayKST;
+      })
+      .map((enrollment) => ({
+        ...enrollment.session,
+        session_id: enrollment.session.id,
+        enrollment_status: enrollment.status || 'PENDING',
+        enrollment_id: enrollment.id,
+      }));
+
+    let calendarRange = {
+      startDate,
+      endDate,
+    };
 
     return {
       enrollmentClasses,

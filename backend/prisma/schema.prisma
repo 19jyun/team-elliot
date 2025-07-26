@@ -309,6 +309,7 @@ model ClassSession {
   currentStudents Int                @default(0) @map("current_students")
   class          Class               @relation(fields: [classId], references: [id])
   enrollments    SessionEnrollment[]
+  contents       SessionContent[]    // 세션 내용 추가
 
   @@unique([classId, date])
   @@map("class_sessions")
@@ -441,4 +442,42 @@ model AcademyCreationRequest {
   @@index([teacherId, status])
   @@index([status, createdAt])
   @@map("academy_creation_requests")
+}
+
+// 발레 자세 난이도 enum
+enum PoseDifficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+// 발레 자세 모델
+model BalletPose {
+  id          Int           @id @default(autoincrement())
+  name        String        @unique @db.VarChar(100) // 자세명 (unique 추가)
+  imageUrl    String?       @map("image_url") @db.VarChar(255) // 자세 사진 URL
+  description String        @db.Text // 자세 설명
+  difficulty  PoseDifficulty @default(BEGINNER) // 난이도
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  
+  sessionContents SessionContent[] // 세션 내용과의 관계
+  
+  @@map("ballet_poses")
+}
+
+// 세션 내용 모델
+model SessionContent {
+  id          Int        @id @default(autoincrement())
+  sessionId   Int        @map("session_id")
+  poseId      Int        @map("pose_id")
+  order       Int        @default(0) // 순서
+  notes       String?    @db.Text // 추가 노트
+  createdAt   DateTime   @default(now())
+  
+  session     ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  pose        BalletPose   @relation(fields: [poseId], references: [id])
+  
+  @@unique([sessionId, poseId, order])
+  @@map("session_contents")
 }
