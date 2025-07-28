@@ -6,10 +6,10 @@ import { format } from 'date-fns'
 interface SessionCardProps {
   session: any
   onClick: () => void
-  userRole: 'student' | 'teacher'
+  role: 'student' | 'teacher' | 'principal'
 }
 
-export function SessionCard({ session, onClick, userRole }: SessionCardProps) {
+export function SessionCard({ session, onClick, role }: SessionCardProps) {
   const formatTime = (time: string | Date) => {
     const date = typeof time === 'string' ? new Date(time) : time
     return date.toLocaleTimeString('ko-KR', { 
@@ -50,6 +50,9 @@ export function SessionCard({ session, onClick, userRole }: SessionCardProps) {
     return levelTexts[level] || '초급'
   }
 
+  // Teacher와 Principal은 동일한 권한을 가짐
+  const canManageSessions = role === 'teacher' || role === 'principal'
+
   return (
     <div
       className="flex flex-col p-4 mb-3 rounded-lg border border-gray-200 cursor-pointer hover:shadow-md transition-colors"
@@ -61,7 +64,7 @@ export function SessionCard({ session, onClick, userRole }: SessionCardProps) {
         <span className="text-sm font-medium text-stone-600">
           {formatTime(session.startTime)} - {formatTime(session.endTime)}
         </span>
-        {userRole === 'teacher' && (
+        {canManageSessions && (
           <span className="text-xs text-stone-500">
             ({session.enrollmentCount}/{session.class?.maxStudents || 0}명)
           </span>
@@ -84,14 +87,14 @@ export function SessionCard({ session, onClick, userRole }: SessionCardProps) {
       </div>
 
       {/* 선생님 정보 (학생용) */}
-      {userRole === 'student' && session.class?.teacher?.name && (
+      {role === 'student' && session.class?.teacher?.name && (
         <div className="text-sm text-stone-600">
           {session.class.teacher.name} 선생님
         </div>
       )}
 
-      {/* 세션 상태 (선생님용) */}
-      {userRole === 'teacher' && (
+      {/* 세션 상태 (Teacher/Principal용) */}
+      {canManageSessions && (
         <div className="flex items-center gap-2 mt-2">
           <span className="text-xs text-stone-500">
             확정: {session.confirmedCount}명

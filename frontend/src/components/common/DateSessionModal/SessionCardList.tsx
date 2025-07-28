@@ -6,10 +6,10 @@ import { SessionCard } from './SessionCard'
 interface SessionCardListProps {
   sessions: any[]
   onSessionClick: (session: any) => void
-  userRole: 'student' | 'teacher'
+  role: 'student' | 'teacher' | 'principal'
 }
 
-export function SessionCardList({ sessions, onSessionClick, userRole }: SessionCardListProps) {
+export function SessionCardList({ sessions, onSessionClick, role }: SessionCardListProps) {
   // 세션들을 시간순으로 정렬
   const sortedSessions = React.useMemo(() => {
     return [...sessions].sort((a, b) => {
@@ -37,7 +37,7 @@ export function SessionCardList({ sessions, onSessionClick, userRole }: SessionC
           key={`${session.id}-${index}`}
           session={session}
           onClick={() => onSessionClick(session)}
-          userRole={userRole}
+          role={role}
         />
       ))}
     </div>

@@ -4,7 +4,7 @@ import React from 'react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
-import { SessionCardList } from './SessionCardList'
+import { SessionCardList } from '../SessionCardList'
 
 interface DateSessionModalProps {
   isOpen: boolean
@@ -12,7 +12,7 @@ interface DateSessionModalProps {
   sessions: any[]
   onClose: () => void
   onSessionClick: (session: any) => void
-  userRole: 'student' | 'teacher'
+  role: 'student' | 'teacher' | 'principal'
 }
 
 export function DateSessionModal({ 
@@ -21,7 +21,7 @@ export function DateSessionModal({
   sessions, 
   onClose, 
   onSessionClick,
-  userRole 
+  role 
 }: DateSessionModalProps) {
   const formatDate = (date: Date) => {
     return format(date, 'M월 d일 (E)', { locale: ko })
@@ -42,7 +42,7 @@ export function DateSessionModal({
       <SessionCardList
         sessions={sessions}
         onSessionClick={onSessionClick}
-        userRole={userRole}
+        role={role}
       />
     </SlideUpModal>
   )

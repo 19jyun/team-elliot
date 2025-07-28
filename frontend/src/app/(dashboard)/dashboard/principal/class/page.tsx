@@ -6,7 +6,7 @@ import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { getPrincipalAllSessions } from '@/api/principal'
-import { DateSessionModal } from '@/components/calendar/DateSessionModal'
+import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessionModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
 import { ClassSession } from '@/types/api/class'
@@ -200,7 +200,7 @@ export default function PrincipalClassPage() {
         sessions={selectedDaySessions}
         onClose={closeDateModal}
         onSessionClick={(session) => console.log('Session clicked:', session)}
-        userRole="teacher"
+        role="principal"
       />
     </div>
   )

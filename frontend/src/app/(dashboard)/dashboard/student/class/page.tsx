@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation'
 import { getMyClasses } from '@/api/student'
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
-import { DateSessionModal } from '@/components/calendar/DateSessionModal'
+import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessionModal'
 import { StudentSessionDetailModal } from '@/components/features/student/classes/StudentSessionDetailModal'
 import { ClassSession } from '@/types/api/class'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
@@ -232,7 +232,7 @@ export default function StudentDashboard() {
         sessions={selectedDaySessions}
         onClose={closeDateModal}
         onSessionClick={handleSessionClick}
-        userRole="student"
+        role="student"
       />
 
       {/* Student Session Detail Modal */}
