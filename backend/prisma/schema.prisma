@@ -17,6 +17,7 @@ enum Role {
   ADMIN
   TEACHER
   STUDENT
+  PRINCIPAL
 }
 
 // 활동 로그 레벨 enum
@@ -62,8 +63,31 @@ model Academy {
   students    StudentAcademy[] // 가입한 학생들
   admins      AcademyAdmin[] // 학원 관리자들
   joinRequests AcademyJoinRequest[] // 학원 가입 신청들
+  principal   Principal? // 학원 원장 (1대1 관계)
 
   @@map("academies")
+}
+
+// 학원 원장 모델 - 학원과 1대1 관계
+model Principal {
+  id          Int      @id @default(autoincrement())
+  userId      String   @unique @db.VarChar(255)
+  password    String   @db.VarChar(255)
+  name        String   @db.VarChar(100)
+  phoneNumber String?  @map("phone_number") @db.VarChar(20)
+  email       String?  @db.VarChar(255)
+  introduction String? @db.Text // 원장 소개
+  photoUrl    String?  @map("photo_url") @db.VarChar(255)
+  education   String[] // 학력/경력 사항
+  certifications String[] // 자격증 정보
+  yearsOfExperience Int? @map("years_of_experience") // 원장 경력 연수
+  academyId   Int      @unique @map("academy_id") // 학원과 1대1 관계
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  academy     Academy  @relation(fields: [academyId], references: [id], onDelete: Cascade)
+
+  @@map("principals")
 }
 
 // 학원-관리자 관계 모델 (다대다 관계)

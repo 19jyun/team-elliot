@@ -5,10 +5,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { getTeacherClassesWithSessions } from '@/api/teacher'
-import { TeacherClassesWithSessionsResponse } from '@/types/api/teacher'
+import { getPrincipalAllSessions } from '@/api/principal'
 import { DateSessionModal } from '@/components/calendar/DateSessionModal'
-import { TeacherSessionDetailModal } from '@/components/features/teacher/classes/CalendarInteractions/TeacherSessionDetailModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
 import { ClassSession } from '@/types/api/class'
@@ -24,7 +22,7 @@ type ExtendedSession = {
   } & { name?: string | null | undefined; email?: string | null | undefined; image?: string | null | undefined }
 }
 
-export default function TeacherDashboard() {
+export default function PrincipalClassPage() {
   const router = useRouter()
   const { data: session, status } = useSession({
     required: true,
@@ -39,26 +37,22 @@ export default function TeacherDashboard() {
   const [clickedDate, setClickedDate] = useState<Date | null>(null)
   const [isDateModalOpen, setIsDateModalOpen] = useState(false)
   const [selectedDaySessions, setSelectedDaySessions] = useState<any[]>([])
-  
-  // 세션 상세 모달 상태 추가
-  const [selectedSession, setSelectedSession] = useState<any>(null)
-  const [isSessionDetailModalOpen, setIsSessionDetailModalOpen] = useState(false)
 
-  // 선생님 클래스와 세션 정보를 한 번에 조회 (토큰 기반)
-  const { data: myData, isLoading, error } = useQuery({
-    queryKey: ['teacher-classes-with-sessions'],
-    queryFn: getTeacherClassesWithSessions,
+  // Principal의 모든 세션 조회
+  const { data: allSessions, isLoading, error } = useQuery({
+    queryKey: ['principal-all-sessions'],
+    queryFn: getPrincipalAllSessions,
     enabled: status === 'authenticated' && !!session?.user && !!session?.accessToken,
     retry: false,
   })
 
-  const mySessions = (myData as TeacherClassesWithSessionsResponse)?.sessions || []
+  const sessions = allSessions || []
 
   // ConnectedCalendar용 데이터 변환
   const convertedSessions = useMemo(() => {
-    if (!mySessions) return [];
+    if (!sessions) return [];
     
-    return mySessions.map((session: any) => ({
+    return sessions.map((session: any) => ({
       id: session.id,
       classId: session.classId || session.id,
       date: session.date,
@@ -66,11 +60,11 @@ export default function TeacherDashboard() {
       endTime: session.endTime,
       currentStudents: session.currentStudents || 0,
       maxStudents: session.maxStudents || 0,
-      isEnrollable: false, // teacher-view에서는 선택 불가
+      isEnrollable: false, // principal-view에서는 선택 불가
       isFull: session.currentStudents >= session.maxStudents,
       isPastStartTime: new Date(session.date + ' ' + session.startTime) < new Date(),
-      isAlreadyEnrolled: false, // teacher-view에서는 해당 없음
-      studentEnrollmentStatus: 'CONFIRMED', // teacher-view에서는 해당 없음
+      isAlreadyEnrolled: false, // principal-view에서는 해당 없음
+      studentEnrollmentStatus: 'CONFIRMED', // principal-view에서는 해당 없음
       class: {
         id: session.class?.id || session.classId || session.id,
         className: session.class?.className || '클래스',
@@ -82,24 +76,17 @@ export default function TeacherDashboard() {
         },
       },
     })) as ClassSession[];
-  }, [mySessions]);
+  }, [sessions]);
 
   // 백엔드에서 받은 캘린더 범위 사용 (새로운 정책 적용)
   const calendarRange = useMemo(() => {
-    if (!myData?.calendarRange) {
-      // 백엔드에서 범위를 받지 못한 경우 기본값 사용 (현재 월부터 3개월)
-      const now = new Date();
-      return {
-        startDate: new Date(now.getFullYear(), now.getMonth(), 1),
-        endDate: new Date(now.getFullYear(), now.getMonth() + 2, 0), // 현재 월 + 2개월 = 3개월 범위
-      };
-    }
-
+    // 백엔드에서 범위를 받지 못한 경우 기본값 사용 (현재 월부터 3개월)
+    const now = new Date();
     return {
-      startDate: new Date(myData.calendarRange.startDate),
-      endDate: new Date(myData.calendarRange.endDate),
+      startDate: new Date(now.getFullYear(), now.getMonth(), 1),
+      endDate: new Date(now.getFullYear(), now.getMonth() + 2, 0), // 현재 월 + 2개월 = 3개월 범위
     };
-  }, [myData?.calendarRange]);
+  }, []);
 
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {
@@ -113,7 +100,7 @@ export default function TeacherDashboard() {
   // 에러 처리
   if (error) {
     if ((error as any)?.response?.status === 401) {
-              signOut({ redirect: true, callbackUrl: '/auth' });
+      signOut({ redirect: true, callbackUrl: '/auth' });
       return null;
     }
     
@@ -135,7 +122,7 @@ export default function TeacherDashboard() {
     const clickedDateObj = new Date(dateString);
     
     // 해당 날짜의 세션들 필터링
-    const daySessions = mySessions?.filter((session: any) => {
+    const daySessions = sessions?.filter((session: any) => {
       const sessionDate = new Date(session.date);
       return sessionDate.toDateString() === clickedDateObj.toDateString();
     }) || [];
@@ -151,21 +138,9 @@ export default function TeacherDashboard() {
     setSelectedDaySessions([])
   }
 
-  // 세션 클릭 핸들러 추가
-  const handleSessionClick = (session: any) => {
-    setSelectedSession(session)
-    setIsSessionDetailModalOpen(true)
-    // setIsDateModalOpen(false) 제거 - 날짜 모달이 닫히지 않도록 함
-  }
-
-  const closeSessionDetailModal = () => {
-    setIsSessionDetailModalOpen(false)
-    setSelectedSession(null)
-  }
-
-  // 담당 클래스 SubPage로 이동
-  const handleTeacherClassesClick = () => {
-    navigateToSubPage('teacher-classes')
+  // 전체 클래스 SubPage로 이동
+  const handlePrincipalClassesClick = () => {
+    navigateToSubPage('principal-all-classes')
   }
 
   return (
@@ -176,15 +151,15 @@ export default function TeacherDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-stone-700">
-                안녕하세요, {session?.user?.name} 선생님!
+                안녕하세요, {session?.user?.name} 원장님!
               </h1>
-              <p className="mt-2 text-stone-500">오늘도 즐거운 수업되세요!</p>
+              <p className="mt-2 text-stone-500">학원의 모든 강의를 한눈에 확인하세요!</p>
             </div>
             {/* 캘린더 아이콘 버튼 */}
             <button
-              onClick={handleTeacherClassesClick}
+              onClick={handlePrincipalClassesClick}
               className="flex items-center justify-center w-12 h-12 bg-stone-100 rounded-full hover:bg-stone-200 transition-colors"
-              aria-label="담당 클래스 보기"
+              aria-label="전체 클래스 보기"
             >
               <svg
                 className="w-6 h-6 text-stone-700"
@@ -209,7 +184,7 @@ export default function TeacherDashboard() {
             mode="teacher-view"
             sessions={convertedSessions}
             selectedSessionIds={new Set()}
-            onSessionSelect={() => {}} // teacher-view에서는 선택 기능 없음
+            onSessionSelect={() => {}} // principal-view에서는 선택 기능 없음
             onDateClick={handleDateClick}
             calendarRange={calendarRange}
           >
@@ -224,16 +199,9 @@ export default function TeacherDashboard() {
         selectedDate={clickedDate}
         sessions={selectedDaySessions}
         onClose={closeDateModal}
-        onSessionClick={handleSessionClick}
+        onSessionClick={(session) => console.log('Session clicked:', session)}
         userRole="teacher"
-      />
-
-      {/* Teacher Session Detail Modal */}
-      <TeacherSessionDetailModal
-        isOpen={isSessionDetailModalOpen}
-        session={selectedSession}
-        onClose={closeSessionDetailModal}
       />
     </div>
   )
-}
+} 

@@ -6,9 +6,9 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { getTeacherClassesWithSessions } from '@/api/teacher'
-import { TeacherClassesList } from '@/components/features/teacher/classes/TeacherClassesList'
-import { TeacherClassSessionModal } from '@/components/features/teacher/classes/TeacherClassSessionModal'
-import { TeacherClassesWithSessionsResponse } from '@/types/api/teacher'
+import { ClassList } from '@/components/common/ClassContainer/ClassList'
+import { ClassSessionModal } from '@/components/common/ClassContainer/ClassSessionModal'
+import { TeacherClassesWithSessionsResponse } from '@/types/api/teacher'  
 
 type ClassData = TeacherClassesWithSessionsResponse['classes'][0]
 
@@ -77,32 +77,29 @@ export function TeacherClassesContainer() {
   return (
     <div className="flex flex-col h-full bg-white">
       {/* 헤더 */}
-      <div className="flex-shrink-0 px-5 py-6">
-        <h1 className="text-2xl font-bold text-stone-700">
-          담당 클래스
-        </h1>
-        <p className="mt-2 text-stone-500">
-          현재 담당하고 있는 클래스와 세션을 확인하세요
-        </p>
+      <div className="flex-shrink-0 px-5 py-6 border-b border-gray-200">
+        <h1 className="text-2xl font-bold text-stone-700">담당 클래스</h1>
+        <p className="mt-2 text-stone-500">현재 담당하고 있는 클래스와 세션을 확인하세요</p>
       </div>
 
-      {/* 메인 컨텐츠 */}
-      <div className="flex-1 min-h-0 bg-white px-5">
-        {/* 담당 클래스 리스트 */}
-        <div className="w-full h-full">
-          <TeacherClassesList
-            classes={myClasses || []}
-            onClassClick={handleClassClick}
-          />
-        </div>
+      {/* 클래스 리스트 */}
+      <div className="flex-1 px-5 py-4">
+        <ClassList
+          classes={myClasses}
+          onClassClick={handleClassClick}
+          showTeacher={false}
+          role="teacher"
+          emptyMessage="담당하고 있는 클래스가 없습니다."
+        />
       </div>
 
-      {/* Teacher Class Session Modal */}
-      <TeacherClassSessionModal
+      {/* Class Session Modal */}
+      <ClassSessionModal
         isOpen={isSessionModalOpen}
         selectedClass={selectedClass}
         sessions={mySessions}
         onClose={closeSessionModal}
+        role="teacher"
       />
     </div>
   )

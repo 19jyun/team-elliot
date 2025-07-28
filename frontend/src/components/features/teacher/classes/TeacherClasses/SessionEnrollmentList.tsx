@@ -4,7 +4,7 @@ import React from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { updateEnrollmentStatus } from '@/api/class-sessions'
 import { toast } from 'sonner'
-import { EnrolledStudentCardList } from './EnrolledStudentCardList'
+import { EnrolledStudentCardList } from '../CalendarInteractions/SessionComponents/EnrolledStudents/EnrolledStudentCardList'
 
 interface SessionEnrollment {
   id: number

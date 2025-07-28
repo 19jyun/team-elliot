@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { StudentDashboardPage } from '@/components/dashboard/StudentDashboardPage';
 import { TeacherDashboardPage } from '@/components/dashboard/TeacherDashboardPage';
 import { AdminDashboardPage } from '@/components/dashboard/AdminDashboardPage';
+import { PrincipalDashboardPage } from '@/components/dashboard/PrincipalDashboardPage';
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -35,6 +36,8 @@ export default function DashboardPage() {
       return <TeacherDashboardPage />;
     case 'ADMIN':
       return <AdminDashboardPage />;
+    case 'PRINCIPAL':
+      return <PrincipalDashboardPage />;
     default:
       return <StudentDashboardPage />;
   }

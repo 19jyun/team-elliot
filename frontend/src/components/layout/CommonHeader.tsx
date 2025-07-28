@@ -9,6 +9,7 @@ import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { useStudentContext, studentNavigationItems } from '@/contexts/StudentContext';
 import { useTeacherContext, teacherNavigationItems } from '@/contexts/TeacherContext';
 import { useAdminContext, adminNavigationItems } from '@/contexts/AdminContext';
+import { usePrincipalContext, principalNavigationItems } from '@/contexts/PrincipalContext';
 
 export function CommonHeader() {
   const { data: session } = useSession();
@@ -38,6 +39,11 @@ export function CommonHeader() {
       navigationItems = ctx.navigationItems;
       activeTab = ctx.activeTab;
       handleTabChange = ctx.handleTabChange;
+    } else if (userRole === 'PRINCIPAL') {
+      const ctx = usePrincipalContext();
+      navigationItems = ctx.navigationItems;
+      activeTab = ctx.activeTab;
+      handleTabChange = ctx.handleTabChange;
     }
   } catch (error) {
     // Context가 아직 준비되지 않은 경우 기본값 사용
@@ -53,6 +59,7 @@ export function CommonHeader() {
       STUDENT: '/dashboard/student',
       TEACHER: '/dashboard/teacher',
       ADMIN: '/dashboard/admin',
+      PRINCIPAL: '/dashboard/principal',
     };
     
     return pathname === defaultPaths[userRole as keyof typeof defaultPaths] || pathname === '/dashboard';

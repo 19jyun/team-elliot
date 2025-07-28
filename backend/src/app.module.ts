@@ -16,6 +16,7 @@ import { ActivityLogModule } from './activity-log/activity-log.module';
 import { RefundModule } from './refund/refund.module';
 import { BalletPoseModule } from './ballet-pose/ballet-pose.module';
 import { SessionContentModule } from './session-content/session-content.module';
+import { PrincipalModule } from './principal/principal.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { SessionContentModule } from './session-content/session-content.module';
     RefundModule,
     BalletPoseModule,
     SessionContentModule,
+    PrincipalModule,
   ],
   providers: [PrismaService],
 })

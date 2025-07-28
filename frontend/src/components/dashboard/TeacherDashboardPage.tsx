@@ -11,7 +11,7 @@ import { EnrollmentManagementContainer } from './teacher/class_management/enroll
 import { TeacherProfileManagement } from './teacher/profile/TeacherProfileManagement/TeacherProfileManagement';
 import { TeacherPersonalInfoManagement } from './teacher/profile/TeacherPersonalInfoManagement/TeacherPersonalInfoManagement';
 import AcademyManagementContainer from './teacher/profile/AcademyManagement/AcademyManagementContainer';
-import { TeacherClassesContainer } from './teacher/TeacherClasses/TeacherClassesContainer';
+import { TeacherClassesContainer } from '../features/teacher/classes/TeacherClasses/TeacherClassesContainer';
 import { DashboardContainer } from './DashboardContainer';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';

@@ -118,6 +118,51 @@ async function main() {
     },
   });
 
+  // Principal 계정 생성
+  const principal = await prisma.principal.upsert({
+    where: { userId: 'principal123' },
+    update: {
+      introduction: '팀 엘리엇 발레 학원의 원장입니다.',
+      photoUrl: 'https://example.com/principal-photo.jpg',
+      education: [
+        '서울예술대학교 무용과 졸업',
+        '러시아 볼쇼이 발레 아카데미 수료',
+        '현) 팀 엘리엇 발레 학원 원장',
+        '전) 서울발레단 단원',
+        '전) 국립발레단 객원무용수',
+      ],
+      certifications: [
+        '발레 지도자 자격증',
+        '예술경영지도사 자격증',
+        '문화예술교육사 자격증',
+      ],
+      yearsOfExperience: 15,
+    },
+    create: {
+      userId: 'principal123',
+      password: hashedPassword,
+      name: '김원장',
+      phoneNumber: '010-1234-5678',
+      email: 'principal@teamelliot.com',
+      introduction: '팀 엘리엇 발레 학원의 원장입니다.',
+      photoUrl: 'https://example.com/principal-photo.jpg',
+      education: [
+        '서울예술대학교 무용과 졸업',
+        '러시아 볼쇼이 발레 아카데미 수료',
+        '현) 팀 엘리엇 발레 학원 원장',
+        '전) 서울발레단 단원',
+        '전) 국립발레단 객원무용수',
+      ],
+      certifications: [
+        '발레 지도자 자격증',
+        '예술경영지도사 자격증',
+        '문화예술교육사 자격증',
+      ],
+      yearsOfExperience: 15,
+      academyId: academy.id,
+    },
+  });
+
   // Create test teacher
   const teacher = await prisma.teacher.upsert({
     where: { userId: 'teacher123' },

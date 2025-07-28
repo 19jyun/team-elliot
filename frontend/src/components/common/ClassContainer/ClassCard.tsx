@@ -1,15 +1,6 @@
 import React from 'react'
 import { format } from 'date-fns'
 
-import { TeacherClassesResponse } from '@/types/api/teacher'
-
-type ClassData = TeacherClassesResponse[0]
-
-interface TeacherClassCardProps {
-  classData: ClassData
-  onClick: (classData: ClassData) => void
-}
-
 type LevelType = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'
 
 const levelBgColor: Record<LevelType, string> = {
@@ -46,9 +37,34 @@ const formatTime = (timeString: string) => {
   }
 }
 
-export const TeacherClassCard: React.FC<TeacherClassCardProps> = ({
+// 공통 클래스 데이터 인터페이스
+export interface CommonClassData {
+  id: number
+  className: string
+  level: string
+  dayOfWeek: string
+  startTime: string
+  endTime: string
+  startDate: string
+  endDate: string
+  teacher?: {
+    id: number
+    name: string
+  }
+}
+
+interface ClassCardProps {
+  classData: CommonClassData
+  onClick: (classData: CommonClassData) => void
+  showTeacher?: boolean // 담당 선생님 표시 여부 (Principal에서 사용)
+  role?: 'teacher' | 'principal' | 'student'
+}
+
+export const ClassCard: React.FC<ClassCardProps> = ({
   classData,
   onClick,
+  showTeacher = false,
+  role = 'teacher',
 }) => {
   // level 타입 보정
   const safeLevel: LevelType =
@@ -75,6 +91,22 @@ export const TeacherClassCard: React.FC<TeacherClassCardProps> = ({
       }}>
         {classData.className}
       </div>
+      
+      {/* 담당 선생님 (showTeacher가 true일 때만 표시) */}
+      {showTeacher && classData.teacher && (
+        <div style={{
+          color: 'var(--Primary-Dark, #573B30)',
+          fontFamily: 'Pretendard Variable',
+          fontSize: 14,
+          fontStyle: 'normal',
+          fontWeight: 500,
+          lineHeight: '140%',
+          letterSpacing: '-0.14px',
+          marginBottom: '4px',
+        }}>
+          담당: {classData.teacher.name} 선생님
+        </div>
+      )}
       
       {/* 수업 시간 */}
       <div style={{
