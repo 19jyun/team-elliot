@@ -1,8 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { StatusStep } from './StatusStep';
+import { useQuery } from '@tanstack/react-query';
+import { getMyAcademy } from '@/api/teacher';
+import { getPrincipalAcademy } from '@/api/principal';
+import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 
 const LEVELS = [
@@ -11,39 +15,78 @@ const LEVELS = [
   { value: 'ADVANCED', label: '고급' },
 ];
 
-export function CreateClassStep1() {
+export function CreateClassStepInfo() {
   const { createClass, setClassFormData, setCreateClassStep, goBack } = useDashboardNavigation();
   const { classFormData } = createClass;
-  
+  const { data: session } = useSession();
+
   const [formData, setFormData] = useState({
     name: classFormData.name,
     description: classFormData.description,
     level: classFormData.level || 'BEGINNER',
     maxStudents: classFormData.maxStudents,
-    price: classFormData.price,
+    price: classFormData.price || 50000,
+  });
+
+  // 학원 정보 조회 (Principal용)
+  const { data: myAcademy, isLoading: isAcademyLoading } = useQuery({
+    queryKey: ['principal-academy'],
+    queryFn: getPrincipalAcademy,
+    enabled: true,
   });
 
   const handleInputChange = (field: string, value: string | number) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // 필수 필드 검증 함수
+  const isFormValid = () => {
+    return (
+      formData.name.trim() !== '' &&
+      formData.description.trim() !== '' &&
+      formData.maxStudents >= 1 &&
+      formData.price >= 0 &&
+      !!myAcademy
+    );
   };
 
   const handleNext = () => {
-    // academyId 체크 (임시로 1로 설정, 실제로는 사용자 정보에서 가져와야 함)
-    const academyId = 1; // TODO: 실제 사용자의 academyId를 가져오는 로직 필요
-    
-    if (!academyId) {
-      toast.error('학원 등록을 먼저 해주세요.');
+    // 필수 필드 검증
+    if (!formData.name.trim()) {
+      toast.error('강의명을 입력해주세요.');
+      return;
+    }
+    if (!formData.description.trim()) {
+      toast.error('강의 설명을 입력해주세요.');
+      return;
+    }
+    if (formData.maxStudents < 1) {
+      toast.error('최대 수강생 수는 1명 이상이어야 합니다.');
+      return;
+    }
+    if (formData.price < 0) {
+      toast.error('강의료는 0원 이상이어야 합니다.');
       return;
     }
 
+    // 학원 가입 여부 확인
+    if (!myAcademy) {
+      toast.error('학원을 먼저 가입해주세요!');
+      return;
+    }
+
+    // DashboardContext의 createClass 상태 업데이트
+    const academyId = myAcademy.id;
     setClassFormData({
-      ...formData,
+      ...classFormData,
+      name: formData.name,
+      description: formData.description,
+      level: formData.level,
+      maxStudents: formData.maxStudents,
+      price: formData.price,
       academyId,
     });
-    setCreateClassStep('schedule');
+    setCreateClassStep('teacher');
   };
 
   const handleBack = () => {
@@ -59,6 +102,12 @@ export function CreateClassStep1() {
     },
     {
       icon: '/icons/CourseRegistrationsStatusSteps2.svg',
+      label: '선생님 지정',
+      isActive: false,
+      isCompleted: false,
+    },
+    {
+      icon: '/icons/CourseRegistrationsStatusSteps2.svg',
       label: '일정 설정',
       isActive: false,
       isCompleted: false,
@@ -70,6 +119,14 @@ export function CreateClassStep1() {
       isCompleted: false,
     },
   ];
+
+  if (isAcademyLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-white relative">
@@ -130,7 +187,7 @@ export function CreateClassStep1() {
                     onClick={() => handleInputChange('level', level.value)}
                     className={`px-4 py-3 text-sm border rounded-lg transition-colors ${
                       formData.level === level.value
-                        ? 'bg-stone-700 text-white border-stone-700'
+                        ? 'bg-[#AC9592] text-white border-[#AC9592]'
                         : 'bg-white text-stone-700 border-stone-300 hover:border-stone-500'
                     }`}
                   >
@@ -146,27 +203,75 @@ export function CreateClassStep1() {
                 <label className="block text-sm font-medium text-stone-700 mb-2">
                   최대 수강생 수 *
                 </label>
-                <input
-                  type="number"
-                  value={formData.maxStudents}
-                  onChange={(e) => handleInputChange('maxStudents', parseInt(e.target.value) || 0)}
-                  className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-transparent"
-                  min="1"
-                  max="50"
-                />
+                <div className="flex items-center border border-stone-300 rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => handleInputChange('maxStudents', Math.max(1, formData.maxStudents - 1))}
+                    className="w-8 h-12 flex items-center justify-center text-stone-600 hover:bg-stone-100 transition-colors"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    value={formData.maxStudents}
+                    onChange={(e) => handleInputChange('maxStudents', parseInt(e.target.value) || 1)}
+                    className="flex-1 px-3 py-3 text-center border-none focus:outline-none"
+                    min="1"
+                    max="50"
+                    style={{ 
+                      height: '48px', 
+                      width: 'calc(100% - 64px)',
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'textfield'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleInputChange('maxStudents', Math.min(50, formData.maxStudents + 1))}
+                    className="w-8 h-12 flex items-center justify-center text-stone-600 hover:bg-stone-100 transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
 
               <div className="text-left">
                 <label className="block text-sm font-medium text-stone-700 mb-2">
                   강의료 (원) *
                 </label>
-                <input
-                  type="number"
-                  value={formData.price}
-                  onChange={(e) => handleInputChange('price', parseInt(e.target.value) || 0)}
-                  className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-transparent"
-                  min="0"
-                />
+                <div className="flex items-center border border-stone-300 rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => handleInputChange('price', Math.max(0, formData.price - 1000))}
+                    className="w-8 h-12 flex items-center justify-center text-stone-600 hover:bg-stone-100 transition-colors"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    value={formData.price || ''}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      handleInputChange('price', value);
+                    }}
+                    className="flex-1 px-3 py-3 text-center border-none focus:outline-none"
+                    min="0"
+                    step="1000"
+                    style={{ 
+                      height: '48px', 
+                      width: 'calc(100% - 64px)',
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'textfield'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleInputChange('price', formData.price + 1000)}
+                    className="w-8 h-12 flex items-center justify-center text-stone-600 hover:bg-stone-100 transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -181,8 +286,8 @@ export function CreateClassStep1() {
             </button>
             <button
               onClick={handleNext}
-              disabled={!formData.name || !formData.description || formData.maxStudents <= 0}
-              className="flex-1 px-4 py-3 text-white bg-stone-700 rounded-lg hover:bg-stone-800 transition-colors disabled:bg-stone-400 disabled:cursor-not-allowed"
+              disabled={!isFormValid()}
+              className="flex-1 px-4 py-3 text-white bg-[#AC9592] rounded-lg hover:bg-[#9A8582] transition-colors disabled:bg-stone-400 disabled:cursor-not-allowed"
             >
               다음
             </button>

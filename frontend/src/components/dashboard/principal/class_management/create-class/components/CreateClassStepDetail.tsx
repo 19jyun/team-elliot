@@ -4,24 +4,34 @@ import React, { useState } from 'react';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { StatusStep } from './StatusStep';
 import { createTeacherClass } from '@/api/class';
-import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
 
-export function CreateClassStep3() {
+export function CreateClassStepDetail() {
   const { createClass, setClassFormData, setCreateClassStep } = useDashboardNavigation();
-  const { classFormData } = createClass;
+  const { classFormData, selectedTeacherId } = createClass;
   const { data: session } = useSession();
-  
-  const [content, setContent] = useState(classFormData.content);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [content, setContent] = useState(classFormData.content);
+
+  // 필수 필드 검증 함수
+  const isFormValid = () => {
+    return content.trim() !== '';
+  };
+
   const handleNext = async () => {
-    // 강의 내용 업데이트
+    // 강의 내용 검증
+    if (!content.trim()) {
+      toast.error('강의 내용을 입력해주세요.');
+      return;
+    }
+
+    // DashboardContext의 createClass 상태 업데이트
     const updatedClassFormData = {
       ...classFormData,
-      content,
+      content: content,
     };
-    
     setClassFormData(updatedClassFormData);
 
     // 필수 필드 검증
@@ -30,9 +40,9 @@ export function CreateClassStep3() {
       return;
     }
 
-    // 현재 로그인한 선생님의 ID 확인
-    if (!session?.user?.id) {
-      toast.error('로그인 정보를 확인할 수 없습니다.');
+    // 선택된 선생님 ID 확인
+    if (!selectedTeacherId) {
+      toast.error('선생님을 선택해주세요.');
       return;
     }
 
@@ -42,7 +52,7 @@ export function CreateClassStep3() {
       description: updatedClassFormData.description,
       maxStudents: updatedClassFormData.maxStudents,
       tuitionFee: updatedClassFormData.price,
-      teacherId: Number(session.user.id), // 현재 로그인한 선생님의 ID
+      teacherId: selectedTeacherId, // 선택된 선생님의 ID
       academyId: updatedClassFormData.academyId!, // 이미 학원 가입 여부를 확인했으므로 non-null assertion 사용
       dayOfWeek: updatedClassFormData.schedule.days[0],
       level: updatedClassFormData.level,
@@ -88,6 +98,12 @@ export function CreateClassStep3() {
     },
     {
       icon: '/icons/CourseRegistrationsStatusSteps1.svg',
+      label: '선생님 지정',
+      isActive: false,
+      isCompleted: true,
+    },
+    {
+      icon: '/icons/CourseRegistrationsStatusSteps1.svg',
       label: '일정 설정',
       isActive: false,
       isCompleted: true,
@@ -128,8 +144,61 @@ export function CreateClassStep3() {
                 onChange={(e) => setContent(e.target.value)}
                 className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-transparent resize-none"
                 rows={8}
-                placeholder="강의에서 다룰 내용을 상세히 작성해주세요.&#10;&#10;예시:&#10;- 강의 목표&#10;- 주요 학습 내용&#10;- 수업 방식&#10;- 준비물&#10;- 기타 안내사항"
+                placeholder="강의에서 다룰 내용을 상세히 작성해주세요.&#10;&#10;예시:&#10;- 발레 기본 자세 연습&#10;- 스트레칭 및 워밍업&#10;- 기본 스텝 연습&#10;- 음악에 맞춘 동작 연습"
               />
+            </div>
+
+            {/* 강의 정보 요약 */}
+            <div className="text-left">
+              <label className="block text-sm font-medium text-stone-700 mb-2">
+                강의 정보 요약
+              </label>
+              <div className="p-4 bg-stone-50 rounded-lg space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-stone-600">강의명:</span>
+                  <span className="font-medium">{classFormData.name || '미입력'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-stone-600">난이도:</span>
+                  <span className="font-medium">
+                    {classFormData.level === 'BEGINNER' ? '초급' : 
+                     classFormData.level === 'INTERMEDIATE' ? '중급' : 
+                     classFormData.level === 'ADVANCED' ? '고급' : '미선택'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-stone-600">최대 수강생:</span>
+                  <span className="font-medium">{classFormData.maxStudents}명</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-stone-600">강의료:</span>
+                  <span className="font-medium">{classFormData.price?.toLocaleString()}원</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-stone-600">요일:</span>
+                  <span className="font-medium">
+                    {classFormData.schedule.days.map(day => {
+                      const dayMap: { [key: string]: string } = {
+                        'MONDAY': '월', 'TUESDAY': '화', 'WEDNESDAY': '수',
+                        'THURSDAY': '목', 'FRIDAY': '금', 'SATURDAY': '토', 'SUNDAY': '일'
+                      };
+                      return dayMap[day] || day;
+                    }).join(', ')}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-stone-600">시간:</span>
+                  <span className="font-medium">
+                    {classFormData.schedule.startTime} ~ {classFormData.schedule.endTime}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-stone-600">기간:</span>
+                  <span className="font-medium">
+                    {classFormData.schedule.startDate} ~ {classFormData.schedule.endDate}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -137,17 +206,16 @@ export function CreateClassStep3() {
           <div className="flex gap-3 mt-8">
             <button
               onClick={handleBack}
-              disabled={isSubmitting}
-              className="flex-1 px-4 py-3 text-stone-700 bg-stone-200 rounded-lg hover:bg-stone-300 transition-colors disabled:bg-stone-100 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-3 text-stone-700 bg-stone-200 rounded-lg hover:bg-stone-300 transition-colors"
             >
               뒤로
             </button>
             <button
               onClick={handleNext}
-              disabled={!content.trim() || isSubmitting}
-              className="flex-1 px-4 py-3 text-white bg-stone-700 rounded-lg hover:bg-stone-800 transition-colors disabled:bg-stone-400 disabled:cursor-not-allowed"
+              disabled={isSubmitting || !isFormValid()}
+              className="flex-1 px-4 py-3 text-white bg-[#AC9592] rounded-lg hover:bg-[#9A8582] transition-colors disabled:bg-stone-400 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? '생성 중...' : '완료'}
+              {isSubmitting ? '생성 중...' : '강의 생성'}
             </button>
           </div>
         </div>

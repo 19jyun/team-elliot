@@ -10,6 +10,7 @@ import { useEffect } from 'react';
 import PrincipalClassPage from '@/app/(dashboard)/dashboard/principal/class/page';
 import PrincipalProfilePage from '@/app/(dashboard)/dashboard/principal/profile/page';
 import { PrincipalClassesContainer } from '@/components/features/principal/classes/PrincipalClassesContainer';
+import { CreateClassContainer } from './principal/class_management/create-class/containers/CreateClassContainer';
 
 // 임시 페이지 컴포넌트들 (추후 구현)
 const PrincipalUserManagementPage = () => (
@@ -43,6 +44,8 @@ function PrincipalDashboardContent() {
     switch (subPage) {
       case 'principal-all-classes':
         return <PrincipalClassesContainer />;
+      case 'create-class':
+        return <CreateClassContainer />;
       default:
         return (
           <div className="flex items-center justify-center h-full">

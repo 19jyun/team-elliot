@@ -32,16 +32,15 @@ export class TeacherController {
   constructor(private readonly teacherService: TeacherService) {}
 
   @Post('me/classes')
-  @Roles(Role.TEACHER)
-  @ApiOperation({ summary: '선생님 클래스 생성' })
+  @Roles(Role.PRINCIPAL)
+  @ApiOperation({ summary: 'Principal이 선생님을 지정하여 클래스 생성' })
   @ApiResponse({ status: 201, description: '클래스 생성 성공' })
   async createClass(
     @GetUser() user: any,
     @Body() createClassDto: CreateClassDto,
   ) {
-    // teacherId가 요청에 포함되어 있지만, 보안을 위해 현재 로그인한 사용자의 ID로 덮어쓰기
-    createClassDto.teacherId = user.id;
-    return this.teacherService.createClass(user.id, createClassDto);
+    // Principal만 강의 개설 가능
+    return this.teacherService.createClass(user.id, createClassDto, user.role);
   }
 
   @Get('me')
@@ -275,8 +274,8 @@ export class TeacherController {
 
   // 5. 선생님 지정하여 강의 개설
   @Post('academy/classes/with-teacher')
-  @Roles(Role.TEACHER)
-  @ApiOperation({ summary: '특정 선생님을 지정하여 강의 개설' })
+  @Roles(Role.PRINCIPAL)
+  @ApiOperation({ summary: 'Principal이 특정 선생님을 지정하여 강의 개설' })
   @ApiResponse({
     status: 201,
     description: '강의가 성공적으로 개설되었습니다.',
@@ -294,11 +293,11 @@ export class TeacherController {
 
   // 6. 학원 소속 선생님 목록 조회
   @Get('academy/teachers')
-  @Roles(Role.TEACHER)
-  @ApiOperation({ summary: '학원 소속 선생님 목록 조회' })
+  @Roles(Role.PRINCIPAL)
+  @ApiOperation({ summary: 'Principal이 학원 소속 선생님 목록 조회' })
   @ApiResponse({ status: 200, description: '학원 소속 선생님 목록' })
   async getAcademyTeachers(@GetUser() user: any) {
-    return this.teacherService.getAcademyTeachers(user.id);
+    return this.teacherService.getAcademyTeachersForPrincipal(user.id);
   }
 
   // 7. 학원 소속 수강생 목록 조회

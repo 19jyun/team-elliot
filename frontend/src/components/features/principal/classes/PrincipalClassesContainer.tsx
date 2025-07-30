@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
-import { getPrincipalAllClasses } from '@/api/principal'
+import { getPrincipalAllClasses, getPrincipalAllSessions } from '@/api/principal'
 import { ClassList } from '@/components/common/ClassContainer/ClassList'
 import { CommonClassData } from '@/components/common/ClassContainer/ClassCard'
 import { ClassSessionModal } from '@/components/common/ClassContainer/ClassSessionModal'
@@ -19,22 +19,31 @@ export const PrincipalClassesContainer = () => {
     },
   })
 
-  // 세션 상세 모달 상태
-  const [selectedSession, setSelectedSession] = useState<any>(null)
-  const [isSessionDetailModalOpen, setIsSessionDetailModalOpen] = useState(false)
+  // 클래스 선택 상태
+  const [selectedClass, setSelectedClass] = useState<any>(null)
+  const [isClassSessionModalOpen, setIsClassSessionModalOpen] = useState(false)
 
   // Principal의 모든 클래스 조회
-  const { data: allClasses, isLoading, error } = useQuery({
+  const { data: allClasses, isLoading: classesLoading, error: classesError } = useQuery({
     queryKey: ['principal-all-classes'],
     queryFn: getPrincipalAllClasses,
     enabled: status === 'authenticated' && !!session?.user && !!session?.accessToken,
     retry: false,
   })
 
+  // Principal의 모든 세션 조회
+  const { data: allSessions, isLoading: sessionsLoading, error: sessionsError } = useQuery({
+    queryKey: ['principal-all-sessions'],
+    queryFn: getPrincipalAllSessions,
+    enabled: status === 'authenticated' && !!session?.user && !!session?.accessToken,
+    retry: false,
+  })
+
   const classes = allClasses || []
+  const sessions = allSessions || []
 
   // 로딩 상태 처리
-  if (status === 'loading' || isLoading) {
+  if (status === 'loading' || classesLoading || sessionsLoading) {
     return (
       <div className="flex items-center justify-center min-h-full">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
@@ -43,8 +52,8 @@ export const PrincipalClassesContainer = () => {
   }
 
   // 에러 처리
-  if (error) {
-    if ((error as any)?.response?.status === 401) {
+  if (classesError || sessionsError) {
+    if ((classesError as any)?.response?.status === 401 || (sessionsError as any)?.response?.status === 401) {
       signOut({ redirect: true, callbackUrl: '/auth' });
       return null;
     }
@@ -64,16 +73,13 @@ export const PrincipalClassesContainer = () => {
 
   // 클래스 클릭 핸들러
   const handleClassClick = (classData: any) => {
-    // 클래스의 첫 번째 세션을 선택 (임시로)
-    if (classData.classSessions && classData.classSessions.length > 0) {
-      setSelectedSession(classData.classSessions[0])
-      setIsSessionDetailModalOpen(true)
-    }
+    setSelectedClass(classData)
+    setIsClassSessionModalOpen(true)
   }
 
-  const closeSessionDetailModal = () => {
-    setIsSessionDetailModalOpen(false)
-    setSelectedSession(null)
+  const closeClassSessionModal = () => {
+    setIsClassSessionModalOpen(false)
+    setSelectedClass(null)
   }
 
   return (
@@ -97,10 +103,10 @@ export const PrincipalClassesContainer = () => {
 
       {/* Class Session Modal */}
       <ClassSessionModal
-        isOpen={isSessionDetailModalOpen}
-        selectedClass={selectedSession?.class}
-        sessions={selectedSession ? [selectedSession] : []}
-        onClose={closeSessionDetailModal}
+        isOpen={isClassSessionModalOpen}
+        selectedClass={selectedClass}
+        sessions={sessions}
+        onClose={closeClassSessionModal}
         role="principal"
       />
     </div>

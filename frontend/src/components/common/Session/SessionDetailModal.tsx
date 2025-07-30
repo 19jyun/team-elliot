@@ -7,9 +7,9 @@ import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { getSessionEnrollments } from '@/api/teacher'
 import { getPrincipalSessionEnrollments } from '@/api/principal'
 import { SessionEnrollmentsResponse } from '@/types/api/teacher'
-import { AttendanceTab } from '@/components/features/teacher/classes/CalendarInteractions/SessionComponents/Attendance/AttendanceTab'
-import { SessionContentTab } from '@/components/features/teacher/classes/CalendarInteractions/SessionComponents/Pose/SessionContentTab'
-import { PoseSelectionModal } from '@/components/features/teacher/classes/CalendarInteractions/SessionComponents/Pose/PoseSelectionModal'
+import { AttendanceTab } from '@/components/common/Session/SessionDetailComponents/Attendance/AttendanceTab'
+import { SessionContentTab } from '@/components/common/Session/SessionDetailComponents/Pose/SessionContentTab'
+import { PoseSelectionModal } from '@/components/common/Session/SessionDetailComponents/Pose/PoseSelectionModal'
 import { useAddSessionContent } from '@/hooks/useSessionContents'
 import { BalletPose } from '@/types/api/ballet-pose'
 
@@ -18,6 +18,8 @@ interface SessionDetailModalProps {
   session: any
   onClose: () => void
   role: 'student' | 'teacher' | 'principal'
+  showNavigation?: boolean // 네비게이션 탭 표시 여부
+  defaultTab?: 'overview' | 'attendance' | 'content' // 기본 탭
 }
 
 type TabType = 'overview' | 'attendance' | 'content'
@@ -35,9 +37,11 @@ export function SessionDetailModal({
   isOpen, 
   session, 
   onClose,
-  role
+  role,
+  showNavigation = true,
+  defaultTab = 'overview'
 }: SessionDetailModalProps) {
-  const [activeTab, setActiveTab] = useState<TabType>('overview')
+  const [activeTab, setActiveTab] = useState<TabType>(defaultTab)
   const [isPoseSelectionOpen, setIsPoseSelectionOpen] = useState(false)
 
   const addContentMutation = useAddSessionContent(session?.id || 0)
@@ -64,10 +68,10 @@ export function SessionDetailModal({
   useEffect(() => {
     if (isOpen && session?.id) {
       // 모달이 열릴 때 상태 초기화
-      setActiveTab('overview')
+      setActiveTab(defaultTab)
       setIsPoseSelectionOpen(false)
     }
-  }, [isOpen, session?.id])
+  }, [isOpen, session?.id, defaultTab])
 
   const formatTime = (time: string | Date) => {
     const date = typeof time === 'string' ? new Date(time) : time
@@ -146,22 +150,24 @@ export function SessionDetailModal({
         title={`${session?.class?.className} - ${formatTime(session?.startTime)}`}
         contentClassName="pb-6"
       >
-        {/* Navigation Bar - 브라운 테마 적용 */}
-        <div className="flex border-b border-stone-200 mb-4">
-          {navigationItems.map((item) => (
-            <button
-              key={item.value}
-              onClick={() => setActiveTab(item.value)}
-              className={`flex-1 py-3 px-4 text-sm font-medium transition-colors duration-200 ${
-                activeTab === item.value
-                  ? `text-${brownTheme.primary} border-b-2 border-${brownTheme.primary}`
-                  : `text-${brownTheme.secondary} hover:text-${brownTheme.hover}`
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
+        {/* Navigation Bar - showNavigation이 true일 때만 표시 */}
+        {showNavigation && (
+          <div className="flex border-b border-stone-200 mb-4">
+            {navigationItems.map((item) => (
+              <button
+                key={item.value}
+                onClick={() => setActiveTab(item.value)}
+                className={`flex-1 py-3 px-4 text-sm font-medium transition-colors duration-200 ${
+                  activeTab === item.value
+                    ? `text-${brownTheme.primary} border-b-2 border-${brownTheme.primary}`
+                    : `text-${brownTheme.secondary} hover:text-${brownTheme.hover}`
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* 고정 크기 컨테이너 + 슬라이딩 애니메이션 */}
         <div className="relative w-full overflow-hidden" style={{ height: '500px' }}>

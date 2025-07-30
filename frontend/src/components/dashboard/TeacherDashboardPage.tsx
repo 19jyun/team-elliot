@@ -6,7 +6,6 @@ import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import TeacherClassPage from '@/app/(dashboard)/dashboard/teacher/class/page';
 import TeacherClassManagementPage from '@/app/(dashboard)/dashboard/teacher/class_management/page';
 import TeacherProfilePage from '@/app/(dashboard)/dashboard/teacher/profile/page';
-import { CreateClassContainer } from './teacher/class_management/create-class/containers/CreateClassContainer';
 import { EnrollmentManagementContainer } from './teacher/class_management/enrollment_management/containers/EnrollmentManagementContainer';
 import { TeacherProfileManagement } from './teacher/profile/TeacherProfileManagement/TeacherProfileManagement';
 import { TeacherPersonalInfoManagement } from './teacher/profile/TeacherPersonalInfoManagement/TeacherPersonalInfoManagement';
@@ -26,8 +25,6 @@ function TeacherDashboardContent() {
     if (!subPage) return null;
 
     switch (subPage) {
-      case 'create-class':
-        return <CreateClassContainer />;
       case 'enrollment-management':
         return <EnrollmentManagementContainer />;
       case 'teacher-classes':
@@ -83,7 +80,7 @@ export function TeacherDashboardPage() {
 
   useEffect(() => {
     if (status !== 'loading' && !session?.user) {
-              router.push('/auth');
+      router.push('/auth');
     }
   }, [session, status, router]);
 
@@ -98,7 +95,7 @@ export function TeacherDashboardPage() {
   if (!session?.user) {
     return (
       <div className="flex items-center justify-center min-h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
+        <p>인증이 필요합니다.</p>
       </div>
     );
   }

@@ -1,6 +1,144 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Keen Slider 커스텀 스타일 */
+.keen-slider {
+  display: flex;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -khtml-touch-callout: none;
+  -webkit-touch-callout: none;
+}
+
+.keen-slider__slide {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  min-height: 100%;
+}
+
+/* Wheel Picker 스타일 */
+.wheel.keen-slider {
+  display: block;
+  color: #000;
+  height: 100%;
+  overflow: visible;
+  width: 100%;
+  background: white;
+}
+
+.wheel--perspective-right .wheel__inner {
+  perspective-origin: calc(50% + 100px) 50%;
+  transform: translateX(10px);
+  -webkit-transform: translateX(10px);
+}
+
+.wheel--perspective-left .wheel__inner {
+  perspective-origin: calc(50% - 100px) 50%;
+  transform: translateX(-10px);
+  -webkit-transform: translateX(-10px);
+}
+
+.wheel__inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1000px;
+  transform-style: preserve-3d;
+  height: 16%;
+  width: 100%;
+}
+
+.wheel__slides {
+  height: 100%;
+  position: relative;
+  width: 100%;
+}
+
+.wheel__shadow-top,
+.wheel__shadow-bottom {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(255, 255, 255, 0.3) 100%
+  );
+  left: 0;
+  height: calc(42% + 2px);
+  width: 100%;
+  border-bottom: 0.5px solid rgba(0, 0, 0, 0.1);
+  position: relative;
+  margin-top: -2px;
+  z-index: 5;
+}
+
+.wheel__shadow-bottom {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(255, 255, 255, 0.9) 100%
+  );
+  margin-top: 2px;
+  border-bottom: none;
+  border-top: 0.5px solid rgba(0, 0, 0, 0.1);
+}
+
+.wheel__label {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1;
+  margin-top: 1px;
+  margin-left: 5px;
+  color: hsl(var(--muted-foreground));
+}
+
+.wheel__slide {
+  align-items: center;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  font-size: 18px;
+  font-weight: 400;
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  justify-content: center;
+  color: #666;
+  transform-style: preserve-3d;
+}
+
+/* 선택된 슬라이드 강조 */
+.wheel__slide.selected {
+  color: #000;
+  font-weight: 600;
+  font-size: 20px;
+  text-shadow: none;
+}
+
+/* 선택 영역 표시 */
+.wheel__selection-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 48px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(172, 149, 146, 0.1) 50%,
+    transparent 100%
+  );
+  border-top: 2px solid #AC9592;
+  border-bottom: 2px solid #AC9592;
+  pointer-events: none;
+  z-index: 10;
+}
 @layer base {
   :root {
     --background: 0 0% 100%;

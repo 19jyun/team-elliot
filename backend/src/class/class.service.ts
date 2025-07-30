@@ -40,20 +40,23 @@ export class ClassService {
     });
   }
 
-  async createClass(data: {
-    className: string;
-    description: string;
-    maxStudents: number;
-    tuitionFee: number;
-    teacherId: number;
-    academyId: number;
-    dayOfWeek: string;
-    level: string;
-    startTime: string;
-    endTime: string;
-    startDate: string; // UTC ISO 문자열
-    endDate: string; // UTC ISO 문자열
-  }) {
+  async createClass(
+    data: {
+      className: string;
+      description: string;
+      maxStudents: number;
+      tuitionFee: number;
+      teacherId: number;
+      academyId: number;
+      dayOfWeek: string;
+      level: string;
+      startTime: string;
+      endTime: string;
+      startDate: string; // UTC ISO 문자열
+      endDate: string; // UTC ISO 문자열
+    },
+    userRole?: string,
+  ) {
     console.log('=== createClass 호출됨 ===');
     console.log('받은 데이터:', {
       ...data,
@@ -78,13 +81,17 @@ export class ClassService {
       throw new NotFoundException('선생님을 찾을 수 없습니다.');
     }
 
-    // 선생님의 권한 확인 (OWNER/ADMIN인지 확인)
-    const isAdmin = teacher.academy?.admins.some(
-      (admin) => admin.teacherId === data.teacherId,
-    );
-
-    // 권한에 따른 status 결정
-    const classStatus = isAdmin ? 'OPEN' : 'DRAFT';
+    // Principal인 경우 항상 OPEN, Teacher인 경우 권한에 따라 결정
+    let classStatus: string;
+    if (userRole === 'PRINCIPAL') {
+      classStatus = 'OPEN';
+    } else {
+      // 선생님의 권한 확인 (OWNER/ADMIN인지 확인)
+      const isAdmin = teacher.academy?.admins.some(
+        (admin) => admin.teacherId === data.teacherId,
+      );
+      classStatus = isAdmin ? 'OPEN' : 'DRAFT';
+    }
 
     // 요일 유효성 검증
     const validDays = [

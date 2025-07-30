@@ -18,8 +18,12 @@ export class TeacherService {
     private classService: ClassService,
   ) {}
 
-  async createClass(teacherId: number, data: CreateClassDto) {
-    return this.classService.createClass(data);
+  async createClass(
+    teacherId: number,
+    data: CreateClassDto,
+    userRole?: string,
+  ) {
+    return this.classService.createClass(data, userRole);
   }
 
   async getTeacherProfile(id: number) {
@@ -329,13 +333,22 @@ export class TeacherService {
     const sessions = teacher.classes.flatMap((class_) =>
       class_.classSessions
         .filter((session) => {
+          // 세션의 종료 시간 계산
           const sessionDate = new Date(session.date);
-          sessionDate.setHours(0, 0, 0, 0); // UTC 기준으로 0시 설정
-          // KST로 변환하여 today와 비교
-          const kstSessionDate = new Date(
-            sessionDate.getTime() + 9 * 60 * 60 * 1000,
+          const sessionEndTime = new Date(sessionDate);
+
+          // endTime을 시간과 분으로 파싱
+          const endTimeStr = session.endTime.toTimeString().slice(0, 5); // "HH:MM" 형식
+          const [hours, minutes] = endTimeStr.split(':').map(Number);
+          sessionEndTime.setHours(hours, minutes, 0, 0);
+
+          // KST로 변환
+          const kstSessionEndTime = new Date(
+            sessionEndTime.getTime() + 9 * 60 * 60 * 1000,
           );
-          return kstSessionDate >= todayKST;
+
+          // 아직 기간이 지나지 않은 세션만 포함 (현재 시간이 세션 종료 시간보다 이전)
+          return kstNow < kstSessionEndTime;
         })
         .map((session) => ({
           id: session.id,
@@ -997,6 +1010,64 @@ export class TeacherService {
         managedAcademies: {
           where: {
             academyId: adminTeacher.academy.id,
+          },
+          select: {
+            role: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    return teachers.map((teacher) => ({
+      id: teacher.id,
+      name: teacher.name,
+      phoneNumber: teacher.phoneNumber,
+      introduction: teacher.introduction,
+      photoUrl: teacher.photoUrl,
+      education: teacher.education,
+      specialties: teacher.specialties,
+      certifications: teacher.certifications,
+      yearsOfExperience: teacher.yearsOfExperience,
+      joinedAt: teacher.createdAt,
+      adminRole: teacher.managedAcademies[0]?.role || null,
+      adminSince: teacher.managedAcademies[0]?.createdAt || null,
+    }));
+  }
+
+  // Principal용 학원 소속 선생님 목록 조회
+  async getAcademyTeachersForPrincipal(principalId: number) {
+    // Principal의 학원 정보 확인
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      include: {
+        academy: true,
+      },
+    });
+
+    if (!principal?.academy) {
+      throw new NotFoundException('소속된 학원이 없습니다.');
+    }
+
+    // 학원 소속 선생님 목록 조회
+    const teachers = await this.prisma.teacher.findMany({
+      where: {
+        academyId: principal.academy.id,
+      },
+      select: {
+        id: true,
+        name: true,
+        phoneNumber: true,
+        introduction: true,
+        photoUrl: true,
+        education: true,
+        specialties: true,
+        certifications: true,
+        yearsOfExperience: true,
+        createdAt: true,
+        managedAcademies: {
+          where: {
+            academyId: principal.academy.id,
           },
           select: {
             role: true,

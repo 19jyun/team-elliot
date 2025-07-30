@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 
 import { getPrincipalAllSessions } from '@/api/principal'
 import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessionModal'
+import { SessionDetailModal } from '@/components/common/Session/SessionDetailModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
 import { ClassSession } from '@/types/api/class'
@@ -21,6 +22,43 @@ type ExtendedSession = {
     accessToken?: string
   } & { name?: string | null | undefined; email?: string | null | undefined; image?: string | null | undefined }
 }
+
+// 강의 개설 카드 컴포넌트
+const CreateClassCard: React.FC<{
+  title: string
+  description?: string
+  isNew?: boolean
+  onClick: () => void
+}> = ({ title, description, isNew, onClick }) => (
+  <div
+    className="flex gap-10 justify-between items-center py-4 pr-4 pl-5 w-full text-base tracking-normal rounded-lg bg-stone-200 text-stone-700 cursor-pointer hover:bg-stone-400 transition-colors duration-200"
+    onClick={onClick}
+    role="button"
+    tabIndex={0}
+  >
+    <div className="flex flex-col gap-1.5 items-start self-stretch my-auto">
+      <div className="flex gap-1.5 items-center">
+        {isNew && (
+          <div className="px-2 py-1 text-xs font-medium text-white bg-red-500 rounded-full">
+            NEW
+          </div>
+        )}
+        <div className="text-base font-medium tracking-normal text-stone-700">
+          {title}
+        </div>
+      </div>
+      <div className="text-sm text-stone-600">
+        {description}
+      </div>
+    </div>
+    <img
+      loading="lazy"
+      src="https://cdn.builder.io/api/v1/image/assets/TEMP/1f7fc23429841d7be71eef4a524441a0723472cbcc37e1d51e9a8dccc0d60f49?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f"
+      alt="Arrow indicator"
+      className="object-contain shrink-0 self-stretch my-auto w-4 aspect-square"
+    />
+  </div>
+)
 
 export default function PrincipalClassPage() {
   const router = useRouter()
@@ -37,6 +75,10 @@ export default function PrincipalClassPage() {
   const [clickedDate, setClickedDate] = useState<Date | null>(null)
   const [isDateModalOpen, setIsDateModalOpen] = useState(false)
   const [selectedDaySessions, setSelectedDaySessions] = useState<any[]>([])
+  
+  // 세션 상세 모달 상태 추가
+  const [selectedSession, setSelectedSession] = useState<any>(null)
+  const [isSessionDetailModalOpen, setIsSessionDetailModalOpen] = useState(false)
 
   // Principal의 모든 세션 조회
   const { data: allSessions, isLoading, error } = useQuery({
@@ -138,9 +180,25 @@ export default function PrincipalClassPage() {
     setSelectedDaySessions([])
   }
 
+  // 세션 클릭 핸들러 추가
+  const handleSessionClick = (session: any) => {
+    setSelectedSession(session)
+    setIsSessionDetailModalOpen(true)
+  }
+
+  const closeSessionDetailModal = () => {
+    setIsSessionDetailModalOpen(false)
+    setSelectedSession(null)
+  }
+
   // 전체 클래스 SubPage로 이동
   const handlePrincipalClassesClick = () => {
     navigateToSubPage('principal-all-classes')
+  }
+
+  // 강의 개설 SubPage로 이동
+  const handleCreateClassClick = () => {
+    navigateToSubPage('create-class')
   }
 
   return (
@@ -191,6 +249,17 @@ export default function PrincipalClassPage() {
             <ConnectedCalendar />
           </CalendarProvider>
         </div>
+
+        {/* 강의 개설 버튼 섹션 */}
+        <div className="flex flex-col px-5 py-4 border-t border-gray-200">
+          <div className="flex flex-col self-center w-full font-semibold leading-snug text-center max-w-[335px]">
+            <CreateClassCard
+              title="강의 개설"
+              description="새로운 강의를 개설하고 선생님을 배정하세요"
+              onClick={handleCreateClassClick}
+            />
+          </div>
+        </div>
       </header>
 
       {/* Date Session Modal */}
@@ -199,7 +268,15 @@ export default function PrincipalClassPage() {
         selectedDate={clickedDate}
         sessions={selectedDaySessions}
         onClose={closeDateModal}
-        onSessionClick={(session) => console.log('Session clicked:', session)}
+        onSessionClick={handleSessionClick}
+        role="principal"
+      />
+
+      {/* Session Detail Modal */}
+      <SessionDetailModal
+        isOpen={isSessionDetailModalOpen}
+        session={selectedSession}
+        onClose={closeSessionDetailModal}
         role="principal"
       />
     </div>

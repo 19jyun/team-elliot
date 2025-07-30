@@ -31,15 +31,17 @@ export function SessionCardList({ sessions, onSessionClick, role }: SessionCardL
   }
 
   return (
-    <div className="space-y-3">
-      {sortedSessions.map((session, index) => (
-        <SessionCard
-          key={`${session.id}-${index}`}
-          session={session}
-          onClick={() => onSessionClick(session)}
-          role={role}
-        />
-      ))}
+    <div className="h-full overflow-y-auto">
+      <div className="space-y-3 pb-6">
+        {sortedSessions.map((session, index) => (
+          <SessionCard
+            key={`${session.id}-${index}`}
+            session={session}
+            onClick={() => onSessionClick(session)}
+            role={role}
+          />
+        ))}
+      </div>
     </div>
   )
 } 

@@ -23,6 +23,12 @@ export function CreateClassComplete() {
     },
     {
       icon: '/icons/CourseRegistrationsStatusSteps1.svg',
+      label: '선생님 지정',
+      isActive: false,
+      isCompleted: true,
+    },
+    {
+      icon: '/icons/CourseRegistrationsStatusSteps1.svg',
       label: '일정 설정',
       isActive: false,
       isCompleted: true,

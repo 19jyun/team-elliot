@@ -2,9 +2,10 @@
 
 import React from 'react';
 import { useDashboardNavigation, CreateClassStep } from '@/contexts/DashboardContext';
-import { CreateClassStep1 } from '../components/CreateClassStep1';
-import { CreateClassStep2 } from '../components/CreateClassStep2';
-import { CreateClassStep3 } from '../components/CreateClassStep3';
+import { CreateClassStepInfo } from '../components/CreateClassStepInfo';
+import { CreateClassStepTeacher } from '../components/CreateClassStepTeacher';
+import { CreateClassStepSchedule } from '../components/CreateClassStepSchedule';
+import { CreateClassStepDetail } from '../components/CreateClassStepDetail';
 import { CreateClassComplete } from '../components/CreateClassComplete';
 
 export function CreateClassContainer() {
@@ -15,15 +16,17 @@ export function CreateClassContainer() {
   const renderCurrentStep = () => {
     switch (currentStep) {
       case 'info':
-        return <CreateClassStep1 />;
+        return <CreateClassStepInfo />;
+      case 'teacher':
+        return <CreateClassStepTeacher />;
       case 'schedule':
-        return <CreateClassStep2 />;
+        return <CreateClassStepSchedule />;
       case 'content':
-        return <CreateClassStep3 />;
+        return <CreateClassStepDetail />;
       case 'complete':
         return <CreateClassComplete />;
       default:
-        return <CreateClassStep1 />;
+        return <CreateClassStepInfo />;
     }
   };
 

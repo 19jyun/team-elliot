@@ -19,6 +19,15 @@ export function SessionCard({ session, onClick, role }: SessionCardProps) {
     })
   }
 
+  const formatDate = (date: string | Date) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date
+    return dateObj.toLocaleDateString('ko-KR', { 
+      month: 'short', 
+      day: 'numeric',
+      weekday: 'short'
+    })
+  }
+
   const formatDayOfWeek = (dayOfWeek: string) => {
     const dayMap: Record<string, string> = {
       'MONDAY': '월',
@@ -59,6 +68,13 @@ export function SessionCard({ session, onClick, role }: SessionCardProps) {
       style={{ background: getLevelColor(session.class?.level || 'BEGINNER') }}
       onClick={onClick}
     >
+      {/* 날짜 정보 */}
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-sm font-medium text-stone-700">
+          {formatDate(session.date)}
+        </span>
+      </div>
+
       {/* 시간 정보 */}
       <div className="flex items-center gap-2 mb-2">
         <span className="text-sm font-medium text-stone-600">

@@ -25,7 +25,7 @@ export interface EnrollmentState {
 }
 
 // 강의 개설 단계 타입
-export type CreateClassStep = 'info' | 'schedule' | 'content' | 'complete';
+export type CreateClassStep = 'info' | 'teacher' | 'schedule' | 'content' | 'complete';
 
 // 강의 개설 상태 인터페이스
 export interface CreateClassState {
@@ -46,6 +46,7 @@ export interface CreateClassState {
     };
     content: string;
   };
+  selectedTeacherId: number | null;
 }
 
 // 수강 신청/환불 신청 관리 단계 타입
@@ -111,6 +112,7 @@ interface DashboardContextType {
   // 수업 생성 관련 메서드들
   setCreateClassStep: (step: CreateClassStep) => void;
   setClassFormData: (data: any) => void;
+  setSelectedTeacherId: (teacherId: number | null) => void;
   resetCreateClass: () => void;
   // 수강 신청/환불 신청 관리 관련 메서드들
   setEnrollmentManagementStep: (step: EnrollmentManagementStep) => void;
@@ -154,6 +156,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         },
         content: '',
       },
+      selectedTeacherId: null,
     },
     enrollmentManagement: {
       currentStep: 'tabs',
@@ -341,6 +344,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
             },
             content: '',
           },
+          selectedTeacherId: null,
         },
         // 탭 변경 시 enrollmentManagement 상태 초기화
         enrollmentManagement: {
@@ -431,7 +435,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       
       // 강의 개설 중인 경우 단계별로 뒤로가기
       if (prev.subPage === 'create-class' && prev.createClass.currentStep !== 'info') {
-        const stepOrder: CreateClassStep[] = ['info', 'schedule', 'content', 'complete'];
+        const stepOrder: CreateClassStep[] = ['info', 'teacher', 'schedule', 'content', 'complete'];
         const currentIndex = stepOrder.indexOf(prev.createClass.currentStep);
         const previousStep = currentIndex > 0 ? stepOrder[currentIndex - 1] : 'info';
         
@@ -489,6 +493,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
             },
             content: '',
           },
+          selectedTeacherId: null,
         },
       };
     });
@@ -635,6 +640,17 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  // 선택된 선생님 ID 설정
+  const setSelectedTeacherId = useCallback((teacherId: number | null) => {
+    setState(prev => ({
+      ...prev,
+      createClass: {
+        ...prev.createClass,
+        selectedTeacherId: teacherId,
+      },
+    }));
+  }, []);
+
   // 강의 개설 상태 초기화
   const resetCreateClass = useCallback(() => {
     setState(prev => ({
@@ -655,6 +671,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           },
           content: '',
         },
+        selectedTeacherId: null,
       },
     }));
   }, []);
@@ -761,6 +778,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     resetEnrollment,
     setCreateClassStep,
     setClassFormData,
+    setSelectedTeacherId,
     resetCreateClass,
     setEnrollmentManagementStep,
     setEnrollmentManagementTab,

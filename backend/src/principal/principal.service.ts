@@ -82,25 +82,54 @@ export class PrincipalService {
       throw new NotFoundException('Principal not found');
     }
 
-    // 모든 세션을 평면화하여 반환
+    // 현재 시간 (KST 기준)
+    const now = new Date();
+    const kstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+
+    // 모든 세션을 평면화하여 반환 (아직 기간이 지나지 않은 세션만)
     const allSessions = [];
     for (const classItem of principal.academy.classes) {
       for (const session of classItem.classSessions) {
-        allSessions.push({
-          id: session.id,
-          classId: session.classId,
-          date: session.date,
-          startTime: session.startTime,
-          endTime: session.endTime,
-          maxStudents: session.maxStudents,
-          currentStudents: session.currentStudents,
-          class: {
-            id: classItem.id,
-            className: classItem.className,
-            level: classItem.level,
-            teacher: classItem.teacher,
-          },
-        });
+        // 세션의 종료 시간 계산
+        const sessionDate = new Date(session.date);
+        const sessionEndTime = new Date(sessionDate);
+
+        // endTime을 시간과 분으로 파싱
+        const endTimeStr = session.endTime.toTimeString().slice(0, 5); // "HH:MM" 형식
+        const [hours, minutes] = endTimeStr.split(':').map(Number);
+        sessionEndTime.setHours(hours, minutes, 0, 0);
+
+        // KST로 변환
+        const kstSessionEndTime = new Date(
+          sessionEndTime.getTime() + 9 * 60 * 60 * 1000,
+        );
+
+        // 아직 기간이 지나지 않은 세션만 포함 (현재 시간이 세션 종료 시간보다 이전)
+        if (kstNow < kstSessionEndTime) {
+          // enrollmentCount와 confirmedCount 계산
+          const enrollmentCount = session.enrollments.length; // 실제 enrollment 개수
+          const confirmedCount = session.enrollments.filter(
+            (enrollment) => enrollment.status === 'CONFIRMED',
+          ).length;
+
+          allSessions.push({
+            id: session.id,
+            classId: session.classId,
+            date: session.date,
+            startTime: session.startTime,
+            endTime: session.endTime,
+            maxStudents: session.maxStudents,
+            currentStudents: session.currentStudents,
+            enrollmentCount,
+            confirmedCount,
+            class: {
+              id: classItem.id,
+              className: classItem.className,
+              level: classItem.level,
+              teacher: classItem.teacher,
+            },
+          });
+        }
       }
     }
 

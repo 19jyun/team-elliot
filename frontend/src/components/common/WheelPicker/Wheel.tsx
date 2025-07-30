@@ -1,0 +1,173 @@
+import React, { useRef, useMemo } from "react"
+import {
+  KeenSliderOptions,
+  TrackDetails,
+  useKeenSlider,
+} from "keen-slider/react"
+
+interface WheelProps {
+  initIdx?: number
+  label?: string
+  length: number
+  loop?: boolean
+  perspective?: "left" | "right" | "center"
+  setValue?: (relative: number, absolute: number) => string
+  width: number
+  onChange?: (index: number) => void
+}
+
+export default function Wheel(props: WheelProps) {
+  const perspective = props.perspective || "center"
+  const wheelSize = 20
+  const slides = props.length
+  const slideDegree = 360 / wheelSize
+  const slidesPerView = props.loop ? 9 : 1
+  const [sliderState, setSliderState] = React.useState<TrackDetails | null>(
+    null
+  )
+  const size = useRef(0)
+  const onChangeRef = useRef(props.onChange)
+  const lastIndexRef = useRef<number | null>(null)
+
+  // onChange ref 업데이트
+  React.useEffect(() => {
+    onChangeRef.current = props.onChange
+  }, [props.onChange])
+
+  const options = useRef<KeenSliderOptions>({
+    slides: {
+      number: slides,
+      origin: props.loop ? "center" : "auto",
+      perView: slidesPerView,
+    },
+    vertical: true,
+    initial: props.initIdx || 0,
+    loop: props.loop,
+    dragSpeed: (val) => {
+      const height = size.current
+      return (
+        val *
+        (height /
+          ((height / 2) * Math.tan(slideDegree * (Math.PI / 180))) /
+          slidesPerView)
+      )
+    },
+    created: (s) => {
+      size.current = s.size
+    },
+    updated: (s) => {
+      size.current = s.size
+    },
+    detailsChanged: (s) => {
+      setSliderState(s.track.details)
+    },
+    rubberband: !props.loop,
+    mode: "free-snap",
+  })
+
+  const [sliderRef, slider] = useKeenSlider<HTMLDivElement>(options.current)
+  const [radius, setRadius] = React.useState(0)
+
+  React.useEffect(() => {
+    if (slider.current) setRadius(slider.current.size / 2)
+  }, [slider])
+
+  // 현재 선택된 값이 변경될 때만 onChange 호출 (중복 호출 방지)
+  React.useEffect(() => {
+    if (sliderState && onChangeRef.current) {
+      const currentIndex = sliderState.abs % props.length;
+      // 이전 인덱스와 다를 때만 호출
+      if (lastIndexRef.current !== currentIndex) {
+        lastIndexRef.current = currentIndex;
+        onChangeRef.current(currentIndex);
+      }
+    }
+  }, [sliderState?.abs, props.length])
+
+  // slideValues를 useMemo로 최적화
+  const slideValues = useMemo(() => {
+    if (!sliderState) return []
+    const offset = props.loop ? 1 / 2 - 1 / slidesPerView / 2 : 0
+
+    const values = []
+    for (let i = 0; i < slides; i++) {
+      const distance = sliderState
+        ? (sliderState.slides[i].distance - offset) * slidesPerView
+        : 0
+      const rotate =
+        Math.abs(distance) > wheelSize / 2
+          ? 180
+          : distance * (360 / wheelSize) * -1
+      
+      // 스타일 객체를 인라인으로 생성하지 않고 문자열로 최적화
+      const transform = `rotateX(${rotate}deg) translateZ(${radius}px)`
+      
+      const value = props.setValue
+        ? props.setValue(i, sliderState.abs + Math.round(distance))
+        : i
+      
+      // 선택된 슬라이드인지 확인 (중앙에 가까운 슬라이드)
+      const isSelected = Math.abs(distance) < 0.5
+      
+      values.push({ transform, value, isSelected })
+    }
+    return values
+  }, [sliderState, props.loop, slidesPerView, slides, wheelSize, radius, props.setValue])
+
+  return (
+    <div
+      className={"wheel keen-slider wheel--perspective-" + perspective}
+      ref={sliderRef}
+    >
+      <div
+        className="wheel__shadow-top"
+        style={{
+          transform: `translateZ(${radius}px)`,
+          WebkitTransform: `translateZ(${radius}px)`,
+        }}
+      />
+      <div className="wheel__inner">
+        <div className="wheel__slides" style={{ width: props.width + "px" }}>
+          {slideValues.map(({ transform, value, isSelected }, idx) => (
+            <div 
+              className={`wheel__slide ${isSelected ? 'selected' : ''}`} 
+              style={{
+                transform,
+                WebkitTransform: transform,
+              }}
+              key={idx}
+            >
+              <span>{value}</span>
+            </div>
+          ))}
+        </div>
+        {props.label && (
+          <div
+            className="wheel__label"
+            style={{
+              transform: `translateZ(${radius}px)`,
+              WebkitTransform: `translateZ(${radius}px)`,
+            }}
+          >
+            {props.label}
+          </div>
+        )}
+        {/* 선택 영역 표시 */}
+        <div 
+          className="wheel__selection-indicator"
+          style={{
+            transform: `translateZ(${radius}px)`,
+            WebkitTransform: `translateZ(${radius}px)`,
+          }}
+        />
+      </div>
+      <div
+        className="wheel__shadow-bottom"
+        style={{
+          transform: `translateZ(${radius}px)`,
+          WebkitTransform: `translateZ(${radius}px)`,
+        }}
+      />
+    </div>
+  )
+} 
