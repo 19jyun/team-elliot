@@ -39,3 +39,14 @@ export const getPrincipalSessionEnrollments = async (sessionId: number) => {
   );
   return response.data;
 };
+
+// Principal의 학원 정보 수정
+export const updatePrincipalAcademy = async (data: {
+  name?: string;
+  phoneNumber?: string;
+  address?: string;
+  description?: string;
+}) => {
+  const response = await axiosInstance.put("/principal/academy", data);
+  return response.data;
+};

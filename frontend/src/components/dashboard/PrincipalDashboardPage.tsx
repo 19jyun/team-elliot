@@ -11,6 +11,7 @@ import PrincipalClassPage from '@/app/(dashboard)/dashboard/principal/class/page
 import PrincipalProfilePage from '@/app/(dashboard)/dashboard/principal/profile/page';
 import { PrincipalClassesContainer } from '@/components/features/principal/classes/PrincipalClassesContainer';
 import { CreateClassContainer } from './principal/class_management/create-class/containers/CreateClassContainer';
+import PrincipalAcademyManagementPage from '@/app/(dashboard)/dashboard/principal/academy_management/page';
 
 // 임시 페이지 컴포넌트들 (추후 구현)
 const PrincipalUserManagementPage = () => (
@@ -23,15 +24,9 @@ const PrincipalUserManagementPage = () => (
   </div>
 );
 
-const PrincipalAcademyManagementPage = () => (
-  <div className="flex items-center justify-center h-full">
-    <div className="text-center">
-      <h2 className="text-xl font-semibold mb-2">학원 관리</h2>
-      <p className="text-gray-600">학원 정보 및 설정 관리 페이지</p>
-      <p className="text-sm text-gray-500 mt-2">개발 중...</p>
-    </div>
-  </div>
-);
+const PrincipalAcademyManagementTab = () => {
+  return <PrincipalAcademyManagementPage />;
+};
 
 function PrincipalDashboardContent() {
   const { activeTab, handleTabChange } = usePrincipalContext();

@@ -4,6 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { UpdateAcademyDto } from './dto/update-academy.dto';
 
 @Injectable()
 export class PrincipalService {
@@ -323,5 +324,30 @@ export class PrincipalService {
       totalCount: enrollments.length,
       statusCounts,
     };
+  }
+
+  // Principal의 학원 정보 수정
+  async updateAcademy(principalId: number, updateAcademyDto: UpdateAcademyDto) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      include: { academy: true },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    // 학원 정보 업데이트
+    const updatedAcademy = await this.prisma.academy.update({
+      where: { id: principal.academyId },
+      data: {
+        name: updateAcademyDto.name,
+        phoneNumber: updateAcademyDto.phoneNumber,
+        address: updateAcademyDto.address,
+        description: updateAcademyDto.description,
+      },
+    });
+
+    return updatedAcademy;
   }
 }

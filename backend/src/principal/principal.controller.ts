@@ -1,9 +1,11 @@
 import {
   Controller,
   Get,
+  Put,
   Param,
   ParseIntPipe,
   UseGuards,
+  Body,
 } from '@nestjs/common';
 import { PrincipalService } from './principal.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -11,6 +13,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { Role } from '@prisma/client';
+import { UpdateAcademyDto } from './dto/update-academy.dto';
 
 @Controller('principal')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -61,5 +64,14 @@ export class PrincipalController {
     @GetUser() user: any,
   ) {
     return this.principalService.getSessionEnrollments(sessionId, user.id);
+  }
+
+  // Principal의 학원 정보 수정
+  @Put('academy')
+  async updateAcademy(
+    @GetUser() user: any,
+    @Body() updateAcademyDto: UpdateAcademyDto,
+  ) {
+    return this.principalService.updateAcademy(user.id, updateAcademyDto);
   }
 }

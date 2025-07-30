@@ -96,6 +96,14 @@ export interface PrincipalStudent {
   activeClasses: number;
 }
 
+// Principal의 학원 정보 수정 요청 타입
+export interface UpdatePrincipalAcademyRequest {
+  name?: string;
+  phoneNumber?: string;
+  address?: string;
+  description?: string;
+}
+
 // API 응답 타입들
 export interface GetPrincipalAcademyResponse extends PrincipalAcademy {}
 export interface GetPrincipalAllSessionsResponse
