@@ -50,3 +50,24 @@ export const updatePrincipalAcademy = async (data: {
   const response = await axiosInstance.put("/principal/academy", data);
   return response.data;
 };
+
+// Principal의 프로필 정보 조회
+export const getPrincipalProfile = async (principalId?: number) => {
+  const url = principalId
+    ? `/principal/${principalId}/profile`
+    : "/principal/profile";
+  const response = await axiosInstance.get(url);
+  return response.data;
+};
+
+// Principal의 프로필 정보 수정
+export const updatePrincipalProfile = async (data: {
+  name?: string;
+  phoneNumber?: string;
+  introduction?: string;
+  education?: string[];
+  certifications?: string[];
+}) => {
+  const response = await axiosInstance.put("/principal/profile", data);
+  return response.data;
+};

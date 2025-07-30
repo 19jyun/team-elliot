@@ -253,6 +253,51 @@ export class PrincipalService {
     return principal;
   }
 
+  // Principal 프로필 정보 수정
+  async updateProfile(principalId: number, updateProfileDto: any) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    // 업데이트할 데이터 준비
+    const updateData: any = {};
+
+    if (updateProfileDto.name !== undefined) {
+      updateData.name = updateProfileDto.name;
+    }
+
+    if (updateProfileDto.phoneNumber !== undefined) {
+      updateData.phoneNumber = updateProfileDto.phoneNumber;
+    }
+
+    if (updateProfileDto.introduction !== undefined) {
+      updateData.introduction = updateProfileDto.introduction;
+    }
+
+    if (updateProfileDto.education !== undefined) {
+      updateData.education = updateProfileDto.education;
+    }
+
+    if (updateProfileDto.certifications !== undefined) {
+      updateData.certifications = updateProfileDto.certifications;
+    }
+
+    // Principal 정보 업데이트
+    const updatedPrincipal = await this.prisma.principal.update({
+      where: { id: principalId },
+      data: updateData,
+      include: {
+        academy: true,
+      },
+    });
+
+    return updatedPrincipal;
+  }
+
   // Principal의 세션 수강생 조회
   async getSessionEnrollments(sessionId: number, principalId: number) {
     // Principal이 해당 세션에 접근할 권한이 있는지 확인

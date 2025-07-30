@@ -12,6 +12,8 @@ import PrincipalProfilePage from '@/app/(dashboard)/dashboard/principal/profile/
 import { PrincipalClassesContainer } from '@/components/features/principal/classes/PrincipalClassesContainer';
 import { CreateClassContainer } from './principal/class_management/create-class/containers/CreateClassContainer';
 import PrincipalAcademyManagementPage from '@/app/(dashboard)/dashboard/principal/academy_management/page';
+import { PrincipalProfileManagement } from './principal/profile/PrincipalProfileManagement/PrincipalProfileManagement';
+import { PrincipalPersonalInfoManagement } from './principal/profile/PrincipalPersonalInfoManagement/PrincipalPersonalInfoManagement';
 
 // 임시 페이지 컴포넌트들 (추후 구현)
 const PrincipalUserManagementPage = () => (
@@ -23,10 +25,6 @@ const PrincipalUserManagementPage = () => (
     </div>
   </div>
 );
-
-const PrincipalAcademyManagementTab = () => {
-  return <PrincipalAcademyManagementPage />;
-};
 
 function PrincipalDashboardContent() {
   const { activeTab, handleTabChange } = usePrincipalContext();
@@ -41,6 +39,10 @@ function PrincipalDashboardContent() {
         return <PrincipalClassesContainer />;
       case 'create-class':
         return <CreateClassContainer />;
+      case 'profile':
+        return <PrincipalProfileManagement />;
+      case 'personal-info':
+        return <PrincipalPersonalInfoManagement />;
       default:
         return (
           <div className="flex items-center justify-center h-full">

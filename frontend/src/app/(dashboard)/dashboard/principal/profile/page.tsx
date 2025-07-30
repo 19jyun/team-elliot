@@ -52,10 +52,6 @@ export default function PrincipalProfilePage() {
     navigateToSubPage('personal-info')
   }
 
-  const handleAcademyManagementClick = () => {
-    navigateToSubPage('academy-management')
-  }
-
   const menuLinks = [
     {
       label: '내 프로필 관리',
@@ -66,11 +62,6 @@ export default function PrincipalProfilePage() {
       label: '개인 정보',
       icon: '/icons/group.svg',
       onClick: handlePersonalInfoClick,
-    },
-    {
-      label: '학원 관리',
-      icon: '/icons/group.svg',
-      onClick: handleAcademyManagementClick,
     },
   ]
 

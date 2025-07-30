@@ -14,6 +14,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { Role } from '@prisma/client';
 import { UpdateAcademyDto } from './dto/update-academy.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Controller('principal')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -55,6 +56,15 @@ export class PrincipalController {
   @Get('profile')
   async getPrincipalInfo(@GetUser() user: any) {
     return this.principalService.getPrincipalInfo(user.id);
+  }
+
+  // Principal 프로필 정보 수정
+  @Put('profile')
+  async updateProfile(
+    @GetUser() user: any,
+    @Body() updateProfileDto: UpdateProfileDto,
+  ) {
+    return this.principalService.updateProfile(user.id, updateProfileDto);
   }
 
   // Principal의 세션 수강생 조회

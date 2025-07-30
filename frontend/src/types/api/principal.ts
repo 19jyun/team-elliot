@@ -104,6 +104,31 @@ export interface UpdatePrincipalAcademyRequest {
   description?: string;
 }
 
+// Principal의 프로필 정보 타입
+export interface PrincipalProfile {
+  id: number;
+  name: string;
+  phoneNumber: string;
+  introduction?: string;
+  photoUrl?: string;
+  education?: string[];
+  certifications?: string[];
+  academy?: {
+    id: number;
+    name: string;
+    code: string;
+  };
+}
+
+// Principal의 프로필 정보 수정 요청 타입
+export interface UpdatePrincipalProfileRequest {
+  name?: string;
+  phoneNumber?: string;
+  introduction?: string;
+  education?: string[];
+  certifications?: string[];
+}
+
 // API 응답 타입들
 export interface GetPrincipalAcademyResponse extends PrincipalAcademy {}
 export interface GetPrincipalAllSessionsResponse
