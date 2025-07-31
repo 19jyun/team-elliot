@@ -4,7 +4,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { usePrincipalData } from '@/hooks/usePrincipalData'
+import { usePrincipalData } from '@/hooks/redux/usePrincipalData'
 import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessionModal'
 import { SessionDetailModal } from '@/components/common/Session/SessionDetailModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'

@@ -3,28 +3,19 @@ import { useMemo, useCallback } from "react";
 
 // Principal 대시보드에서 사용할 데이터 훅
 export function usePrincipalData() {
-  const {
-    user,
-    userProfile,
-    academy,
-    enrollments,
-    refundRequests,
-    classes,
-    teachers,
-    students,
-    isLoading,
-    error,
-  } = useAppSelector((state) => state.appData);
+  const { user, principalData, isLoading, error } = useAppSelector(
+    (state) => state.appData
+  );
 
   // 클래스를 세션 형태로 변환
   const sessions = useMemo(() => {
-    if (!classes || classes.length === 0) {
+    if (!principalData?.classes || principalData.classes.length === 0) {
       console.log("No classes found in Redux store");
       return [];
     }
 
     // 모든 클래스의 classSessions를 추출하여 하나의 배열로 합치기
-    const allSessions = classes.flatMap((cls: any) => {
+    const allSessions = principalData.classes.flatMap((cls: any) => {
       if (!cls.classSessions || cls.classSessions.length === 0) {
         return [];
       }
@@ -50,10 +41,10 @@ export function usePrincipalData() {
       }));
     });
 
-    console.log("usePrincipalData - classes:", classes);
+    console.log("usePrincipalData - classes:", principalData.classes);
     console.log("usePrincipalData - allSessions:", allSessions);
     return allSessions;
-  }, [classes]);
+  }, [principalData?.classes]);
 
   // 캘린더용 세션 데이터 변환 (ConnectedCalendar에서 사용)
   const calendarSessions = useMemo(() => {
@@ -91,9 +82,9 @@ export function usePrincipalData() {
 
   // 수강신청 대기 중인 세션들
   const pendingEnrollmentSessions = useMemo(() => {
-    if (!enrollments || !classes) return [];
+    if (!principalData?.enrollments || !principalData?.classes) return [];
 
-    const pendingEnrollments = enrollments.filter(
+    const pendingEnrollments = principalData.enrollments.filter(
       (enrollment) => enrollment.status === "PENDING"
     );
 
@@ -126,13 +117,13 @@ export function usePrincipalData() {
     });
 
     return Array.from(sessionMap.values());
-  }, [enrollments, classes]);
+  }, [principalData?.enrollments, principalData?.classes]);
 
   // 환불요청 대기 중인 세션들
   const pendingRefundSessions = useMemo(() => {
-    if (!refundRequests || !classes) return [];
+    if (!principalData?.refundRequests || !principalData?.classes) return [];
 
-    const pendingRefunds = refundRequests.filter(
+    const pendingRefunds = principalData.refundRequests.filter(
       (refund) => refund.status === "PENDING"
     );
 
@@ -172,54 +163,58 @@ export function usePrincipalData() {
     });
 
     return Array.from(sessionMap.values());
-  }, [refundRequests, classes]);
+  }, [principalData?.refundRequests, principalData?.classes]);
 
   // 특정 세션의 수강신청 목록
   const getSessionEnrollments = useCallback(
     (sessionId: number) => {
       return (
-        enrollments?.filter(
+        principalData?.enrollments?.filter(
           (enrollment) => enrollment.sessionId === sessionId
         ) || []
       );
     },
-    [enrollments]
+    [principalData?.enrollments]
   );
 
   // 특정 세션의 환불요청 목록
   const getSessionRefundRequests = useCallback(
     (sessionId: number) => {
       return (
-        refundRequests?.filter(
+        principalData?.refundRequests?.filter(
           (refund: any) => (refund.sessionId || refund.classId) === sessionId
         ) || []
       );
     },
-    [refundRequests]
+    [principalData?.refundRequests]
   );
 
   // 특정 학생 정보
   const getStudentById = useCallback(
     (studentId: number) => {
-      return students?.find((student) => student.id === studentId);
+      return principalData?.students?.find(
+        (student) => student.id === studentId
+      );
     },
-    [students]
+    [principalData?.students]
   );
 
   // 특정 선생님 정보
   const getTeacherById = useCallback(
     (teacherId: number) => {
-      return teachers?.find((teacher) => teacher.id === teacherId);
+      return principalData?.teachers?.find(
+        (teacher) => teacher.id === teacherId
+      );
     },
-    [teachers]
+    [principalData?.teachers]
   );
 
   // 특정 클래스 정보
   const getClassById = useCallback(
     (classId: number) => {
-      return classes?.find((cls) => cls.id === classId);
+      return principalData?.classes?.find((cls) => cls.id === classId);
     },
-    [classes]
+    [principalData?.classes]
   );
 
   // 특정 날짜의 세션들 가져오기
@@ -243,10 +238,10 @@ export function usePrincipalData() {
   // 특정 세션 정보 가져오기
   const getSessionById = useCallback(
     (sessionId: number) => {
-      if (!classes) return null;
+      if (!principalData?.classes) return null;
 
       // 모든 클래스의 classSessions에서 해당 sessionId를 찾기
-      for (const cls of classes as any[]) {
+      for (const cls of principalData.classes as any[]) {
         if (cls.classSessions) {
           const session = cls.classSessions.find(
             (s: any) => s.id === sessionId
@@ -282,19 +277,19 @@ export function usePrincipalData() {
       console.log("getSessionById - not found");
       return null;
     },
-    [classes]
+    [principalData?.classes]
   );
 
   return {
     // 기본 데이터
     user,
-    userProfile,
-    academy,
-    enrollments,
-    refundRequests,
-    classes,
-    teachers,
-    students,
+    userProfile: principalData?.userProfile,
+    academy: principalData?.academy,
+    enrollments: principalData?.enrollments,
+    refundRequests: principalData?.refundRequests,
+    classes: principalData?.classes,
+    teachers: principalData?.teachers,
+    students: principalData?.students,
     sessions, // 추가: 세션 형태로 변환된 데이터
     calendarSessions, // 추가: 캘린더용 세션 데이터
     isLoading,

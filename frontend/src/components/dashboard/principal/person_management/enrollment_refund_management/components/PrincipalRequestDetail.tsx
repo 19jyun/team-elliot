@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePrincipalContext } from '@/contexts/PrincipalContext';
-import { usePrincipalData } from '@/hooks/usePrincipalData';
+import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
 import { 
   approvePrincipalEnrollment, 
   rejectPrincipalEnrollment, 

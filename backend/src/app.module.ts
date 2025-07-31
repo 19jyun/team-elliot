@@ -17,6 +17,7 @@ import { RefundModule } from './refund/refund.module';
 import { BalletPoseModule } from './ballet-pose/ballet-pose.module';
 import { SessionContentModule } from './session-content/session-content.module';
 import { PrincipalModule } from './principal/principal.module';
+import { SocketModule } from './socket/socket.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { PrincipalModule } from './principal/principal.module';
     BalletPoseModule,
     SessionContentModule,
     PrincipalModule,
+    SocketModule,
   ],
   providers: [PrismaService],
 })

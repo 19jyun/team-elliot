@@ -4,8 +4,8 @@ import { useEffect } from 'react'
 import { useAppDispatch } from '@/store/hooks'
 import { useSocketEvent } from '@/hooks/useSocket'
 import { 
-  updateEnrollmentFromSocket, 
-  updateRefundRequestFromSocket 
+  updatePrincipalEnrollmentFromSocket, 
+  updatePrincipalRefundRequestFromSocket 
 } from '@/store/slices/appDataSlice'
 import { toast } from 'sonner'
 
@@ -17,7 +17,7 @@ export function SocketListener() {
     console.log('📢 수강신청 상태 변경:', data)
     
     // Redux 상태 업데이트
-    dispatch(updateEnrollmentFromSocket(data))
+    dispatch(updatePrincipalEnrollmentFromSocket(data))
     
     // 토스트 알림
     const statusText = data.status === 'CONFIRMED' ? '승인' : '거절'
@@ -31,7 +31,7 @@ export function SocketListener() {
     console.log('📢 환불 요청 상태 변경:', data)
     
     // Redux 상태 업데이트
-    dispatch(updateRefundRequestFromSocket(data))
+    dispatch(updatePrincipalRefundRequestFromSocket(data))
     
     // 토스트 알림
     const statusText = data.status === 'APPROVED' ? '승인' : '거절'

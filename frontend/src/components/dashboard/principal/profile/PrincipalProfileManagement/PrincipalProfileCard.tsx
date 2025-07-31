@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { updatePrincipalProfile } from '@/api/principal';
+import { updatePrincipalProfile as updatePrincipalProfileApi } from '@/api/principal';
 import { UpdatePrincipalProfileRequest } from '@/types/api/principal';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,9 +24,9 @@ import {
   Trash2,
   Camera
 } from 'lucide-react';
-import { usePrincipalData } from '@/hooks/usePrincipalData';
+import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
 import { useAppDispatch } from '@/store/hooks';
-import { updateUserProfile } from '@/store/slices/appDataSlice';
+import { updatePrincipalProfile } from '@/store/slices/appDataSlice';
 
 interface PrincipalProfileCardProps {
   principalId?: number; // 특정 원장 ID (없으면 현재 로그인한 원장)
@@ -61,10 +61,10 @@ export function PrincipalProfileCard({
 
   // 프로필 업데이트 뮤테이션 (편집 가능한 경우만)
   const updateProfileMutation = useMutation({
-    mutationFn: updatePrincipalProfile,
+    mutationFn: updatePrincipalProfileApi,
     onSuccess: (updatedProfile) => {
       // Redux store 직접 업데이트
-      dispatch(updateUserProfile(updatedProfile));
+      dispatch(updatePrincipalProfile(updatedProfile));
       toast.success('프로필이 성공적으로 업데이트되었습니다.');
       setIsEditing(false);
       onSave?.();

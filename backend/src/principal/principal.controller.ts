@@ -54,6 +54,18 @@ export class PrincipalController {
     return this.principalService.getAllStudents(user.id);
   }
 
+  // Principal의 학원 모든 수강신청 조회 (Redux store용)
+  @Get('enrollments')
+  async getAllEnrollments(@GetUser() user: any) {
+    return this.principalService.getAllEnrollments(user.id);
+  }
+
+  // Principal의 학원 모든 환불요청 조회 (Redux store용)
+  @Get('refund-requests')
+  async getAllRefundRequests(@GetUser() user: any) {
+    return this.principalService.getAllRefundRequests(user.id);
+  }
+
   // Principal 정보 조회
   @Get('profile')
   async getPrincipalInfo(@GetUser() user: any) {

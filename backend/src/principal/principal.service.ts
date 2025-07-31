@@ -7,10 +7,14 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateAcademyDto } from './dto/update-academy.dto';
+import { SocketGateway } from '../socket/socket.gateway';
 
 @Injectable()
 export class PrincipalService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private socketGateway: SocketGateway,
+  ) {}
 
   // Principal의 학원 정보 조회
   async getMyAcademy(principalId: number) {
@@ -267,6 +271,115 @@ export class PrincipalService {
     );
 
     return studentsWithStats;
+  }
+
+  // Principal의 학원 모든 수강신청 조회 (Redux store용)
+  async getAllEnrollments(principalId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      include: { academy: true },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    const enrollments = await this.prisma.sessionEnrollment.findMany({
+      where: {
+        session: {
+          class: {
+            academyId: principal.academyId,
+          },
+        },
+      },
+      include: {
+        student: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        session: {
+          include: {
+            class: {
+              select: {
+                id: true,
+                className: true,
+                teacher: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        enrolledAt: 'desc',
+      },
+    });
+
+    return enrollments;
+  }
+
+  // Principal의 학원 모든 환불요청 조회 (Redux store용)
+  async getAllRefundRequests(principalId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      include: { academy: true },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    const refundRequests = await this.prisma.refundRequest.findMany({
+      where: {
+        sessionEnrollment: {
+          session: {
+            class: {
+              academyId: principal.academyId,
+            },
+          },
+        },
+      },
+      include: {
+        sessionEnrollment: {
+          include: {
+            student: {
+              select: {
+                name: true,
+              },
+            },
+            session: {
+              include: {
+                class: {
+                  select: {
+                    className: true,
+                    teacher: {
+                      select: {
+                        name: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        processor: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        requestedAt: 'desc',
+      },
+    });
+
+    return refundRequests;
   }
 
   // Principal 정보 조회
@@ -739,6 +852,13 @@ export class PrincipalService {
       },
     });
 
+    // Socket 이벤트 전송
+    this.socketGateway.notifyEnrollmentStatusChange(
+      enrollmentId,
+      'CONFIRMED',
+      updatedEnrollment,
+    );
+
     return updatedEnrollment;
   }
 
@@ -793,6 +913,13 @@ export class PrincipalService {
       },
     });
 
+    // Socket 이벤트 전송
+    this.socketGateway.notifyEnrollmentStatusChange(
+      enrollmentId,
+      'REJECTED',
+      updatedEnrollment,
+    );
+
     return updatedEnrollment;
   }
 
@@ -846,6 +973,13 @@ export class PrincipalService {
         },
       },
     });
+
+    // Socket 이벤트 전송
+    this.socketGateway.notifyRefundRequestStatusChange(
+      refundId,
+      'APPROVED',
+      updatedRefundRequest,
+    );
 
     return updatedRefundRequest;
   }
@@ -906,6 +1040,13 @@ export class PrincipalService {
         },
       },
     });
+
+    // Socket 이벤트 전송
+    this.socketGateway.notifyRefundRequestStatusChange(
+      refundId,
+      'REJECTED',
+      updatedRefundRequest,
+    );
 
     return updatedRefundRequest;
   }

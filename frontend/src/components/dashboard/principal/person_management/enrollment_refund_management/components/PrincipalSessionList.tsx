@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { usePrincipalContext } from '@/contexts/PrincipalContext';
-import { usePrincipalData } from '@/hooks/usePrincipalData';
+import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
 import { parseFromUTCISO } from '@/lib/timeUtils';
 
 export function PrincipalSessionList() {

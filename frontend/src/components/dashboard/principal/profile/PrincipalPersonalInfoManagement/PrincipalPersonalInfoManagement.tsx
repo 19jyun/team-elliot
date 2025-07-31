@@ -8,11 +8,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { User, Phone, Building, Edit, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { getPrincipalProfile, updatePrincipalProfile } from '@/api/principal';
-import { PrincipalProfile, UpdatePrincipalProfileRequest } from '@/types/api/principal';
-import { usePrincipalData } from '@/hooks/usePrincipalData';
+import { getPrincipalProfile, updatePrincipalProfile as updatePrincipalProfileApi } from '@/api/principal';
+import { UpdatePrincipalProfileRequest } from '@/types/api/principal';
+import type { PrincipalProfile } from '@/store/types';
+import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
 import { useAppDispatch } from '@/store/hooks';
-import { updateUserProfile } from '@/store/slices/appDataSlice';
+import { updatePrincipalProfile } from '@/store/slices/appDataSlice';
 
 export function PrincipalPersonalInfoManagement() {
   const [personalInfo, setPersonalInfo] = useState<PrincipalProfile | null>(null);
@@ -142,10 +143,10 @@ export function PrincipalPersonalInfoManagement() {
 
     try {
       setIsLoading(true);
-      const response = await updatePrincipalProfile(editedInfo);
+      const response = await updatePrincipalProfileApi(editedInfo);
       
       // Redux store 직접 업데이트
-      dispatch(updateUserProfile(response));
+      dispatch(updatePrincipalProfile(response));
       
       await loadPersonalInfo(); // 업데이트된 정보 다시 로드
       setIsEditing(false);

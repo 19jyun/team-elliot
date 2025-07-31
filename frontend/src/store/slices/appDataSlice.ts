@@ -1,12 +1,10 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import type {
   User,
-  Academy,
-  Class,
-  SessionEnrollment,
-  RefundRequest,
-  Teacher,
-  Student,
+  PrincipalData,
+  StudentData,
+  TeacherData,
+  AdminData,
 } from "../types";
 import {
   fetchUserData,
@@ -28,42 +26,28 @@ import {
 import type { SocketEventData } from "@/types/socket";
 
 interface AppDataState {
-  // 사용자 정보
+  // 공통 데이터
   user: User | null;
-  userProfile: any | null; // 사용자 프로필 정보
-
-  // 학원 정보
-  academy: Academy | null;
-
-  // 수강신청 관련
-  enrollments: SessionEnrollment[];
-  refundRequests: RefundRequest[];
-
-  // 클래스 관련
-  classes: Class[];
-
-  // 사용자 관리
-  teachers: Teacher[];
-  students: Student[];
-
-  // 로딩 상태
   isLoading: boolean;
   error: string | null;
   lastUpdated: string | null;
+
+  // 역할별 데이터
+  principalData: PrincipalData | null;
+  studentData: StudentData | null;
+  teacherData: TeacherData | null;
+  adminData: AdminData | null;
 }
 
 const initialState: AppDataState = {
   user: null,
-  userProfile: null,
-  academy: null,
-  enrollments: [],
-  refundRequests: [],
-  classes: [],
-  teachers: [],
-  students: [],
   isLoading: false,
   error: null,
   lastUpdated: null,
+  principalData: null,
+  studentData: null,
+  teacherData: null,
+  adminData: null,
 };
 
 // 기본 액션들
@@ -71,130 +55,159 @@ export const appDataSlice = createSlice({
   name: "appData",
   initialState,
   reducers: {
-    // 사용자 정보 설정
+    // 공통 액션들
     setUser: (state, action) => {
       state.user = action.payload;
     },
 
-    // 사용자 프로필 정보 설정
-    setUserProfile: (state, action) => {
-      state.userProfile = action.payload;
-    },
-
-    // 사용자 프로필 정보 업데이트 (실시간용)
-    updateUserProfile: (state, action) => {
-      if (state.userProfile) {
-        state.userProfile = { ...state.userProfile, ...action.payload };
-      }
-    },
-
-    // 학원 정보 설정
-    setAcademy: (state, action) => {
-      state.academy = action.payload;
-    },
-
-    // 학원 정보 업데이트 (실시간용)
-    updateAcademy: (state, action) => {
-      if (state.academy) {
-        state.academy = { ...state.academy, ...action.payload };
-      }
-    },
-
-    // 수강신청 업데이트 (실시간용)
-    updateEnrollment: (state, action) => {
-      const index = state.enrollments.findIndex(
-        (e) => e.id === action.payload.id
-      );
-      if (index !== -1) {
-        state.enrollments[index] = action.payload;
-      } else {
-        state.enrollments.push(action.payload);
-      }
-    },
-
-    // Socket 이벤트로 수강신청 상태 변경
-    updateEnrollmentFromSocket: (state, action) => {
-      const { enrollmentId, status, data } =
-        action.payload as SocketEventData<"enrollment_status_changed">;
-      const index = state.enrollments.findIndex((e) => e.id === enrollmentId);
-      if (index !== -1) {
-        state.enrollments[index] = {
-          ...state.enrollments[index],
-          status,
-          ...data,
-        };
-      }
-    },
-
-    // 환불 요청 업데이트 (실시간용)
-    updateRefundRequest: (state, action) => {
-      const index = state.refundRequests.findIndex(
-        (r) => r.id === action.payload.id
-      );
-      if (index !== -1) {
-        state.refundRequests[index] = action.payload;
-      } else {
-        state.refundRequests.push(action.payload);
-      }
-    },
-
-    // Socket 이벤트로 환불 요청 상태 변경
-    updateRefundRequestFromSocket: (state, action) => {
-      const { refundId, status, data } =
-        action.payload as SocketEventData<"refund_request_status_changed">;
-      const index = state.refundRequests.findIndex((r) => r.id === refundId);
-      if (index !== -1) {
-        state.refundRequests[index] = {
-          ...state.refundRequests[index],
-          status,
-          ...data,
-        };
-      }
-    },
-
-    // 클래스 업데이트 (실시간용)
-    updateClass: (state, action) => {
-      const index = state.classes.findIndex((c) => c.id === action.payload.id);
-      if (index !== -1) {
-        state.classes[index] = action.payload;
-      } else {
-        state.classes.push(action.payload);
-      }
-    },
-
-    // 선생님 업데이트
-    updateTeacher: (state, action) => {
-      const index = state.teachers.findIndex((t) => t.id === action.payload.id);
-      if (index !== -1) {
-        state.teachers[index] = action.payload;
-      } else {
-        state.teachers.push(action.payload);
-      }
-    },
-
-    // 학생 업데이트
-    updateStudent: (state, action) => {
-      const index = state.students.findIndex((s) => s.id === action.payload.id);
-      if (index !== -1) {
-        state.students[index] = action.payload;
-      } else {
-        state.students.push(action.payload);
-      }
-    },
-
-    // 로딩 상태 설정
     setLoading: (state, action) => {
       state.isLoading = action.payload;
     },
 
-    // 에러 설정
     setError: (state, action) => {
       state.error = action.payload;
     },
 
-    // 마지막 업데이트 시간 설정
     setLastUpdated: (state, action) => {
       state.lastUpdated = action.payload;
+    },
+
+    // Principal 관련 액션들
+    setPrincipalData: (state, action) => {
+      state.principalData = action.payload;
+    },
+
+    updatePrincipalProfile: (state, action) => {
+      if (state.principalData?.userProfile) {
+        state.principalData.userProfile = {
+          ...state.principalData.userProfile,
+          ...action.payload,
+        };
+      }
+    },
+
+    updatePrincipalAcademy: (state, action) => {
+      if (state.principalData?.academy) {
+        state.principalData.academy = {
+          ...state.principalData.academy,
+          ...action.payload,
+        };
+      }
+    },
+
+    updatePrincipalEnrollment: (state, action) => {
+      if (state.principalData?.enrollments) {
+        const index = state.principalData.enrollments.findIndex(
+          (e) => e.id === action.payload.id
+        );
+        if (index !== -1) {
+          state.principalData.enrollments[index] = action.payload;
+        } else {
+          state.principalData.enrollments.push(action.payload);
+        }
+      }
+    },
+
+    updatePrincipalRefundRequest: (state, action) => {
+      if (state.principalData?.refundRequests) {
+        const index = state.principalData.refundRequests.findIndex(
+          (r) => r.id === action.payload.id
+        );
+        if (index !== -1) {
+          state.principalData.refundRequests[index] = action.payload;
+        } else {
+          state.principalData.refundRequests.push(action.payload);
+        }
+      }
+    },
+
+    updatePrincipalClass: (state, action) => {
+      if (state.principalData?.classes) {
+        const index = state.principalData.classes.findIndex(
+          (c) => c.id === action.payload.id
+        );
+        if (index !== -1) {
+          state.principalData.classes[index] = action.payload;
+        } else {
+          state.principalData.classes.push(action.payload);
+        }
+      }
+    },
+
+    updatePrincipalTeacher: (state, action) => {
+      if (state.principalData?.teachers) {
+        const index = state.principalData.teachers.findIndex(
+          (t) => t.id === action.payload.id
+        );
+        if (index !== -1) {
+          state.principalData.teachers[index] = action.payload;
+        } else {
+          state.principalData.teachers.push(action.payload);
+        }
+      }
+    },
+
+    updatePrincipalStudent: (state, action) => {
+      if (state.principalData?.students) {
+        const index = state.principalData.students.findIndex(
+          (s) => s.id === action.payload.id
+        );
+        if (index !== -1) {
+          state.principalData.students[index] = action.payload;
+        } else {
+          state.principalData.students.push(action.payload);
+        }
+      }
+    },
+
+    // Socket 이벤트 액션들 (Principal 전용)
+    updatePrincipalEnrollmentFromSocket: (state, action) => {
+      const { enrollmentId, status, data } =
+        action.payload as SocketEventData<"enrollment_status_changed">;
+      if (state.principalData?.enrollments) {
+        const index = state.principalData.enrollments.findIndex(
+          (e) => e.id === enrollmentId
+        );
+        if (index !== -1) {
+          state.principalData.enrollments[index] = {
+            ...state.principalData.enrollments[index],
+            status,
+            ...data,
+          };
+        }
+      }
+    },
+
+    updatePrincipalRefundRequestFromSocket: (state, action) => {
+      const { refundId, status, data } =
+        action.payload as SocketEventData<"refund_request_status_changed">;
+      if (state.principalData?.refundRequests) {
+        const index = state.principalData.refundRequests.findIndex(
+          (r) => r.id === refundId
+        );
+        if (index !== -1) {
+          state.principalData.refundRequests[index] = {
+            ...state.principalData.refundRequests[index],
+            status,
+            ...data,
+          };
+        }
+      }
+    },
+
+    // Student 관련 액션들 (추후 확장용)
+    setStudentData: (state, action) => {
+      state.studentData = action.payload;
+    },
+
+    // Teacher 관련 액션들 (추후 확장용)
+    setTeacherData: (state, action) => {
+      state.teacherData = action.payload;
+    },
+
+    // Admin 관련 액션들 (추후 확장용)
+    setAdminData: (state, action) => {
+      state.adminData = action.payload;
     },
 
     // 상태 초기화
@@ -218,16 +231,14 @@ export const appDataSlice = createSlice({
 
         // 받은 데이터로 상태 업데이트
         if (action.payload.user) state.user = action.payload.user;
-        if (action.payload.userProfile)
-          state.userProfile = action.payload.userProfile;
-        if (action.payload.academy) state.academy = action.payload.academy;
-        if (action.payload.enrollments)
-          state.enrollments = action.payload.enrollments;
-        if (action.payload.refundRequests)
-          state.refundRequests = action.payload.refundRequests;
-        if (action.payload.classes) state.classes = action.payload.classes;
-        if (action.payload.teachers) state.teachers = action.payload.teachers;
-        if (action.payload.students) state.students = action.payload.students;
+        if (action.payload.principalData)
+          state.principalData = action.payload.principalData;
+        if (action.payload.studentData)
+          state.studentData = action.payload.studentData;
+        if (action.payload.teacherData)
+          state.teacherData = action.payload.teacherData;
+        if (action.payload.adminData)
+          state.adminData = action.payload.adminData;
 
         console.log("✅ 앱 데이터 초기화 완료");
       })
@@ -286,13 +297,15 @@ export const initializeAppData = createAsyncThunk(
 
           data = {
             ...data,
-            academy,
-            enrollments,
-            refundRequests,
-            classes,
-            teachers,
-            students,
-            userProfile,
+            principalData: {
+              userProfile,
+              academy,
+              enrollments,
+              refundRequests,
+              classes,
+              teachers,
+              students,
+            },
           };
           break;
 
@@ -306,35 +319,27 @@ export const initializeAppData = createAsyncThunk(
 
           data = {
             ...data,
-            students: adminStudents,
-            teachers: adminTeachers,
-            classes: adminClasses,
+            adminData: {
+              students: adminStudents,
+              teachers: adminTeachers,
+              classes: adminClasses,
+            },
           };
           break;
 
         case "STUDENT":
-          const [studentClasses, studentEnrollments] = await Promise.all([
-            fetchStudentClassesData(userId),
-            fetchStudentEnrollmentsData(userId),
-          ]);
-
+          // 추후 Student 데이터 로딩 로직 구현 예정
           data = {
             ...data,
-            classes: studentClasses,
-            enrollments: studentEnrollments,
+            studentData: {},
           };
           break;
 
         case "TEACHER":
-          const [teacherClasses, teacherStudents] = await Promise.all([
-            fetchTeacherClassesData(userId),
-            fetchTeacherStudentsData(userId),
-          ]);
-
+          // 추후 Teacher 데이터 로딩 로직 구현 예정
           data = {
             ...data,
-            classes: teacherClasses,
-            students: teacherStudents,
+            teacherData: {},
           };
           break;
       }
@@ -352,20 +357,22 @@ export const initializeAppData = createAsyncThunk(
 
 export const {
   setUser,
-  setUserProfile,
-  updateUserProfile,
-  setAcademy,
-  updateAcademy,
-  updateEnrollment,
-  updateEnrollmentFromSocket,
-  updateRefundRequest,
-  updateRefundRequestFromSocket,
-  updateClass,
-  updateTeacher,
-  updateStudent,
   setLoading,
   setError,
   setLastUpdated,
+  setPrincipalData,
+  updatePrincipalProfile,
+  updatePrincipalAcademy,
+  updatePrincipalEnrollment,
+  updatePrincipalRefundRequest,
+  updatePrincipalClass,
+  updatePrincipalTeacher,
+  updatePrincipalStudent,
+  updatePrincipalEnrollmentFromSocket,
+  updatePrincipalRefundRequestFromSocket,
+  setStudentData,
+  setTeacherData,
+  setAdminData,
   clearAppData,
 } = appDataSlice.actions;
 

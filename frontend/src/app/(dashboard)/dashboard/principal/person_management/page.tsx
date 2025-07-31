@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { usePrincipalData } from '@/hooks/usePrincipalData'
+import { usePrincipalData } from '@/hooks/redux/usePrincipalData'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
 import { toast } from 'sonner'
 

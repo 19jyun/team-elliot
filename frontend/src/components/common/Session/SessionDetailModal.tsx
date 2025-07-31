@@ -11,7 +11,7 @@ import { SessionContentTab } from '@/components/common/Session/SessionDetailComp
 import { PoseSelectionModal } from '@/components/common/Session/SessionDetailComponents/Pose/PoseSelectionModal'
 import { useAddSessionContent } from '@/hooks/useSessionContents'
 import { BalletPose } from '@/types/api/ballet-pose'
-import { usePrincipalData } from '@/hooks/usePrincipalData'
+import { usePrincipalData } from '@/hooks/redux/usePrincipalData'
 
 interface SessionDetailModalProps {
   isOpen: boolean

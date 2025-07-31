@@ -10,11 +10,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { updatePrincipalAcademy } from '@/api/principal';
+import { updatePrincipalAcademy as updatePrincipalAcademyApi } from '@/api/principal';
 import { UpdatePrincipalAcademyRequest } from '@/types/api/principal';
-import { usePrincipalData } from '@/hooks/usePrincipalData';
+import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
 import { useAppDispatch } from '@/store/hooks';
-import { updateAcademy } from '@/store/slices/appDataSlice';
+import { updatePrincipalAcademy } from '@/store/slices/appDataSlice';
 
 export default function PrincipalAcademyManagementPage() {
   const router = useRouter();
@@ -52,10 +52,10 @@ export default function PrincipalAcademyManagementPage() {
 
   // 학원 정보 수정 뮤테이션
   const updateAcademyMutation = useMutation({
-    mutationFn: updatePrincipalAcademy,
+    mutationFn: updatePrincipalAcademyApi,
     onSuccess: (updatedAcademy) => {
       // Redux store 직접 업데이트
-      dispatch(updateAcademy(updatedAcademy));
+      dispatch(updatePrincipalAcademy(updatedAcademy));
       toast.success('학원 정보가 수정되었습니다.');
       setIsEditing(false);
     },

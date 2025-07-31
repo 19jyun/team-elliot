@@ -5,7 +5,7 @@ import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { SessionCardList } from '@/components/common/Session/SessionCardList'
-import { usePrincipalData } from '@/hooks/usePrincipalData'
+import { usePrincipalData } from '@/hooks/redux/usePrincipalData'
 
 interface DateSessionModalProps {
   isOpen: boolean

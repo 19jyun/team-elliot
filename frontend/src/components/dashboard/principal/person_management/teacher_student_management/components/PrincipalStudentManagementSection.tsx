@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { removePrincipalStudent } from '@/api/principal';
 import { useState } from 'react';
 import { PrincipalStudentSessionHistoryModal } from './PrincipalStudentSessionHistoryModal';
-import { usePrincipalData } from '@/hooks/usePrincipalData';
+import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
 
 export default function PrincipalStudentManagementSection() {
   const queryClient = useQueryClient();

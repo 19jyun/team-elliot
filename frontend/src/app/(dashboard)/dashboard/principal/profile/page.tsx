@@ -11,7 +11,7 @@ import { LogoutModal } from '@/components/user/LogoutModal'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
 import { logout } from '@/api/auth'
 import FooterLinks from '@/components/common/FooterLinks'
-import { usePrincipalData } from '@/hooks/usePrincipalData'
+import { usePrincipalData } from '@/hooks/redux/usePrincipalData'
 
 export default function PrincipalProfilePage() {
   const router = useRouter()
