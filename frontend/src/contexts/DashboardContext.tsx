@@ -49,17 +49,7 @@ export interface CreateClassState {
   selectedTeacherId: number | null;
 }
 
-// 수강 신청/환불 신청 관리 단계 타입
-export type EnrollmentManagementStep = 'tabs' | 'session-list' | 'request-detail';
 
-// 수강 신청/환불 신청 관리 상태 인터페이스
-export interface EnrollmentManagementState {
-  currentStep: EnrollmentManagementStep;
-  selectedTab: 'enrollment' | 'refund';
-  selectedSessionId: number | null;
-  selectedRequestId: number | null;
-  selectedRequestType: 'enrollment' | 'refund' | null;
-}
 
 // 포커스 상태 타입
 export type FocusType = 'dashboard' | 'modal' | 'subpage' | 'overlay';
@@ -70,7 +60,6 @@ interface DashboardState {
   subPage: string | null;
   enrollment: EnrollmentState;
   createClass: CreateClassState;
-  enrollmentManagement: EnrollmentManagementState;
   currentFocus: FocusType;
   focusHistory: FocusType[];
   isFocusTransitioning: boolean;
@@ -83,7 +72,6 @@ interface DashboardContextType {
   subPage: string | null;
   enrollment: EnrollmentState;
   createClass: CreateClassState;
-  enrollmentManagement: EnrollmentManagementState;
   currentFocus: FocusType;
   focusHistory: FocusType[];
   isFocusTransitioning: boolean;
@@ -114,13 +102,7 @@ interface DashboardContextType {
   setClassFormData: (data: any) => void;
   setSelectedTeacherId: (teacherId: number | null) => void;
   resetCreateClass: () => void;
-  // 수강 신청/환불 신청 관리 관련 메서드들
-  setEnrollmentManagementStep: (step: EnrollmentManagementStep) => void;
-  setEnrollmentManagementTab: (tab: 'enrollment' | 'refund') => void;
-  setSelectedSessionId: (sessionId: number | null) => void;
-  setSelectedRequestId: (requestId: number | null) => void;
-  setSelectedRequestType: (requestType: 'enrollment' | 'refund' | null) => void;
-  resetEnrollmentManagement: () => void;
+
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
@@ -158,13 +140,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       },
       selectedTeacherId: null,
     },
-    enrollmentManagement: {
-      currentStep: 'tabs',
-      selectedTab: 'enrollment',
-      selectedSessionId: null,
-      selectedRequestId: null,
-      selectedRequestType: null,
-    },
+
     currentFocus: 'dashboard',
     focusHistory: ['dashboard'],
     isFocusTransitioning: false,
@@ -346,14 +322,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           },
           selectedTeacherId: null,
         },
-        // 탭 변경 시 enrollmentManagement 상태 초기화
-        enrollmentManagement: {
-          currentStep: 'tabs',
-          selectedTab: 'enrollment',
-          selectedSessionId: null,
-          selectedRequestId: null,
-          selectedRequestType: null,
-        },
+
       };
     });
   }, [state.activeTab, state.isTransitioning]);
@@ -371,29 +340,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   // 뒤로가기
   const goBack = useCallback(() => {
     setState(prev => {
-      // 수강 신청/환불 신청 관리 중인 경우 단계별로 뒤로가기
-      if (prev.subPage === 'enrollment-management') {
-        if (prev.enrollmentManagement.currentStep === 'request-detail') {
-          return {
-            ...prev,
-            enrollmentManagement: {
-              ...prev.enrollmentManagement,
-              currentStep: 'session-list',
-              selectedRequestId: null,
-              selectedRequestType: null,
-            },
-          };
-        } else if (prev.enrollmentManagement.currentStep === 'session-list') {
-          return {
-            ...prev,
-            enrollmentManagement: {
-              ...prev.enrollmentManagement,
-              currentStep: 'tabs',
-              selectedSessionId: null,
-            },
-          };
-        }
-      }
+
       
       // 수강 변경 중인 경우 (modify-* 형태의 subPage) 단계별로 뒤로가기
       if (prev.subPage && prev.subPage.startsWith('modify-') && prev.enrollment.currentStep !== 'date-selection') {
@@ -676,74 +623,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
-  // 수강 신청/환불 신청 관리 단계 설정
-  const setEnrollmentManagementStep = useCallback((step: EnrollmentManagementStep) => {
-    setState(prev => ({
-      ...prev,
-      enrollmentManagement: {
-        ...prev.enrollmentManagement,
-        currentStep: step,
-      },
-    }));
-  }, []);
 
-  // 수강 신청/환불 신청 관리 탭 설정
-  const setEnrollmentManagementTab = useCallback((tab: 'enrollment' | 'refund') => {
-    setState(prev => ({
-      ...prev,
-      enrollmentManagement: {
-        ...prev.enrollmentManagement,
-        selectedTab: tab,
-      },
-    }));
-  }, []);
-
-  // 선택된 세션 ID 설정
-  const setSelectedSessionId = useCallback((sessionId: number | null) => {
-    setState(prev => ({
-      ...prev,
-      enrollmentManagement: {
-        ...prev.enrollmentManagement,
-        selectedSessionId: sessionId,
-      },
-    }));
-  }, []);
-
-  // 선택된 요청 ID 설정
-  const setSelectedRequestId = useCallback((requestId: number | null) => {
-    setState(prev => ({
-      ...prev,
-      enrollmentManagement: {
-        ...prev.enrollmentManagement,
-        selectedRequestId: requestId,
-      },
-    }));
-  }, []);
-
-  // 선택된 요청 타입 설정
-  const setSelectedRequestType = useCallback((requestType: 'enrollment' | 'refund' | null) => {
-    setState(prev => ({
-      ...prev,
-      enrollmentManagement: {
-        ...prev.enrollmentManagement,
-        selectedRequestType: requestType,
-      },
-    }));
-  }, []);
-
-  // 수강 신청/환불 신청 관리 상태 초기화
-  const resetEnrollmentManagement = useCallback(() => {
-    setState(prev => ({
-      ...prev,
-      enrollmentManagement: {
-        currentStep: 'tabs',
-        selectedTab: 'enrollment',
-        selectedSessionId: null,
-        selectedRequestId: null,
-        selectedRequestType: null,
-      },
-    }));
-  }, []);
 
   const value: DashboardContextType = {
     navigationItems: getNavigationItems(),
@@ -752,7 +632,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     subPage: state.subPage,
     enrollment: state.enrollment,
     createClass: state.createClass,
-    enrollmentManagement: state.enrollmentManagement,
+
     currentFocus: state.currentFocus,
     focusHistory: state.focusHistory,
     isFocusTransitioning: state.isFocusTransitioning,
@@ -780,12 +660,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setClassFormData,
     setSelectedTeacherId,
     resetCreateClass,
-    setEnrollmentManagementStep,
-    setEnrollmentManagementTab,
-    setSelectedSessionId,
-    setSelectedRequestId,
-    setSelectedRequestType,
-    resetEnrollmentManagement,
+
   };
 
   return (

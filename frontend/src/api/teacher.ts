@@ -19,6 +19,8 @@ import {
   CreateAndJoinAcademyResponse,
   UpdateAcademyRequest,
   LeaveAcademyResponse,
+  RequestJoinAcademyRequest,
+  RequestJoinAcademyResponse,
 } from "@/types/api/teacher";
 
 // 프로필 관련 API
@@ -109,16 +111,15 @@ export const batchUpdateEnrollmentStatus = async (
   return response.data;
 };
 
-// 클래스 상세 정보 업데이트
 export const updateClassDetails = async (
   classId: number,
   data: UpdateClassDetailsRequest
 ): Promise<UpdateClassDetailsResponse> => {
-  const response = await axiosInstance.put(`/classes/${classId}/details`, data);
+  const response = await axiosInstance.put(`/classes/${classId}`, data);
   return response.data;
 };
 
-// 학원 관리 API
+// 학원 관련 API
 export const getMyAcademy = async (): Promise<Academy | null> => {
   const response = await axiosInstance.get("/teachers/me/academy");
   return response.data;
@@ -154,7 +155,6 @@ export const createAndJoinAcademy = async (
   return response.data;
 };
 
-// 학원 정보 수정 (관리자만)
 export const updateAcademy = async (
   data: UpdateAcademyRequest
 ): Promise<Academy> => {
@@ -162,149 +162,17 @@ export const updateAcademy = async (
   return response.data;
 };
 
-// 학원 탈퇴 (관리자 불가)
 export const leaveAcademy = async (): Promise<LeaveAcademyResponse> => {
   const response = await axiosInstance.post("/teachers/me/leave-academy");
   return response.data;
 };
 
-// 수강 신청/환불 신청 관리 API
-export const getTeacherSessionsWithPendingRequests = async (
-  requestType: "enrollment" | "refund"
-) => {
-  const response = await axiosInstance.get(
-    `/teachers/me/sessions-with-${requestType}-requests`
-  );
-  return response.data;
-};
-
-export const getSessionRequests = async (
-  sessionId: number,
-  requestType: "enrollment" | "refund"
-) => {
-  const response = await axiosInstance.get(
-    `/class-sessions/${sessionId}/${requestType}-requests`
-  );
-  return response.data;
-};
-
-export const approveEnrollment = async (enrollmentId: number) => {
+export const requestJoinAcademy = async (
+  data: RequestJoinAcademyRequest
+): Promise<RequestJoinAcademyResponse> => {
   const response = await axiosInstance.post(
-    `/class-sessions/enrollments/${enrollmentId}/approve`
-  );
-  return response.data;
-};
-
-export const rejectEnrollment = async (
-  enrollmentId: number,
-  data: { reason: string; detailedReason?: string }
-) => {
-  const response = await axiosInstance.post(
-    `/class-sessions/enrollments/${enrollmentId}/reject`,
+    "/teachers/me/request-join-academy",
     data
-  );
-  return response.data;
-};
-
-export const approveRefund = async (refundId: number) => {
-  const response = await axiosInstance.post(`/refunds/${refundId}/approve`);
-  return response.data;
-};
-
-export const rejectRefund = async (
-  refundId: number,
-  data: { reason: string; detailedReason?: string }
-) => {
-  const response = await axiosInstance.put(`/refunds/${refundId}/reject`, data);
-  return response.data;
-};
-
-// === 새로운 학원 관리 API들 ===
-
-// 1. 학원 소속 선생님 목록 조회
-export const getAcademyTeachers = async () => {
-  const response = await axiosInstance.get("/teachers/academy/teachers");
-  return response.data;
-};
-
-// 2. 학원 소속 수강생 목록 조회
-export const getAcademyStudents = async () => {
-  const response = await axiosInstance.get("/teachers/academy/students");
-  return response.data;
-};
-
-// 3. 특정 선생님을 학원에서 제거
-export const removeTeacherFromAcademy = async (teacherId: number) => {
-  const response = await axiosInstance.delete(
-    `/teachers/academy/teachers/${teacherId}`
-  );
-  return response.data;
-};
-
-// 4. 관리자 권한 부여
-export const assignAdminRole = async (teacherId: number) => {
-  const response = await axiosInstance.post(
-    `/teachers/academy/teachers/${teacherId}/assign-admin`
-  );
-  return response.data;
-};
-
-// 5. 관리자 권한 제거
-export const removeAdminRole = async (teacherId: number) => {
-  const response = await axiosInstance.delete(
-    `/teachers/academy/teachers/${teacherId}/remove-admin`
-  );
-  return response.data;
-};
-
-// 6. 수강생의 세션 수강 현황 조회
-export const getStudentSessionHistory = async (studentId: number) => {
-  const response = await axiosInstance.get(
-    `/teachers/academy/students/${studentId}/sessions`
-  );
-  return response.data;
-};
-
-// 7. 선생님 지정하여 강의 개설
-export const createClassWithTeacher = async (data: {
-  classData: any;
-  assignedTeacherId: number;
-}) => {
-  const response = await axiosInstance.post(
-    "/teachers/academy/classes/with-teacher",
-    data
-  );
-  return response.data;
-};
-
-// 8. DRAFT 상태 강의 목록 조회
-export const getDraftClasses = async () => {
-  const response = await axiosInstance.get("/classes/academy/draft");
-  return response.data;
-};
-
-// 9. 학원의 모든 활성 클래스 조회
-export const getActiveClasses = async () => {
-  const response = await axiosInstance.get("/classes/academy/active");
-  return response.data;
-};
-
-// 9. 강의 상태 변경 (승인/거절)
-export const updateClassStatus = async (
-  classId: number,
-  data: {
-    status: "DRAFT" | "OPEN" | "CLOSED";
-    reason?: string;
-  }
-) => {
-  const response = await axiosInstance.put(`/classes/${classId}/status`, data);
-  return response.data;
-};
-
-// 8. 수강생을 학원에서 제거
-export const removeStudentFromAcademy = async (studentId: number) => {
-  const response = await axiosInstance.delete(
-    `/student/academy/students/${studentId}`
   );
   return response.data;
 };

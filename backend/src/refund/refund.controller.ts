@@ -56,20 +56,6 @@ export class RefundController {
   }
 
   /**
-   * 환불 요청 처리 (관리자/강사용)
-   */
-  @Put('process')
-  @Roles(Role.ADMIN, Role.TEACHER)
-  @ApiOperation({ summary: '환불 요청 처리' })
-  @ApiResponse({ status: 200, description: '환불 요청이 처리되었습니다.' })
-  async processRefundRequest(
-    @Body() dto: RefundProcessDto,
-    @CurrentUser() user: any,
-  ) {
-    return this.refundService.processRefundRequest(dto, user.id);
-  }
-
-  /**
    * 학생별 환불 요청 목록 조회
    */
   @Get('student')
@@ -81,10 +67,10 @@ export class RefundController {
   }
 
   /**
-   * 전체 환불 요청 목록 조회 (관리자/강사용)
+   * 전체 환불 요청 목록 조회 (관리자용)
    */
   @Get('all')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: '전체 환불 요청 목록 조회' })
   @ApiResponse({
     status: 200,
@@ -98,7 +84,7 @@ export class RefundController {
    * 환불 요청 상세 조회
    */
   @Get(':refundRequestId')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.STUDENT)
   @ApiOperation({ summary: '환불 요청 상세 조회' })
   @ApiResponse({
     status: 200,
@@ -108,38 +94,5 @@ export class RefundController {
     @Param('refundRequestId', ParseIntPipe) refundRequestId: number,
   ) {
     return this.refundService.getRefundRequest(refundRequestId);
-  }
-
-  /**
-   * 환불 요청 승인
-   */
-  @Post(':refundRequestId/approve')
-  @Roles(Role.ADMIN, Role.TEACHER)
-  @ApiOperation({ summary: '환불 요청 승인' })
-  @ApiResponse({ status: 200, description: '환불 요청 승인 성공' })
-  async approveRefundRequest(
-    @Param('refundRequestId', ParseIntPipe) refundRequestId: number,
-    @CurrentUser() user: any,
-  ) {
-    return this.refundService.approveRefundRequest(refundRequestId, user.id);
-  }
-
-  /**
-   * 환불 요청 거절
-   */
-  @Post(':refundRequestId/reject')
-  @Roles(Role.ADMIN, Role.TEACHER)
-  @ApiOperation({ summary: '환불 요청 거절' })
-  @ApiResponse({ status: 200, description: '환불 요청 거절 성공' })
-  async rejectRefundRequest(
-    @Param('refundRequestId', ParseIntPipe) refundRequestId: number,
-    @Body() data: { reason: string; detailedReason?: string },
-    @CurrentUser() user: any,
-  ) {
-    return this.refundService.rejectRefundRequest(
-      refundRequestId,
-      data,
-      user.id,
-    );
   }
 }

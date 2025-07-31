@@ -71,3 +71,104 @@ export const updatePrincipalProfile = async (data: {
   const response = await axiosInstance.put("/principal/profile", data);
   return response.data;
 };
+
+// === Principal 수강 신청/환불 신청 관리 API ===
+
+// 1. Principal의 세션별 요청 목록 조회
+export const getPrincipalSessionsWithPendingRequests = async (
+  requestType: "enrollment" | "refund"
+) => {
+  const response = await axiosInstance.get(
+    `/principal/sessions-with-${requestType}-requests`
+  );
+  return response.data;
+};
+
+// 2. 특정 세션의 요청 목록 조회
+export const getPrincipalSessionRequests = async (
+  sessionId: number,
+  requestType: "enrollment" | "refund"
+) => {
+  const response = await axiosInstance.get(
+    `/principal/sessions/${sessionId}/${requestType}-requests`
+  );
+  return response.data;
+};
+
+// 3. 수강 신청 승인
+export const approvePrincipalEnrollment = async (enrollmentId: number) => {
+  const response = await axiosInstance.post(
+    `/principal/enrollments/${enrollmentId}/approve`
+  );
+  return response.data;
+};
+
+// 4. 수강 신청 거절
+export const rejectPrincipalEnrollment = async (
+  enrollmentId: number,
+  data: { reason: string; detailedReason?: string }
+) => {
+  const response = await axiosInstance.post(
+    `/principal/enrollments/${enrollmentId}/reject`,
+    data
+  );
+  return response.data;
+};
+
+// 5. 환불 요청 승인
+export const approvePrincipalRefund = async (refundId: number) => {
+  const response = await axiosInstance.post(
+    `/principal/refunds/${refundId}/approve`
+  );
+  return response.data;
+};
+
+// 6. 환불 요청 거절
+export const rejectPrincipalRefund = async (
+  refundId: number,
+  data: { reason: string; detailedReason?: string }
+) => {
+  const response = await axiosInstance.put(
+    `/principal/refunds/${refundId}/reject`,
+    data
+  );
+  return response.data;
+};
+
+// === Principal 선생님/수강생 관리 API ===
+
+// 1. Principal의 학원 소속 선생님 목록 조회 (기존 API 활용)
+export const getPrincipalAcademyTeachers = async () => {
+  const response = await axiosInstance.get("/principal/teachers");
+  return response.data;
+};
+
+// 2. Principal의 학원 소속 수강생 목록 조회 (기존 API 활용)
+export const getPrincipalAcademyStudents = async () => {
+  const response = await axiosInstance.get("/principal/students");
+  return response.data;
+};
+
+// 3. 선생님을 학원에서 제거
+export const removePrincipalTeacher = async (teacherId: number) => {
+  const response = await axiosInstance.delete(
+    `/principal/teachers/${teacherId}`
+  );
+  return response.data;
+};
+
+// 6. 수강생을 학원에서 제거
+export const removePrincipalStudent = async (studentId: number) => {
+  const response = await axiosInstance.delete(
+    `/principal/students/${studentId}`
+  );
+  return response.data;
+};
+
+// 7. 수강생의 세션 수강 현황 조회
+export const getPrincipalStudentSessionHistory = async (studentId: number) => {
+  const response = await axiosInstance.get(
+    `/principal/students/${studentId}/sessions`
+  );
+  return response.data;
+};

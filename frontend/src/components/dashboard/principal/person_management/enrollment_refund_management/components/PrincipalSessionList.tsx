@@ -2,32 +2,27 @@
 
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useDashboardNavigation } from '@/contexts/DashboardContext';
-import { getTeacherSessionsWithPendingRequests } from '@/api/teacher';
+import { usePrincipalContext } from '@/contexts/PrincipalContext';
+import { getPrincipalSessionsWithPendingRequests } from '@/api/principal';
 import { parseFromUTCISO } from '@/lib/timeUtils';
 
-export function SessionList() {
+export function PrincipalSessionList() {
   const { 
-    enrollmentManagement, 
+    personManagement, 
     setSelectedSessionId, 
-    setEnrollmentManagementStep,
-    goBack
-  } = useDashboardNavigation();
-  const { selectedTab } = enrollmentManagement;
+    setPersonManagementStep
+  } = usePrincipalContext();
+  const { selectedTab } = personManagement;
 
-  // 선생님의 세션별 요청 목록 조회
+  // Principal의 세션별 요청 목록 조회
   const { data: sessions, isLoading, error } = useQuery({
-    queryKey: ['teacher-sessions-requests', selectedTab],
-    queryFn: () => getTeacherSessionsWithPendingRequests(selectedTab),
+    queryKey: ['principal-sessions-requests', selectedTab],
+    queryFn: () => getPrincipalSessionsWithPendingRequests(selectedTab),
   });
 
   const handleSessionClick = (sessionId: number) => {
     setSelectedSessionId(sessionId);
-    setEnrollmentManagementStep('request-detail');
-  };
-
-  const handleGoBack = () => {
-    goBack();
+    setPersonManagementStep('enrollment-refund');
   };
 
   const formatDate = (dateString: string) => {

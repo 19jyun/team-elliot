@@ -2,19 +2,24 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useDashboardNavigation } from '@/contexts/DashboardContext';
-import { getSessionRequests, approveEnrollment, rejectEnrollment, approveRefund, rejectRefund } from '@/api/teacher';
-import { RequestCard } from './RequestCard';
-import { RejectionFormModal } from './RejectionFormModal';
+import { usePrincipalContext } from '@/contexts/PrincipalContext';
+import { 
+  getPrincipalSessionRequests, 
+  approvePrincipalEnrollment, 
+  rejectPrincipalEnrollment, 
+  approvePrincipalRefund, 
+  rejectPrincipalRefund 
+} from '@/api/principal';
+import { PrincipalRequestCard } from './PrincipalRequestCard';
+import { PrincipalRejectionFormModal } from './PrincipalRejectionFormModal';
 import { toast } from 'sonner';
 
-export function RequestDetail() {
+export function PrincipalRequestDetail() {
   const { 
-    enrollmentManagement, 
-    setEnrollmentManagementStep,
-    goBack
-  } = useDashboardNavigation();
-  const { selectedTab, selectedSessionId } = enrollmentManagement;
+    personManagement, 
+    setPersonManagementStep
+  } = usePrincipalContext();
+  const { selectedTab, selectedSessionId } = personManagement;
   const [showRejectionModal, setShowRejectionModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -22,8 +27,8 @@ export function RequestDetail() {
 
   // 선택된 세션의 요청 목록 조회
   const { data: requests, isLoading, error } = useQuery({
-    queryKey: ['session-requests', selectedSessionId, selectedTab],
-    queryFn: () => getSessionRequests(selectedSessionId!, selectedTab),
+    queryKey: ['principal-session-requests', selectedSessionId, selectedTab],
+    queryFn: () => getPrincipalSessionRequests(selectedSessionId!, selectedTab),
     enabled: !!selectedSessionId,
   });
 
@@ -31,15 +36,15 @@ export function RequestDetail() {
   const approveMutation = useMutation({
     mutationFn: async (requestId: number) => {
       if (selectedTab === 'enrollment') {
-        return approveEnrollment(requestId);
+        return approvePrincipalEnrollment(requestId);
       } else {
-        return approveRefund(requestId);
+        return approvePrincipalRefund(requestId);
       }
     },
     onSuccess: () => {
       toast.success('승인 처리가 완료되었습니다.');
-      queryClient.invalidateQueries({ queryKey: ['session-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['teacher-sessions-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['principal-session-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['principal-sessions-requests'] });
     },
     onError: (error) => {
       toast.error('승인 처리 중 오류가 발생했습니다.');
@@ -51,15 +56,15 @@ export function RequestDetail() {
   const rejectMutation = useMutation({
     mutationFn: async ({ requestId, reason, detailedReason }: { requestId: number; reason: string; detailedReason?: string }) => {
       if (selectedTab === 'enrollment') {
-        return rejectEnrollment(requestId, { reason, detailedReason });
+        return rejectPrincipalEnrollment(requestId, { reason, detailedReason });
       } else {
-        return rejectRefund(requestId, { reason, detailedReason });
+        return rejectPrincipalRefund(requestId, { reason, detailedReason });
       }
     },
     onSuccess: () => {
       toast.success('거절 처리가 완료되었습니다.');
-      queryClient.invalidateQueries({ queryKey: ['session-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['teacher-sessions-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['principal-session-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['principal-sessions-requests'] });
       setShowRejectionModal(false);
       setSelectedRequest(null);
     },
@@ -104,7 +109,7 @@ export function RequestDetail() {
   };
 
   const handleGoBack = () => {
-    setEnrollmentManagementStep('session-list');
+    setPersonManagementStep('enrollment-refund');
   };
 
   if (isLoading) {
@@ -130,7 +135,7 @@ export function RequestDetail() {
         {requests && requests.length > 0 ? (
           <div className="space-y-4">
             {requests.map((request: any) => (
-              <RequestCard
+              <PrincipalRequestCard
                 key={request.id}
                 request={request}
                 requestType={selectedTab}
@@ -162,7 +167,7 @@ export function RequestDetail() {
       </div>
 
       {/* 거절 폼 모달 */}
-      <RejectionFormModal
+      <PrincipalRejectionFormModal
         isOpen={showRejectionModal}
         onClose={handleCloseRejectionModal}
         onSubmit={handleRejectionSubmit}

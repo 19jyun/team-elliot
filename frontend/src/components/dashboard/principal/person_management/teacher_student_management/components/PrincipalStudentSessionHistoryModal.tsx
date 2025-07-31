@@ -4,26 +4,25 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { getStudentSessionHistory } from '@/api/teacher';
-import { AcademyStudent, StudentSessionHistory } from '@/types/api/teacher';
+import { getPrincipalStudentSessionHistory } from '@/api/principal';
 import { format } from 'date-fns';
 import { CheckCircle, XCircle, AlertCircle, Clock } from 'lucide-react';
 import { SlideUpModal } from '@/components/common/SlideUpModal';
 
-interface StudentSessionHistoryModalProps {
-  student: AcademyStudent;
+interface PrincipalStudentSessionHistoryModalProps {
+  student: any;
   onClose: () => void;
 }
 
-export default function StudentSessionHistoryModal({ student, onClose }: StudentSessionHistoryModalProps) {
-  const [history, setHistory] = useState<StudentSessionHistory[] | null>(null);
+export function PrincipalStudentSessionHistoryModal({ student, onClose }: PrincipalStudentSessionHistoryModalProps) {
+  const [history, setHistory] = useState<any[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchHistory = async () => {
       setIsLoading(true);
       try {
-        const response = await getStudentSessionHistory(student.id);
+        const response = await getPrincipalStudentSessionHistory(student.id);
         setHistory(response);
       } catch (error: any) {
         toast.error(error.response?.data?.message || '수강생 현황 조회에 실패했습니다.');
@@ -139,7 +138,7 @@ export default function StudentSessionHistoryModal({ student, onClose }: Student
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {history?.map((session) => (
+                {history?.map((session: any) => (
                   <tr key={session.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {session.session.class.className}
@@ -162,4 +161,4 @@ export default function StudentSessionHistoryModal({ student, onClose }: Student
       </div>
     </SlideUpModal>
   );
-}
+} 

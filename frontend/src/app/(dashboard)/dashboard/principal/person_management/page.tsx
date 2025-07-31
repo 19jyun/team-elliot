@@ -5,11 +5,11 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
-import { getMyAcademy } from '@/api/teacher'
+import { getPrincipalAcademy } from '@/api/principal'
 import { toast } from 'sonner'
 
-// 수업 관리 카드 컴포넌트
-const ClassManagementCard: React.FC<{
+// 인원 관리 카드 컴포넌트 (Teacher의 ClassManagementCard와 동일한 디자인)
+const PersonManagementCard: React.FC<{
   title: string
   description?: string
   isNew?: boolean
@@ -45,7 +45,7 @@ const ClassManagementCard: React.FC<{
   </div>
 )
 
-export default function TeacherClassManagementPage() {
+export default function PrincipalPersonManagementPage() {
   const router = useRouter()
   const { data: session, status } = useSession({
     required: true,
@@ -55,23 +55,31 @@ export default function TeacherClassManagementPage() {
   })
   const { navigateToSubPage } = useDashboardNavigation()
 
-  // 선생님의 학원 정보 조회
+  // Principal의 학원 정보 조회
   const { data: myAcademy, isLoading: isAcademyLoading } = useQuery({
-    queryKey: ['teacher-academy'],
-    queryFn: getMyAcademy,
+    queryKey: ['principal-academy'],
+    queryFn: getPrincipalAcademy,
     enabled: status === 'authenticated',
   })
 
-
-
-  const handleStudentFeedback = () => {
-    // TODO: 수강생 피드백 기능 구현
-    console.log('수강생 피드백 버튼 클릭됨')
+  const handleEnrollmentRefundManagement = () => {
+    // 학원 정보 확인
+    if (!myAcademy) {
+      toast.error('학원 정보를 불러올 수 없습니다!')
+      return
+    }
+    
+    navigateToSubPage('enrollment-refund-management')
   }
 
-  const handleFutureFeature = () => {
-    // TODO: 추후 기능 구현
-    console.log('추후 기능 버튼 클릭됨')
+  const handleTeacherStudentManagement = () => {
+    // 학원 정보 확인
+    if (!myAcademy) {
+      toast.error('학원 정보를 불러올 수 없습니다!')
+      return
+    }
+    
+    navigateToSubPage('teacher-student-management')
   }
 
   if (status === 'loading' || isAcademyLoading) {
@@ -85,30 +93,24 @@ export default function TeacherClassManagementPage() {
   return (
     <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px]">
       <div className="flex flex-col px-5 py-6">
-        <h1 className="text-2xl font-bold text-stone-700">수업 관리</h1>
-        <p className="mt-2 text-stone-500">원장님이 개설한 강의를 관리하세요</p>
+        <h1 className="text-2xl font-bold text-stone-700">인원 관리</h1>
+        <p className="mt-2 text-stone-500">수강 신청/환불 신청과 수강생/강사를 관리하세요</p>
       </div>
 
-      {/* 수업 관리 카드 섹션 */}
+      {/* 인원 관리 카드 섹션 */}
       <div className="flex flex-col self-center mt-5 w-full font-semibold leading-snug text-center max-w-[335px]">
-
+        <PersonManagementCard
+          title="수강 신청/환불 신청 관리"
+          onClick={handleEnrollmentRefundManagement}
+        />
         
         <div className="mt-3">
-          <ClassManagementCard
-            title="수강생 피드백"
-            onClick={handleStudentFeedback}
-          />
-        </div>
-
-        <div className="mt-3">
-          <ClassManagementCard
-            title="추후 기능 추가 예정"
-            description="더 많은 기능이 준비 중입니다"
-            isNew
-            onClick={handleFutureFeature}
+          <PersonManagementCard
+            title="수강생/강사 관리"
+            onClick={handleTeacherStudentManagement}
           />
         </div>
       </div>
     </div>
   )
-}
+} 

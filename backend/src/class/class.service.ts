@@ -71,7 +71,7 @@ export class ClassService {
       include: {
         academy: {
           include: {
-            admins: true,
+            principal: true,
           },
         },
       },
@@ -86,11 +86,9 @@ export class ClassService {
     if (userRole === 'PRINCIPAL') {
       classStatus = 'OPEN';
     } else {
-      // 선생님의 권한 확인 (OWNER/ADMIN인지 확인)
-      const isAdmin = teacher.academy?.admins.some(
-        (admin) => admin.teacherId === data.teacherId,
-      );
-      classStatus = isAdmin ? 'OPEN' : 'DRAFT';
+      // 선생님의 권한 확인 (Principal인지 확인)
+      const isPrincipal = teacher.academy?.principal?.id === data.teacherId;
+      classStatus = isPrincipal ? 'OPEN' : 'DRAFT';
     }
 
     // 요일 유효성 검증
@@ -374,7 +372,7 @@ export class ClassService {
       include: {
         academy: {
           include: {
-            admins: true,
+            principal: true,
           },
         },
       },
@@ -385,11 +383,9 @@ export class ClassService {
     }
 
     // 권한 확인 (OWNER/ADMIN만 상태 변경 가능)
-    const isAdmin = classInfo.academy.admins.some(
-      (admin) => admin.teacherId === teacherId,
-    );
+    const isPrincipal = classInfo.academy.principal?.id === teacherId;
 
-    if (!isAdmin) {
+    if (!isPrincipal) {
       throw new ForbiddenException('강의 상태 변경 권한이 없습니다.');
     }
 

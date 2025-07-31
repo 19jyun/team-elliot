@@ -42,11 +42,7 @@ enum AcademyRequestStatus {
   REJECTED  // 거절됨
 }
 
-// 학원 관리자 역할 enum
-enum AdminRole {
-  OWNER    // 소유자 (최고 권한)
-  ADMIN    // 관리자
-}
+
 
 // 학원 모델
 model Academy {
@@ -61,7 +57,7 @@ model Academy {
   teachers    Teacher[] // 소속 강사들
   classes     Class[] // 소속 수업들
   students    StudentAcademy[] // 가입한 학생들
-  admins      AcademyAdmin[] // 학원 관리자들
+
   joinRequests AcademyJoinRequest[] // 학원 가입 신청들
   principal   Principal? // 학원 원장 (1대1 관계)
 
@@ -90,20 +86,7 @@ model Principal {
   @@map("principals")
 }
 
-// 학원-관리자 관계 모델 (다대다 관계)
-model AcademyAdmin {
-  id        Int       @id @default(autoincrement())
-  academyId Int       @map("academy_id")
-  teacherId Int       @map("teacher_id")
-  role      AdminRole @default(ADMIN)
-  createdAt DateTime  @default(now())
-  
-  academy   Academy   @relation(fields: [academyId], references: [id], onDelete: Cascade)
-  teacher   Teacher   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  
-  @@unique([academyId, teacherId])
-  @@map("academy_admins")
-}
+
 
 // 학생-학원 관계 모델 (다대다 관계)
 model StudentAcademy {
@@ -179,7 +162,7 @@ model Teacher {
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   academy           Academy?      @relation(fields: [academyId], references: [id])
-  managedAcademies  AcademyAdmin[] // 관리하는 학원들 (다대다 관계)
+
   joinRequests      AcademyJoinRequest[] // 학원 가입 신청들
   creationRequests  AcademyCreationRequest[] // 학원 생성 신청들
 

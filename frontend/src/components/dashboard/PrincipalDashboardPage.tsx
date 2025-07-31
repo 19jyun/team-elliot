@@ -9,22 +9,16 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import PrincipalClassPage from '@/app/(dashboard)/dashboard/principal/class/page';
 import PrincipalProfilePage from '@/app/(dashboard)/dashboard/principal/profile/page';
+import PrincipalPersonManagementPage from '@/app/(dashboard)/dashboard/principal/person_management/page';
 import { PrincipalClassesContainer } from '@/components/features/principal/classes/PrincipalClassesContainer';
 import { CreateClassContainer } from './principal/class_management/create-class/containers/CreateClassContainer';
 import PrincipalAcademyManagementPage from '@/app/(dashboard)/dashboard/principal/academy_management/page';
 import { PrincipalProfileManagement } from './principal/profile/PrincipalProfileManagement/PrincipalProfileManagement';
 import { PrincipalPersonalInfoManagement } from './principal/profile/PrincipalPersonalInfoManagement/PrincipalPersonalInfoManagement';
+import { EnrollmentRefundManagementContainer } from './principal/person_management/enrollment_refund_management/containers/EnrollmentRefundManagementContainer';
+import { TeacherStudentManagementContainer } from './principal/person_management/teacher_student_management/containers/TeacherStudentManagementContainer';
 
-// 임시 페이지 컴포넌트들 (추후 구현)
-const PrincipalUserManagementPage = () => (
-  <div className="flex items-center justify-center h-full">
-    <div className="text-center">
-      <h2 className="text-xl font-semibold mb-2">수강생/강사 관리</h2>
-      <p className="text-gray-600">수강생 및 강사 관리 페이지</p>
-      <p className="text-sm text-gray-500 mt-2">개발 중...</p>
-    </div>
-  </div>
-);
+
 
 function PrincipalDashboardContent() {
   const { activeTab, handleTabChange } = usePrincipalContext();
@@ -43,6 +37,10 @@ function PrincipalDashboardContent() {
         return <PrincipalProfileManagement />;
       case 'personal-info':
         return <PrincipalPersonalInfoManagement />;
+      case 'enrollment-refund-management':
+        return <EnrollmentRefundManagementContainer />;
+      case 'teacher-student-management':
+        return <TeacherStudentManagementContainer />;
       default:
         return (
           <div className="flex items-center justify-center h-full">
@@ -59,7 +57,7 @@ function PrincipalDashboardContent() {
   // 메인 탭 페이지들을 배열로 준비
   const tabPages = [
     <PrincipalClassPage key="class" />,
-    <PrincipalUserManagementPage key="user-management" />,
+    <PrincipalPersonManagementPage key="person-management" />,
     <PrincipalAcademyManagementPage key="academy-management" />,
     <PrincipalProfilePage key="profile" />
   ];

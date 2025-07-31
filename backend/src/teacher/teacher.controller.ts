@@ -23,6 +23,7 @@ import { Role } from '@prisma/client';
 import { CreateClassDto } from '../admin/dto/create-class.dto';
 import { CreateAcademyDto } from '../academy/dto/create-academy.dto';
 import { UpdateAcademyDto } from '../academy/dto/update-academy.dto';
+import { JoinAcademyRequestDto } from '../academy/dto/join-academy-request.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @ApiTags('Teacher')
@@ -41,6 +42,20 @@ export class TeacherController {
   ) {
     // Principal만 강의 개설 가능
     return this.teacherService.createClass(user.id, createClassDto, user.role);
+  }
+
+  @Post('me/request-join-academy')
+  @Roles(Role.TEACHER)
+  @ApiOperation({ summary: '학원 가입 요청' })
+  @ApiResponse({ status: 201, description: '가입 요청 성공' })
+  async requestJoinAcademy(
+    @GetUser() user: any,
+    @Body() joinAcademyRequestDto: JoinAcademyRequestDto,
+  ) {
+    return this.teacherService.requestJoinAcademy(
+      user.id,
+      joinAcademyRequestDto,
+    );
   }
 
   @Get('me')
@@ -200,112 +215,5 @@ export class TeacherController {
   @Roles(Role.ADMIN)
   async getTeacherClassesWithSessions(@Param('id', ParseIntPipe) id: number) {
     return this.teacherService.getTeacherClassesWithSessions(id);
-  }
-
-  // 수강 신청/환불 신청 관리 관련 엔드포인트들
-  @Get('me/sessions-with-enrollment-requests')
-  @Roles(Role.TEACHER)
-  @ApiOperation({ summary: '수강 신청이 대기 중인 세션 목록 조회' })
-  @ApiResponse({ status: 200, description: '수강 신청 대기 세션 목록' })
-  async getSessionsWithEnrollmentRequests(@GetUser() user: any) {
-    return this.teacherService.getSessionsWithEnrollmentRequests(user.id);
-  }
-
-  @Get('me/sessions-with-refund-requests')
-  @Roles(Role.TEACHER)
-  @ApiOperation({ summary: '환불 요청이 대기 중인 세션 목록 조회' })
-  @ApiResponse({ status: 200, description: '환불 요청 대기 세션 목록' })
-  async getSessionsWithRefundRequests(@GetUser() user: any) {
-    return this.teacherService.getSessionsWithRefundRequests(user.id);
-  }
-
-  // === 학원 관리 API들 ===
-
-  // 1. 특정 선생님을 학원에서 제거
-  @Delete('academy/teachers/:teacherId')
-  @Roles(Role.TEACHER)
-  @ApiOperation({ summary: '선생님을 학원에서 제거' })
-  @ApiResponse({
-    status: 200,
-    description: '선생님이 학원에서 제거되었습니다.',
-  })
-  async removeTeacherFromAcademy(
-    @GetUser() user: any,
-    @Param('teacherId', ParseIntPipe) teacherId: number,
-  ) {
-    return this.teacherService.removeTeacherFromAcademy(user.id, teacherId);
-  }
-
-  // 2. 관리자 권한 부여
-  @Post('academy/teachers/:teacherId/assign-admin')
-  @Roles(Role.TEACHER)
-  @ApiOperation({ summary: '선생님에게 관리자 권한 부여' })
-  @ApiResponse({ status: 200, description: '관리자 권한이 부여되었습니다.' })
-  async assignAdminRole(
-    @GetUser() user: any,
-    @Param('teacherId', ParseIntPipe) teacherId: number,
-  ) {
-    return this.teacherService.assignAdminRole(user.id, teacherId);
-  }
-
-  // 3. 관리자 권한 제거
-  @Delete('academy/teachers/:teacherId/remove-admin')
-  @Roles(Role.TEACHER)
-  @ApiOperation({ summary: '선생님의 관리자 권한 제거' })
-  @ApiResponse({ status: 200, description: '관리자 권한이 제거되었습니다.' })
-  async removeAdminRole(
-    @GetUser() user: any,
-    @Param('teacherId', ParseIntPipe) teacherId: number,
-  ) {
-    return this.teacherService.removeAdminRole(user.id, teacherId);
-  }
-
-  // 4. 수강생의 세션 수강 현황 조회
-  @Get('academy/students/:studentId/sessions')
-  @Roles(Role.TEACHER)
-  @ApiOperation({ summary: '수강생의 세션 수강 현황 조회' })
-  @ApiResponse({ status: 200, description: '수강생의 세션 수강 현황' })
-  async getStudentSessionHistory(
-    @GetUser() user: any,
-    @Param('studentId', ParseIntPipe) studentId: number,
-  ) {
-    return this.teacherService.getStudentSessionHistory(user.id, studentId);
-  }
-
-  // 5. 선생님 지정하여 강의 개설
-  @Post('academy/classes/with-teacher')
-  @Roles(Role.PRINCIPAL)
-  @ApiOperation({ summary: 'Principal이 특정 선생님을 지정하여 강의 개설' })
-  @ApiResponse({
-    status: 201,
-    description: '강의가 성공적으로 개설되었습니다.',
-  })
-  async createClassWithTeacher(
-    @GetUser() user: any,
-    @Body() body: { classData: CreateClassDto; assignedTeacherId: number },
-  ) {
-    return this.teacherService.createClassWithTeacher(
-      user.id,
-      body.classData,
-      body.assignedTeacherId,
-    );
-  }
-
-  // 6. 학원 소속 선생님 목록 조회
-  @Get('academy/teachers')
-  @Roles(Role.PRINCIPAL)
-  @ApiOperation({ summary: 'Principal이 학원 소속 선생님 목록 조회' })
-  @ApiResponse({ status: 200, description: '학원 소속 선생님 목록' })
-  async getAcademyTeachers(@GetUser() user: any) {
-    return this.teacherService.getAcademyTeachersForPrincipal(user.id);
-  }
-
-  // 7. 학원 소속 수강생 목록 조회
-  @Get('academy/students')
-  @Roles(Role.TEACHER)
-  @ApiOperation({ summary: '학원 소속 수강생 목록 조회' })
-  @ApiResponse({ status: 200, description: '학원 소속 수강생 목록' })
-  async getAcademyStudents(@GetUser() user: any) {
-    return this.teacherService.getAcademyStudents(user.id);
   }
 }

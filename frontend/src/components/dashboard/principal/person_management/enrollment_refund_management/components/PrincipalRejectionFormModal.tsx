@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { SlideUpModal } from '@/components/common/SlideUpModal';
 
-interface RejectionFormModalProps {
+interface PrincipalRejectionFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (reason: string, detailedReason?: string) => void;
@@ -11,13 +11,13 @@ interface RejectionFormModalProps {
   isLoading?: boolean;
 }
 
-export function RejectionFormModal({
+export function PrincipalRejectionFormModal({
   isOpen,
   onClose,
   onSubmit,
   requestType,
   isLoading = false,
-}: RejectionFormModalProps) {
+}: PrincipalRejectionFormModalProps) {
   const [reason, setReason] = useState('');
   const [detailedReason, setDetailedReason] = useState('');
 

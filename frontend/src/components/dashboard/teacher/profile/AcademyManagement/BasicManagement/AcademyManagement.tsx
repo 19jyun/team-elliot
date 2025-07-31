@@ -36,9 +36,11 @@ export default function AcademyManagement({ onBack }: AcademyManagementProps) {
     isJoining,
     withdrawalModal,
     setWithdrawalModal,
+    withdrawalType,
     handleJoinAcademy,
     handleWithdrawalConfirm,
     handleCreateAcademy,
+    handleLeaveAcademy,
   } = useAcademyManagement();
 
   const {
@@ -107,6 +109,8 @@ export default function AcademyManagement({ onBack }: AcademyManagementProps) {
     resetVerification();
   };
 
+
+
   return (
     <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px] py-2 relative">
       {/* 학원 생성 섹션 */}
@@ -166,6 +170,10 @@ export default function AcademyManagement({ onBack }: AcademyManagementProps) {
                 academy={currentAcademy}
                 variant="teacher"
                 showTeamCode={true}
+                showActionButton={true}
+                actionText="탈퇴하기"
+                actionVariant="outline"
+                onAction={handleLeaveAcademy}
               />
             )}
           </CardContent>
@@ -177,6 +185,7 @@ export default function AcademyManagement({ onBack }: AcademyManagementProps) {
         isOpen={withdrawalModal}
         onClose={() => setWithdrawalModal(false)}
         onConfirm={handleWithdrawalConfirm}
+        withdrawalType={withdrawalType}
       />
     </div>
   );

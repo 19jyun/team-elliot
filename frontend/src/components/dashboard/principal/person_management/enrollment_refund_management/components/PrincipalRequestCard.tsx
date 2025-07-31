@@ -3,7 +3,7 @@
 import React from 'react';
 import { parseFromUTCISO } from '@/lib/timeUtils';
 
-interface RequestCardProps {
+interface PrincipalRequestCardProps {
   request: any;
   requestType: 'enrollment' | 'refund';
   onClick: () => void;
@@ -12,14 +12,14 @@ interface RequestCardProps {
   isProcessing?: boolean;
 }
 
-export function RequestCard({ 
+export function PrincipalRequestCard({ 
   request, 
   requestType, 
   onClick, 
   onApprove, 
   onReject, 
   isProcessing = false 
-}: RequestCardProps) {
+}: PrincipalRequestCardProps) {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('ko-KR', {
       year: 'numeric',

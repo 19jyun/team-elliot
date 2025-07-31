@@ -1,18 +1,18 @@
 'use client';
 
 import React from 'react';
-import { useDashboardNavigation } from '@/contexts/DashboardContext';
+import { usePrincipalContext } from '@/contexts/PrincipalContext';
 
-export function EnrollmentManagementTabs() {
+export function EnrollmentRefundManagementTabs() {
   const { 
-    enrollmentManagement, 
-    setEnrollmentManagementTab, 
-    setEnrollmentManagementStep,
+    personManagement, 
+    setPersonManagementTab, 
+    setPersonManagementStep,
     setSelectedSessionId,
     setSelectedRequestId,
     setSelectedRequestType
-  } = useDashboardNavigation();
-  const { selectedTab } = enrollmentManagement;
+  } = usePrincipalContext();
+  const { selectedTab } = personManagement;
 
   const handleTabClick = (tab: 'enrollment' | 'refund') => {
     // 탭 변경 시 컨텍스트 초기화
@@ -21,8 +21,8 @@ export function EnrollmentManagementTabs() {
     setSelectedRequestType(null);
     
     // 탭과 단계 설정
-    setEnrollmentManagementTab(tab);
-    setEnrollmentManagementStep('session-list');
+    setPersonManagementTab(tab);
+    setPersonManagementStep('enrollment-refund');
   };
 
   return (

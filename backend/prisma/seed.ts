@@ -454,24 +454,6 @@ async function main() {
     });
   }
 
-  // AcademyAdmin 관계 설정 - 선생님을 학원의 OWNER로 설정
-  await prisma.academyAdmin.upsert({
-    where: {
-      academyId_teacherId: {
-        academyId: academy.id,
-        teacherId: teacher.id,
-      },
-    },
-    update: {
-      role: 'OWNER',
-    },
-    create: {
-      academyId: academy.id,
-      teacherId: teacher.id,
-      role: 'OWNER',
-    },
-  });
-
   // 테스트용 세션 콘텐츠 생성 (첫 번째 클래스의 첫 번째 세션에)
   const firstClass = await prisma.class.findFirst({
     where: { academyId: academy.id },

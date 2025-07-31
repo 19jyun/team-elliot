@@ -49,9 +49,6 @@ async function resetDatabase() {
     console.log('🏫 학원 생성 요청 삭제 중...');
     await prisma.academyCreationRequest.deleteMany();
 
-    console.log('👨‍🏫 학원 관리자 관계 삭제 중...');
-    await prisma.academyAdmin.deleteMany();
-
     console.log('👥 학생-학원 관계 삭제 중...');
     await prisma.studentAcademy.deleteMany();
 
