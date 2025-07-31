@@ -11,6 +11,7 @@ import { LogoutModal } from '@/components/user/LogoutModal'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
 import { logout } from '@/api/auth'
 import FooterLinks from '@/components/common/FooterLinks'
+import { usePrincipalData } from '@/hooks/usePrincipalData'
 
 export default function PrincipalProfilePage() {
   const router = useRouter()
@@ -22,6 +23,9 @@ export default function PrincipalProfilePage() {
       router.push('/auth')
     },
   })
+
+  // Redux store에서 데이터 가져오기
+  const { userProfile, isLoading, error } = usePrincipalData()
 
   const handleSignOut = async () => {
     try {
@@ -65,10 +69,26 @@ export default function PrincipalProfilePage() {
     },
   ]
 
-  if (status === 'loading') {
+  // 로딩 상태 처리
+  if (status === 'loading' || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-full">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
+      </div>
+    )
+  }
+
+  // 에러 처리
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-full">
+        <p className="text-red-500">데이터를 불러오는데 실패했습니다.</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
+        >
+          다시 시도
+        </button>
       </div>
     )
   }
@@ -86,7 +106,7 @@ export default function PrincipalProfilePage() {
       />
       <div className="flex flex-col px-5 py-6">
         <h1 className="text-2xl font-bold text-stone-700">
-          {session?.user?.name}님의 정보
+          {userProfile?.name || session?.user?.name}님의 정보
         </h1>
       </div>
 

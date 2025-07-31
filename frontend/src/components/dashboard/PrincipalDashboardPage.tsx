@@ -17,6 +17,9 @@ import { PrincipalProfileManagement } from './principal/profile/PrincipalProfile
 import { PrincipalPersonalInfoManagement } from './principal/profile/PrincipalPersonalInfoManagement/PrincipalPersonalInfoManagement';
 import { EnrollmentRefundManagementContainer } from './principal/person_management/enrollment_refund_management/containers/EnrollmentRefundManagementContainer';
 import { TeacherStudentManagementContainer } from './principal/person_management/teacher_student_management/containers/TeacherStudentManagementContainer';
+import { ReduxTestComponent } from '@/components/common/ReduxTestComponent';
+import { SocketListener } from '@/components/common/SocketListener';
+import { SocketStatus } from '@/components/common/SocketStatus';
 
 
 
@@ -66,6 +69,7 @@ function PrincipalDashboardContent() {
     <div className="flex flex-col h-screen bg-gray-50">
       <CommonHeader />
       <main className="flex-1 overflow-hidden relative">
+
         {/* DashboardContainer - 항상 렌더링 */}
         <DashboardContainer
           activeTab={activeTab}
@@ -84,6 +88,10 @@ function PrincipalDashboardContent() {
             </div>
           </div>
         )}
+
+        {/* Socket 관련 컴포넌트들 */}
+        <SocketListener />
+        <SocketStatus />
       </main>
     </div>
   );

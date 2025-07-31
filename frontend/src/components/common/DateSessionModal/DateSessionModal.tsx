@@ -1,15 +1,15 @@
 'use client'
 
-import React from 'react'
+import React, { useMemo } from 'react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { SessionCardList } from '@/components/common/Session/SessionCardList'
+import { usePrincipalData } from '@/hooks/usePrincipalData'
 
 interface DateSessionModalProps {
   isOpen: boolean
   selectedDate: Date | null
-  sessions: any[]
   onClose: () => void
   onSessionClick: (session: any) => void
   role: 'student' | 'teacher' | 'principal'
@@ -18,11 +18,22 @@ interface DateSessionModalProps {
 export function DateSessionModal({ 
   isOpen, 
   selectedDate, 
-  sessions, 
   onClose, 
   onSessionClick,
   role 
 }: DateSessionModalProps) {
+  // Redux store에서 데이터 가져오기
+  const { getSessionsByDate } = usePrincipalData()
+
+  // 선택된 날짜의 세션들을 Redux에서 가져오기
+  const sessions = useMemo(() => {
+    if (!selectedDate) return [];
+    const result = getSessionsByDate(selectedDate);
+    console.log('DateSessionModal - selectedDate:', selectedDate);
+    console.log('DateSessionModal - sessions:', result);
+    return result;
+  }, [selectedDate, getSessionsByDate]);
+
   const formatDate = (date: Date) => {
     return format(date, 'M월 d일 (E)', { locale: ko })
   }

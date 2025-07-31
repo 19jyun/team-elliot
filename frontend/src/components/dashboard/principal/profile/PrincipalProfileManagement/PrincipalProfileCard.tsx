@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getPrincipalProfile, updatePrincipalProfile } from '@/api/principal';
-import { PrincipalProfile, UpdatePrincipalProfileRequest } from '@/types/api/principal';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { updatePrincipalProfile } from '@/api/principal';
+import { UpdatePrincipalProfileRequest } from '@/types/api/principal';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,9 @@ import {
   Trash2,
   Camera
 } from 'lucide-react';
+import { usePrincipalData } from '@/hooks/usePrincipalData';
+import { useAppDispatch } from '@/store/hooks';
+import { updateUserProfile } from '@/store/slices/appDataSlice';
 
 interface PrincipalProfileCardProps {
   principalId?: number; // 특정 원장 ID (없으면 현재 로그인한 원장)
@@ -51,28 +54,17 @@ export function PrincipalProfileCard({
   const [newCertification, setNewCertification] = useState('');
 
   const queryClient = useQueryClient();
+  const dispatch = useAppDispatch();
 
-  // 원장 프로필 정보 조회
-  const { data: profile, isLoading, error } = useQuery({
-    queryKey: ['principal-profile', principalId || 'me'],
-    queryFn: () => getPrincipalProfile(principalId),
-    retry: false,
-    staleTime: 5 * 60 * 1000, // 5분간 캐시
-    gcTime: 10 * 60 * 1000, // 10분간 가비지 컬렉션 시간
-  });
-
-  // 에러 로깅을 useEffect로 처리
-  useEffect(() => {
-    if (error) {
-      console.error('PrincipalProfileCard API 호출 실패:', error);
-    }
-  }, [error]);
+  // Redux store에서 데이터 가져오기
+  const { userProfile, isLoading, error } = usePrincipalData();
 
   // 프로필 업데이트 뮤테이션 (편집 가능한 경우만)
   const updateProfileMutation = useMutation({
     mutationFn: updatePrincipalProfile,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['principal-profile'] });
+    onSuccess: (updatedProfile) => {
+      // Redux store 직접 업데이트
+      dispatch(updateUserProfile(updatedProfile));
       toast.success('프로필이 성공적으로 업데이트되었습니다.');
       setIsEditing(false);
       onSave?.();
@@ -85,14 +77,14 @@ export function PrincipalProfileCard({
 
   // 편집 모드 시작
   const handleEdit = () => {
-    if (profile) {
+    if (userProfile) {
       setFormData({
-        introduction: profile.introduction || '',
-        education: profile.education || [],
-        certifications: profile.certifications || [],
+        introduction: userProfile.introduction || '',
+        education: userProfile.education || [],
+        certifications: userProfile.certifications || [],
       });
-      setTempEducation(profile.education || []);
-      setTempCertifications(profile.certifications || []);
+      setTempEducation(userProfile.education || []);
+      setTempCertifications(userProfile.certifications || []);
     }
     setIsEditing(true);
   };
@@ -129,8 +121,6 @@ export function PrincipalProfileCard({
     setTempEducation(tempEducation.filter((_, i) => i !== index));
   };
 
-
-
   // 자격증 추가
   const addCertification = () => {
     if (newCertification.trim()) {
@@ -152,7 +142,7 @@ export function PrincipalProfileCard({
     );
   }
 
-  if (error || !profile) {
+  if (error || !userProfile) {
     return (
       <Card className="w-full max-w-2xl mx-auto">
         <CardContent className="p-6">
@@ -172,14 +162,14 @@ export function PrincipalProfileCard({
         <CardContent className="p-4">
           <div className="flex items-center space-x-3">
             <Avatar className="h-12 w-12">
-              <AvatarImage src={profile.photoUrl} alt={profile.name} />
+              <AvatarImage src={userProfile.photoUrl} alt={userProfile.name} />
               <AvatarFallback>
-                {profile.name?.charAt(0)}
+                {userProfile.name?.charAt(0)}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <h3 className="font-semibold">{profile.name}</h3>
-              <p className="text-sm text-gray-600">{profile.introduction}</p>
+              <h3 className="font-semibold">{userProfile.name}</h3>
+              <p className="text-sm text-gray-600">{userProfile.introduction}</p>
             </div>
           </div>
         </CardContent>
@@ -211,15 +201,15 @@ export function PrincipalProfileCard({
         {/* 프로필 사진 및 기본 정보 */}
         <div className="flex items-start gap-4">
           <Avatar className="h-20 w-20">
-            <AvatarImage src={profile.photoUrl} alt={profile.name} />
+            <AvatarImage src={userProfile.photoUrl} alt={userProfile.name} />
             <AvatarFallback className="text-lg">
-              {profile.name?.charAt(0)}
+              {userProfile.name?.charAt(0)}
             </AvatarFallback>
           </Avatar>
           
           <div className="flex-1 space-y-3">
-            <h3 className="text-lg font-semibold">{profile.name}</h3>
-            <p className="text-gray-600">{profile.phoneNumber}</p>
+            <h3 className="text-lg font-semibold">{userProfile.name}</h3>
+            <p className="text-gray-600">{userProfile.phoneNumber}</p>
             {isEditing && (
               <div className="text-xs text-gray-500 space-y-1">
                 <p>• 이름 및 전화번호는 개인정보 관리 페이지에서 수정하실 수 있습니다.</p>
@@ -245,7 +235,7 @@ export function PrincipalProfileCard({
             />
           ) : (
             <p className="text-gray-700 whitespace-pre-wrap">
-              {profile.introduction || '소개가 없습니다.'}
+              {userProfile.introduction || '소개가 없습니다.'}
             </p>
           )}
         </div>
@@ -290,8 +280,8 @@ export function PrincipalProfileCard({
             </div>
           ) : (
             <div className="space-y-2">
-              {profile.education && profile.education.length > 0 ? (
-                profile.education.map((education: string, index: number) => (
+              {userProfile.education && userProfile.education.length > 0 ? (
+                userProfile.education.map((education: string, index: number) => (
                   <Badge key={index} variant="secondary">
                     {education}
                   </Badge>
@@ -302,8 +292,6 @@ export function PrincipalProfileCard({
             </div>
           )}
         </div>
-
-
 
         {/* 자격증 */}
         <div className="space-y-3">
@@ -343,8 +331,8 @@ export function PrincipalProfileCard({
             </div>
           ) : (
             <div className="space-y-2">
-              {profile.certifications && profile.certifications.length > 0 ? (
-                profile.certifications.map((certification: string, index: number) => (
+              {userProfile.certifications && userProfile.certifications.length > 0 ? (
+                userProfile.certifications.map((certification: string, index: number) => (
                   <Badge key={index} variant="default">
                     {certification}
                   </Badge>

@@ -144,7 +144,7 @@ export function ClassSessionModal({
       {/* SessionDetailModal */}
       <SessionDetailModal
         isOpen={isSessionDetailModalOpen}
-        session={selectedSession}
+        sessionId={selectedSession?.id || null}
         onClose={closeSessionDetailModal}
         role={role}
         showNavigation={true}

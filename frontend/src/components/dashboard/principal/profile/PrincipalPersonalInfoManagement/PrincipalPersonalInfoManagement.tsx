@@ -10,6 +10,9 @@ import { User, Phone, Building, Edit, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { getPrincipalProfile, updatePrincipalProfile } from '@/api/principal';
 import { PrincipalProfile, UpdatePrincipalProfileRequest } from '@/types/api/principal';
+import { usePrincipalData } from '@/hooks/usePrincipalData';
+import { useAppDispatch } from '@/store/hooks';
+import { updateUserProfile } from '@/store/slices/appDataSlice';
 
 export function PrincipalPersonalInfoManagement() {
   const [personalInfo, setPersonalInfo] = useState<PrincipalProfile | null>(null);
@@ -24,9 +27,21 @@ export function PrincipalPersonalInfoManagement() {
   const [timeLeft, setTimeLeft] = useState(180); // 3분 = 180초
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
+  const dispatch = useAppDispatch();
+
+  // Redux store에서 데이터 가져오기
+  const { userProfile, isLoading: isDataLoading, error } = usePrincipalData();
+
+  // userProfile 데이터가 로드되면 personalInfo 업데이트
   useEffect(() => {
-    loadPersonalInfo();
-  }, []);
+    if (userProfile) {
+      setPersonalInfo(userProfile);
+      setEditedInfo({
+        name: userProfile.name || '',
+        phoneNumber: userProfile.phoneNumber || '',
+      });
+    }
+  }, [userProfile]);
 
   // 타이머 효과
   useEffect(() => {
@@ -127,7 +142,11 @@ export function PrincipalPersonalInfoManagement() {
 
     try {
       setIsLoading(true);
-      await updatePrincipalProfile(editedInfo);
+      const response = await updatePrincipalProfile(editedInfo);
+      
+      // Redux store 직접 업데이트
+      dispatch(updateUserProfile(response));
+      
       await loadPersonalInfo(); // 업데이트된 정보 다시 로드
       setIsEditing(false);
       handleCancelVerification();

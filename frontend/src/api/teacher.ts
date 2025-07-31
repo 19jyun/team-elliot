@@ -176,3 +176,9 @@ export const requestJoinAcademy = async (
   );
   return response.data;
 };
+
+// 학원 선생님 목록 조회
+export const getAcademyTeachers = async (): Promise<any[]> => {
+  const response = await axiosInstance.get("/teachers/academy");
+  return response.data;
+};

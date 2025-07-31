@@ -32,6 +32,18 @@ export const getPrincipalAllStudents = async () => {
   return response.data;
 };
 
+// 6. Principal의 학원에 속한 모든 수강신청 조회 (Redux store용)
+export const getPrincipalAllEnrollments = async () => {
+  const response = await axiosInstance.get("/principal/enrollments");
+  return response.data;
+};
+
+// 7. Principal의 학원에 속한 모든 환불요청 조회 (Redux store용)
+export const getPrincipalAllRefundRequests = async () => {
+  const response = await axiosInstance.get("/principal/refund-requests");
+  return response.data;
+};
+
 // Principal의 세션 수강생 조회
 export const getPrincipalSessionEnrollments = async (sessionId: number) => {
   const response = await axiosInstance.get(

@@ -1,9 +1,8 @@
 'use client';
 
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { usePrincipalContext } from '@/contexts/PrincipalContext';
-import { getPrincipalSessionsWithPendingRequests } from '@/api/principal';
+import { usePrincipalData } from '@/hooks/usePrincipalData';
 import { parseFromUTCISO } from '@/lib/timeUtils';
 
 export function PrincipalSessionList() {
@@ -14,11 +13,18 @@ export function PrincipalSessionList() {
   } = usePrincipalContext();
   const { selectedTab } = personManagement;
 
-  // Principal의 세션별 요청 목록 조회
-  const { data: sessions, isLoading, error } = useQuery({
-    queryKey: ['principal-sessions-requests', selectedTab],
-    queryFn: () => getPrincipalSessionsWithPendingRequests(selectedTab),
-  });
+  // Redux store에서 데이터 가져오기
+  const { 
+    pendingEnrollmentSessions, 
+    pendingRefundSessions, 
+    isLoading, 
+    error 
+  } = usePrincipalData();
+
+  // 선택된 탭에 따라 세션 목록 결정
+  const sessions = selectedTab === 'enrollment' 
+    ? pendingEnrollmentSessions 
+    : pendingRefundSessions;
 
   const handleSessionClick = (sessionId: number) => {
     setSelectedSessionId(sessionId);
@@ -26,23 +32,43 @@ export function PrincipalSessionList() {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      weekday: 'long'
-    });
+    if (!dateString || dateString === 'Invalid Date') {
+      return '날짜 없음';
+    }
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return '날짜 없음';
+      }
+      return date.toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        weekday: 'long'
+      });
+    } catch (error) {
+      return '날짜 없음';
+    }
   };
 
   const formatTime = (timeString: string) => {
-    // UTC ISO 문자열을 한국 시간으로 변환
-    const koreanTime = parseFromUTCISO(timeString);
-    return koreanTime.toLocaleTimeString('ko-KR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    });
+    if (!timeString || timeString === 'Invalid Date') {
+      return '시간 없음';
+    }
+    try {
+      // UTC ISO 문자열을 한국 시간으로 변환
+      const koreanTime = parseFromUTCISO(timeString);
+      if (isNaN(koreanTime.getTime())) {
+        return '시간 없음';
+      }
+      return koreanTime.toLocaleTimeString('ko-KR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+    } catch (error) {
+      return '시간 없음';
+    }
   };
 
   const getLevelColor = (level: string) => {
@@ -99,54 +125,35 @@ export function PrincipalSessionList() {
       <div className="space-y-3">
         {sessions.map((session: any) => (
           <div
-            key={session.id}
-            onClick={() => handleSessionClick(session.id)}
-            className="p-4 border border-stone-200 rounded-lg cursor-pointer hover:shadow-md transition-all duration-200"
-            style={{ background: getLevelColor(session.class?.level || 'BEGINNER') }}
+            key={session.sessionId}
+            className="bg-white rounded-lg border border-stone-200 p-4 cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => handleSessionClick(session.sessionId)}
           >
-            {/* 헤더: 클래스명과 요청 수 */}
             <div className="flex justify-between items-start mb-3">
-              <div className="flex items-center gap-2">
-                <span
-                  className="px-2 py-1 text-xs font-medium text-white rounded"
-                  style={{
-                    background: 'var(--Primary-Dark, linear-gradient(0deg, rgba(0, 0, 0, 0.20) 0%, rgba(0, 0, 0, 0.20) 100%), #573B30)',
-                  }}
-                >
-                  {getLevelText(session.class?.level || 'BEGINNER')}
-                </span>
-                <h3 className="font-semibold text-stone-700">{session.className}</h3>
+              <div className="flex-1">
+                <h3 className="font-semibold text-stone-900 mb-1">
+                  {session.className || '클래스명 없음'}
+                </h3>
+                <p className="text-sm text-stone-600">
+                  {formatDate(session.date)} {formatTime(session.startTime)} - {formatTime(session.endTime)}
+                </p>
               </div>
-              <span className="px-2 py-1 text-xs bg-primary text-white rounded-full font-medium">
-                {session.requestCount}개 요청
-              </span>
+              <div className="flex items-center space-x-2">
+                <span
+                  className="px-2 py-1 text-xs rounded-full text-white"
+                  style={{ backgroundColor: getLevelColor(session.level) }}
+                >
+                  {getLevelText(session.level)}
+                </span>
+                <span className="bg-blue-100 text-blue-800 px-2 py-1 text-xs rounded-full font-medium">
+                  {session.pendingCount}건 대기
+                </span>
+              </div>
             </div>
-
-            {/* 날짜 정보 */}
-            <div className="mb-2">
-              <p className="text-sm font-medium text-stone-700">
-                {formatDate(session.sessionDate)}
-              </p>
-            </div>
-
-            {/* 시간 정보 */}
-            <div className="mb-3">
-              <p className="text-sm text-stone-600">
-                {formatTime(session.startTime)} - {formatTime(session.endTime)}
-              </p>
-            </div>
-
-            {/* 액션 버튼 */}
-            <div className="flex justify-end">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSessionClick(session.id);
-                }}
-                className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors"
-              >
-                요청 보기
-              </button>
+            
+            <div className="flex items-center justify-between text-sm text-stone-500">
+              <span>강사: {session.teacherName || '미지정'}</span>
+              <span>수강생: {session.currentStudents || 0}명</span>
             </div>
           </div>
         ))}

@@ -1,4 +1,5 @@
 import { DashboardProvider } from '@/contexts/DashboardContext';
+import { AppInitializer } from '@/components/common/AppInitializer';
 
 export default function DashboardLayout({
   children,
@@ -7,7 +8,9 @@ export default function DashboardLayout({
 }) {
   return (
     <DashboardProvider>
-      {children}
+      <AppInitializer>
+        {children}
+      </AppInitializer>
     </DashboardProvider>
   )
 }

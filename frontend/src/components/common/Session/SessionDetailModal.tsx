@@ -1,8 +1,7 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { useQuery } from '@tanstack/react-query'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { getSessionEnrollments } from '@/api/teacher'
 import { getPrincipalSessionEnrollments } from '@/api/principal'
@@ -12,14 +11,15 @@ import { SessionContentTab } from '@/components/common/Session/SessionDetailComp
 import { PoseSelectionModal } from '@/components/common/Session/SessionDetailComponents/Pose/PoseSelectionModal'
 import { useAddSessionContent } from '@/hooks/useSessionContents'
 import { BalletPose } from '@/types/api/ballet-pose'
+import { usePrincipalData } from '@/hooks/usePrincipalData'
 
 interface SessionDetailModalProps {
   isOpen: boolean
-  session: any
+  sessionId: number | null // ID만 받기
   onClose: () => void
   role: 'student' | 'teacher' | 'principal'
-  showNavigation?: boolean // 네비게이션 탭 표시 여부
-  defaultTab?: 'overview' | 'attendance' | 'content' // 기본 탭
+  showNavigation?: boolean
+  defaultTab?: 'overview' | 'attendance' | 'content'
 }
 
 type TabType = 'overview' | 'attendance' | 'content'
@@ -35,7 +35,7 @@ const brownTheme = {
 
 export function SessionDetailModal({ 
   isOpen, 
-  session, 
+  sessionId,  // session 객체 대신 ID만
   onClose,
   role,
   showNavigation = true,
@@ -43,35 +43,102 @@ export function SessionDetailModal({
 }: SessionDetailModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>(defaultTab)
   const [isPoseSelectionOpen, setIsPoseSelectionOpen] = useState(false)
+  const [enrollmentData, setEnrollmentData] = useState<SessionEnrollmentsResponse | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
-  const addContentMutation = useAddSessionContent(session?.id || 0)
+  const addContentMutation = useAddSessionContent(sessionId || 0)
+
+  // Redux store에서 데이터 가져오기
+  const { 
+    getSessionEnrollments: getSessionEnrollmentsFromStore,
+    getSessionById,
+    getTeacherById,
+    isLoading: storeLoading,
+    error,
+    enrollments: storeEnrollments,
+    classes: storeClasses
+  } = usePrincipalData()
+
+  // 세션 정보를 Redux에서 가져오기
+  const session = useMemo(() => {
+    if (!sessionId) return null;
+    const result = getSessionById(sessionId);
+    console.log('SessionDetailModal - sessionId:', sessionId);
+    console.log('SessionDetailModal - session:', result);
+    return result;
+  }, [sessionId, getSessionById]);
 
   // Teacher와 Principal은 동일한 권한을 가짐
   const canManageSessions = role === 'teacher' || role === 'principal'
 
-  // 선택된 세션의 수강생 목록 조회 (권한별 API 분기)
-  const { data: enrollmentData, isLoading } = useQuery({
-    queryKey: ['session-enrollments', session?.id, role],
-    queryFn: () => {
-      if (role === 'teacher') {
-        return getSessionEnrollments(session?.id || 0)
-      } else if (role === 'principal') {
-        return getPrincipalSessionEnrollments(session?.id || 0)
-      } else {
-        // Student는 수강생 목록을 볼 필요가 없음
-        return Promise.resolve(null)
+  // 세션 수강생 정보 로드 (Teacher의 경우만 API 호출)
+  useEffect(() => {
+    if (isOpen && sessionId && canManageSessions && role === 'teacher') {
+      loadSessionEnrollments()
+    } else if (role === 'principal' && sessionId) {
+      // Principal의 경우 Redux store에서 가져온 데이터 사용
+      const currentSession = getSessionById(sessionId);
+      if (!currentSession) {
+        setEnrollmentData(null);
+        return;
       }
-    },
-    enabled: isOpen && !!session?.id && canManageSessions,
-  })
+
+      // 직접 storeEnrollments에서 필터링
+      const enrollments = storeEnrollments?.filter(
+        (enrollment) => enrollment.sessionId === sessionId
+      ) || [];
+      
+      const enrollmentsList = enrollments.map((enrollment: any) => ({
+        id: enrollment.id,
+        studentId: enrollment.studentId,
+        status: enrollment.status,
+        enrolledAt: enrollment.enrolledAt,
+        student: {
+          id: enrollment.studentId,
+          name: enrollment.student?.name || '학생',
+          email: enrollment.student?.email || '',
+        }
+      }));
+
+      // 상태별 카운트 계산
+      const statusCounts = enrollmentsList.reduce((acc: any, enrollment: any) => {
+        acc[enrollment.status] = (acc[enrollment.status] || 0) + 1;
+        return acc;
+      }, {});
+
+      const enrollmentDataFromStore = {
+        enrollments: enrollmentsList,
+        totalCount: enrollmentsList.length,
+        statusCounts,
+        session: currentSession // SessionEnrollmentsResponse 타입에 맞게 session 추가
+      } as SessionEnrollmentsResponse;
+
+      setEnrollmentData(enrollmentDataFromStore);
+    } else {
+      setEnrollmentData(null)
+      setIsLoading(false)
+    }
+  }, [isOpen, sessionId, canManageSessions, role, storeEnrollments]) // storeEnrollments만 의존성으로 사용
+
+  const loadSessionEnrollments = async () => {
+    try {
+      setIsLoading(true)
+      const data = await getSessionEnrollments(sessionId!)
+      setEnrollmentData(data)
+    } catch (error) {
+      console.error('세션 수강생 정보 로드 실패:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   useEffect(() => {
-    if (isOpen && session?.id) {
+    if (isOpen && sessionId) {
       // 모달이 열릴 때 상태 초기화
       setActiveTab(defaultTab)
       setIsPoseSelectionOpen(false)
     }
-  }, [isOpen, session?.id, defaultTab])
+  }, [isOpen, sessionId, defaultTab])
 
   const formatTime = (time: string | Date) => {
     const date = typeof time === 'string' ? new Date(time) : time
@@ -181,11 +248,7 @@ export function SessionDetailModal({
             <div className="w-1/3 flex-shrink-0 px-1">
               <div className="h-full overflow-y-auto">
                 <div className="space-y-6">
-                  {isLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
-                    </div>
-                  ) : enrollmentData ? (
+                  {enrollmentData ? (
                     <>
                       {/* 세션 정보 요약 */}
                       <div className="bg-stone-50 rounded-lg p-4">
@@ -291,7 +354,7 @@ export function SessionDetailModal({
                   <AttendanceTab
                     sessionId={session.id}
                     enrollments={enrollmentData?.enrollments || []}
-                    isLoading={isLoading}
+                    isLoading={false} // Redux store에서 데이터를 가져오므로 isLoading은 항상 false
                   />
                 </div>
               </div>

@@ -3,9 +3,8 @@
 import * as React from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useQuery } from '@tanstack/react-query'
+import { usePrincipalData } from '@/hooks/usePrincipalData'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
-import { getPrincipalAcademy } from '@/api/principal'
 import { toast } from 'sonner'
 
 // 인원 관리 카드 컴포넌트 (Teacher의 ClassManagementCard와 동일한 디자인)
@@ -55,16 +54,12 @@ export default function PrincipalPersonManagementPage() {
   })
   const { navigateToSubPage } = useDashboardNavigation()
 
-  // Principal의 학원 정보 조회
-  const { data: myAcademy, isLoading: isAcademyLoading } = useQuery({
-    queryKey: ['principal-academy'],
-    queryFn: getPrincipalAcademy,
-    enabled: status === 'authenticated',
-  })
+  // Redux store에서 데이터 가져오기
+  const { academy, isLoading, error } = usePrincipalData()
 
   const handleEnrollmentRefundManagement = () => {
     // 학원 정보 확인
-    if (!myAcademy) {
+    if (!academy) {
       toast.error('학원 정보를 불러올 수 없습니다!')
       return
     }
@@ -74,7 +69,7 @@ export default function PrincipalPersonManagementPage() {
 
   const handleTeacherStudentManagement = () => {
     // 학원 정보 확인
-    if (!myAcademy) {
+    if (!academy) {
       toast.error('학원 정보를 불러올 수 없습니다!')
       return
     }
@@ -82,10 +77,26 @@ export default function PrincipalPersonManagementPage() {
     navigateToSubPage('teacher-student-management')
   }
 
-  if (status === 'loading' || isAcademyLoading) {
+  // 로딩 상태 처리
+  if (status === 'loading' || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
+      </div>
+    )
+  }
+
+  // 에러 처리
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <p className="text-red-500">데이터를 불러오는데 실패했습니다.</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
+        >
+          다시 시도
+        </button>
       </div>
     )
   }
