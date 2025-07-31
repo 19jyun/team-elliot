@@ -62,25 +62,7 @@ export default function TeacherClassManagementPage() {
     enabled: status === 'authenticated',
   })
 
-  const handleCreateClass = () => {
-    // 학원 가입 여부 확인
-    if (!myAcademy) {
-      toast.error('학원을 먼저 가입해주세요!')
-      return
-    }
-    
-    navigateToSubPage('create-class')
-  }
 
-  const handleEnrollmentManagement = () => {
-    // 학원 가입 여부 확인
-    if (!myAcademy) {
-      toast.error('학원을 먼저 가입해주세요!')
-      return
-    }
-    
-    navigateToSubPage('enrollment-management')
-  }
 
   const handleStudentFeedback = () => {
     // TODO: 수강생 피드백 기능 구현
@@ -104,22 +86,13 @@ export default function TeacherClassManagementPage() {
     <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px]">
       <div className="flex flex-col px-5 py-6">
         <h1 className="text-2xl font-bold text-stone-700">수업 관리</h1>
+        <p className="mt-2 text-stone-500">원장님이 개설한 강의를 관리하세요</p>
       </div>
 
       {/* 수업 관리 카드 섹션 */}
       <div className="flex flex-col self-center mt-5 w-full font-semibold leading-snug text-center max-w-[335px]">
-        <ClassManagementCard
-          title="강의 개설"
-          onClick={handleCreateClass}
-        />
-        
-        <div className="mt-3">
-          <ClassManagementCard
-            title="수강 신청/환불 신청 관리"
-            onClick={handleEnrollmentManagement}
-          />
-        </div>
 
+        
         <div className="mt-3">
           <ClassManagementCard
             title="수강생 피드백"

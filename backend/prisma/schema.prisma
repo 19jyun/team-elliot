@@ -17,6 +17,7 @@ enum Role {
   ADMIN
   TEACHER
   STUDENT
+  PRINCIPAL
 }
 
 // 활동 로그 레벨 enum
@@ -41,11 +42,7 @@ enum AcademyRequestStatus {
   REJECTED  // 거절됨
 }
 
-// 학원 관리자 역할 enum
-enum AdminRole {
-  OWNER    // 소유자 (최고 권한)
-  ADMIN    // 관리자
-}
+
 
 // 학원 모델
 model Academy {
@@ -60,26 +57,36 @@ model Academy {
   teachers    Teacher[] // 소속 강사들
   classes     Class[] // 소속 수업들
   students    StudentAcademy[] // 가입한 학생들
-  admins      AcademyAdmin[] // 학원 관리자들
+
   joinRequests AcademyJoinRequest[] // 학원 가입 신청들
+  principal   Principal? // 학원 원장 (1대1 관계)
 
   @@map("academies")
 }
 
-// 학원-관리자 관계 모델 (다대다 관계)
-model AcademyAdmin {
-  id        Int       @id @default(autoincrement())
-  academyId Int       @map("academy_id")
-  teacherId Int       @map("teacher_id")
-  role      AdminRole @default(ADMIN)
-  createdAt DateTime  @default(now())
+// 학원 원장 모델 - 학원과 1대1 관계
+model Principal {
+  id          Int      @id @default(autoincrement())
+  userId      String   @unique @db.VarChar(255)
+  password    String   @db.VarChar(255)
+  name        String   @db.VarChar(100)
+  phoneNumber String?  @map("phone_number") @db.VarChar(20)
+  email       String?  @db.VarChar(255)
+  introduction String? @db.Text // 원장 소개
+  photoUrl    String?  @map("photo_url") @db.VarChar(255)
+  education   String[] // 학력/경력 사항
+  certifications String[] // 자격증 정보
+  yearsOfExperience Int? @map("years_of_experience") // 원장 경력 연수
+  academyId   Int      @unique @map("academy_id") // 학원과 1대1 관계
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   
-  academy   Academy   @relation(fields: [academyId], references: [id], onDelete: Cascade)
-  teacher   Teacher   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  
-  @@unique([academyId, teacherId])
-  @@map("academy_admins")
+  academy     Academy  @relation(fields: [academyId], references: [id], onDelete: Cascade)
+
+  @@map("principals")
 }
+
+
 
 // 학생-학원 관계 모델 (다대다 관계)
 model StudentAcademy {
@@ -155,7 +162,7 @@ model Teacher {
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   academy           Academy?      @relation(fields: [academyId], references: [id])
-  managedAcademies  AcademyAdmin[] // 관리하는 학원들 (다대다 관계)
+
   joinRequests      AcademyJoinRequest[] // 학원 가입 신청들
   creationRequests  AcademyCreationRequest[] // 학원 생성 신청들
 

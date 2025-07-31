@@ -9,9 +9,15 @@ interface WithdrawalConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  withdrawalType?: 'leave' | 'join';
 }
 
-export function WithdrawalConfirmModal({ isOpen, onClose, onConfirm }: WithdrawalConfirmModalProps) {
+export function WithdrawalConfirmModal({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  withdrawalType = 'leave' 
+}: WithdrawalConfirmModalProps) {
   const { pushFocus, popFocus } = useDashboardNavigation();
 
   useEffect(() => {
@@ -32,6 +38,14 @@ export function WithdrawalConfirmModal({ isOpen, onClose, onConfirm }: Withdrawa
     onConfirm();
   };
 
+  const getMessage = () => {
+    if (withdrawalType === 'join') {
+      return '새 학원을 가입하려면 현재 소속된 학원을 탈퇴해야 합니다. 탈퇴하시겠습니까?';
+    } else {
+      return '학원을 탈퇴 후에는 또 다시 가입 요청을 하셔야 합니다. 탈퇴하시겠습니까?';
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -45,8 +59,7 @@ export function WithdrawalConfirmModal({ isOpen, onClose, onConfirm }: Withdrawa
         </div>
         
         <p className="text-gray-600 mb-6">
-          새 학원을 가입하려면 현재 소속된 학원을 탈퇴해야 합니다. 
-          탈퇴하시겠습니까?
+          {getMessage()}
         </p>
 
         <div className="flex gap-3">

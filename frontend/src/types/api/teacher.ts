@@ -24,26 +24,8 @@ export interface Academy {
   phoneNumber?: string;
   email?: string;
   website?: string;
-  adminId?: number;
-  admin?: {
-    id: number;
-    name: string;
-  };
-  admins?: AcademyAdmin[];
   createdAt: string;
   updatedAt: string;
-}
-
-export interface AcademyAdmin {
-  id: number;
-  academyId: number;
-  teacherId: number;
-  role: "OWNER" | "ADMIN";
-  createdAt: string;
-  teacher: {
-    id: number;
-    name: string;
-  };
 }
 
 export interface CreateAcademyRequest {
@@ -84,6 +66,29 @@ export interface UpdateAcademyRequest {
 
 export interface LeaveAcademyResponse {
   message: string;
+}
+
+export interface RequestJoinAcademyRequest {
+  code: string;
+  message?: string;
+}
+
+export interface RequestJoinAcademyResponse {
+  message: string;
+  request: {
+    id: number;
+    teacherId: number;
+    academyId: number;
+    status: "PENDING" | "APPROVED" | "REJECTED";
+    message?: string;
+    createdAt: string;
+    updatedAt: string;
+    academy: {
+      id: number;
+      name: string;
+      code: string;
+    };
+  };
 }
 
 export interface UpdateTeacherProfileRequest {
@@ -308,112 +313,3 @@ export interface BatchUpdateEnrollmentStatusResponse {
 // === 새로운 학원 관리 타입들 ===
 
 // 학원 소속 선생님 정보
-export interface AcademyTeacher {
-  id: number;
-  name: string;
-  phoneNumber?: string;
-  introduction?: string;
-  photoUrl?: string;
-  education?: string[];
-  specialties?: string[];
-  certifications?: string[];
-  yearsOfExperience?: number;
-  joinedAt: string;
-  adminRole?: "OWNER" | "ADMIN" | null;
-  adminSince?: string | null;
-}
-
-// 학원 소속 수강생 정보
-export interface AcademyStudent {
-  id: number;
-  name: string;
-  phoneNumber?: string;
-  emergencyContact?: string;
-  birthDate?: string;
-  notes?: string;
-  level?: string;
-  joinedAt?: string;
-  totalSessions: number;
-  confirmedSessions: number;
-  pendingSessions: number;
-}
-
-// 수강생 세션 수강 현황
-export interface StudentSessionHistory {
-  id: number;
-  status: string;
-  enrolledAt: string;
-  cancelledAt?: string;
-  session: {
-    id: number;
-    date: string;
-    startTime: string;
-    endTime: string;
-    class: {
-      id: number;
-      className: string;
-      level: string;
-      teacher: {
-        id: number;
-        name: string;
-      };
-    };
-  };
-  payment?: {
-    id: number;
-    amount: number;
-    status: string;
-    paidAt?: string;
-  };
-  refundRequests?: Array<{
-    id: number;
-    reason: string;
-    refundAmount: number;
-    status: string;
-    requestedAt: string;
-  }>;
-}
-
-// 선생님 지정 강의 개설 요청
-export interface CreateClassWithTeacherRequest {
-  classData: {
-    name: string;
-    description?: string;
-    level: string;
-    maxStudents: number;
-    tuitionFee: number;
-    dayOfWeek: string;
-    startTime: string;
-    endTime: string;
-    startDate: string;
-    endDate: string;
-    backgroundColor?: string;
-    location?: string;
-  };
-  assignedTeacherId: number;
-}
-
-// API 응답 타입들
-export interface GetAcademyTeachersResponse extends Array<AcademyTeacher> {}
-export interface GetAcademyStudentsResponse extends Array<AcademyStudent> {}
-export interface GetStudentSessionHistoryResponse
-  extends Array<StudentSessionHistory> {}
-export interface RemoveTeacherResponse {
-  message: string;
-}
-export interface AssignAdminResponse {
-  message: string;
-}
-export interface RemoveAdminResponse {
-  message: string;
-}
-export interface RemoveStudentResponse {
-  message: string;
-}
-export interface CreateClassWithTeacherResponse {
-  id: number;
-  className: string;
-  teacherId: number;
-  academyId: number;
-  // ... 기타 클래스 정보
-}

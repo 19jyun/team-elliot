@@ -118,6 +118,74 @@ async function main() {
     },
   });
 
+  // Principal 계정 생성
+  const principal = await prisma.principal.upsert({
+    where: { userId: 'principal123' },
+    update: {
+      introduction: '팀 엘리엇 발레 학원의 원장입니다.',
+      photoUrl: 'https://example.com/principal-photo.jpg',
+      education: [
+        '서울예술대학교 무용과 졸업',
+        '러시아 볼쇼이 발레 아카데미 수료',
+        '현) 팀 엘리엇 발레 학원 원장',
+        '전) 서울발레단 단원',
+        '전) 국립발레단 객원무용수',
+      ],
+      certifications: [
+        '발레 지도자 자격증',
+        '예술경영지도사 자격증',
+        '문화예술교육사 자격증',
+      ],
+      yearsOfExperience: 15,
+    },
+    create: {
+      userId: 'principal123',
+      password: hashedPassword,
+      name: '김원장',
+      phoneNumber: '010-1234-5678',
+      email: 'principal@teamelliot.com',
+      introduction: '팀 엘리엇 발레 학원의 원장입니다.',
+      photoUrl: 'https://example.com/principal-photo.jpg',
+      education: [
+        '서울예술대학교 무용과 졸업',
+        '러시아 볼쇼이 발레 아카데미 수료',
+        '현) 팀 엘리엇 발레 학원 원장',
+        '전) 서울발레단 단원',
+        '전) 국립발레단 객원무용수',
+      ],
+      certifications: [
+        '발레 지도자 자격증',
+        '예술경영지도사 자격증',
+        '문화예술교육사 자격증',
+      ],
+      yearsOfExperience: 15,
+      academyId: academy.id,
+    },
+  });
+
+  // User 테이블에 강사와 학생 생성
+  const teacherUser = await prisma.user.upsert({
+    where: { userId: 'teacher123' },
+    update: {},
+    create: {
+      userId: 'teacher123',
+      password: hashedPassword,
+      name: '고예진',
+      role: 'TEACHER',
+    },
+  });
+
+  const studentUser = await prisma.user.upsert({
+    where: { userId: 'student123' },
+    update: {},
+    create: {
+      userId: 'student123',
+      password: hashedPassword,
+      name: '이학생',
+      role: 'STUDENT',
+    },
+  });
+
   // Create test teacher
   const teacher = await prisma.teacher.upsert({
     where: { userId: 'teacher123' },
@@ -273,8 +341,14 @@ async function main() {
 
   // 클래스 생성 및 세션 자동 생성
   for (const classData of classesData) {
-    const createdClass = await prisma.class.create({
-      data: {
+    const createdClass = await prisma.class.upsert({
+      where: {
+        classCode: classData.classCode,
+      },
+      update: {
+        ...classData,
+      },
+      create: {
         ...classData,
       },
     });
@@ -380,24 +454,6 @@ async function main() {
     });
   }
 
-  // AcademyAdmin 관계 설정 - 선생님을 학원의 OWNER로 설정
-  await prisma.academyAdmin.upsert({
-    where: {
-      academyId_teacherId: {
-        academyId: academy.id,
-        teacherId: teacher.id,
-      },
-    },
-    update: {
-      role: 'OWNER',
-    },
-    create: {
-      academyId: academy.id,
-      teacherId: teacher.id,
-      role: 'OWNER',
-    },
-  });
-
   // 테스트용 세션 콘텐츠 생성 (첫 번째 클래스의 첫 번째 세션에)
   const firstClass = await prisma.class.findFirst({
     where: { academyId: academy.id },
@@ -438,33 +494,33 @@ async function main() {
     }
   }
 
-  // 테스트용 활동 로그 생성
+  // 테스트용 활동 로그 생성 (createMany 사용 - 중복 방지)
   await prisma.activityLog.createMany({
     data: [
       {
-        userId: teacher.id,
-        userRole: 'TEACHER',
+        userId: teacherUser.id,
+        userRole: 'TEACHER' as const,
         action: 'LOGIN',
         description: '강사 로그인',
-        level: 'NORMAL',
+        level: 'NORMAL' as const,
         ipAddress: '127.0.0.1',
         userAgent: 'Test Browser',
       },
       {
-        userId: student.id,
-        userRole: 'STUDENT',
+        userId: studentUser.id,
+        userRole: 'STUDENT' as const,
         action: 'ENROLLMENT',
         description: '클래스 수강 신청',
-        level: 'IMPORTANT',
+        level: 'IMPORTANT' as const,
         ipAddress: '127.0.0.1',
         userAgent: 'Test Browser',
       },
       {
-        userId: teacher.id,
-        userRole: 'TEACHER',
+        userId: teacherUser.id,
+        userRole: 'TEACHER' as const,
         action: 'SESSION_CREATION',
         description: '세션 생성',
-        level: 'IMPORTANT',
+        level: 'IMPORTANT' as const,
         ipAddress: '127.0.0.1',
         userAgent: 'Test Browser',
       },
@@ -476,18 +532,29 @@ async function main() {
   if (firstClass && firstClass.classSessions.length > 0) {
     const firstSession = firstClass.classSessions[0];
 
-    // 세션 등록 생성
-    const sessionEnrollment = await prisma.sessionEnrollment.create({
-      data: {
+    // 세션 등록 생성 (upsert 사용)
+    const sessionEnrollment = await prisma.sessionEnrollment.upsert({
+      where: {
+        studentId_sessionId: {
+          studentId: student.id,
+          sessionId: firstSession.id,
+        },
+      },
+      update: {},
+      create: {
         sessionId: firstSession.id,
         studentId: student.id,
         status: 'CONFIRMED',
       },
     });
 
-    // 결제 생성
-    const testPayment = await prisma.payment.create({
-      data: {
+    // 결제 생성 (upsert 사용)
+    const testPayment = await prisma.payment.upsert({
+      where: {
+        sessionEnrollmentId: sessionEnrollment.id,
+      },
+      update: {},
+      create: {
         sessionEnrollmentId: sessionEnrollment.id,
         studentId: student.id,
         amount: 150000,
@@ -497,8 +564,8 @@ async function main() {
       },
     });
 
-    // 환불 요청 생성
-    await prisma.refundRequest.create({
+    // 환불 요청 생성 (createMany 사용하여 중복 방지)
+    await prisma.refundRequest.createMany({
       data: {
         sessionEnrollmentId: sessionEnrollment.id,
         studentId: student.id,
@@ -509,6 +576,7 @@ async function main() {
         accountNumber: '110-123-456789',
         accountHolder: '이학생',
       },
+      skipDuplicates: true,
     });
   }
 

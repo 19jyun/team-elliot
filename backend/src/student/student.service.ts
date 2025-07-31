@@ -210,7 +210,7 @@ export class StudentService {
       include: {
         academy: {
           include: {
-            admins: true,
+            principal: true,
           },
         },
       },
@@ -220,10 +220,8 @@ export class StudentService {
       throw new NotFoundException('소속된 학원이 없습니다.');
     }
 
-    const isAdmin = adminTeacher.academy.admins.some(
-      (admin) => admin.teacherId === adminTeacherId,
-    );
-    if (!isAdmin) {
+    const isPrincipal = adminTeacher.academy.principal?.id === adminTeacherId;
+    if (!isPrincipal) {
       throw new ForbiddenException('학원 관리 권한이 없습니다.');
     }
 

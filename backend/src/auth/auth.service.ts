@@ -38,6 +38,18 @@ export class AuthService {
       return result;
     }
 
+    // principal 체크
+    const principal = await this.prisma.principal.findUnique({
+      where: {
+        userId: userId,
+      },
+    });
+
+    if (principal && (await bcrypt.compare(password, principal.password))) {
+      const { password, ...result } = principal;
+      return { ...result, role: 'PRINCIPAL' };
+    }
+
     // teacher 체크
     const teacher = await this.prisma.teacher.findUnique({
       where: {

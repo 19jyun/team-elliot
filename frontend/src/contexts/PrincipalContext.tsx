@@ -1,0 +1,198 @@
+import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { useDashboardNavigation } from './DashboardContext';
+
+export const principalNavigationItems = [
+  { label: '강의 관리', value: 0 },
+  { label: '수강생/강사 관리', value: 1 },
+  { label: '학원 관리', value: 2 },
+  { label: '나의 정보', value: 3 },
+];
+
+export interface PrincipalCreateClassState {
+  currentStep: 'info' | 'teacher' | 'schedule' | 'content' | 'complete';
+  classFormData: {
+    name: string;
+    description: string;
+    maxStudents: number;
+    price: number;
+    schedule: {
+      days: string[];
+      startTime: string;
+      endTime: string;
+      startDate: string;
+      endDate: string;
+    };
+    content: string;
+    academyId?: number;
+  };
+  selectedTeacherId: number | null;
+}
+
+// Principal 인원 관리 상태 타입
+export type PrincipalPersonManagementStep = 'main' | 'enrollment-refund' | 'teacher-student';
+
+export interface PrincipalPersonManagementState {
+  currentStep: PrincipalPersonManagementStep;
+  selectedTab: 'enrollment' | 'refund';
+  selectedSessionId: number | null;
+  selectedRequestId: number | null;
+  selectedRequestType: 'enrollment' | 'refund' | null;
+}
+
+interface PrincipalContextType {
+  activeTab: number;
+  setActiveTab: (tab: number) => void;
+  createClass: PrincipalCreateClassState;
+  setCreateClass: (state: PrincipalCreateClassState) => void;
+  personManagement: PrincipalPersonManagementState;
+  navigationItems: typeof principalNavigationItems;
+  handleTabChange: (tab: number) => void;
+  // 인원 관리 관련 메서드들
+  setPersonManagementStep: (step: PrincipalPersonManagementStep) => void;
+  setPersonManagementTab: (tab: 'enrollment' | 'refund') => void;
+  setSelectedSessionId: (sessionId: number | null) => void;
+  setSelectedRequestId: (requestId: number | null) => void;
+  setSelectedRequestType: (requestType: 'enrollment' | 'refund' | null) => void;
+  resetPersonManagement: () => void;
+}
+
+const PrincipalContext = createContext<PrincipalContextType | undefined>(undefined);
+
+export function PrincipalProvider({ children }: { children: ReactNode }) {
+  const [activeTab, setActiveTab] = useState(0);
+  const [createClass, setCreateClass] = useState<PrincipalCreateClassState>({
+    currentStep: 'info',
+    classFormData: {
+      name: '',
+      description: '',
+      maxStudents: 10,
+      price: 0,
+      schedule: {
+        days: [],
+        startTime: '',
+        endTime: '',
+        startDate: '',
+        endDate: '',
+      },
+      content: '',
+    },
+    selectedTeacherId: null,
+  });
+  const [personManagement, setPersonManagement] = useState<PrincipalPersonManagementState>({
+    currentStep: 'main',
+    selectedTab: 'enrollment',
+    selectedSessionId: null,
+    selectedRequestId: null,
+    selectedRequestType: null,
+  });
+
+  const { clearSubPage } = useDashboardNavigation();
+
+  const handleTabChange = (tab: number) => {
+    setActiveTab(tab);
+    // 탭 변경 시 createClass 상태 초기화
+    setCreateClass({
+      currentStep: 'info',
+      classFormData: {
+        name: '',
+        description: '',
+        maxStudents: 10,
+        price: 0,
+        schedule: {
+          days: [],
+          startTime: '',
+          endTime: '',
+          startDate: '',
+          endDate: '',
+        },
+        content: '',
+      },
+      selectedTeacherId: null,
+    });
+    // 인원 관리 상태도 초기화
+    setPersonManagement({
+      currentStep: 'main',
+      selectedTab: 'enrollment',
+      selectedSessionId: null,
+      selectedRequestId: null,
+      selectedRequestType: null,
+    });
+    // DashboardContext의 SubPage도 초기화
+    clearSubPage();
+  };
+
+  // 인원 관리 단계 설정
+  const setPersonManagementStep = useCallback((step: PrincipalPersonManagementStep) => {
+    setPersonManagement(prev => ({
+      ...prev,
+      currentStep: step,
+    }));
+  }, []);
+
+  // 인원 관리 탭 설정
+  const setPersonManagementTab = useCallback((tab: 'enrollment' | 'refund') => {
+    setPersonManagement(prev => ({
+      ...prev,
+      selectedTab: tab,
+    }));
+  }, []);
+
+  // 선택된 세션 ID 설정
+  const setSelectedSessionId = useCallback((sessionId: number | null) => {
+    setPersonManagement(prev => ({
+      ...prev,
+      selectedSessionId: sessionId,
+    }));
+  }, []);
+
+  // 선택된 요청 ID 설정
+  const setSelectedRequestId = useCallback((requestId: number | null) => {
+    setPersonManagement(prev => ({
+      ...prev,
+      selectedRequestId: requestId,
+    }));
+  }, []);
+
+  // 선택된 요청 타입 설정
+  const setSelectedRequestType = useCallback((requestType: 'enrollment' | 'refund' | null) => {
+    setPersonManagement(prev => ({
+      ...prev,
+      selectedRequestType: requestType,
+    }));
+  }, []);
+
+  // 인원 관리 상태 초기화
+  const resetPersonManagement = useCallback(() => {
+    setPersonManagement({
+      currentStep: 'main',
+      selectedTab: 'enrollment',
+      selectedSessionId: null,
+      selectedRequestId: null,
+      selectedRequestType: null,
+    });
+  }, []);
+
+  const value: PrincipalContextType = {
+    activeTab,
+    setActiveTab,
+    createClass,
+    setCreateClass,
+    personManagement,
+    navigationItems: principalNavigationItems,
+    handleTabChange,
+    setPersonManagementStep,
+    setPersonManagementTab,
+    setSelectedSessionId,
+    setSelectedRequestId,
+    setSelectedRequestType,
+    resetPersonManagement,
+  };
+
+  return <PrincipalContext.Provider value={value}>{children}</PrincipalContext.Provider>;
+}
+
+export function usePrincipalContext() {
+  const ctx = useContext(PrincipalContext);
+  if (!ctx) throw new Error('usePrincipalContext must be used within a PrincipalProvider');
+  return ctx;
+} 

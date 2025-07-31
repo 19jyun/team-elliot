@@ -7,8 +7,8 @@ import { useRouter } from 'next/navigation'
 
 import { getTeacherClassesWithSessions } from '@/api/teacher'
 import { TeacherClassesWithSessionsResponse } from '@/types/api/teacher'
-import { DateSessionModal } from '@/components/calendar/DateSessionModal'
-import { TeacherSessionDetailModal } from '@/components/features/teacher/classes/TeacherSessionDetailModal'
+import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessionModal'
+import { SessionDetailModal } from '@/components/common/Session/SessionDetailModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
 import { ClassSession } from '@/types/api/class'
@@ -225,14 +225,15 @@ export default function TeacherDashboard() {
         sessions={selectedDaySessions}
         onClose={closeDateModal}
         onSessionClick={handleSessionClick}
-        userRole="teacher"
+        role="teacher"
       />
 
-      {/* Teacher Session Detail Modal */}
-      <TeacherSessionDetailModal
+      {/* Session Detail Modal */}
+      <SessionDetailModal
         isOpen={isSessionDetailModalOpen}
         session={selectedSession}
         onClose={closeSessionDetailModal}
+        role="teacher"
       />
     </div>
   )

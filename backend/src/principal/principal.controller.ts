@@ -1,0 +1,195 @@
+import {
+  Controller,
+  Get,
+  Put,
+  Post,
+  Delete,
+  Param,
+  ParseIntPipe,
+  UseGuards,
+  Body,
+} from '@nestjs/common';
+import { PrincipalService } from './principal.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import { Role } from '@prisma/client';
+import { UpdateAcademyDto } from './dto/update-academy.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+
+@Controller('principal')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.PRINCIPAL)
+export class PrincipalController {
+  constructor(private readonly principalService: PrincipalService) {}
+
+  // Principal의 학원 정보 조회
+  @Get('academy')
+  async getMyAcademy(@GetUser() user: any) {
+    return this.principalService.getMyAcademy(user.id);
+  }
+
+  // Principal의 학원 모든 세션 조회
+  @Get('sessions')
+  async getAllSessions(@GetUser() user: any) {
+    return this.principalService.getAllSessions(user.id);
+  }
+
+  // Principal의 학원 모든 클래스 조회
+  @Get('classes')
+  async getAllClasses(@GetUser() user: any) {
+    return this.principalService.getAllClasses(user.id);
+  }
+
+  // Principal의 학원 모든 강사 조회
+  @Get('teachers')
+  async getAllTeachers(@GetUser() user: any) {
+    return this.principalService.getAllTeachers(user.id);
+  }
+
+  // Principal의 학원 모든 학생 조회
+  @Get('students')
+  async getAllStudents(@GetUser() user: any) {
+    return this.principalService.getAllStudents(user.id);
+  }
+
+  // Principal 정보 조회
+  @Get('profile')
+  async getPrincipalInfo(@GetUser() user: any) {
+    return this.principalService.getPrincipalInfo(user.id);
+  }
+
+  // Principal 프로필 정보 수정
+  @Put('profile')
+  async updateProfile(
+    @GetUser() user: any,
+    @Body() updateProfileDto: UpdateProfileDto,
+  ) {
+    return this.principalService.updateProfile(user.id, updateProfileDto);
+  }
+
+  // Principal의 세션 수강생 조회
+  @Get('sessions/:sessionId/enrollments')
+  async getSessionEnrollments(
+    @Param('sessionId', ParseIntPipe) sessionId: number,
+    @GetUser() user: any,
+  ) {
+    return this.principalService.getSessionEnrollments(sessionId, user.id);
+  }
+
+  // Principal의 학원 정보 수정
+  @Put('academy')
+  async updateAcademy(
+    @GetUser() user: any,
+    @Body() updateAcademyDto: UpdateAcademyDto,
+  ) {
+    return this.principalService.updateAcademy(user.id, updateAcademyDto);
+  }
+
+  // === 수강 신청/환불 신청 관리 API ===
+
+  // Principal의 수강 신청 대기 세션 목록 조회
+  @Get('sessions-with-enrollment-requests')
+  async getSessionsWithEnrollmentRequests(@GetUser() user: any) {
+    return this.principalService.getSessionsWithEnrollmentRequests(user.id);
+  }
+
+  // Principal의 환불 요청 대기 세션 목록 조회
+  @Get('sessions-with-refund-requests')
+  async getSessionsWithRefundRequests(@GetUser() user: any) {
+    return this.principalService.getSessionsWithRefundRequests(user.id);
+  }
+
+  // 특정 세션의 수강 신청 요청 목록 조회
+  @Get('sessions/:sessionId/enrollment-requests')
+  async getSessionEnrollmentRequests(
+    @Param('sessionId', ParseIntPipe) sessionId: number,
+    @GetUser() user: any,
+  ) {
+    return this.principalService.getSessionEnrollmentRequests(
+      sessionId,
+      user.id,
+    );
+  }
+
+  // 특정 세션의 환불 요청 목록 조회
+  @Get('sessions/:sessionId/refund-requests')
+  async getSessionRefundRequests(
+    @Param('sessionId', ParseIntPipe) sessionId: number,
+    @GetUser() user: any,
+  ) {
+    return this.principalService.getSessionRefundRequests(sessionId, user.id);
+  }
+
+  // 수강 신청 승인
+  @Post('enrollments/:enrollmentId/approve')
+  async approveEnrollment(
+    @Param('enrollmentId', ParseIntPipe) enrollmentId: number,
+    @GetUser() user: any,
+  ) {
+    return this.principalService.approveEnrollment(enrollmentId, user.id);
+  }
+
+  // 수강 신청 거절
+  @Post('enrollments/:enrollmentId/reject')
+  async rejectEnrollment(
+    @Param('enrollmentId', ParseIntPipe) enrollmentId: number,
+    @Body() rejectData: { reason: string; detailedReason?: string },
+    @GetUser() user: any,
+  ) {
+    return this.principalService.rejectEnrollment(
+      enrollmentId,
+      rejectData,
+      user.id,
+    );
+  }
+
+  // 환불 요청 승인
+  @Post('refunds/:refundId/approve')
+  async approveRefund(
+    @Param('refundId', ParseIntPipe) refundId: number,
+    @GetUser() user: any,
+  ) {
+    return this.principalService.approveRefund(refundId, user.id);
+  }
+
+  // 환불 요청 거절
+  @Put('refunds/:refundId/reject')
+  async rejectRefund(
+    @Param('refundId', ParseIntPipe) refundId: number,
+    @Body() rejectData: { reason: string; detailedReason?: string },
+    @GetUser() user: any,
+  ) {
+    return this.principalService.rejectRefund(refundId, rejectData, user.id);
+  }
+
+  // === 선생님/수강생 관리 API ===
+
+  // 선생님을 학원에서 제거
+  @Delete('teachers/:teacherId')
+  async removeTeacher(
+    @Param('teacherId', ParseIntPipe) teacherId: number,
+    @GetUser() user: any,
+  ) {
+    return this.principalService.removeTeacher(teacherId, user.id);
+  }
+
+  // 수강생을 학원에서 제거
+  @Delete('students/:studentId')
+  async removeStudent(
+    @Param('studentId', ParseIntPipe) studentId: number,
+    @GetUser() user: any,
+  ) {
+    return this.principalService.removeStudent(studentId, user.id);
+  }
+
+  // 수강생의 세션 수강 현황 조회
+  @Get('students/:studentId/sessions')
+  async getStudentSessionHistory(
+    @Param('studentId', ParseIntPipe) studentId: number,
+    @GetUser() user: any,
+  ) {
+    return this.principalService.getStudentSessionHistory(studentId, user.id);
+  }
+}
