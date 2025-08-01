@@ -97,6 +97,12 @@ export class TeacherController {
     return this.teacherService.updateProfile(user.id, parsedData, photo);
   }
 
+  @Get('me/data')
+  @Roles(Role.TEACHER)
+  async getTeacherData(@GetUser() user: any) {
+    return this.teacherService.getTeacherData(user.id);
+  }
+
   @Get('me/classes')
   @Roles(Role.TEACHER)
   async getMyClasses(@GetUser() user: any) {

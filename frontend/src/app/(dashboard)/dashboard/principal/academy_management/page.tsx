@@ -14,7 +14,7 @@ import { updatePrincipalAcademy as updatePrincipalAcademyApi } from '@/api/princ
 import { UpdatePrincipalAcademyRequest } from '@/types/api/principal';
 import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
 import { useAppDispatch } from '@/store/hooks';
-import { updatePrincipalAcademy } from '@/store/slices/appDataSlice';
+import { updatePrincipalAcademy } from '@/store/slices/principalSlice';
 
 export default function PrincipalAcademyManagementPage() {
   const router = useRouter();

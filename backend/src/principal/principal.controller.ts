@@ -72,6 +72,12 @@ export class PrincipalController {
     return this.principalService.getPrincipalInfo(user.id);
   }
 
+  // Principal 전체 데이터 조회 (Redux 초기화용)
+  @Get('me/data')
+  async getPrincipalData(@GetUser() user: any) {
+    return this.principalService.getPrincipalData(user.id);
+  }
+
   // Principal 프로필 정보 수정
   @Put('profile')
   async updateProfile(

@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
 import { useAppDispatch } from '@/store/hooks';
-import { updatePrincipalProfile } from '@/store/slices/appDataSlice';
+import { updatePrincipalProfile } from '@/store/slices/principalSlice';
 
 interface PrincipalProfileCardProps {
   principalId?: number; // 특정 원장 ID (없으면 현재 로그인한 원장)

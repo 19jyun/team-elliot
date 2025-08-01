@@ -1,10 +1,18 @@
 import { configureStore } from "@reduxjs/toolkit";
-import appDataReducer from "./slices/appDataSlice";
+import commonReducer from "./slices/commonSlice";
+import teacherReducer from "./slices/teacherSlice";
+import principalReducer from "./slices/principalSlice";
+import studentReducer from "./slices/studentSlice";
+import adminReducer from "./slices/adminSlice";
 import uiReducer from "./slices/uiSlice";
 
 export const store = configureStore({
   reducer: {
-    appData: appDataReducer,
+    common: commonReducer,
+    teacher: teacherReducer,
+    principal: principalReducer,
+    student: studentReducer,
+    admin: adminReducer,
     ui: uiReducer,
   },
   middleware: (getDefaultMiddleware) =>

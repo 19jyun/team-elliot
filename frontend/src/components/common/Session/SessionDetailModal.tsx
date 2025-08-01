@@ -12,6 +12,7 @@ import { PoseSelectionModal } from '@/components/common/Session/SessionDetailCom
 import { useAddSessionContent } from '@/hooks/useSessionContents'
 import { BalletPose } from '@/types/api/ballet-pose'
 import { usePrincipalData } from '@/hooks/redux/usePrincipalData'
+import { useTeacherData } from '@/hooks/redux/useTeacherData'
 
 interface SessionDetailModalProps {
   isOpen: boolean
@@ -48,16 +49,23 @@ export function SessionDetailModal({
 
   const addContentMutation = useAddSessionContent(sessionId || 0)
 
-  // Redux store에서 데이터 가져오기
+  // 역할에 따라 다른 Redux store에서 데이터 가져오기
+  const principalData = usePrincipalData();
+  const teacherData = useTeacherData();
+  
   const { 
     getSessionEnrollments: getSessionEnrollmentsFromStore,
     getSessionById,
     getTeacherById,
     isLoading: storeLoading,
     error,
-    enrollments: storeEnrollments,
     classes: storeClasses
-  } = usePrincipalData()
+  } = role === 'teacher' ? teacherData : principalData;
+
+  // Teacher와 Principal 모두 enrollments에 접근 가능
+  const storeEnrollments = role === 'teacher' 
+    ? teacherData.enrollments 
+    : principalData.enrollments;
 
   // 세션 정보를 Redux에서 가져오기
   const session = useMemo(() => {
@@ -85,7 +93,7 @@ export function SessionDetailModal({
 
       // 직접 storeEnrollments에서 필터링
       const enrollments = storeEnrollments?.filter(
-        (enrollment) => enrollment.sessionId === sessionId
+        (enrollment: any) => enrollment.sessionId === sessionId
       ) || [];
       
       const enrollmentsList = enrollments.map((enrollment: any) => ({

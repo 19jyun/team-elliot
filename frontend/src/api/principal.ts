@@ -1,5 +1,13 @@
 import axiosInstance from "@/lib/axios";
 
+// === Principal Dashboard Redux 데이터 초기화용 API ===
+
+// PrincipalData 전체 초기화 (Redux용)
+export const getPrincipalData = async () => {
+  const response = await axiosInstance.get("/principal/me/data");
+  return response.data;
+};
+
 // Principal 전용 API 함수들
 
 // 1. Principal의 학원 정보 조회

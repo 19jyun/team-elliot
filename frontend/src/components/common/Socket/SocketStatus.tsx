@@ -1,6 +1,6 @@
 'use client'
 
-import { useSocketConnection } from '@/hooks/useSocket'
+import { useSocketConnection } from '@/hooks/socket/useSocket'
 
 export function SocketStatus() {
   const { isConnected, isConnecting } = useSocketConnection()

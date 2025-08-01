@@ -1,11 +1,10 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
-import { getPrincipalAllClasses, getPrincipalAllSessions } from '@/api/principal'
+import { usePrincipalData } from '@/hooks/redux/usePrincipalData'
 import { ClassList } from '@/components/common/ClassContainer/ClassList'
 import { CommonClassData } from '@/components/common/ClassContainer/ClassCard'
 import { ClassSessionModal } from '@/components/common/ClassContainer/ClassSessionModal'
@@ -23,27 +22,11 @@ export const PrincipalClassesContainer = () => {
   const [selectedClass, setSelectedClass] = useState<any>(null)
   const [isClassSessionModalOpen, setIsClassSessionModalOpen] = useState(false)
 
-  // Principal의 모든 클래스 조회
-  const { data: allClasses, isLoading: classesLoading, error: classesError } = useQuery({
-    queryKey: ['principal-all-classes'],
-    queryFn: getPrincipalAllClasses,
-    enabled: status === 'authenticated' && !!session?.user && !!session?.accessToken,
-    retry: false,
-  })
-
-  // Principal의 모든 세션 조회
-  const { data: allSessions, isLoading: sessionsLoading, error: sessionsError } = useQuery({
-    queryKey: ['principal-all-sessions'],
-    queryFn: getPrincipalAllSessions,
-    enabled: status === 'authenticated' && !!session?.user && !!session?.accessToken,
-    retry: false,
-  })
-
-  const classes = allClasses || []
-  const sessions = allSessions || []
+  // Redux store에서 Principal 데이터 가져오기
+  const { classes, sessions, isLoading, error } = usePrincipalData()
 
   // 로딩 상태 처리
-  if (status === 'loading' || classesLoading || sessionsLoading) {
+  if (status === 'loading' || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-full">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
@@ -52,8 +35,8 @@ export const PrincipalClassesContainer = () => {
   }
 
   // 에러 처리
-  if (classesError || sessionsError) {
-    if ((classesError as any)?.response?.status === 401 || (sessionsError as any)?.response?.status === 401) {
+  if (error) {
+    if ((error as any)?.response?.status === 401) {
       signOut({ redirect: true, callbackUrl: '/auth' });
       return null;
     }
@@ -93,7 +76,7 @@ export const PrincipalClassesContainer = () => {
       {/* 클래스 리스트 */}
       <div className="flex-1 px-5 py-4">
         <ClassList
-          classes={classes}
+          classes={classes || []}
           onClassClick={handleClassClick}
           showTeacher={true}
           role="principal"
@@ -105,7 +88,7 @@ export const PrincipalClassesContainer = () => {
       <ClassSessionModal
         isOpen={isClassSessionModalOpen}
         selectedClass={selectedClass}
-        sessions={sessions}
+        sessions={sessions || []}
         onClose={closeClassSessionModal}
         role="principal"
       />

@@ -3,9 +3,11 @@ import { useMemo, useCallback } from "react";
 
 // Principal 대시보드에서 사용할 데이터 훅
 export function usePrincipalData() {
-  const { user, principalData, isLoading, error } = useAppSelector(
-    (state) => state.appData
-  );
+  const {
+    data: principalData,
+    isLoading,
+    error,
+  } = useAppSelector((state) => state.principal);
 
   // 클래스를 세션 형태로 변환
   const sessions = useMemo(() => {
@@ -282,7 +284,7 @@ export function usePrincipalData() {
 
   return {
     // 기본 데이터
-    user,
+    user: principalData?.userProfile,
     userProfile: principalData?.userProfile,
     academy: principalData?.academy,
     enrollments: principalData?.enrollments,

@@ -310,6 +310,30 @@ export interface BatchUpdateEnrollmentStatusResponse {
   total: number;
 }
 
-// === 새로운 학원 관리 타입들 ===
+// === API Response 타입들 ===
 
-// 학원 소속 선생님 정보
+// Principal - 학원 원장 정보
+export interface Principal {
+  id: number;
+  userId: string;
+  name: string;
+  phoneNumber?: string;
+  email?: string;
+  introduction?: string;
+  photoUrl?: string;
+  education: string[];
+  certifications: string[];
+  yearsOfExperience?: number;
+  academyId: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// TeacherData 초기화용 API Response
+export interface TeacherDataResponse {
+  userProfile: TeacherProfile;
+  academy: Academy | null;
+  principal: Principal | null;
+  classes: TeacherClassesResponse;
+  sessions: TeacherSessionsResponse;
+}

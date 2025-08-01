@@ -21,6 +21,8 @@ import {
   LeaveAcademyResponse,
   RequestJoinAcademyRequest,
   RequestJoinAcademyResponse,
+  TeacherDataResponse,
+  Principal,
 } from "@/types/api/teacher";
 
 // 프로필 관련 API
@@ -180,5 +182,19 @@ export const requestJoinAcademy = async (
 // 학원 선생님 목록 조회
 export const getAcademyTeachers = async (): Promise<any[]> => {
   const response = await axiosInstance.get("/teachers/academy");
+  return response.data;
+};
+
+// === Teacher Dashboard Redux 데이터 초기화용 API ===
+
+// TeacherData 전체 초기화 (Redux용)
+export const getTeacherData = async (): Promise<TeacherDataResponse> => {
+  const response = await axiosInstance.get("/teachers/me/data");
+  return response.data;
+};
+
+// 학원 원장 정보 조회
+export const getTeacherAcademyPrincipal = async (): Promise<Principal> => {
+  const response = await axiosInstance.get("/teachers/me/academy/principal");
   return response.data;
 };

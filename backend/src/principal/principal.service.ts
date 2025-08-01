@@ -398,6 +398,181 @@ export class PrincipalService {
     return principal;
   }
 
+  // Principal 전체 데이터 조회 (Redux 초기화용)
+  async getPrincipalData(principalId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      include: {
+        academy: {
+          include: {
+            teachers: {
+              include: {
+                classes: true,
+              },
+            },
+            classes: {
+              include: {
+                teacher: true,
+                classSessions: {
+                  include: {
+                    enrollments: {
+                      include: {
+                        student: true,
+                        payment: true,
+                        refundRequests: {
+                          include: {
+                            student: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            students: {
+              include: {
+                student: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    // Redux store에 맞는 형태로 데이터 구성
+    return {
+      userProfile: {
+        id: principal.id,
+        userId: principal.userId,
+        name: principal.name,
+        email: principal.email,
+        phoneNumber: principal.phoneNumber,
+        introduction: principal.introduction,
+        education: principal.education,
+        certifications: principal.certifications,
+        photoUrl: principal.photoUrl,
+        academy: principal.academy,
+        createdAt: principal.createdAt,
+        updatedAt: principal.updatedAt,
+      },
+      academy: principal.academy,
+      enrollments: principal.academy.classes.flatMap((cls) =>
+        cls.classSessions.flatMap((session) =>
+          session.enrollments.map((enrollment) => ({
+            ...enrollment,
+            session: {
+              id: session.id,
+              date: session.date,
+              startTime: session.startTime,
+              endTime: session.endTime,
+              class: {
+                id: cls.id,
+                className: cls.className,
+                teacher: {
+                  name: cls.teacher.name,
+                },
+              },
+            },
+          })),
+        ),
+      ),
+      refundRequests: principal.academy.classes.flatMap((cls) =>
+        cls.classSessions.flatMap((session) =>
+          session.enrollments.flatMap((enrollment) =>
+            enrollment.refundRequests.map((refund) => ({
+              ...refund,
+              sessionEnrollment: {
+                session: {
+                  id: session.id,
+                  date: session.date,
+                  startTime: session.startTime,
+                  endTime: session.endTime,
+                  class: {
+                    id: cls.id,
+                    className: cls.className,
+                    teacher: {
+                      name: cls.teacher.name,
+                    },
+                  },
+                },
+                date: session.date,
+                startTime: session.startTime,
+                endTime: session.endTime,
+              },
+            })),
+          ),
+        ),
+      ),
+      classes: principal.academy.classes.map((cls) => ({
+        id: cls.id,
+        className: cls.className,
+        classCode: cls.classCode,
+        description: cls.description,
+        maxStudents: cls.maxStudents,
+        tuitionFee: cls.tuitionFee,
+        teacherId: cls.teacherId,
+        academyId: cls.academyId,
+        dayOfWeek: cls.dayOfWeek,
+        startTime: cls.startTime,
+        endTime: cls.endTime,
+        level: cls.level,
+        status: cls.status,
+        startDate: cls.startDate,
+        endDate: cls.endDate,
+        backgroundColor: cls.backgroundColor,
+        teacher: {
+          id: cls.teacher.id,
+          name: cls.teacher.name,
+          phoneNumber: cls.teacher.phoneNumber,
+          introduction: cls.teacher.introduction,
+          photoUrl: cls.teacher.photoUrl,
+        },
+        academy: {
+          id: principal.academy.id,
+          name: principal.academy.name,
+        },
+        classSessions: cls.classSessions.map((session) => ({
+          id: session.id,
+          classId: session.classId,
+          date: session.date,
+          startTime: session.startTime,
+          endTime: session.endTime,
+          currentStudents: session.enrollments.length,
+          maxStudents: cls.maxStudents,
+          enrollments: session.enrollments.map((enrollment) => ({
+            id: enrollment.id,
+            studentId: enrollment.studentId,
+            sessionId: enrollment.sessionId,
+            status: enrollment.status,
+            enrolledAt: enrollment.enrolledAt,
+            student: {
+              id: enrollment.student.id,
+              name: enrollment.student.name,
+              phoneNumber: enrollment.student.phoneNumber,
+            },
+          })),
+        })),
+      })),
+      teachers: principal.academy.teachers.map((teacher) => ({
+        id: teacher.id,
+        name: teacher.name,
+        phoneNumber: teacher.phoneNumber,
+        introduction: teacher.introduction,
+        photoUrl: teacher.photoUrl,
+      })),
+      students: principal.academy.students.map((student) => ({
+        id: student.student.id,
+        name: student.student.name,
+        phoneNumber: student.student.phoneNumber,
+      })),
+    };
+  }
+
   // Principal 프로필 정보 수정
   async updateProfile(principalId: number, updateProfileDto: any) {
     const principal = await this.prisma.principal.findUnique({

@@ -6,6 +6,7 @@ import { ko } from 'date-fns/locale'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { SessionCardList } from '@/components/common/Session/SessionCardList'
 import { usePrincipalData } from '@/hooks/redux/usePrincipalData'
+import { useTeacherData } from '@/hooks/redux/useTeacherData'
 
 interface DateSessionModalProps {
   isOpen: boolean
@@ -22,8 +23,11 @@ export function DateSessionModal({
   onSessionClick,
   role 
 }: DateSessionModalProps) {
-  // Redux store에서 데이터 가져오기
-  const { getSessionsByDate } = usePrincipalData()
+  // 역할에 따라 다른 Redux store에서 데이터 가져오기
+  const principalData = usePrincipalData();
+  const teacherData = useTeacherData();
+  
+  const { getSessionsByDate } = role === 'teacher' ? teacherData : principalData;
 
   // 선택된 날짜의 세션들을 Redux에서 가져오기
   const sessions = useMemo(() => {

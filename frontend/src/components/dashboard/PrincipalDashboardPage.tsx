@@ -18,14 +18,18 @@ import { PrincipalPersonalInfoManagement } from './principal/profile/PrincipalPe
 import { EnrollmentRefundManagementContainer } from './principal/person_management/enrollment_refund_management/containers/EnrollmentRefundManagementContainer';
 import { TeacherStudentManagementContainer } from './principal/person_management/teacher_student_management/containers/TeacherStudentManagementContainer';
 import { ReduxTestComponent } from '@/components/common/ReduxTestComponent';
-import { SocketListener } from '@/components/common/SocketListener';
-import { SocketStatus } from '@/components/common/SocketStatus';
+import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSocketListener';
+import { SocketStatus } from '@/components/common/Socket/SocketStatus';
+import { usePrincipalInitialization } from '@/hooks/redux/usePrincipalInitialization';
 
 
 
 function PrincipalDashboardContent() {
   const { activeTab, handleTabChange } = usePrincipalContext();
   const { subPage, isTransitioning } = useDashboardNavigation();
+
+  // Principal 데이터 초기화
+  usePrincipalInitialization();
 
   // SubPage 렌더링 함수
   const renderSubPage = () => {
@@ -90,7 +94,7 @@ function PrincipalDashboardContent() {
         )}
 
         {/* Socket 관련 컴포넌트들 */}
-        <SocketListener />
+        <RoleBasedSocketListener />
         <SocketStatus />
       </main>
     </div>

@@ -7,6 +7,10 @@ import { Separator } from '@/components/ui/separator';
 import { MapPin, Phone, Calendar } from 'lucide-react';
 import { formatDate } from '@/utils/academyUtils';
 import { ExpandableText } from '@/components/common/ExpandableText';
+import { useTeacherData } from '@/hooks/redux/useTeacherData';
+import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
+import { useStudentData } from '@/hooks/redux/useStudentData';
+import { useSession } from 'next-auth/react';
 
 // 공통 Academy 타입 정의
 interface CommonAcademy {
@@ -20,14 +24,15 @@ interface CommonAcademy {
 }
 
 interface AcademyCardProps {
-  academy: CommonAcademy;
-  variant?: 'teacher' | 'student';
+  academy?: CommonAcademy; // Redux에서 가져올 수 있으므로 optional로 변경
+  variant?: 'teacher' | 'student' | 'principal';
   onAction?: () => void;
   actionText?: string;
   actionVariant?: 'default' | 'destructive' | 'outline';
   showActionButton?: boolean;
-    infoMessage?: string;
-    showTeamCode?: boolean;
+  infoMessage?: string;
+  showTeamCode?: boolean;
+  useRedux?: boolean; // Redux 사용 여부
 }
 
 export function AcademyCard({ 
@@ -38,17 +43,40 @@ export function AcademyCard({
   actionVariant = 'outline',
   showActionButton = false,
   infoMessage,
-  showTeamCode = false
+  showTeamCode = false,
+  useRedux = false
 }: AcademyCardProps) {
+  const { data: session } = useSession();
+  const teacherData = useTeacherData();
+  const principalData = usePrincipalData();
+  const studentData = useStudentData();
+
+  // Redux 사용 시 role에 따라 academy 데이터 가져오기
+  let academyData = academy;
+  if (useRedux && !academy) {
+    const userRole = session?.user?.role;
+    if (userRole === 'TEACHER') {
+      academyData = teacherData.academy || undefined;
+    } else if (userRole === 'PRINCIPAL') {
+      academyData = principalData.academy || undefined;
+    } else if (userRole === 'STUDENT') {
+      academyData = studentData.academy || undefined;
+    }
+  }
+
+  // academy 데이터가 없으면 렌더링하지 않음
+  if (!academyData) {
+    return null;
+  }
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <CardTitle className="text-lg">{academy.name}</CardTitle>
+            <CardTitle className="text-lg">{academyData.name}</CardTitle>
             {showTeamCode && (
             <Badge variant="secondary" className="mt-2">
-              {academy.code}
+              {academyData.code}
                           </Badge>
             )}
           </div>
@@ -56,27 +84,27 @@ export function AcademyCard({
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="space-y-2 text-sm">
-          {academy.address && (
+          {academyData.address && (
             <div className="flex items-center gap-2 text-gray-600">
               <MapPin className="h-4 w-4" />
-              <span className="truncate">{academy.address}</span>
+              <span className="truncate">{academyData.address}</span>
             </div>
           )}
-          {academy.phoneNumber && (
+          {academyData.phoneNumber && (
             <div className="flex items-center gap-2 text-gray-600">
               <Phone className="h-4 w-4" />
-              <span>{academy.phoneNumber}</span>
+              <span>{academyData.phoneNumber}</span>
             </div>
           )}
           <div className="flex items-center gap-2 text-gray-600">
             <Calendar className="h-4 w-4" />
-            <span>가입일: {formatDate(academy.createdAt)}</span>
+            <span>가입일: {formatDate(academyData.createdAt)}</span>
           </div>
         </div>
         
-        {academy.description && (
+        {academyData.description && (
           <ExpandableText
-            text={academy.description}
+            text={academyData.description}
             lineClamp={3}
             className="text-sm text-gray-600"
             buttonText={{ expand: '더보기', collapse: '접기' }}

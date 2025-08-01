@@ -13,7 +13,7 @@ import { UpdatePrincipalProfileRequest } from '@/types/api/principal';
 import type { PrincipalProfile } from '@/store/types';
 import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
 import { useAppDispatch } from '@/store/hooks';
-import { updatePrincipalProfile } from '@/store/slices/appDataSlice';
+import { updatePrincipalProfile } from '@/store/slices/principalSlice';
 
 export function PrincipalPersonalInfoManagement() {
   const [personalInfo, setPersonalInfo] = useState<PrincipalProfile | null>(null);
