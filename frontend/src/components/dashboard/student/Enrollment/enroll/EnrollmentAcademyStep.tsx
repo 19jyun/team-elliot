@@ -2,11 +2,10 @@
 
 import React from 'react';
 import { useSession } from 'next-auth/react';
-import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { getMyAcademies, Academy } from '@/api/academy';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
+import { useStudentData } from '@/hooks/redux/useStudentData';
 
 export function EnrollmentAcademyStep() {
   const { enrollment, setEnrollmentStep, setSelectedAcademyId: setContextSelectedAcademyId, goBack, navigateToSubPage } = useDashboardNavigation();
@@ -17,22 +16,10 @@ export function EnrollmentAcademyStep() {
     },
   });
 
-  // SubPage 설정 - 이미 enroll 상태이므로 불필요
-  // React.useEffect(() => {
-  //   navigateToSubPage('enroll');
-  // }, [navigateToSubPage]);
+  // Redux에서 academies 데이터 가져오기
+  const { academies, isLoading, error } = useStudentData();
 
   const [localSelectedAcademyId, setLocalSelectedAcademyId] = React.useState<number | null>(null);
-
-  // 학생이 가입된 학원 목록 조회
-  const { data: academiesResponse, isLoading } = useQuery({
-    queryKey: ['studentAcademies'],
-    queryFn: getMyAcademies,
-    enabled: status === 'authenticated',
-  });
-
-  // API 응답에서 데이터 추출
-  const academies = academiesResponse?.data || [];
 
   const statusSteps = [
     {
@@ -68,6 +55,23 @@ export function EnrollmentAcademyStep() {
     setContextSelectedAcademyId(localSelectedAcademyId);
     setEnrollmentStep('class-selection');
   };
+
+  // 에러 처리
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">학원 정보를 불러오는데 실패했습니다.</p>
+          <button
+            onClick={goBack}
+            className="px-4 py-2 bg-[#AC9592] text-white rounded-lg hover:bg-[#8B7A77] transition-colors"
+          >
+            뒤로가기
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (status === 'loading' || isLoading) {
     return (
@@ -106,7 +110,7 @@ export function EnrollmentAcademyStep() {
             </div>
           ) : (
             <div className="space-y-3">
-              {academies.map((academy: Academy) => (
+              {academies.map((academy) => (
                 <div
                   key={academy.id}
                   onClick={() => handleAcademySelect(academy.id)}

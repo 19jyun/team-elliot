@@ -17,10 +17,16 @@ import { DashboardContainer } from './DashboardContainer';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { useStudentInitialization } from '@/hooks/redux/useStudentInitialization';
+import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSocketListener';
+import { SocketStatus } from '@/components/common/Socket/SocketStatus';
 
 function StudentDashboardContent() {
   const { activeTab, handleTabChange } = useStudentContext();
   const { subPage, isTransitioning } = useDashboardNavigation();
+
+  // Student 데이터 초기화
+  useStudentInitialization();
 
   // SubPage 렌더링 함수
   const renderSubPage = () => {
@@ -83,6 +89,10 @@ function StudentDashboardContent() {
             </div>
           </div>
         )}
+
+        {/* Socket 관련 컴포넌트들 */}
+        <RoleBasedSocketListener />
+        <SocketStatus />
       </main>
     </div>
   );
@@ -94,7 +104,7 @@ export function StudentDashboardPage() {
 
   useEffect(() => {
     if (status !== 'loading' && !session?.user) {
-              router.push('/auth');
+      router.push('/auth');
     }
   }, [session, status, router]);
 
@@ -109,7 +119,7 @@ export function StudentDashboardPage() {
   if (!session?.user) {
     return (
       <div className="flex items-center justify-center min-h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
+        <p>인증이 필요합니다.</p>
       </div>
     );
   }

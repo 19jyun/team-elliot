@@ -1,13 +1,13 @@
 'use client'
 
 import { useSession, signOut } from 'next-auth/react'
-import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { getMyClasses } from '@/api/student'
 import { EnrolledClassesList } from '@/components/features/student/classes/EnrolledClassesList'
 import { ClassSessionModal } from '@/components/features/student/classes/ClassSessionModal'
+import { StudentSessionDetailModal } from '@/components/features/student/classes/StudentSessionDetailModal'
+import { useStudentData } from '@/hooks/redux/useStudentData'
 
 export function EnrolledClassesContainer() {
   const router = useRouter()
@@ -20,13 +20,18 @@ export function EnrolledClassesContainer() {
 
   const [selectedClass, setSelectedClass] = useState<any>(null)
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false)
+  
+  // StudentSessionDetailModal 상태 추가
+  const [selectedSession, setSelectedSession] = useState<any>(null)
+  const [isSessionDetailModalOpen, setIsSessionDetailModalOpen] = useState(false)
 
-  const { data: myClasses, isLoading, error } = useQuery({
-    queryKey: ['my-classes'],
-    queryFn: getMyClasses,
-    enabled: status === 'authenticated' && !!session?.user && !!session?.accessToken,
-    retry: false,
-  })
+  // Redux 데이터 사용
+  const { 
+    enrolledClasses, 
+    sessionClasses, 
+    isLoading, 
+    error 
+  } = useStudentData()
 
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {
@@ -67,6 +72,18 @@ export function EnrolledClassesContainer() {
     setSelectedClass(null)
   }
 
+  // 세션 클릭 핸들러 추가
+  const handleSessionClick = (session: any) => {
+    setSelectedSession(session)
+    setIsSessionDetailModalOpen(true)
+    // ClassSessionModal은 닫지 않고 유지 (사용자가 뒤로가기 할 수 있도록)
+  }
+
+  const closeSessionDetailModal = () => {
+    setIsSessionDetailModalOpen(false)
+    setSelectedSession(null)
+  }
+
   return (
     <div className="flex flex-col h-full bg-white">
       {/* 헤더 */}
@@ -84,7 +101,7 @@ export function EnrolledClassesContainer() {
         {/* 수강중인 클래스 리스트 */}
         <div className="w-full h-full">
           <EnrolledClassesList
-            classes={myClasses?.enrollmentClasses || []}
+            classes={enrolledClasses || []}
             onClassClick={handleClassClick}
           />
         </div>
@@ -94,8 +111,17 @@ export function EnrolledClassesContainer() {
       <ClassSessionModal
         isOpen={isSessionModalOpen}
         selectedClass={selectedClass}
-        sessions={myClasses?.sessionClasses || []}
+        sessions={sessionClasses || []}
         onClose={closeSessionModal}
+        onSessionClick={handleSessionClick} // 세션 클릭 핸들러 전달
+      />
+
+      {/* Student Session Detail Modal */}
+      <StudentSessionDetailModal
+        isOpen={isSessionDetailModalOpen}
+        session={selectedSession}
+        onClose={closeSessionDetailModal}
+        onlyDetail={true}
       />
     </div>
   )

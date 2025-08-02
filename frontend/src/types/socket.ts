@@ -30,6 +30,20 @@ export interface SocketEvents {
     timestamp: string;
   };
 
+  // 클래스 가용성 변경
+  class_availability_changed: {
+    classId: number;
+    data: any;
+    timestamp: string;
+  };
+
+  // 세션 가용성 변경
+  session_availability_changed: {
+    sessionId: number;
+    data: any;
+    timestamp: string;
+  };
+
   // 학원 정보 관련
   academy_info_changed: {
     academyId: number;

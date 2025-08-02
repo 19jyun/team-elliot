@@ -7,8 +7,7 @@ import { EnrollmentModificationPaymentStep } from './EnrollmentModificationPayme
 import { EnrollmentCompleteStep } from '../enroll/EnrollmentCompleteStep';
 import { RefundRequestStep } from './RefundRequestStep';
 import { RefundCompleteStep } from './RefundCompleteStep';
-import { getStudentClassEnrollments } from '@/api/class-sessions';
-import { StudentClassEnrollmentsResponse } from '@/types/api/class';
+import { useStudentData } from '@/hooks/redux/useStudentData';
 import { useEnrollmentCalculation } from '@/hooks/useEnrollmentCalculation';
 import { toast } from 'sonner';
 
@@ -21,8 +20,7 @@ interface EnrollmentModificationContainerProps {
 export function EnrollmentModificationContainer({ classId, className, month }: EnrollmentModificationContainerProps) {
   const { enrollment, setEnrollmentStep } = useDashboardNavigation();
   const { currentStep } = enrollment;
-  const [existingEnrollments, setExistingEnrollments] = useState<StudentClassEnrollmentsResponse['sessions']>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { enrollmentHistory, isLoading, error } = useStudentData();
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [refundAmount, setRefundAmount] = useState(0);
   const [cancelledSessionsCount, setCancelledSessionsCount] = useState(0);
@@ -41,26 +39,27 @@ export function EnrollmentModificationContainer({ classId, className, month }: E
   
   console.log('effectiveStep:', effectiveStep);
 
-  // 기존 수강 신청 정보 로드
-  useEffect(() => {
-    const loadExistingEnrollments = async () => {
-      try {
-        setIsLoading(true);
-        const response = await getStudentClassEnrollments(classId);
-        setExistingEnrollments(response.sessions);
-        
-        // 기본 수강료 사용 (실제로는 EnrollmentModificationDateStep에서 가져옴)
-        setSessionPrice(50000);
-      } catch (error) {
-        console.error('기존 수강 신청 정보 로드 실패:', error);
-        toast.error('수강 변경 정보를 불러오는데 실패했습니다.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadExistingEnrollments();
-  }, [classId]);
+  // Redux에서 해당 클래스의 수강 신청 정보 필터링
+  const existingEnrollments = React.useMemo(() => {
+    if (!enrollmentHistory) return [];
+    
+    return enrollmentHistory
+      .filter(enrollment => enrollment.session.class.id === classId)
+      .map(enrollment => ({
+        id: enrollment.session.id,
+        date: enrollment.session.date,
+        startTime: enrollment.session.startTime,
+        endTime: enrollment.session.endTime,
+        class: enrollment.session.class,
+        enrollment: {
+          id: enrollment.id,
+          status: enrollment.status as any, // 타입 호환성을 위해 any로 캐스팅
+          enrolledAt: enrollment.enrolledAt,
+          description: enrollment.description,
+          refundRejection: enrollment.refundRejection
+        }
+      }));
+  }, [enrollmentHistory, classId]);
 
   // 수강 변경 금액 계산
   const { change, isAdditionalPayment, isRefund, isNoChange } = useEnrollmentCalculation({
@@ -230,6 +229,22 @@ export function EnrollmentModificationContainer({ classId, className, month }: E
     }
   };
 
+  // 에러 처리
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-white">
+        <p className="text-red-500">수강 변경 정보를 불러오는데 실패했습니다.</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
+        >
+          다시 시도
+        </button>
+      </div>
+    );
+  }
+
+  // 로딩 상태 처리
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-white">

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { updateTeacherProfile } from '@/api/teacher';
+import { updateTeacherProfile, getTeacherProfileById } from '@/api/teacher';
 import { useTeacherData } from '@/hooks/redux/useTeacherData';
 import { useAppDispatch } from '@/store/hooks';
 import { updateTeacherProfile as updateTeacherProfileAction } from '@/store/slices/teacherSlice';
@@ -55,8 +55,39 @@ export function TeacherProfileCard({
   const [newCertification, setNewCertification] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Redux store에서 Teacher 데이터 가져오기
-  const { userProfile, isLoading, error } = useTeacherData();
+  // 특정 선생님 ID가 있으면 API로 직접 조회, 없으면 Redux 사용
+  const [apiUserProfile, setApiUserProfile] = useState<TeacherProfileResponse | null>(null);
+  const [apiIsLoading, setApiIsLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  // Redux store에서 Teacher 데이터 가져오기 (teacherId가 없을 때만 사용)
+  const { userProfile: reduxUserProfile, isLoading: reduxIsLoading, error: reduxError } = useTeacherData();
+
+  // teacherId가 있으면 API로 직접 조회
+  useEffect(() => {
+    if (teacherId) {
+      const loadTeacherProfile = async () => {
+        try {
+          setApiIsLoading(true);
+          setApiError(null);
+          const profile = await getTeacherProfileById(teacherId);
+          setApiUserProfile(profile);
+        } catch (error: any) {
+          console.error('선생님 프로필 로드 실패:', error);
+          setApiError(error.message || '선생님 정보를 불러올 수 없습니다.');
+        } finally {
+          setApiIsLoading(false);
+        }
+      };
+
+      loadTeacherProfile();
+    }
+  }, [teacherId]);
+
+  // 사용할 데이터 결정
+  const userProfile = teacherId ? apiUserProfile : reduxUserProfile;
+  const isLoading = teacherId ? apiIsLoading : reduxIsLoading;
+  const error = teacherId ? apiError : reduxError;
 
   // 프로필 업데이트 함수
   const updateProfile = async (data: UpdateProfileRequest) => {
