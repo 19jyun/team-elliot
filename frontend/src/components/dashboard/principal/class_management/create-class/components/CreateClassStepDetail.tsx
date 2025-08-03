@@ -63,15 +63,12 @@ export function CreateClassStepDetail() {
       backgroundColor: "#F8F9FA", // 기본값
     };
 
-    // API 요청 데이터를 console.log로 출력
-    console.log('강의 생성 API 요청 데이터:', requestData);
     
     try {
       setIsSubmitting(true);
       
       // 실제 API 호출
       const response = await createTeacherClass(requestData);
-      console.log('강의 생성 성공:', response);
       
       toast.success('강의가 성공적으로 생성되었습니다!');
       

@@ -43,16 +43,13 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
   // teacher 정보 디버깅
   useEffect(() => {
     if (classDetails?.teacher) {
-      console.log('ClassDetail에서 teacher 정보:', classDetails.teacher);
     }
   }, [classDetails?.teacher]);
 
   const loadClassDetails = async () => {
     try {
       setIsLoading(true);
-      console.log('클래스 상세 정보 로드 시작, classId:', classId);
       const response = await getClassDetails(classId);
-      console.log('클래스 상세 정보 응답:', response);
       setClassDetails(response);
     } catch (error) {
       console.error('클래스 상세 정보 로드 실패:', error);
@@ -81,7 +78,6 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
   };
 
   const handleModificationRequest = () => {
-    console.log('수강 변경 요청 - classSessions:', classSessions);
     
     // 기존 수강 신청된 세션들의 월 정보를 분석
     let targetMonth = null;
@@ -93,16 +89,12 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
         session.enrollment_status === 'REFUND_REJECTED_CONFIRMED'
       );
       
-      console.log('기존 수강 신청된 세션들:', enrolledSessions);
       
       if (enrolledSessions.length > 0) {
         const sessionDates = enrolledSessions.map((session: any) => new Date(session.date));
         const months = sessionDates.map(date => date.getMonth() + 1); // 0-based index
         const uniqueMonths = [...new Set(months)];
         
-        console.log('세션 날짜들:', sessionDates);
-        console.log('월들:', months);
-        console.log('고유 월들:', uniqueMonths);
         
         // 가장 많은 세션이 있는 월을 targetMonth로 설정
         const monthCounts = uniqueMonths.map(month => ({
@@ -114,8 +106,6 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
         );
         
         targetMonth = mostFrequentMonth.month;
-        console.log('월별 세션 수:', monthCounts);
-        console.log('분석된 targetMonth:', targetMonth);
       }
     }
     
@@ -136,17 +126,14 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
         });
         
         targetMonth = new Date(closestSession.date).getMonth() + 1;
-        console.log('가장 가까운 미래 세션의 월을 사용:', targetMonth);
       } else {
         // 미래 세션이 없으면 현재 월 사용
         targetMonth = currentDate.getMonth() + 1;
-        console.log('미래 세션이 없어 현재 월을 사용:', targetMonth);
       }
     }
     
     // 수강 변경 SubPage로 이동 (월 정보 포함)
     const subPagePath = `modify-${classId}-${targetMonth}`;
-    console.log('수강 변경 SubPage 경로:', subPagePath);
     
     // 모달 닫기 콜백 호출
     if (onModificationClick) {

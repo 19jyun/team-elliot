@@ -35,35 +35,28 @@ export function useStudentInitialization() {
         dispatch(setLoading(true));
         dispatch(setError(null));
 
-        console.log("🔄 Student 데이터 초기화 시작...");
 
         // 1. 수강중인 클래스/세션 정보
         const myClasses = await getMyClasses();
-        console.log("✅ 수강중인 클래스/세션 로드 완료:", myClasses);
 
         // 2. 개인 정보
         const myProfile = await getMyProfile();
-        console.log("✅ 개인 정보 로드 완료:", myProfile);
 
         // 3. 수강 신청/결제 내역
         const enrollmentHistory = await getEnrollmentHistory();
-        console.log("✅ 수강 신청/결제 내역 로드 완료:", enrollmentHistory);
 
         // 4. 환불/취소 내역
         const cancellationHistory = await getCancellationHistory();
-        console.log("✅ 환불/취소 내역 로드 완료:", cancellationHistory);
 
         // 5. 가입한 학원 목록 - 응답 데이터만 추출
         const academiesResponse = await getMyAcademies();
         const myAcademies = academiesResponse.data || []; // axios 응답에서 data만 추출
-        console.log("✅ 가입한 학원 목록 로드 완료:", myAcademies);
 
         // 6. 수강 가능한 클래스/세션 정보 (모든 학원)
         let allAvailableClasses: any[] = [];
         let allAvailableSessions: any[] = [];
 
         if (myAcademies.length > 0) {
-          console.log("🔄 수강 가능한 클래스/세션 로드 시작...");
 
           // 각 학원별로 수강 가능한 세션 조회
           for (const academy of myAcademies) {
@@ -102,7 +95,7 @@ export function useStudentInitialization() {
             }
           }
 
-          console.log("✅ 전체 수강 가능한 클래스/세션 로드 완료:", {
+          console.log('수강 가능한 클래스/세션 로드 완료:', {
             classes: allAvailableClasses.length,
             sessions: allAvailableSessions.length,
           });
@@ -126,7 +119,6 @@ export function useStudentInitialization() {
           })
         );
 
-        console.log("✅ Student 데이터 초기화 완료");
         toast.success("Student 대시보드가 로드되었습니다.");
       } catch (error: any) {
         console.error("❌ Student 데이터 초기화 실패:", error);

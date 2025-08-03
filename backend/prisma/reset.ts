@@ -7,8 +7,6 @@ async function resetDatabase() {
 
   try {
     // 외래 키 제약 조건을 고려하여 역순으로 삭제
-    console.log('📝 활동 로그 삭제 중...');
-    await prisma.activityLog.deleteMany();
 
     console.log('💰 환불 요청 삭제 중...');
     await prisma.refundRequest.deleteMany();

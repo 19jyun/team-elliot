@@ -28,7 +28,6 @@ export default function AdminDashboard() {
   })
 
   useEffect(() => {
-    console.log('Current session:', session)
   }, [session])
 
   const handleSignOut = async () => {

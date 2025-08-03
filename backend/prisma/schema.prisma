@@ -20,13 +20,7 @@ enum Role {
   PRINCIPAL
 }
 
-// 활동 로그 레벨 enum
-enum LogLevel {
-  CRITICAL
-  IMPORTANT
-  NORMAL
-  DEBUG
-}
+
 
 // 거절 타입 enum
 enum RejectionType {
@@ -111,7 +105,6 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   notices   Notice[] // 공지사항 작성자 관계
-  activityLogs ActivityLog[] // 활동 로그 관계
   processedRefunds RefundRequest[] @relation("RefundProcessor") // 처리한 환불 요청들
   rejectionDetails RejectionDetail[] // 거절 내역
 
@@ -340,30 +333,7 @@ model SessionEnrollment {
   @@map("session_enrollments")
 }
 
-// 활동 로그 모델 - 사용자 활동 추적
-model ActivityLog {
-  id          Int      @id @default(autoincrement())
-  userId      Int      @map("user_id")
-  userRole    Role     @map("user_role")
-  action      String   @db.VarChar(100) // 활동 타입 (ENROLL, PAYMENT, etc.)
-  entityType  String?  @map("entity_type") @db.VarChar(50) // 관련 엔티티 타입
-  entityId    Int?     @map("entity_id") // 관련 엔티티 ID
-  oldValue    Json?    @map("old_value") // 변경 전 값
-  newValue    Json?    @map("new_value") // 변경 후 값
-  description String   @db.Text // 활동 설명
-  level       LogLevel @default(IMPORTANT) // 로그 중요도
-  ipAddress   String?  @map("ip_address") @db.VarChar(45)
-  userAgent   String?  @map("user_agent") @db.Text
-  createdAt   DateTime @default(now())
-  
-  user        User     @relation(fields: [userId], references: [id])
 
-  @@index([userId, createdAt])
-  @@index([action, createdAt])
-  @@index([entityType, entityId])
-  @@index([level, createdAt])
-  @@map("activity_logs")
-}
 
 // 환불 요청 모델
 model RefundRequest {

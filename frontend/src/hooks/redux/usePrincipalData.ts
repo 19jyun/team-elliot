@@ -12,7 +12,6 @@ export function usePrincipalData() {
   // 클래스를 세션 형태로 변환
   const sessions = useMemo(() => {
     if (!principalData?.classes || principalData.classes.length === 0) {
-      console.log("No classes found in Redux store");
       return [];
     }
 
@@ -43,8 +42,6 @@ export function usePrincipalData() {
       }));
     });
 
-    console.log("usePrincipalData - classes:", principalData.classes);
-    console.log("usePrincipalData - allSessions:", allSessions);
     return allSessions;
   }, [principalData?.classes]);
 
@@ -78,7 +75,6 @@ export function usePrincipalData() {
       },
     }));
 
-    console.log("usePrincipalData - calendarSessions:", result);
     return result;
   }, [sessions]);
 
@@ -229,9 +225,6 @@ export function usePrincipalData() {
         return sessionDate.toDateString() === date.toDateString();
       });
 
-      console.log("getSessionsByDate - date:", date);
-      console.log("getSessionsByDate - sessions:", sessions);
-      console.log("getSessionsByDate - result:", result);
       return result;
     },
     [sessions]
@@ -268,15 +261,11 @@ export function usePrincipalData() {
                 },
               },
             };
-            console.log("getSessionById - sessionId:", sessionId);
-            console.log("getSessionById - result:", result);
             return result;
           }
         }
       }
 
-      console.log("getSessionById - sessionId:", sessionId);
-      console.log("getSessionById - not found");
       return null;
     },
     [principalData?.classes]

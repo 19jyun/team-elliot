@@ -49,13 +49,11 @@ export const initializeSocket = async (): Promise<Socket> => {
     let hasLoggedConnection = false;
     socket.on("connect", () => {
       if (!hasLoggedConnection) {
-        console.log("🔌 Socket.IO 연결 성공:", socket?.id);
         hasLoggedConnection = true;
       }
     });
 
     socket.on("disconnect", (reason) => {
-      console.log("🔌 Socket.IO 연결 해제:", reason);
     });
 
     socket.on("connect_error", (error) => {
@@ -63,7 +61,6 @@ export const initializeSocket = async (): Promise<Socket> => {
     });
 
     socket.on("reconnect", (attemptNumber) => {
-      console.log("🔄 Socket.IO 재연결 성공:", attemptNumber);
     });
 
     socket.on("reconnect_error", (error) => {
@@ -84,7 +81,6 @@ export const disconnectSocket = () => {
   if (socket) {
     socket.disconnect();
     socket = null;
-    console.log("🔌 Socket.IO 연결 해제됨");
   }
 };
 

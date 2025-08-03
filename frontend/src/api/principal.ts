@@ -92,6 +92,23 @@ export const updatePrincipalProfile = async (data: {
   return response.data;
 };
 
+// Principal의 프로필 사진 업로드
+export const updatePrincipalProfilePhoto = async (photo: File) => {
+  const formData = new FormData();
+  formData.append("photo", photo);
+
+  const response = await axiosInstance.put(
+    "/principal/profile/photo",
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+  return response.data;
+};
+
 // === Principal 수강 신청/환불 신청 관리 API ===
 
 // 1. Principal의 세션별 요청 목록 조회

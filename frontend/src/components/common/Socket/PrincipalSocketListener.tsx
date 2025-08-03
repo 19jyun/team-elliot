@@ -13,7 +13,6 @@ export function PrincipalSocketListener() {
 
   // Principal 전용 이벤트 리스너들
   useSocketEvent('enrollment_status_changed', (data) => {
-    console.log('📢 [Principal] 수강신청 상태 변경:', data)
     
     dispatch(updatePrincipalEnrollmentFromSocket(data))
     
@@ -24,7 +23,6 @@ export function PrincipalSocketListener() {
   })
 
   useSocketEvent('refund_request_status_changed', (data) => {
-    console.log('📢 [Principal] 환불 요청 상태 변경:', data)
     
     dispatch(updatePrincipalRefundRequestFromSocket(data))
     
@@ -35,17 +33,14 @@ export function PrincipalSocketListener() {
   })
 
   useSocketEvent('class_info_changed', (data) => {
-    console.log('📢 [Principal] 클래스 정보 변경:', data)
     toast.info('클래스 정보가 업데이트되었습니다.')
   })
 
   useSocketEvent('academy_info_changed', (data) => {
-    console.log('📢 [Principal] 학원 정보 변경:', data)
     toast.info('학원 정보가 업데이트되었습니다.')
   })
 
   useSocketEvent('class_reminder', (data) => {
-    console.log('📢 [Principal] 수업 시간 알림:', data)
     toast.warning('수업 시간 알림', {
       description: `${data.classData.className} - ${data.message}`,
       duration: 10000,
@@ -53,7 +48,6 @@ export function PrincipalSocketListener() {
   })
 
   useSocketEvent('connection_confirmed', (data) => {
-    console.log('✅ [Principal] Socket 연결 확인:', data)
     toast.success('실시간 연결이 설정되었습니다.', {
       description: '이제 실시간 업데이트를 받을 수 있습니다.',
     })

@@ -25,18 +25,39 @@ export class BalletPoseService {
     return pose;
   }
 
-  async create(createBalletPoseDto: CreateBalletPoseDto) {
+  async create(
+    createBalletPoseDto: CreateBalletPoseDto,
+    image?: Express.Multer.File,
+  ) {
+    const data: any = { ...createBalletPoseDto };
+
+    // 이미지가 업로드된 경우 URL 추가
+    if (image) {
+      data.imageUrl = `/uploads/ballet-poses/${image.filename}`;
+    }
+
     return this.prisma.balletPose.create({
-      data: createBalletPoseDto,
+      data,
     });
   }
 
-  async update(id: number, updateBalletPoseDto: UpdateBalletPoseDto) {
+  async update(
+    id: number,
+    updateBalletPoseDto: UpdateBalletPoseDto,
+    image?: Express.Multer.File,
+  ) {
     await this.findOne(id); // 존재 여부 확인
+
+    const data: any = { ...updateBalletPoseDto };
+
+    // 이미지가 업로드된 경우 URL 추가
+    if (image) {
+      data.imageUrl = `/uploads/ballet-poses/${image.filename}`;
+    }
 
     return this.prisma.balletPose.update({
       where: { id },
-      data: updateBalletPoseDto,
+      data,
     });
   }
 

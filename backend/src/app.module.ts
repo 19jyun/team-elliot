@@ -12,7 +12,7 @@ import { join } from 'path';
 import { StudentModule } from './student/student.module';
 import { SmsModule } from './sms/sms.module';
 import { BankingModule } from './banking/banking.module';
-import { ActivityLogModule } from './activity-log/activity-log.module';
+
 import { RefundModule } from './refund/refund.module';
 import { BalletPoseModule } from './ballet-pose/ballet-pose.module';
 import { SessionContentModule } from './session-content/session-content.module';
@@ -25,7 +25,7 @@ import { SocketModule } from './socket/socket.module';
       isGlobal: true,
     }),
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'uploads'),
+      rootPath: join(__dirname, '..', '..', 'uploads'),
       serveRoot: '/uploads',
     }),
     AuthModule,
@@ -37,7 +37,7 @@ import { SocketModule } from './socket/socket.module';
     StudentModule,
     SmsModule,
     BankingModule,
-    ActivityLogModule,
+
     RefundModule,
     BalletPoseModule,
     SessionContentModule,

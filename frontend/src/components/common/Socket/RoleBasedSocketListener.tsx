@@ -27,7 +27,6 @@ export function RoleBasedSocketListener() {
   // 역할에 맞는 리스너 컴포넌트 동적 생성
   const ListenerComponent = roleListeners[userRole as keyof typeof roleListeners]
   
-  console.log(`🎧 ${userRole} 역할용 소켓 리스너 생성됨`)
   
   return <ListenerComponent />
 } 

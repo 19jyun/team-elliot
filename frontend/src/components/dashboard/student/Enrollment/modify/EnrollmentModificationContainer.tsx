@@ -26,18 +26,15 @@ export function EnrollmentModificationContainer({ classId, className, month }: E
   const [cancelledSessionsCount, setCancelledSessionsCount] = useState(0);
   const [sessionPrice, setSessionPrice] = useState(50000); // 기본값
 
-  console.log('EnrollmentModificationContainer 렌더링:', { classId, month, currentStep, className });
 
   // 수강 변경 모드로 설정 - 즉시 설정
   useEffect(() => {
-    console.log('수강 변경 모드로 설정 중...');
     setEnrollmentStep('date-selection');
   }, [setEnrollmentStep]);
 
   // 수강 변경 모드에서는 항상 date-selection 단계로 강제 설정
   const effectiveStep = currentStep === 'main' ? 'date-selection' : currentStep;
   
-  console.log('effectiveStep:', effectiveStep);
 
   // Redux에서 해당 클래스의 수강 신청 정보 필터링
   const existingEnrollments = React.useMemo(() => {
@@ -70,7 +67,6 @@ export function EnrollmentModificationContainer({ classId, className, month }: E
 
   // 날짜 선택 완료 시 처리
   const handleDateSelectionComplete = (dates: string[], sessionPrice?: number) => {
-    console.log('handleDateSelectionComplete 호출됨:', dates);
     setSelectedDates(dates);
     
     // 전달받은 sessionPrice가 있으면 사용, 없으면 기존 값 사용
@@ -122,7 +118,8 @@ export function EnrollmentModificationContainer({ classId, className, month }: E
       changeType = "no_change";
     }
     
-    console.log('단계 분기 계산:', {
+    // 변경 정보 로깅
+    console.log('수강 변경 정보:', {
       dates,
       originalEnrolledSessions: originalEnrolledSessions.length,
       newSessionsCount,
@@ -134,15 +131,12 @@ export function EnrollmentModificationContainer({ classId, className, month }: E
     
     if (changeType === "no_change") {
       // 변경 사항이 없으면 완료 페이지로
-      console.log('complete 단계로 이동');
       setEnrollmentStep('complete');
     } else if (changeType === "additional_payment") {
       // 추가 결제가 필요하면 결제 페이지로
-      console.log('payment 단계로 이동');
       setEnrollmentStep('payment');
     } else if (changeType === "refund") {
       // 환불이 필요하면 환불 신청 페이지로
-      console.log('refund-request 단계로 이동');
       setRefundAmount(Math.abs(totalAmount));
       setCancelledSessionsCount(cancelledSessionsCount);
       setEnrollmentStep('refund-request');

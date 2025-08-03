@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { updateTeacherProfile, getTeacherProfileById } from '@/api/teacher';
+import React, { useState, useEffect, useRef } from 'react';
+import { updateTeacherProfile, updateTeacherProfilePhoto, getTeacherProfileById } from '@/api/teacher';
 import { useTeacherData } from '@/hooks/redux/useTeacherData';
 import { useAppDispatch } from '@/store/hooks';
 import { updateTeacherProfile as updateTeacherProfileAction } from '@/store/slices/teacherSlice';
 import { TeacherProfileResponse, UpdateProfileRequest } from '@/types/api/teacher';
 import { toast } from 'sonner';
+import { getImageUrl } from '@/utils/imageUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,6 +55,11 @@ export function TeacherProfileCard({
   const [newSpecialty, setNewSpecialty] = useState('');
   const [newCertification, setNewCertification] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
+  
+  // Photo upload 관련 state
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   // 특정 선생님 ID가 있으면 API로 직접 조회, 없으면 Redux 사용
   const [apiUserProfile, setApiUserProfile] = useState<TeacherProfileResponse | null>(null);
@@ -108,6 +114,39 @@ export function TeacherProfileCard({
     }
   };
 
+  // Photo upload 관련 함수들
+  const handlePhotoClick = () => {
+    if (isEditing && fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // 파일 크기 검증 (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('파일 크기는 5MB 이하여야 합니다.');
+        return;
+      }
+
+      // 파일 타입 검증
+      if (!file.type.startsWith('image/')) {
+        toast.error('이미지 파일만 업로드 가능합니다.');
+        return;
+      }
+
+      setSelectedPhoto(file);
+      
+      // 미리보기 URL 생성
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewUrl(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // 편집 모드 시작
   const handleEdit = () => {
     if (!userProfile) return;
@@ -132,19 +171,46 @@ export function TeacherProfileCard({
     setNewEducation('');
     setNewSpecialty('');
     setNewCertification('');
+    // Photo 관련 상태 초기화
+    setSelectedPhoto(null);
+    setPreviewUrl(null);
     onCancel?.();
   };
 
   // 프로필 저장
-  const handleSave = () => {
-    const updateData: UpdateProfileRequest = {
-      ...formData,
-      education: tempEducation,
-      specialties: tempSpecialties,
-      certifications: tempCertifications,
-    };
-    
-    updateProfile(updateData);
+  const handleSave = async () => {
+    try {
+      setIsUpdating(true);
+      
+      // 1. 프로필 정보 업데이트
+      const updateData: UpdateProfileRequest = {
+        ...formData,
+        education: tempEducation,
+        specialties: tempSpecialties,
+        certifications: tempCertifications,
+      };
+      
+      const updatedProfile = await updateTeacherProfile(updateData);
+      
+      // 2. 사진 업로드 (선택된 경우)
+      if (selectedPhoto) {
+        await updateTeacherProfilePhoto(selectedPhoto);
+        // 사진 업로드 후 상태 초기화
+        setSelectedPhoto(null);
+        setPreviewUrl(null);
+      }
+      
+      // Redux store 업데이트
+      dispatch(updateTeacherProfileAction(updatedProfile));
+      toast.success('프로필이 성공적으로 업데이트되었습니다.');
+      setIsEditing(false);
+      onSave?.();
+    } catch (error: any) {
+      console.error('프로필 업데이트 실패:', error);
+      toast.error('프로필 업데이트에 실패했습니다.');
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   // 배열 항목 추가
@@ -192,12 +258,14 @@ export function TeacherProfileCard({
         <CardContent className="p-4 space-y-4">
           {/* 프로필 사진 및 기본 정보 */}
           <div className="flex items-start gap-4">
-            <Avatar className="h-16 w-16">
-              <AvatarImage src={userProfile.photoUrl} alt={userProfile.name} />
-              <AvatarFallback className="text-lg">
-                {userProfile.name?.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className="h-16 w-16">
+                <AvatarImage src={getImageUrl(userProfile.photoUrl) || ''} alt={userProfile.name} />
+                <AvatarFallback className="text-lg">
+                  {userProfile.name?.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+            </div>
             
             <div className="flex-1 space-y-2">
               <h3 className="text-lg font-semibold">{userProfile.name}</h3>
@@ -311,12 +379,37 @@ export function TeacherProfileCard({
       <CardContent className="space-y-6">
         {/* 프로필 사진 및 기본 정보 */}
         <div className="flex items-start gap-4">
-          <Avatar className="h-20 w-20">
-            <AvatarImage src={userProfile.photoUrl} alt={userProfile.name} />
-            <AvatarFallback className="text-lg">
-              {userProfile.name?.charAt(0)}
-            </AvatarFallback>
-          </Avatar>
+          <div className="relative">
+            <div 
+              className={`relative ${isEditing ? 'cursor-pointer' : ''}`}
+              onClick={handlePhotoClick}
+            >
+              <Avatar className={`h-20 w-20 ${isEditing ? 'ring-2 ring-blue-500 ring-offset-2 hover:ring-blue-600' : ''}`}>
+                <AvatarImage 
+                  src={previewUrl || getImageUrl(userProfile.photoUrl) || ''} 
+                  alt={userProfile.name} 
+                />
+                <AvatarFallback className="text-lg">
+                  {userProfile.name?.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              {isEditing && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 hover:opacity-100 transition-opacity">
+                  <Camera className="h-6 w-6 text-white" />
+                </div>
+              )}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoChange}
+              className="hidden"
+              id="teacher-photo-upload"
+              aria-label="프로필 사진 업로드"
+              capture="environment"
+            />
+          </div>
           
           <div className="flex-1 space-y-3">
             <h3 className="text-lg font-semibold">{userProfile.name}</h3>

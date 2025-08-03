@@ -50,8 +50,6 @@ export function DateSessionModal({
   const sessions = useMemo(() => {
     if (!selectedDate) return [];
     const result = getSessionsByDate(selectedDate);
-    console.log('DateSessionModal - selectedDate:', selectedDate);
-    console.log('DateSessionModal - sessions:', result);
     return result;
   }, [selectedDate, getSessionsByDate]);
 

@@ -28,7 +28,6 @@ export function usePrincipalInitialization() {
         dispatch(setLoading(true));
         dispatch(setError(null));
 
-        console.log("🔄 Principal 데이터 초기화 시작...");
 
         // PrincipalData 전체 조회
         const principalData = await getPrincipalData();
@@ -36,7 +35,6 @@ export function usePrincipalInitialization() {
         // Redux 상태 업데이트
         dispatch(setPrincipalData(principalData));
 
-        console.log("✅ Principal 데이터 초기화 완료:", principalData);
         toast.success("Principal 대시보드가 로드되었습니다.");
       } catch (error: any) {
         console.error("❌ Principal 데이터 초기화 실패:", error);

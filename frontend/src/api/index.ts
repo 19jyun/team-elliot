@@ -72,9 +72,9 @@ export { refundApi } from "./refund";
 
 // Activity Log API
 export {
-  activityLogApi,
+
   LOG_LEVELS,
   getActivityTypeLabel,
   getLogLevelLabel,
   getLogLevelColor,
-} from "./activityLog";
+

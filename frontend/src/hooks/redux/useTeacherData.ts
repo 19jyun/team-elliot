@@ -80,12 +80,10 @@ export function useTeacherData() {
   const getSessionsByDate = useCallback(
     (date: Date) => {
       if (!teacherData?.sessions) {
-        console.log("❌ Teacher getSessionsByDate - sessions 없음");
         return [];
       }
 
       const targetDate = date.toISOString().split("T")[0];
-      console.log("🔍 Teacher getSessionsByDate - targetDate:", targetDate);
       console.log(
         "🔍 Teacher getSessionsByDate - all sessions:",
         teacherData.sessions

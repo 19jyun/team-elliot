@@ -28,7 +28,6 @@ export function useTeacherInitialization() {
         dispatch(setLoading(true));
         dispatch(setError(null));
 
-        console.log("🔄 Teacher 데이터 초기화 시작...");
 
         // TeacherData 전체 조회
         const teacherData = await getTeacherData();
@@ -36,7 +35,6 @@ export function useTeacherInitialization() {
         // Redux 상태 업데이트
         dispatch(setTeacherData(teacherData));
 
-        console.log("✅ Teacher 데이터 초기화 완료:", teacherData);
         toast.success("Teacher 대시보드가 로드되었습니다.");
       } catch (error: any) {
         console.error("❌ Teacher 데이터 초기화 실패:", error);

@@ -74,7 +74,6 @@ export function logFocusTransition(
   reason?: string
 ): void {
   if (process.env.NODE_ENV === "development") {
-    console.log(
       `[Focus] ${FOCUS_DESCRIPTIONS[from]} → ${FOCUS_DESCRIPTIONS[to]}${
         reason ? ` (${reason})` : ""
       }`

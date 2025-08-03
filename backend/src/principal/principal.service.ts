@@ -574,7 +574,11 @@ export class PrincipalService {
   }
 
   // Principal 프로필 정보 수정
-  async updateProfile(principalId: number, updateProfileDto: any) {
+  async updateProfile(
+    principalId: number,
+    updateProfileDto: any,
+    photo?: Express.Multer.File,
+  ) {
     const principal = await this.prisma.principal.findUnique({
       where: { id: principalId },
     });
@@ -606,10 +610,40 @@ export class PrincipalService {
       updateData.certifications = updateProfileDto.certifications;
     }
 
+    // 사진이 업로드된 경우 URL 생성
+    if (photo) {
+      updateData.photoUrl = `/uploads/principal-photos/${photo.filename}`;
+    }
+
     // Principal 정보 업데이트
     const updatedPrincipal = await this.prisma.principal.update({
       where: { id: principalId },
       data: updateData,
+      include: {
+        academy: true,
+      },
+    });
+
+    return updatedPrincipal;
+  }
+
+  // Principal 프로필 사진 업데이트
+  async updateProfilePhoto(principalId: number, photo: Express.Multer.File) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    // 사진 URL 생성
+    const photoUrl = `/uploads/principal-photos/${photo.filename}`;
+
+    // Principal 사진 업데이트
+    const updatedPrincipal = await this.prisma.principal.update({
+      where: { id: principalId },
+      data: { photoUrl },
       include: {
         academy: true,
       },

@@ -93,7 +93,6 @@ export class TeacherService {
       yearsOfExperience?: number;
       availableTimes?: any;
     },
-    photo?: Express.Multer.File,
   ) {
     const teacher = await this.prisma.teacher.findUnique({
       where: { id },
@@ -103,15 +102,74 @@ export class TeacherService {
       throw new NotFoundException('선생님을 찾을 수 없습니다.');
     }
 
-    const photoUrl = photo
-      ? `/uploads/profile-photos/${photo.filename}`
-      : undefined;
-
     const updatedTeacher = await this.prisma.teacher.update({
       where: { id },
       data: {
         ...updateData,
-        ...(photoUrl && { photoUrl }),
+        updatedAt: new Date(),
+      },
+      select: {
+        id: true,
+        userId: true,
+        name: true,
+        phoneNumber: true,
+        introduction: true,
+        photoUrl: true,
+        education: true,
+        specialties: true,
+        certifications: true,
+        yearsOfExperience: true,
+        availableTimes: true,
+        createdAt: true,
+        updatedAt: true,
+        academy: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return {
+      id: updatedTeacher.id,
+      userId: updatedTeacher.userId,
+      name: updatedTeacher.name,
+      phoneNumber: updatedTeacher.phoneNumber,
+      introduction: updatedTeacher.introduction,
+      photoUrl: updatedTeacher.photoUrl,
+      education: updatedTeacher.education,
+      specialties: updatedTeacher.specialties,
+      certifications: updatedTeacher.certifications,
+      yearsOfExperience: updatedTeacher.yearsOfExperience,
+      availableTimes: updatedTeacher.availableTimes,
+      academyId: updatedTeacher.academy?.id || null,
+      academy: updatedTeacher.academy
+        ? {
+            id: updatedTeacher.academy.id,
+            name: updatedTeacher.academy.name,
+          }
+        : null,
+      createdAt: updatedTeacher.createdAt,
+      updatedAt: updatedTeacher.updatedAt,
+    };
+  }
+
+  async updateProfilePhoto(id: number, photo: Express.Multer.File) {
+    const teacher = await this.prisma.teacher.findUnique({
+      where: { id },
+    });
+
+    if (!teacher) {
+      throw new NotFoundException('선생님을 찾을 수 없습니다.');
+    }
+
+    const photoUrl = `/uploads/teacher-photos/${photo.filename}`;
+
+    const updatedTeacher = await this.prisma.teacher.update({
+      where: { id },
+      data: {
+        photoUrl,
         updatedAt: new Date(),
       },
       select: {

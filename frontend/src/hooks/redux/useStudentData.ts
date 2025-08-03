@@ -22,7 +22,6 @@ export function useStudentData() {
       !studentData?.sessionClasses ||
       studentData.sessionClasses.length === 0
     ) {
-      console.log("No session classes found in Redux store");
       return [];
     }
 

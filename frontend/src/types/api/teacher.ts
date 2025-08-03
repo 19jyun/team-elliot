@@ -113,7 +113,6 @@ export interface UpdateProfileRequest {
   certifications?: string[];
   yearsOfExperience?: number;
   availableTimes?: any;
-  photo?: File;
 }
 
 export interface UpdateProfileResponse extends TeacherProfile {}

@@ -71,8 +71,6 @@ export function SessionDetailModal({
   const session = useMemo(() => {
     if (!sessionId) return null;
     const result = getSessionById(sessionId);
-    console.log('SessionDetailModal - sessionId:', sessionId);
-    console.log('SessionDetailModal - session:', result);
     return result;
   }, [sessionId, getSessionById]);
 

@@ -46,25 +46,25 @@ export const getTeacherProfileById = async (
 export const updateTeacherProfile = async (
   data: UpdateProfileRequest
 ): Promise<UpdateProfileResponse> => {
+  const response = await axiosInstance.put("/teachers/me/profile", data);
+  return response.data;
+};
+
+export const updateTeacherProfilePhoto = async (
+  photo: File
+): Promise<UpdateProfileResponse> => {
   const formData = new FormData();
+  formData.append("photo", photo);
 
-  Object.entries(data).forEach(([key, value]) => {
-    if (value !== undefined && value !== null) {
-      if (key === "photo" && value instanceof File) {
-        formData.append(key, value);
-      } else if (Array.isArray(value)) {
-        formData.append(key, JSON.stringify(value));
-      } else {
-        formData.append(key, String(value));
-      }
+  const response = await axiosInstance.put(
+    "/teachers/me/profile/photo",
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
     }
-  });
-
-  const response = await axiosInstance.put("/teachers/me/profile", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  );
   return response.data;
 };
 

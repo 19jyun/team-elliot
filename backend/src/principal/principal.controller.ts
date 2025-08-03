@@ -8,7 +8,10 @@ import {
   ParseIntPipe,
   UseGuards,
   Body,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { PrincipalService } from './principal.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -17,6 +20,7 @@ import { GetUser } from '../auth/decorators/get-user.decorator';
 import { Role } from '@prisma/client';
 import { UpdateAcademyDto } from './dto/update-academy.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { principalProfileConfig } from '../config/multer.config';
 
 @Controller('principal')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -85,6 +89,16 @@ export class PrincipalController {
     @Body() updateProfileDto: UpdateProfileDto,
   ) {
     return this.principalService.updateProfile(user.id, updateProfileDto);
+  }
+
+  // Principal 프로필 사진 업데이트
+  @Put('profile/photo')
+  @UseInterceptors(FileInterceptor('photo', principalProfileConfig))
+  async updateProfilePhoto(
+    @GetUser() user: any,
+    @UploadedFile() photo: Express.Multer.File,
+  ) {
+    return this.principalService.updateProfilePhoto(user.id, photo);
   }
 
   // Principal의 세션 수강생 조회

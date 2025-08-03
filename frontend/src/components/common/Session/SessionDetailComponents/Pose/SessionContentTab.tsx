@@ -148,10 +148,8 @@ export function SessionContentTab({ sessionId, onAddPoseClick }: SessionContentT
 
   // 삭제 처리 (X 버튼 클릭 시)
   const handleDelete = (contentId: number) => {
-    console.log('삭제 처리, contentId:', contentId);
     setFinalContents(prev => {
       const filtered = prev.filter(item => item.id !== contentId);
-      console.log('finalContents 변경 (삭제):', filtered.map(i => i.id));
       return filtered;
     });
     // setIsEditMode(true); // 제거 - hasChanges useEffect에서 처리
@@ -165,7 +163,6 @@ export function SessionContentTab({ sessionId, onAddPoseClick }: SessionContentT
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over?.id);
         const newOrder = arrayMove(items, oldIndex, newIndex);
-        console.log('finalContents 변경 (순서):', newOrder.map(i => i.id));
         return newOrder;
       });
       // setIsEditMode(true); // 제거 - hasChanges useEffect에서 처리
@@ -175,8 +172,6 @@ export function SessionContentTab({ sessionId, onAddPoseClick }: SessionContentT
   // 변경사항 적용 (최종 상태를 서버에 전송)
   const applyChanges = async () => {
     try {
-      console.log('변경사항 적용, finalContents:', finalContents.map(i => i.id));
-      console.log('원본 contents:', contents?.map(i => i.id));
       
       if (!contents) return;
 
@@ -185,21 +180,17 @@ export function SessionContentTab({ sessionId, onAddPoseClick }: SessionContentT
         .filter(content => !finalContents.some(final => final.id === content.id))
         .map(content => content.id);
 
-      console.log('삭제할 항목들:', deletedContentIds);
 
       // 삭제된 항목들을 개별적으로 삭제
       for (const contentId of deletedContentIds) {
         await deleteContentMutation.mutateAsync(contentId);
-        console.log(`삭제 완료: ${contentId}`);
       }
 
       // 2. 순서 변경 처리 (삭제 후 남은 항목들)
       if (finalContents.length > 0) {
         const contentIds = finalContents.map(content => content.id.toString());
-        console.log('서버에 전송할 contentIds (순서 변경):', contentIds);
         
         await reorderMutation.mutateAsync({ contentIds });
-        console.log('순서 변경 성공!');
       }
 
       // 편집 모드 종료
@@ -244,7 +235,6 @@ export function SessionContentTab({ sessionId, onAddPoseClick }: SessionContentT
       </div>
 
       {/* 자세 목록 */}
-      {(() => { console.log('렌더링되는 finalContents:', finalContents.map(i => i.id)); return null; })()}
       {finalContents && finalContents.length > 0 ? (
         <DndContext
           sensors={sensors}
