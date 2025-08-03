@@ -5,23 +5,19 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { ActivityLogService } from '../activity-log/activity-log.service';
+
 import {
   UpdateEnrollmentStatusDto,
   BatchUpdateEnrollmentStatusDto,
   SessionEnrollmentStatus,
 } from './dto/update-enrollment-status.dto';
 import { ChangeEnrollmentDto } from './dto/change-enrollment.dto';
-import {
-  ACTIVITY_TYPES,
-  ENTITY_TYPES,
-} from '../activity-log/constants/activity-types';
+
 
 @Injectable()
 export class ClassSessionService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly activityLogService: ActivityLogService,
   ) {}
 
   /**
@@ -74,23 +70,7 @@ export class ClassSessionService {
       },
     });
 
-    // 세션 생성 로그
-    await this.activityLogService.logActivityAsync({
-      userId: teacherId,
-      userRole: 'TEACHER',
-      action: ACTIVITY_TYPES.CLASS.CLASS_SESSION_CREATE,
-      entityType: ENTITY_TYPES.CLASS_SESSION,
-      entityId: session.id,
-      newValue: {
-        sessionId: session.id,
-        classId: session.classId,
-        className: session.class.className,
-        date: session.date,
-        startTime: session.startTime,
-        endTime: session.endTime,
-      },
-      description: `${session.class.className} 세션 생성: ${session.date.toLocaleDateString()}`,
-    });
+
 
     return session;
   }
@@ -148,23 +128,6 @@ export class ClassSessionService {
     });
 
     // 세션 수정 로그
-    await this.activityLogService.logActivityAsync({
-      userId: teacherId,
-      userRole: 'TEACHER',
-      action: ACTIVITY_TYPES.CLASS.CLASS_SESSION_UPDATE,
-      entityType: ENTITY_TYPES.CLASS_SESSION,
-      entityId: sessionId,
-      oldValue: oldData,
-      newValue: {
-        sessionId,
-        classId: session.classId,
-        className: session.class.className,
-        date: updatedSession.date,
-        startTime: updatedSession.startTime,
-        endTime: updatedSession.endTime,
-      },
-      description: `${session.class.className} 세션 수정: ${updatedSession.date.toLocaleDateString()}`,
-    });
 
     return updatedSession;
   }
@@ -212,22 +175,6 @@ export class ClassSessionService {
     });
 
     // 세션 삭제 로그
-    await this.activityLogService.logActivityAsync({
-      userId: teacherId,
-      userRole: 'TEACHER',
-      action: ACTIVITY_TYPES.CLASS.CLASS_SESSION_DELETE,
-      entityType: ENTITY_TYPES.CLASS_SESSION,
-      entityId: sessionId,
-      oldValue: {
-        sessionId,
-        classId: session.classId,
-        className: session.class.className,
-        date: session.date,
-        startTime: session.startTime,
-        endTime: session.endTime,
-      },
-      description: `${session.class.className} 세션 삭제: ${session.date.toLocaleDateString()}`,
-    });
 
     return { message: '세션이 삭제되었습니다.' };
   }
@@ -705,23 +652,6 @@ export class ClassSessionService {
         },
       });
 
-      this.activityLogService.logActivityAsync({
-        userId: studentId,
-        userRole: 'STUDENT',
-        action: ACTIVITY_TYPES.ENROLLMENT.ENROLL_SESSION,
-        entityType: ENTITY_TYPES.SESSION_ENROLLMENT,
-        entityId: updatedEnrollment.id,
-        oldValue: {
-          status: existingEnrollment.status,
-        },
-        newValue: {
-          sessionId,
-          status: 'PENDING',
-          className: session.class.className,
-          sessionDate: session.date,
-        },
-        description: `수강 신청 재신청: ${session.class.className} - ${session.date.toLocaleDateString()}`,
-      });
 
       return updatedEnrollment;
     }
@@ -766,20 +696,6 @@ export class ClassSessionService {
     });
 
     // 활동 로그 기록 (비동기)
-    this.activityLogService.logActivityAsync({
-      userId: studentId,
-      userRole: 'STUDENT',
-      action: ACTIVITY_TYPES.ENROLLMENT.ENROLL_SESSION,
-      entityType: ENTITY_TYPES.SESSION_ENROLLMENT,
-      entityId: enrollment.id,
-      newValue: {
-        sessionId,
-        status: 'PENDING',
-        className: session.class.className,
-        sessionDate: session.date,
-      },
-      description: `수강 신청: ${session.class.className} - ${session.date.toLocaleDateString()}`,
-    });
 
     return enrollment;
   }
@@ -799,18 +715,6 @@ export class ClassSessionService {
     }
 
     // 배치 수강 신청 활동 로그
-    this.activityLogService.logActivityAsync({
-      userId: studentId,
-      userRole: 'STUDENT',
-      action: ACTIVITY_TYPES.ENROLLMENT.BATCH_ENROLL_SESSIONS,
-      entityType: ENTITY_TYPES.SESSION_ENROLLMENT,
-      newValue: {
-        sessionIds,
-        successCount: enrollments.length,
-        totalCount: sessionIds.length,
-      },
-      description: `배치 수강 신청: ${enrollments.length}/${sessionIds.length}개 세션 신청 완료`,
-    });
 
     return {
       success: enrollments.length,
@@ -894,25 +798,6 @@ export class ClassSessionService {
 
     // 활동 로그 기록
     const action = this.getActionForStatusChange(oldStatus, newStatus);
-    await this.activityLogService.logActivityAsync({
-      userId: teacherId,
-      userRole: 'TEACHER',
-      action,
-      entityType: ENTITY_TYPES.SESSION_ENROLLMENT,
-      entityId: enrollmentId,
-      oldValue: {
-        status: oldStatus,
-        studentId: enrollment.studentId,
-        sessionId: enrollment.sessionId,
-      },
-      newValue: {
-        status: newStatus,
-        studentId: enrollment.studentId,
-        sessionId: enrollment.sessionId,
-        reason: updateDto.reason,
-      },
-      description: `${enrollment.student.name}님의 수강 신청 ${this.getStatusChangeDescription(oldStatus, newStatus)}`,
-    });
 
     return updatedEnrollment;
   }
@@ -973,19 +858,6 @@ export class ClassSessionService {
     });
 
     // 배치 활동 로그
-    await this.activityLogService.logActivityAsync({
-      userId: teacherId,
-      userRole: 'TEACHER',
-      action: this.getBatchActionForStatusChange(status),
-      entityType: ENTITY_TYPES.SESSION_ENROLLMENT,
-      newValue: {
-        enrollmentIds,
-        status,
-        reason,
-        count: enrollmentIds.length,
-      },
-      description: `${enrollmentIds.length}개 수강 신청 ${this.getStatusChangeDescription('PENDING', status)}`,
-    });
 
     return {
       success: updatedEnrollments.count,
@@ -1070,17 +942,6 @@ export class ClassSessionService {
 
     // 배치 완료 로그
     if (completedEnrollments.count > 0) {
-      await this.activityLogService.logActivityAsync({
-        userId: 1, // 시스템 사용자 ID (관리자)
-        userRole: 'ADMIN',
-        action: ACTIVITY_TYPES.ADMIN.BATCH_SESSION_COMPLETE,
-        entityType: ENTITY_TYPES.SESSION_ENROLLMENT,
-        newValue: {
-          completedCount: completedEnrollments.count,
-          completedAt: now,
-        },
-        description: `${completedEnrollments.count}개의 수강 신청이 자동으로 완료 상태로 변경되었습니다.`,
-      });
     }
 
     return {
@@ -1155,19 +1016,6 @@ export class ClassSessionService {
     });
 
     // 출석 체크 로그
-    await this.activityLogService.logActivityAsync({
-      userId: teacherId,
-      userRole: 'TEACHER',
-      action:
-        attendanceStatus === 'ATTENDED'
-          ? ACTIVITY_TYPES.ATTENDANCE.ATTENDANCE_CHECK
-          : ACTIVITY_TYPES.ATTENDANCE.ABSENT_ATTENDANCE,
-      entityType: ENTITY_TYPES.SESSION_ENROLLMENT,
-      entityId: enrollmentId,
-      oldValue: { status: oldStatus },
-      newValue: { status: newStatus },
-      description: `${enrollment.student.name}님 출석 체크: ${attendanceStatus === 'ATTENDED' ? '출석' : '결석'}`,
-    });
 
     return updatedEnrollment;
   }
@@ -1248,27 +1096,6 @@ export class ClassSessionService {
     }
 
     // 수강 취소 로그
-    await this.activityLogService.logActivityAsync({
-      userId: studentId,
-      userRole: 'STUDENT',
-      action: ACTIVITY_TYPES.ENROLLMENT.CANCEL_ENROLLMENT,
-      entityType: ENTITY_TYPES.SESSION_ENROLLMENT,
-      entityId: enrollmentId,
-      oldValue: {
-        status: oldStatus,
-        sessionId: enrollment.sessionId,
-        className: enrollment.session.class.className,
-        sessionDate: enrollment.session.date,
-      },
-      newValue: {
-        status: SessionEnrollmentStatus.CANCELLED,
-        sessionId: enrollment.sessionId,
-        className: enrollment.session.class.className,
-        sessionDate: enrollment.session.date,
-        cancelledAt: cancelledEnrollment.cancelledAt,
-      },
-      description: `${enrollment.session.class.className} 수강 취소: ${enrollment.session.date.toLocaleDateString()}`,
-    });
 
     return cancelledEnrollment;
   }
@@ -1603,29 +1430,6 @@ export class ClassSessionService {
     });
 
     // 수강 변경 로그 (하나의 활동으로 기록)
-    await this.activityLogService.logActivityAsync({
-      userId: studentId,
-      userRole: 'STUDENT',
-      action: ACTIVITY_TYPES.ENROLLMENT.CHANGE_ENROLLMENT,
-      entityType: ENTITY_TYPES.SESSION_ENROLLMENT,
-      entityId: result.newEnrollment.id,
-      oldValue: {
-        cancelledEnrollmentId: currentEnrollmentId,
-        cancelledSessionId: currentEnrollment.sessionId,
-        cancelledClassName: currentEnrollment.session.class.className,
-        cancelledSessionDate: currentEnrollment.session.date,
-        cancelledStatus: currentEnrollment.status,
-      },
-      newValue: {
-        newEnrollmentId: result.newEnrollment.id,
-        newSessionId: result.newEnrollment.sessionId,
-        newClassName: result.newEnrollment.session.class.className,
-        newSessionDate: result.newEnrollment.session.date,
-        newStatus: result.newEnrollment.status,
-        reason: changeDto.reason,
-      },
-      description: `수강 변경: ${currentEnrollment.session.class.className} → ${result.newEnrollment.session.class.className}`,
-    });
 
     return {
       message: '수강 변경이 완료되었습니다.',
@@ -1926,32 +1730,6 @@ export class ClassSessionService {
     }
 
     // 배치 수강 변경 로그
-    await this.activityLogService.logActivityAsync({
-      userId: studentId,
-      userRole: 'STUDENT',
-      action: ACTIVITY_TYPES.ENROLLMENT.BATCH_MODIFY_ENROLLMENT,
-      entityType: ENTITY_TYPES.SESSION_ENROLLMENT,
-      entityId:
-        result.newEnrollments[0]?.id || result.cancelledEnrollments[0]?.id,
-      oldValue: {
-        cancelledEnrollmentIds: result.cancelledEnrollments.map((e) => e.id),
-        cancelledSessionIds: result.cancelledEnrollments.map(
-          (e) => e.sessionId,
-        ),
-        cancelledClassNames: result.cancelledEnrollments.map(
-          (e) => e.session.class.className,
-        ),
-      },
-      newValue: {
-        newEnrollmentIds: result.newEnrollments.map((e) => e.id),
-        newSessionIds: result.newEnrollments.map((e) => e.sessionId),
-        newClassNames: result.newEnrollments.map(
-          (e) => e.session.class.className,
-        ),
-        reason,
-      },
-      description: `배치 수강 변경: ${result.cancelledEnrollments.length}개 취소, ${result.newEnrollments.length}개 신청`,
-    });
 
     return result;
   }
@@ -1962,22 +1740,22 @@ export class ClassSessionService {
     newStatus: string,
   ): string {
     if (newStatus === SessionEnrollmentStatus.CONFIRMED)
-      return ACTIVITY_TYPES.ENROLLMENT.APPROVE_ENROLLMENT;
+      return 'APPROVE_ENROLLMENT';
     if (newStatus === SessionEnrollmentStatus.CANCELLED)
-      return ACTIVITY_TYPES.ENROLLMENT.REJECT_ENROLLMENT;
+      return 'REJECT_ENROLLMENT';
     if (newStatus === 'CONFIRMED')
-      return ACTIVITY_TYPES.ENROLLMENT.COMPLETE_ENROLLMENT;
-    return ACTIVITY_TYPES.ENROLLMENT.UPDATE_ENROLLMENT_STATUS;
+      return 'COMPLETE_ENROLLMENT';
+    return 'UPDATE_ENROLLMENT_STATUS';
   }
 
   private getBatchActionForStatusChange(
     status: SessionEnrollmentStatus,
   ): string {
     if (status === SessionEnrollmentStatus.CONFIRMED)
-      return ACTIVITY_TYPES.ENROLLMENT.BATCH_APPROVE_ENROLLMENT;
+      return 'BATCH_APPROVE_ENROLLMENT';
     if (status === SessionEnrollmentStatus.CANCELLED)
-      return ACTIVITY_TYPES.ENROLLMENT.BATCH_REJECT_ENROLLMENT;
-    return ACTIVITY_TYPES.ENROLLMENT.BATCH_UPDATE_ENROLLMENT_STATUS;
+      return 'BATCH_REJECT_ENROLLMENT';
+    return 'BATCH_UPDATE_ENROLLMENT_STATUS';
   }
 
   private getStatusChangeDescription(
@@ -2265,16 +2043,6 @@ export class ClassSessionService {
     );
 
     // 활동 로그 기록
-    await this.activityLogService.logActivityAsync({
-      userId: teacherId,
-      userRole: 'TEACHER',
-      action: ACTIVITY_TYPES.ENROLLMENT.APPROVE_ENROLLMENT,
-      entityType: ENTITY_TYPES.SESSION_ENROLLMENT,
-      entityId: enrollmentId,
-      oldValue: { status: 'PENDING' },
-      newValue: { status: 'CONFIRMED' },
-      description: `${enrollment.student.name}의 수강 신청 승인`,
-    });
 
     return updatedEnrollment;
   }
@@ -2352,16 +2120,6 @@ export class ClassSessionService {
     });
 
     // 활동 로그 기록
-    await this.activityLogService.logActivityAsync({
-      userId: teacherId,
-      userRole: 'TEACHER',
-      action: ACTIVITY_TYPES.ENROLLMENT.REJECT_ENROLLMENT,
-      entityType: ENTITY_TYPES.SESSION_ENROLLMENT,
-      entityId: enrollmentId,
-      oldValue: { status: 'PENDING' },
-      newValue: { status: 'CANCELLED', reason: data.reason },
-      description: `${enrollment.student.name}의 수강 신청 거절: ${data.reason}`,
-    });
 
     return result;
   }

@@ -9,7 +9,10 @@ import {
   ParseIntPipe,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { BalletPoseService } from './ballet-pose.service';
 import { CreateBalletPoseDto } from './dto/create-ballet-pose.dto';
@@ -18,6 +21,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import { balletPoseConfig } from '../config/multer.config';
 
 @ApiTags('BalletPose')
 @Controller('ballet-poses')
@@ -44,21 +48,27 @@ export class BalletPoseController {
 
   @Post()
   @Roles(Role.ADMIN)
+  @UseInterceptors(FileInterceptor('image', balletPoseConfig))
   @ApiOperation({ summary: '발레 자세 생성' })
   @ApiResponse({ status: 201, description: '발레 자세 생성 성공' })
-  async create(@Body() createBalletPoseDto: CreateBalletPoseDto) {
-    return this.balletPoseService.create(createBalletPoseDto);
+  async create(
+    @Body() createBalletPoseDto: CreateBalletPoseDto,
+    @UploadedFile() image?: Express.Multer.File,
+  ) {
+    return this.balletPoseService.create(createBalletPoseDto, image);
   }
 
   @Patch(':id')
   @Roles(Role.ADMIN)
+  @UseInterceptors(FileInterceptor('image', balletPoseConfig))
   @ApiOperation({ summary: '발레 자세 수정' })
   @ApiResponse({ status: 200, description: '발레 자세 수정 성공' })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateBalletPoseDto: UpdateBalletPoseDto,
+    @UploadedFile() image?: Express.Multer.File,
   ) {
-    return this.balletPoseService.update(id, updateBalletPoseDto);
+    return this.balletPoseService.update(id, updateBalletPoseDto, image);
   }
 
   @Delete(':id')

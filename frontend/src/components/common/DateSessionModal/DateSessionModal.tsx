@@ -1,15 +1,17 @@
 'use client'
 
-import React from 'react'
+import React, { useMemo } from 'react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { SessionCardList } from '@/components/common/Session/SessionCardList'
+import { usePrincipalData } from '@/hooks/redux/usePrincipalData'
+import { useTeacherData } from '@/hooks/redux/useTeacherData'
+import { useStudentData } from '@/hooks/redux/useStudentData'
 
 interface DateSessionModalProps {
   isOpen: boolean
   selectedDate: Date | null
-  sessions: any[]
   onClose: () => void
   onSessionClick: (session: any) => void
   role: 'student' | 'teacher' | 'principal'
@@ -18,11 +20,39 @@ interface DateSessionModalProps {
 export function DateSessionModal({ 
   isOpen, 
   selectedDate, 
-  sessions, 
   onClose, 
   onSessionClick,
   role 
 }: DateSessionModalProps) {
+  // 역할에 따라 다른 Redux store에서 데이터 가져오기
+  const principalData = usePrincipalData();
+  const teacherData = useTeacherData();
+  const studentData = useStudentData();
+  
+  // 역할에 따른 데이터 선택
+  const getDataByRole = () => {
+    switch (role) {
+      case 'student':
+        return studentData;
+      case 'teacher':
+        return teacherData;
+      case 'principal':
+        return principalData;
+      default:
+        return principalData;
+    }
+  };
+
+  const currentData = getDataByRole();
+  const { getSessionsByDate } = currentData;
+
+  // 선택된 날짜의 세션들을 Redux에서 가져오기
+  const sessions = useMemo(() => {
+    if (!selectedDate) return [];
+    const result = getSessionsByDate(selectedDate);
+    return result;
+  }, [selectedDate, getSessionsByDate]);
+
   const formatDate = (date: Date) => {
     return format(date, 'M월 d일 (E)', { locale: ko })
   }

@@ -56,7 +56,6 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
       sessions = contextSessions;
     } else if (typeof window !== 'undefined') {
       const sessionsData = localStorage.getItem('selectedSessions');
-      console.log('selectedSessions in localStorage:', sessionsData);
       
       if (sessionsData) {
         sessions = JSON.parse(sessionsData);
@@ -93,8 +92,9 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
         const className = session.class?.className || '클래스';
         const sessionFee = parseInt((session.class as any)?.tuitionFee) || 0; // 실제 클래스 수강료 사용
         
-        console.log(`세션 ${session.id}의 수강료:`, {
-          className,
+        // 클래스 수강료 정보 추가
+        teacher.classFees.push({
+          name: className,
           tuitionFee: (session.class as any)?.tuitionFee,
           calculatedFee: sessionFee
         });

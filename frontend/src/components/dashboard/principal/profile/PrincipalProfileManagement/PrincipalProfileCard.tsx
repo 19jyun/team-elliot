@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getPrincipalProfile, updatePrincipalProfile } from '@/api/principal';
-import { PrincipalProfile, UpdatePrincipalProfileRequest } from '@/types/api/principal';
+import React, { useState, useEffect, useRef } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { updatePrincipalProfile as updatePrincipalProfileApi, updatePrincipalProfilePhoto as updatePrincipalProfilePhotoApi } from '@/api/principal';
+import { UpdatePrincipalProfileRequest } from '@/types/api/principal';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,10 @@ import {
   Trash2,
   Camera
 } from 'lucide-react';
+import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
+import { useAppDispatch } from '@/store/hooks';
+import { updatePrincipalProfile } from '@/store/slices/principalSlice';
+import { getImageUrl } from '@/utils/imageUtils';
 
 interface PrincipalProfileCardProps {
   principalId?: number; // 특정 원장 ID (없으면 현재 로그인한 원장)
@@ -49,30 +53,22 @@ export function PrincipalProfileCard({
   const [tempCertifications, setTempCertifications] = useState<string[]>([]);
   const [newEducation, setNewEducation] = useState('');
   const [newCertification, setNewCertification] = useState('');
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const queryClient = useQueryClient();
+  const dispatch = useAppDispatch();
 
-  // 원장 프로필 정보 조회
-  const { data: profile, isLoading, error } = useQuery({
-    queryKey: ['principal-profile', principalId || 'me'],
-    queryFn: () => getPrincipalProfile(principalId),
-    retry: false,
-    staleTime: 5 * 60 * 1000, // 5분간 캐시
-    gcTime: 10 * 60 * 1000, // 10분간 가비지 컬렉션 시간
-  });
-
-  // 에러 로깅을 useEffect로 처리
-  useEffect(() => {
-    if (error) {
-      console.error('PrincipalProfileCard API 호출 실패:', error);
-    }
-  }, [error]);
+  // Redux store에서 데이터 가져오기
+  const { userProfile, isLoading, error } = usePrincipalData();
 
   // 프로필 업데이트 뮤테이션 (편집 가능한 경우만)
   const updateProfileMutation = useMutation({
-    mutationFn: updatePrincipalProfile,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['principal-profile'] });
+    mutationFn: updatePrincipalProfileApi,
+    onSuccess: (updatedProfile) => {
+      // Redux store 직접 업데이트
+      dispatch(updatePrincipalProfile(updatedProfile));
       toast.success('프로필이 성공적으로 업데이트되었습니다.');
       setIsEditing(false);
       onSave?.();
@@ -83,16 +79,32 @@ export function PrincipalProfileCard({
     },
   });
 
+  // 사진 업로드 뮤테이션
+  const updatePhotoMutation = useMutation({
+    mutationFn: updatePrincipalProfilePhotoApi,
+    onSuccess: (updatedProfile) => {
+      // Redux store 직접 업데이트
+      dispatch(updatePrincipalProfile(updatedProfile));
+      toast.success('프로필 사진이 성공적으로 업로드되었습니다.');
+      setSelectedPhoto(null);
+      setPreviewUrl(null);
+    },
+    onError: (error) => {
+      console.error('사진 업로드 실패:', error);
+      toast.error('사진 업로드에 실패했습니다.');
+    },
+  });
+
   // 편집 모드 시작
   const handleEdit = () => {
-    if (profile) {
+    if (userProfile) {
       setFormData({
-        introduction: profile.introduction || '',
-        education: profile.education || [],
-        certifications: profile.certifications || [],
+        introduction: userProfile.introduction || '',
+        education: userProfile.education || [],
+        certifications: userProfile.certifications || [],
       });
-      setTempEducation(profile.education || []);
-      setTempCertifications(profile.certifications || []);
+      setTempEducation(userProfile.education || []);
+      setTempCertifications(userProfile.certifications || []);
     }
     setIsEditing(true);
   };
@@ -103,7 +115,66 @@ export function PrincipalProfileCard({
     setFormData({});
     setTempEducation([]);
     setTempCertifications([]);
+    setSelectedPhoto(null);
+    setPreviewUrl(null);
     onCancel?.();
+  };
+
+  // 사진 클릭 핸들러
+  const handlePhotoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!isEditing) {
+      return;
+    }
+    
+    if (!fileInputRef.current) {
+      return;
+    }
+    
+    try {
+      fileInputRef.current.click();
+    } catch (error) {
+      console.error('파일 입력 필드 클릭 실패:', error);
+    }
+  };
+
+
+
+  // 사진 선택 핸들러
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // 파일 크기 체크 (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('파일 크기는 5MB 이하여야 합니다.');
+        // 파일 입력 필드 초기화
+        e.target.value = '';
+        return;
+      }
+
+      // 파일 타입 체크
+      if (!file.type.startsWith('image/')) {
+        toast.error('이미지 파일만 업로드 가능합니다.');
+        // 파일 입력 필드 초기화
+        e.target.value = '';
+        return;
+      }
+
+      setSelectedPhoto(file);
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result as string);
+        // 사진 선택 시 자동 업로드 제거 - 저장 버튼 클릭 시에만 업로드
+      };
+      reader.onerror = () => {
+        toast.error('파일을 읽는 중 오류가 발생했습니다.');
+        e.target.value = '';
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   // 저장
@@ -113,8 +184,17 @@ export function PrincipalProfileCard({
       education: tempEducation,
       certifications: tempCertifications,
     };
+    
+    // 프로필 데이터 업데이트
     updateProfileMutation.mutate(updatedData);
+    
+    // 선택된 사진이 있으면 사진도 업로드
+    if (selectedPhoto) {
+      updatePhotoMutation.mutate(selectedPhoto);
+    }
   };
+
+
 
   // 교육사항 추가
   const addEducation = () => {
@@ -128,8 +208,6 @@ export function PrincipalProfileCard({
   const removeEducation = (index: number) => {
     setTempEducation(tempEducation.filter((_, i) => i !== index));
   };
-
-
 
   // 자격증 추가
   const addCertification = () => {
@@ -152,7 +230,7 @@ export function PrincipalProfileCard({
     );
   }
 
-  if (error || !profile) {
+  if (error || !userProfile) {
     return (
       <Card className="w-full max-w-2xl mx-auto">
         <CardContent className="p-6">
@@ -171,15 +249,60 @@ export function PrincipalProfileCard({
       <Card className="w-full">
         <CardContent className="p-4">
           <div className="flex items-center space-x-3">
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={profile.photoUrl} alt={profile.name} />
-              <AvatarFallback>
-                {profile.name?.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative">
+                                                           <div
+                  className={`inline-block transition-all duration-200 ${
+                    isEditing 
+                      ? 'cursor-pointer ring-2 ring-blue-500 hover:opacity-80 hover:ring-blue-600 hover:scale-105 rounded-full' 
+                      : 'cursor-default'
+                  }`}
+                  onClick={handlePhotoClick}
+                  style={{ touchAction: 'manipulation' }}
+                >
+                                     <div 
+                     className="h-12 w-12 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center relative z-10"
+                     onClick={handlePhotoClick}
+                   >
+                    {previewUrl || getImageUrl(userProfile.photoUrl) ? (
+                      <img 
+                        src={previewUrl || getImageUrl(userProfile.photoUrl) || ''} 
+                        alt={userProfile.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="text-sm font-semibold text-gray-600">
+                        {userProfile.name?.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              
+                             {isEditing && (
+                 <div 
+                   className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+                   style={{ zIndex: 5 }}
+                 >
+                   <Camera className="h-4 w-4 text-white" />
+                   <span className="absolute bottom-0 text-xs text-white font-medium">클릭</span>
+                 </div>
+               )}
+              
+              {isEditing && (
+                <Input
+                  ref={fileInputRef}
+                  id="principal-photo-upload-compact"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                  aria-label="프로필 사진 업로드"
+                />
+              )}
+            </div>
             <div className="flex-1">
-              <h3 className="font-semibold">{profile.name}</h3>
-              <p className="text-sm text-gray-600">{profile.introduction}</p>
+              <h3 className="font-semibold">{userProfile.name}</h3>
+              <p className="text-sm text-gray-600">{userProfile.introduction}</p>
             </div>
           </div>
         </CardContent>
@@ -210,16 +333,63 @@ export function PrincipalProfileCard({
       <CardContent className="space-y-6">
         {/* 프로필 사진 및 기본 정보 */}
         <div className="flex items-start gap-4">
-          <Avatar className="h-20 w-20">
-            <AvatarImage src={profile.photoUrl} alt={profile.name} />
-            <AvatarFallback className="text-lg">
-              {profile.name?.charAt(0)}
-            </AvatarFallback>
-          </Avatar>
+          <div className="relative">
+                         <div
+               className={`inline-block transition-all duration-200 ${
+                 isEditing 
+                   ? 'cursor-pointer ring-2 ring-blue-500 hover:opacity-80 hover:ring-blue-600 hover:scale-105 rounded-full' 
+                   : 'cursor-default'
+               }`}
+               onClick={handlePhotoClick}
+               style={{ touchAction: 'manipulation' }}
+             >
+               <div 
+                 className="h-20 w-20 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center relative z-10"
+                 onClick={handlePhotoClick}
+               >
+                 {previewUrl || getImageUrl(userProfile.photoUrl) ? (
+                   <img 
+                     src={previewUrl || getImageUrl(userProfile.photoUrl) || ''} 
+                     alt={userProfile.name}
+                     className="w-full h-full object-cover"
+                   />
+                 ) : (
+                   <div className="text-lg font-semibold text-gray-600">
+                     {userProfile.name?.charAt(0)}
+                   </div>
+                 )}
+               </div>
+             </div>
+             
+             {isEditing && (
+               <div 
+                 className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+                 style={{ zIndex: 5 }}
+               >
+                 <Camera className="h-6 w-6 text-white" />
+                 <span className="absolute bottom-1 text-xs text-white font-medium">클릭</span>
+               </div>
+             )}
+            
+
+            
+            {isEditing && (
+              <Input
+                ref={fileInputRef}
+                id="principal-photo-upload"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handlePhotoChange}
+                className="hidden"
+                aria-label="프로필 사진 업로드"
+              />
+            )}
+          </div>
           
           <div className="flex-1 space-y-3">
-            <h3 className="text-lg font-semibold">{profile.name}</h3>
-            <p className="text-gray-600">{profile.phoneNumber}</p>
+            <h3 className="text-lg font-semibold">{userProfile.name}</h3>
+            <p className="text-gray-600">{userProfile.phoneNumber}</p>
             {isEditing && (
               <div className="text-xs text-gray-500 space-y-1">
                 <p>• 이름 및 전화번호는 개인정보 관리 페이지에서 수정하실 수 있습니다.</p>
@@ -245,7 +415,7 @@ export function PrincipalProfileCard({
             />
           ) : (
             <p className="text-gray-700 whitespace-pre-wrap">
-              {profile.introduction || '소개가 없습니다.'}
+              {userProfile.introduction || '소개가 없습니다.'}
             </p>
           )}
         </div>
@@ -290,8 +460,8 @@ export function PrincipalProfileCard({
             </div>
           ) : (
             <div className="space-y-2">
-              {profile.education && profile.education.length > 0 ? (
-                profile.education.map((education: string, index: number) => (
+              {userProfile.education && userProfile.education.length > 0 ? (
+                userProfile.education.map((education: string, index: number) => (
                   <Badge key={index} variant="secondary">
                     {education}
                   </Badge>
@@ -302,8 +472,6 @@ export function PrincipalProfileCard({
             </div>
           )}
         </div>
-
-
 
         {/* 자격증 */}
         <div className="space-y-3">
@@ -343,8 +511,8 @@ export function PrincipalProfileCard({
             </div>
           ) : (
             <div className="space-y-2">
-              {profile.certifications && profile.certifications.length > 0 ? (
-                profile.certifications.map((certification: string, index: number) => (
+              {userProfile.certifications && userProfile.certifications.length > 0 ? (
+                userProfile.certifications.map((certification: string, index: number) => (
                   <Badge key={index} variant="default">
                     {certification}
                   </Badge>
@@ -359,7 +527,11 @@ export function PrincipalProfileCard({
         {/* 편집 버튼들 */}
         {isEditing && (
           <div className="flex justify-end gap-2 pt-4">
-            <Button onClick={handleCancel} variant="outline">
+            <Button 
+              onClick={handleCancel} 
+              variant="outline"
+              disabled={updateProfileMutation.isPending}
+            >
               <X className="h-4 w-4 mr-2" />
               취소
             </Button>
@@ -368,7 +540,7 @@ export function PrincipalProfileCard({
               disabled={updateProfileMutation.isPending}
             >
               <Save className="h-4 w-4 mr-2" />
-              저장
+              {updateProfileMutation.isPending ? '업로드 중...' : '저장'}
             </Button>
           </div>
         )}

@@ -6,12 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Settings, Edit, Save, X } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { getPrincipalAcademy, updatePrincipalAcademy } from '@/api/principal';
-import { PrincipalAcademy, UpdatePrincipalAcademyRequest } from '@/types/api/principal';
+import { updatePrincipalAcademy as updatePrincipalAcademyApi } from '@/api/principal';
+import { UpdatePrincipalAcademyRequest } from '@/types/api/principal';
+import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
+import { useAppDispatch } from '@/store/hooks';
+import { updatePrincipalAcademy } from '@/store/slices/principalSlice';
 
 export default function PrincipalAcademyManagementPage() {
   const router = useRouter();
@@ -30,13 +33,10 @@ export default function PrincipalAcademyManagementPage() {
     description: '',
   });
   const queryClient = useQueryClient();
+  const dispatch = useAppDispatch();
 
-  // Principal의 학원 정보 조회
-  const { data: academy, isLoading } = useQuery({
-    queryKey: ['principal-academy'],
-    queryFn: getPrincipalAcademy,
-    enabled: status === 'authenticated' && !!session?.user && !!session?.accessToken,
-  });
+  // Redux store에서 데이터 가져오기
+  const { academy, isLoading, error } = usePrincipalData();
 
   // academy 데이터가 로드되면 formData 업데이트
   useEffect(() => {
@@ -52,9 +52,10 @@ export default function PrincipalAcademyManagementPage() {
 
   // 학원 정보 수정 뮤테이션
   const updateAcademyMutation = useMutation({
-    mutationFn: updatePrincipalAcademy,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['principal-academy'] });
+    mutationFn: updatePrincipalAcademyApi,
+    onSuccess: (updatedAcademy) => {
+      // Redux store 직접 업데이트
+      dispatch(updatePrincipalAcademy(updatedAcademy));
       toast.success('학원 정보가 수정되었습니다.');
       setIsEditing(false);
     },
@@ -87,10 +88,26 @@ export default function PrincipalAcademyManagementPage() {
     updateAcademyMutation.mutate(formData);
   };
 
+  // 로딩 상태 처리
   if (status === 'loading' || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-full">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // 에러 처리
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-full">
+        <p className="text-red-500">데이터를 불러오는데 실패했습니다.</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
+        >
+          다시 시도
+        </button>
       </div>
     );
   }

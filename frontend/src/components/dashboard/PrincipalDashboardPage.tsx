@@ -17,12 +17,19 @@ import { PrincipalProfileManagement } from './principal/profile/PrincipalProfile
 import { PrincipalPersonalInfoManagement } from './principal/profile/PrincipalPersonalInfoManagement/PrincipalPersonalInfoManagement';
 import { EnrollmentRefundManagementContainer } from './principal/person_management/enrollment_refund_management/containers/EnrollmentRefundManagementContainer';
 import { TeacherStudentManagementContainer } from './principal/person_management/teacher_student_management/containers/TeacherStudentManagementContainer';
+import { ReduxTestComponent } from '@/components/common/ReduxTestComponent';
+import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSocketListener';
+import { SocketStatus } from '@/components/common/Socket/SocketStatus';
+import { usePrincipalInitialization } from '@/hooks/redux/usePrincipalInitialization';
 
 
 
 function PrincipalDashboardContent() {
   const { activeTab, handleTabChange } = usePrincipalContext();
   const { subPage, isTransitioning } = useDashboardNavigation();
+
+  // Principal 데이터 초기화
+  usePrincipalInitialization();
 
   // SubPage 렌더링 함수
   const renderSubPage = () => {
@@ -66,6 +73,7 @@ function PrincipalDashboardContent() {
     <div className="flex flex-col h-screen bg-gray-50">
       <CommonHeader />
       <main className="flex-1 overflow-hidden relative">
+
         {/* DashboardContainer - 항상 렌더링 */}
         <DashboardContainer
           activeTab={activeTab}
@@ -84,6 +92,10 @@ function PrincipalDashboardContent() {
             </div>
           </div>
         )}
+
+        {/* Socket 관련 컴포넌트들 */}
+        <RoleBasedSocketListener />
+        <SocketStatus />
       </main>
     </div>
   );

@@ -1,18 +1,16 @@
 'use client'
 
 import { useSession, signOut } from 'next-auth/react'
-import { useQuery } from '@tanstack/react-query'
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { getTeacherClassesWithSessions } from '@/api/teacher'
-import { TeacherClassesWithSessionsResponse } from '@/types/api/teacher'
 import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessionModal'
 import { SessionDetailModal } from '@/components/common/Session/SessionDetailModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
 import { ClassSession } from '@/types/api/class'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
+import { useTeacherData } from '@/hooks/redux/useTeacherData'
 
 // Type for extended session
 type ExtendedSession = {
@@ -35,30 +33,26 @@ export default function TeacherDashboard() {
 
   const { navigateToSubPage } = useDashboardNavigation()
   
+  // Redux에서 Teacher 데이터 가져오기
+  const { 
+    calendarSessions, 
+    isLoading, 
+    error 
+  } = useTeacherData()
+  
   // 날짜 클릭 관련 상태 추가
   const [clickedDate, setClickedDate] = useState<Date | null>(null)
   const [isDateModalOpen, setIsDateModalOpen] = useState(false)
-  const [selectedDaySessions, setSelectedDaySessions] = useState<any[]>([])
   
   // 세션 상세 모달 상태 추가
   const [selectedSession, setSelectedSession] = useState<any>(null)
   const [isSessionDetailModalOpen, setIsSessionDetailModalOpen] = useState(false)
 
-  // 선생님 클래스와 세션 정보를 한 번에 조회 (토큰 기반)
-  const { data: myData, isLoading, error } = useQuery({
-    queryKey: ['teacher-classes-with-sessions'],
-    queryFn: getTeacherClassesWithSessions,
-    enabled: status === 'authenticated' && !!session?.user && !!session?.accessToken,
-    retry: false,
-  })
-
-  const mySessions = (myData as TeacherClassesWithSessionsResponse)?.sessions || []
-
   // ConnectedCalendar용 데이터 변환
   const convertedSessions = useMemo(() => {
-    if (!mySessions) return [];
+    if (!calendarSessions) return [];
     
-    return mySessions.map((session: any) => ({
+    return calendarSessions.map((session: any) => ({
       id: session.id,
       classId: session.classId || session.id,
       date: session.date,
@@ -82,24 +76,16 @@ export default function TeacherDashboard() {
         },
       },
     })) as ClassSession[];
-  }, [mySessions]);
+  }, [calendarSessions]);
 
-  // 백엔드에서 받은 캘린더 범위 사용 (새로운 정책 적용)
+  // 캘린더 범위 설정 (기본값 사용)
   const calendarRange = useMemo(() => {
-    if (!myData?.calendarRange) {
-      // 백엔드에서 범위를 받지 못한 경우 기본값 사용 (현재 월부터 3개월)
-      const now = new Date();
-      return {
-        startDate: new Date(now.getFullYear(), now.getMonth(), 1),
-        endDate: new Date(now.getFullYear(), now.getMonth() + 2, 0), // 현재 월 + 2개월 = 3개월 범위
-      };
-    }
-
+    const now = new Date();
     return {
-      startDate: new Date(myData.calendarRange.startDate),
-      endDate: new Date(myData.calendarRange.endDate),
+      startDate: new Date(now.getFullYear(), now.getMonth(), 1),
+      endDate: new Date(now.getFullYear(), now.getMonth() + 2, 0), // 현재 월 + 2개월 = 3개월 범위
     };
-  }, [myData?.calendarRange]);
+  }, []);
 
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {
@@ -130,25 +116,16 @@ export default function TeacherDashboard() {
     )
   }
 
-  // 날짜 클릭 핸들러 (ConnectedCalendar용)
+  // 날짜 클릭 핸들러 (ConnectedCalendar용) - Redux 방식
   const handleDateClick = (dateString: string) => {
     const clickedDateObj = new Date(dateString);
-    
-    // 해당 날짜의 세션들 필터링
-    const daySessions = mySessions?.filter((session: any) => {
-      const sessionDate = new Date(session.date);
-      return sessionDate.toDateString() === clickedDateObj.toDateString();
-    }) || [];
-
     setClickedDate(clickedDateObj);
-    setSelectedDaySessions(daySessions);
     setIsDateModalOpen(true);
   }
 
   const closeDateModal = () => {
     setIsDateModalOpen(false)
     setClickedDate(null)
-    setSelectedDaySessions([])
   }
 
   // 세션 클릭 핸들러 추가
@@ -222,7 +199,6 @@ export default function TeacherDashboard() {
       <DateSessionModal
         isOpen={isDateModalOpen}
         selectedDate={clickedDate}
-        sessions={selectedDaySessions}
         onClose={closeDateModal}
         onSessionClick={handleSessionClick}
         role="teacher"
@@ -231,7 +207,7 @@ export default function TeacherDashboard() {
       {/* Session Detail Modal */}
       <SessionDetailModal
         isOpen={isSessionDetailModalOpen}
-        session={selectedSession}
+        sessionId={selectedSession?.id || null}
         onClose={closeSessionDetailModal}
         role="teacher"
       />

@@ -1,89 +1,80 @@
-// Teacher APIs
+// Principal API
 export {
-  getTeacherProfile,
-  updateTeacherProfile,
-  getTeacherClasses,
-  getTeacherClassesWithSessions,
-  getSessionEnrollments,
-  updateClassDetails,
-  getMyAcademy,
-  changeAcademy,
-  createAcademy,
-  createAndJoinAcademy,
-} from "./teacher";
-
-// Class Sessions API
-export {
-  getClassSessions,
-  getClassSession,
-  enrollSession,
-  batchEnrollSessions,
-  getStudentClassEnrollments,
-  cancelEnrollment,
-  changeEnrollment,
-  batchModifyEnrollments,
-  updateEnrollmentStatus,
-  batchUpdateEnrollmentStatus,
-  checkAttendance,
-} from "./class-sessions";
-
-// Ballet Pose API
-export {
-  getBalletPoses,
-  getBalletPose,
-  createBalletPose,
-  updateBalletPose,
-  deleteBalletPose,
-} from "./ballet-pose";
-
-// Session Content API
-export {
-  getSessionContents,
-  getSessionContent,
-  addSessionContent,
-  updateSessionContent,
-  deleteSessionContent,
-  reorderSessionContents,
-} from "./session-content";
-
-// Refund API
-export { refundApi } from "./refund";
-
-// Student API
-export {
-  getMyClasses,
-  getClassDetail,
-  enrollClass,
-  unenrollClass,
-  getMyProfile,
-  updateMyProfile,
-} from "./student";
-
-// Auth API
-export {
-  login,
-  signup,
-  logout,
-  withdrawal,
-  checkDuplicateUserId,
-} from "./auth";
+  getPrincipalAcademy,
+  getPrincipalAllClasses,
+  getPrincipalAllTeachers,
+  getPrincipalAllStudents,
+  getPrincipalAllEnrollments,
+  getPrincipalAllRefundRequests,
+  getPrincipalProfile,
+  getPrincipalSessionsWithPendingRequests,
+  getPrincipalSessionEnrollments,
+  getPrincipalSessionRequests,
+  approvePrincipalEnrollment,
+  rejectPrincipalEnrollment,
+  approvePrincipalRefund,
+  rejectPrincipalRefund,
+  updatePrincipalProfile,
+  updatePrincipalAcademy,
+  getPrincipalAcademyTeachers,
+  getPrincipalAcademyStudents,
+  removePrincipalTeacher,
+  removePrincipalStudent,
+  getPrincipalStudentSessionHistory,
+} from "./principal";
 
 // Admin API
 export {
   getStudents,
   getTeachers,
   getClasses,
-  getWithdrawalStats,
   createStudent,
-  createTeacher,
-  createClass,
   deleteStudent,
+  createTeacher,
   deleteTeacher,
-  deleteClass,
-  resetStudentPassword,
-  generateSessionsForClass,
-  generateSessionsForPeriod,
 } from "./admin";
 
+// Student API
+export { getMyClasses } from "./student";
+
+// Teacher API
+export { getTeacherClasses, getAcademyTeachers } from "./teacher";
+
+// Auth API
+export {
+  login,
+  signup,
+  logout,
+  checkDuplicateUserId,
+  withdrawal,
+} from "./auth";
+
 // Academy API
-export { getAcademies, joinAcademy, leaveAcademy } from "./academy";
+export { createAcademy, joinAcademy, leaveAcademy } from "./academy";
+
+// Class API
+export {
+  getClassDetails,
+  getAllClasses,
+  createClass,
+  createTeacherClass,
+  updateClass,
+  deleteClass,
+  enrollClass,
+  unenrollClass,
+  getClassesByMonth,
+  getClassCards,
+  getClassesWithSessionsByMonth,
+} from "./class";
+
+// Refund API
+export { refundApi } from "./refund";
+
+// Activity Log API
+export {
+
+  LOG_LEVELS,
+  getActivityTypeLabel,
+  getLogLevelLabel,
+  getLogLevelColor,
+

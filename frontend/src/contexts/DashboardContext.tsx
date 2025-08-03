@@ -349,7 +349,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         const currentIndex = modificationStepOrder.indexOf(prev.enrollment.currentStep);
         const previousStep = currentIndex > 0 ? modificationStepOrder[currentIndex - 1] : 'date-selection';
         
-        console.log('수강 변경 뒤로가기:', { currentStep: prev.enrollment.currentStep, previousStep });
         
         return {
           ...prev,

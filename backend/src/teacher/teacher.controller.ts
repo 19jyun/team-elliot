@@ -18,7 +18,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
-import { multerConfig } from '../config/multer.config';
+import { teacherProfileConfig } from '../config/multer.config';
 import { Role } from '@prisma/client';
 import { CreateClassDto } from '../admin/dto/create-class.dto';
 import { CreateAcademyDto } from '../academy/dto/create-academy.dto';
@@ -66,35 +66,24 @@ export class TeacherController {
 
   @Put('me/profile')
   @Roles(Role.TEACHER)
-  @UseInterceptors(FileInterceptor('photo', multerConfig))
-  async updateMyProfile(
-    @GetUser() user: any,
-    @Body() updateData: any,
-    @UploadedFile() photo?: Express.Multer.File,
-  ) {
-    // JSON 문자열로 전송된 배열 필드들을 파싱
-    const parsedData = {
-      name: updateData.name,
-      phoneNumber: updateData.phoneNumber,
-      introduction: updateData.introduction,
-      education: updateData.education
-        ? JSON.parse(updateData.education)
-        : undefined,
-      specialties: updateData.specialties
-        ? JSON.parse(updateData.specialties)
-        : undefined,
-      certifications: updateData.certifications
-        ? JSON.parse(updateData.certifications)
-        : undefined,
-      yearsOfExperience: updateData.yearsOfExperience
-        ? parseInt(updateData.yearsOfExperience)
-        : undefined,
-      availableTimes: updateData.availableTimes
-        ? JSON.parse(updateData.availableTimes)
-        : undefined,
-    };
+  async updateMyProfile(@GetUser() user: any, @Body() updateData: any) {
+    return this.teacherService.updateProfile(user.id, updateData);
+  }
 
-    return this.teacherService.updateProfile(user.id, parsedData, photo);
+  @Put('me/profile/photo')
+  @Roles(Role.TEACHER)
+  @UseInterceptors(FileInterceptor('photo', teacherProfileConfig))
+  async updateMyProfilePhoto(
+    @GetUser() user: any,
+    @UploadedFile() photo: Express.Multer.File,
+  ) {
+    return this.teacherService.updateProfilePhoto(user.id, photo);
+  }
+
+  @Get('me/data')
+  @Roles(Role.TEACHER)
+  async getTeacherData(@GetUser() user: any) {
+    return this.teacherService.getTeacherData(user.id);
   }
 
   @Get('me/classes')
@@ -196,13 +185,11 @@ export class TeacherController {
 
   @Put(':id/profile')
   @Roles(Role.ADMIN)
-  @UseInterceptors(FileInterceptor('photo', multerConfig))
   async updateProfile(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateData: any,
-    @UploadedFile() photo?: Express.Multer.File,
   ) {
-    return this.teacherService.updateProfile(id, updateData, photo);
+    return this.teacherService.updateProfile(id, updateData);
   }
 
   @Get(':id/classes')

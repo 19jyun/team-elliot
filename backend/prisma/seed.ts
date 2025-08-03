@@ -494,39 +494,7 @@ async function main() {
     }
   }
 
-  // 테스트용 활동 로그 생성 (createMany 사용 - 중복 방지)
-  await prisma.activityLog.createMany({
-    data: [
-      {
-        userId: teacherUser.id,
-        userRole: 'TEACHER' as const,
-        action: 'LOGIN',
-        description: '강사 로그인',
-        level: 'NORMAL' as const,
-        ipAddress: '127.0.0.1',
-        userAgent: 'Test Browser',
-      },
-      {
-        userId: studentUser.id,
-        userRole: 'STUDENT' as const,
-        action: 'ENROLLMENT',
-        description: '클래스 수강 신청',
-        level: 'IMPORTANT' as const,
-        ipAddress: '127.0.0.1',
-        userAgent: 'Test Browser',
-      },
-      {
-        userId: teacherUser.id,
-        userRole: 'TEACHER' as const,
-        action: 'SESSION_CREATION',
-        description: '세션 생성',
-        level: 'IMPORTANT' as const,
-        ipAddress: '127.0.0.1',
-        userAgent: 'Test Browser',
-      },
-    ],
-    skipDuplicates: true,
-  });
+
 
   // 테스트용 세션 등록 및 결제 생성
   if (firstClass && firstClass.classSessions.length > 0) {

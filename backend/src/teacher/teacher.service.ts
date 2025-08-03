@@ -93,7 +93,6 @@ export class TeacherService {
       yearsOfExperience?: number;
       availableTimes?: any;
     },
-    photo?: Express.Multer.File,
   ) {
     const teacher = await this.prisma.teacher.findUnique({
       where: { id },
@@ -103,15 +102,74 @@ export class TeacherService {
       throw new NotFoundException('선생님을 찾을 수 없습니다.');
     }
 
-    const photoUrl = photo
-      ? `/uploads/profile-photos/${photo.filename}`
-      : undefined;
-
     const updatedTeacher = await this.prisma.teacher.update({
       where: { id },
       data: {
         ...updateData,
-        ...(photoUrl && { photoUrl }),
+        updatedAt: new Date(),
+      },
+      select: {
+        id: true,
+        userId: true,
+        name: true,
+        phoneNumber: true,
+        introduction: true,
+        photoUrl: true,
+        education: true,
+        specialties: true,
+        certifications: true,
+        yearsOfExperience: true,
+        availableTimes: true,
+        createdAt: true,
+        updatedAt: true,
+        academy: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return {
+      id: updatedTeacher.id,
+      userId: updatedTeacher.userId,
+      name: updatedTeacher.name,
+      phoneNumber: updatedTeacher.phoneNumber,
+      introduction: updatedTeacher.introduction,
+      photoUrl: updatedTeacher.photoUrl,
+      education: updatedTeacher.education,
+      specialties: updatedTeacher.specialties,
+      certifications: updatedTeacher.certifications,
+      yearsOfExperience: updatedTeacher.yearsOfExperience,
+      availableTimes: updatedTeacher.availableTimes,
+      academyId: updatedTeacher.academy?.id || null,
+      academy: updatedTeacher.academy
+        ? {
+            id: updatedTeacher.academy.id,
+            name: updatedTeacher.academy.name,
+          }
+        : null,
+      createdAt: updatedTeacher.createdAt,
+      updatedAt: updatedTeacher.updatedAt,
+    };
+  }
+
+  async updateProfilePhoto(id: number, photo: Express.Multer.File) {
+    const teacher = await this.prisma.teacher.findUnique({
+      where: { id },
+    });
+
+    if (!teacher) {
+      throw new NotFoundException('선생님을 찾을 수 없습니다.');
+    }
+
+    const photoUrl = `/uploads/teacher-photos/${photo.filename}`;
+
+    const updatedTeacher = await this.prisma.teacher.update({
+      where: { id },
+      data: {
+        photoUrl,
         updatedAt: new Date(),
       },
       select: {
@@ -568,6 +626,201 @@ export class TeacherService {
     return {
       message: '학원 가입 요청이 성공적으로 전송되었습니다.',
       request: joinRequest,
+    };
+  }
+
+  // Teacher 대시보드 Redux 초기화용 데이터 조회
+  async getTeacherData(teacherId: number) {
+    const teacher = await this.prisma.teacher.findUnique({
+      where: { id: teacherId },
+      include: {
+        academy: {
+          include: {
+            principal: true,
+            classes: {
+              where: {
+                teacherId: teacherId,
+              },
+              include: {
+                teacher: true,
+                classSessions: {
+                  include: {
+                    enrollments: {
+                      include: {
+                        student: true,
+                        payment: true,
+                        refundRequests: { include: { student: true } },
+                      },
+                    },
+                    contents: {
+                      include: {
+                        pose: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!teacher) {
+      throw new NotFoundException('Teacher not found');
+    }
+
+    if (!teacher.academy) {
+      throw new NotFoundException('Teacher is not associated with any academy');
+    }
+
+    // Principal 정보
+    const principal = teacher.academy.principal;
+
+    // 모든 세션을 하나의 배열로 변환
+    const sessions = teacher.academy.classes.flatMap((cls) =>
+      cls.classSessions.map((session) => ({
+        id: session.id,
+        classId: session.classId,
+        date: session.date,
+        startTime: session.startTime,
+        endTime: session.endTime,
+        currentStudents: session.enrollments.length,
+        maxStudents: cls.maxStudents,
+        class: {
+          id: cls.id,
+          className: cls.className,
+          level: cls.level,
+          tuitionFee: cls.tuitionFee?.toString() || '50000',
+          teacher: {
+            id: cls.teacher.id,
+            name: cls.teacher.name,
+          },
+        },
+        enrollments: session.enrollments.map((enrollment) => ({
+          id: enrollment.id,
+          studentId: enrollment.studentId,
+          sessionId: enrollment.sessionId,
+          status: enrollment.status,
+          enrolledAt: enrollment.enrolledAt,
+          student: {
+            id: enrollment.student.id,
+            name: enrollment.student.name,
+            phoneNumber: enrollment.student.phoneNumber,
+          },
+          payment: enrollment.payment,
+          refundRequests: enrollment.refundRequests,
+        })),
+        contents: session.contents.map((content) => ({
+          id: content.id,
+          sessionId: content.sessionId,
+          poseId: content.poseId,
+          order: content.order,
+          pose: content.pose,
+        })),
+      })),
+    );
+
+    // 모든 수강신청을 하나의 배열로 변환
+    const enrollments = sessions.flatMap((session) =>
+      session.enrollments.map((enrollment) => ({
+        ...enrollment,
+        session: {
+          id: session.id,
+          date: session.date,
+          startTime: session.startTime,
+          endTime: session.endTime,
+          class: session.class,
+        },
+      })),
+    );
+
+    return {
+      userProfile: {
+        id: teacher.id,
+        userId: teacher.userId,
+        name: teacher.name,
+        phoneNumber: teacher.phoneNumber,
+        introduction: teacher.introduction,
+        photoUrl: teacher.photoUrl,
+        education: teacher.education,
+        specialties: teacher.specialties,
+        certifications: teacher.certifications,
+        yearsOfExperience: teacher.yearsOfExperience,
+        availableTimes: teacher.availableTimes,
+        academy: {
+          id: teacher.academy.id,
+          name: teacher.academy.name,
+        },
+      },
+      academy: teacher.academy,
+      principal: principal
+        ? {
+            id: principal.id,
+            name: principal.name,
+            phoneNumber: principal.phoneNumber,
+            email: principal.email,
+          }
+        : null,
+      classes: teacher.academy.classes.map((cls) => ({
+        id: cls.id,
+        className: cls.className,
+        classCode: cls.classCode,
+        description: cls.description,
+        maxStudents: cls.maxStudents,
+        tuitionFee: cls.tuitionFee,
+        teacherId: cls.teacherId,
+        academyId: cls.academyId,
+        dayOfWeek: cls.dayOfWeek,
+        startTime: cls.startTime,
+        endTime: cls.endTime,
+        level: cls.level,
+        status: cls.status,
+        startDate: cls.startDate,
+        endDate: cls.endDate,
+        backgroundColor: cls.backgroundColor,
+        teacher: {
+          id: cls.teacher.id,
+          name: cls.teacher.name,
+          phoneNumber: cls.teacher.phoneNumber,
+          introduction: cls.teacher.introduction,
+          photoUrl: cls.teacher.photoUrl,
+        },
+        academy: {
+          id: teacher.academy.id,
+          name: teacher.academy.name,
+        },
+        classSessions: cls.classSessions.map((session) => ({
+          id: session.id,
+          classId: session.classId,
+          date: session.date,
+          startTime: session.startTime,
+          endTime: session.endTime,
+          currentStudents: session.enrollments.length,
+          maxStudents: cls.maxStudents,
+          enrollments: session.enrollments.map((enrollment) => ({
+            id: enrollment.id,
+            studentId: enrollment.studentId,
+            sessionId: enrollment.sessionId,
+            status: enrollment.status,
+            enrolledAt: enrollment.enrolledAt,
+            student: {
+              id: enrollment.student.id,
+              name: enrollment.student.name,
+              phoneNumber: enrollment.student.phoneNumber,
+            },
+          })),
+          contents: session.contents.map((content) => ({
+            id: content.id,
+            sessionId: content.sessionId,
+            poseId: content.poseId,
+            order: content.order,
+            pose: content.pose,
+          })),
+        })),
+      })),
+      sessions,
+      enrollments,
     };
   }
 }

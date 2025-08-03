@@ -83,7 +83,6 @@ export function EnrollmentModificationPaymentStep({
       sessions = contextSessions;
     } else if (typeof window !== 'undefined') {
       const sessionsData = localStorage.getItem('selectedSessions');
-      console.log('selectedSessions in localStorage:', sessionsData);
       
       if (sessionsData) {
         sessions = JSON.parse(sessionsData);
@@ -120,8 +119,6 @@ export function EnrollmentModificationPaymentStep({
           return !existingDates.includes(sessionDate);
         });
         
-        console.log('수강 변경 - 새로 추가된 세션들:', newSessions);
-        console.log('modificationInfo.newSessionsCount:', modificationInfo.newSessionsCount);
         
         // newSessionsCount와 실제 필터링된 세션 수가 일치하는지 확인
         if (newSessions.length === modificationInfo.newSessionsCount) {
@@ -234,7 +231,7 @@ export function EnrollmentModificationPaymentStep({
         })
         .map((session: any) => session.id);
 
-      console.log('수강 변경 요청:', {
+      console.log('수강 변경 요청 데이터:', {
         cancellations,
         newEnrollments,
         reason: '수강 변경'
@@ -247,7 +244,6 @@ export function EnrollmentModificationPaymentStep({
         reason: '수강 변경'
       });
 
-      console.log('수강 변경 결과:', result);
       toast.success('수강 변경이 완료되었습니다.');
       setEnrollmentStep('complete');
       onComplete?.(); // 수강 변경 완료 시 콜백 호출

@@ -1,5 +1,13 @@
 import axiosInstance from "@/lib/axios";
 
+// === Principal Dashboard Redux 데이터 초기화용 API ===
+
+// PrincipalData 전체 초기화 (Redux용)
+export const getPrincipalData = async () => {
+  const response = await axiosInstance.get("/principal/me/data");
+  return response.data;
+};
+
 // Principal 전용 API 함수들
 
 // 1. Principal의 학원 정보 조회
@@ -29,6 +37,18 @@ export const getPrincipalAllTeachers = async () => {
 // 5. Principal의 학원에 속한 모든 수강생 조회
 export const getPrincipalAllStudents = async () => {
   const response = await axiosInstance.get("/principal/students");
+  return response.data;
+};
+
+// 6. Principal의 학원에 속한 모든 수강신청 조회 (Redux store용)
+export const getPrincipalAllEnrollments = async () => {
+  const response = await axiosInstance.get("/principal/enrollments");
+  return response.data;
+};
+
+// 7. Principal의 학원에 속한 모든 환불요청 조회 (Redux store용)
+export const getPrincipalAllRefundRequests = async () => {
+  const response = await axiosInstance.get("/principal/refund-requests");
   return response.data;
 };
 
@@ -69,6 +89,23 @@ export const updatePrincipalProfile = async (data: {
   certifications?: string[];
 }) => {
   const response = await axiosInstance.put("/principal/profile", data);
+  return response.data;
+};
+
+// Principal의 프로필 사진 업로드
+export const updatePrincipalProfilePhoto = async (photo: File) => {
+  const formData = new FormData();
+  formData.append("photo", photo);
+
+  const response = await axiosInstance.put(
+    "/principal/profile/photo",
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
   return response.data;
 };
 

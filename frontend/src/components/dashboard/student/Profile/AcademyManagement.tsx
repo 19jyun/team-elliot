@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { ExpandableText } from '@/components/common';
 import { AcademyCard } from '@/components/common/AcademyCard';
+import { useStudentData } from '@/hooks/redux/useStudentData';
 
 interface LeaveAcademyModalProps {
   isOpen: boolean;
@@ -106,58 +107,56 @@ function LeaveAcademyModal({ isOpen, onClose, onConfirm, academyName }: LeaveAca
 }
 
 export function AcademyManagement() {
-  const router = useRouter();
   const { pushFocus, popFocus } = useDashboardNavigation();
-  const [myAcademies, setMyAcademies] = useState<Academy[]>([]);
-  const [joinCode, setJoinCode] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const { academies, isLoading, error } = useStudentData();
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+  const [joinAcademyCode, setJoinAcademyCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
-  const [leaveModal, setLeaveModal] = useState<{
-    isOpen: boolean;
-    academyId: number | null;
-    academyName: string;
-  }>({
-    isOpen: false,
-    academyId: null,
-    academyName: '',
-  });
+  const [leaveAcademyId, setLeaveAcademyId] = useState<number | null>(null);
+  const [leaveAcademyName, setLeaveAcademyName] = useState<string>('');
+  const [isLeaving, setIsLeaving] = useState(false);
 
   useEffect(() => {
-    loadMyAcademies();
-    // 컴포넌트가 마운트될 때 포커스를 subpage로 설정
     pushFocus('subpage');
-    
-    return () => {
-      // 컴포넌트가 언마운트될 때 이전 포커스로 복원
-      popFocus();
-    };
+    return () => popFocus();
   }, [pushFocus, popFocus]);
 
-  const loadMyAcademies = async () => {
-    try {
-      setIsLoading(true);
-      const response = await getMyAcademies();
-      setMyAcademies(response.data);
-    } catch (error) {
-      console.error('학원 목록 로드 실패:', error);
-      toast.error('학원 목록을 불러오는데 실패했습니다.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // 에러 처리
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-full">
+        <p className="text-red-500">학원 정보를 불러오는데 실패했습니다.</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
+        >
+          다시 시도
+        </button>
+      </div>
+    );
+  }
+
+  // 로딩 상태 처리
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-full">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
+      </div>
+    );
+  }
 
   const handleJoinAcademy = async () => {
-    if (!joinCode.trim()) {
+    if (!joinAcademyCode.trim()) {
       toast.error('학원 코드를 입력해주세요.');
       return;
     }
 
     try {
       setIsJoining(true);
-      await joinAcademy({ code: joinCode.trim() });
+      await joinAcademy({ code: joinAcademyCode.trim() });
       toast.success('학원 가입이 완료되었습니다.');
-      setJoinCode('');
-      loadMyAcademies(); // 목록 새로고침
+      setJoinAcademyCode('');
+      // loadMyAcademies(); // 목록 새로고침 - useStudentData에서 관리
     } catch (error: any) {
       console.error('학원 가입 실패:', error);
       const message = error.response?.data?.message || '학원 가입에 실패했습니다.';
@@ -168,30 +167,32 @@ export function AcademyManagement() {
   };
 
   const handleLeaveAcademyClick = (academyId: number, academyName: string) => {
-    setLeaveModal({
-      isOpen: true,
-      academyId,
-      academyName,
-    });
+    setLeaveAcademyId(academyId);
+    setLeaveAcademyName(academyName);
   };
 
   const handleLeaveAcademyConfirm = async () => {
-    if (!leaveModal.academyId) return;
+    if (!leaveAcademyId) return;
 
     try {
-      await leaveAcademy({ academyId: leaveModal.academyId });
+      setIsLeaving(true);
+      await leaveAcademy({ academyId: leaveAcademyId });
       toast.success('학원 탈퇴가 완료되었습니다.');
-      loadMyAcademies(); // 목록 새로고침
-      setLeaveModal({ isOpen: false, academyId: null, academyName: '' });
+      // loadMyAcademies(); // 목록 새로고침 - useStudentData에서 관리
+      setLeaveAcademyId(null);
+      setLeaveAcademyName('');
     } catch (error: any) {
       console.error('학원 탈퇴 실패:', error);
       const message = error.response?.data?.message || '학원 탈퇴에 실패했습니다.';
       toast.error(message);
+    } finally {
+      setIsLeaving(false);
     }
   };
 
   const handleLeaveModalClose = () => {
-    setLeaveModal({ isOpen: false, academyId: null, academyName: '' });
+    setLeaveAcademyId(null);
+    setLeaveAcademyName('');
   };
 
   const formatDate = (dateString: string) => {
@@ -230,14 +231,14 @@ export function AcademyManagement() {
             <div className="flex gap-3">
               <Input
                 placeholder="학원 코드를 입력하세요"
-                value={joinCode}
-                onChange={(e) => setJoinCode(e.target.value)}
+                value={joinAcademyCode}
+                onChange={(e) => setJoinAcademyCode(e.target.value)}
                 className="flex-1"
                 onKeyPress={(e) => e.key === 'Enter' && handleJoinAcademy()}
               />
               <Button 
                 onClick={handleJoinAcademy} 
-                disabled={isJoining || !joinCode.trim()}
+                disabled={isJoining || !joinAcademyCode.trim()}
                 className="min-w-[80px] transition-all duration-300 ease-in-out"
                 size="sm"
               >
@@ -254,18 +255,14 @@ export function AcademyManagement() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               <Users className="h-5 w-5" />
-              내가 가입한 학원 ({myAcademies.length})
+              내가 가입한 학원 ({academies.length})
             </CardTitle>
             <CardDescription>
               현재 가입되어 있는 학원들의 목록입니다.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              </div>
-            ) : myAcademies.length === 0 ? (
+            {academies.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <Building2 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                 <p>가입한 학원이 없습니다.</p>
@@ -273,7 +270,7 @@ export function AcademyManagement() {
               </div>
             ) : (
               <div className="space-y-4 max-h-96 overflow-y-auto">
-                {myAcademies.map((academy) => (
+                {academies.map((academy: any) => (
                   <AcademyCard
                     key={academy.id}
                     academy={academy}
@@ -292,10 +289,10 @@ export function AcademyManagement() {
 
       {/* 탈퇴 확인 모달 */}
       <LeaveAcademyModal
-        isOpen={leaveModal.isOpen}
+        isOpen={!!leaveAcademyId}
         onClose={handleLeaveModalClose}
         onConfirm={handleLeaveAcademyConfirm}
-        academyName={leaveModal.academyName}
+        academyName={leaveAcademyName}
       />
     </div>
   );

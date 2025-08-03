@@ -5,13 +5,13 @@ import { motion } from 'framer-motion'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { ClassDetail } from '@/components/features/student/classes/ClassDetail'
 import { SessionDetailTab } from '@/components/features/student/classes/SessionDetailTab'
-import { getClassDetails } from '@/api/class'
-import { ClassDetailsResponse } from '@/types/api/class'
+import { useStudentData } from '@/hooks/redux/useStudentData'
 
 interface StudentSessionDetailModalProps {
   isOpen: boolean
   session: any
   onClose: () => void
+  onlyDetail?: boolean // 세션 상세 정보만 표시할지 여부
 }
 
 type TabType = 'class' | 'session'
@@ -28,34 +28,32 @@ const brownTheme = {
 export function StudentSessionDetailModal({ 
   isOpen, 
   session, 
-  onClose 
+  onClose,
+  onlyDetail = false 
 }: StudentSessionDetailModalProps) {
-  const [classDetails, setClassDetails] = useState<ClassDetailsResponse | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const { getClassById, isLoading } = useStudentData();
+  const [classDetails, setClassDetails] = useState<any>(null)
   const [activeTab, setActiveTab] = useState<TabType>('class')
 
+  // 모든 useEffect를 조건부 return 이전에 호출
   useEffect(() => {
     if (isOpen && session?.class?.id) {
-      loadClassDetails()
+      // Redux에서 클래스 정보 가져오기
+      const classData = getClassById(session.class.id);
+      setClassDetails(classData);
     } else {
       // 모달이 닫히거나 session이 없을 때 상태 초기화
       setClassDetails(null)
-      setIsLoading(false)
       setActiveTab('class')
     }
-  }, [isOpen, session?.class?.id])
+  }, [isOpen, session?.class?.id, getClassById])
 
-  const loadClassDetails = async () => {
-    try {
-      setIsLoading(true)
-      const details = await getClassDetails(session.class.id)
-      setClassDetails(details)
-    } catch (error) {
-      console.error('클래스 상세 정보 로드 실패:', error)
-    } finally {
-      setIsLoading(false)
+  // onlyDetail이 true이면 기본 탭을 session으로 설정
+  useEffect(() => {
+    if (onlyDetail) {
+      setActiveTab('session');
     }
-  }
+  }, [onlyDetail]);
 
   const formatTime = (time: string | Date) => {
     const date = typeof time === 'string' ? new Date(time) : time
@@ -66,19 +64,23 @@ export function StudentSessionDetailModal({
     })
   }
 
-  const navigationItems = [
-    { label: '클래스 정보', value: 'class' as TabType },
-    { label: '수업 내용', value: 'session' as TabType },
-  ]
+  // onlyDetail이 true이면 세션 상세 정보만 표시
+  const navigationItems = onlyDetail 
+    ? [{ label: '수업 내용', value: 'session' as TabType }]
+    : [
+        { label: '클래스 정보', value: 'class' as TabType },
+        { label: '수업 내용', value: 'session' as TabType },
+      ];
 
-  // session이 없으면 모달을 렌더링하지 않음
-  if (!session) {
-    return null
+  // 탭 인덱스 계산 (onlyDetail이 true이면 항상 0)
+  const getTabIndex = (tab: TabType) => {
+    if (onlyDetail) return 0;
+    return navigationItems.findIndex(item => item.value === tab)
   }
 
-  // 탭 인덱스 계산
-  const getTabIndex = (tab: TabType) => {
-    return navigationItems.findIndex(item => item.value === tab)
+  // session이 없으면 모달을 렌더링하지 않음 (모든 Hook 호출 후)
+  if (!session) {
+    return null
   }
 
   return (
@@ -88,60 +90,70 @@ export function StudentSessionDetailModal({
       title={`${session?.class?.className} - ${formatTime(session?.startTime)}`}
       contentClassName="pb-6"
     >
-      {/* Navigation Bar - 브라운 테마 적용 */}
-      <div className="flex border-b border-stone-200 mb-4">
-        {navigationItems.map((item) => (
-          <button
-            key={item.value}
-            onClick={() => setActiveTab(item.value)}
-            className={`flex-1 py-3 px-4 text-sm font-medium transition-colors duration-200 ${
-              activeTab === item.value
-                ? `text-${brownTheme.primary} border-b-2 border-${brownTheme.primary}`
-                : `text-${brownTheme.secondary} hover:text-${brownTheme.hover}`
-            }`}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
+      {/* Navigation Bar - onlyDetail이 false일 때만 표시 */}
+      {!onlyDetail && (
+        <div className="flex border-b border-stone-200 mb-4">
+          {navigationItems.map((item) => (
+            <button
+              key={item.value}
+              onClick={() => setActiveTab(item.value)}
+              className={`flex-1 py-3 px-4 text-sm font-medium transition-colors duration-200 ${
+                activeTab === item.value
+                  ? `text-${brownTheme.primary} border-b-2 border-${brownTheme.primary}`
+                  : `text-${brownTheme.secondary} hover:text-${brownTheme.hover}`
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {/* 컨테이너 - 고정 높이로 변경 */}
-      <div className="flex flex-col overflow-hidden" style={{ height: '500px' }}>
-        <motion.div
-          className="flex w-full h-full"
-          style={{ width: '200%' }} // 2개 탭
-          animate={{ x: -(getTabIndex(activeTab) * 50) + '%' }}
-          transition={{ type: 'tween', duration: 0.3, ease: 'easeInOut' }}
-        >
-          {/* 클래스 정보 탭 */}
-          <div className="w-1/2 flex-shrink-0 px-1">
-            <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-              {isLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
-                </div>
-              ) : classDetails ? (
-                <ClassDetail 
-                  classId={session.class.id} 
-                  classSessions={[session]} 
-                  showModificationButton={true}
-                  onModificationClick={onClose}
-                />
-              ) : (
-                <div className="text-center py-8 text-stone-500">
-                  클래스 정보를 불러올 수 없습니다.
-                </div>
-              )}
-            </div>
+      {/* 컨테이너 - onlyDetail에 따라 높이 조정 */}
+      <div className="flex flex-col overflow-hidden" style={{ height: onlyDetail ? '600px' : '500px' }}>
+        {onlyDetail ? (
+          // onlyDetail이 true일 때: 세션 상세 정보만 표시
+          <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            <SessionDetailTab sessionId={session.id} />
           </div>
-          
-          {/* 세션 상세 정보 탭 */}
-          <div className="w-1/2 flex-shrink-0 px-1">
-            <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-              <SessionDetailTab sessionId={session.id} />
+        ) : (
+          // onlyDetail이 false일 때: 기존 탭 구조 유지
+          <motion.div
+            className="flex w-full h-full"
+            style={{ width: '200%' }} // 2개 탭
+            animate={{ x: -(getTabIndex(activeTab) * 50) + '%' }}
+            transition={{ type: 'tween', duration: 0.3, ease: 'easeInOut' }}
+          >
+            {/* 클래스 정보 탭 */}
+            <div className="w-1/2 flex-shrink-0 px-1">
+              <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
+                  </div>
+                ) : classDetails ? (
+                  <ClassDetail 
+                    classId={session.class.id} 
+                    classSessions={[session]} 
+                    showModificationButton={true}
+                    onModificationClick={onClose}
+                  />
+                ) : (
+                  <div className="text-center py-8 text-stone-500">
+                    클래스 정보를 불러올 수 없습니다.
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        </motion.div>
+            
+            {/* 세션 상세 정보 탭 */}
+            <div className="w-1/2 flex-shrink-0 px-1">
+              <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                <SessionDetailTab sessionId={session.id} />
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
     </SlideUpModal>
   )

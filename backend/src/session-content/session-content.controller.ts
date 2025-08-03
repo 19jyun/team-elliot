@@ -40,7 +40,7 @@ export class SessionContentController {
   }
 
   @Post()
-  @Roles(Role.TEACHER, Role.ADMIN)
+  @Roles(Role.TEACHER, Role.ADMIN, Role.PRINCIPAL)
   @ApiOperation({ summary: '세션 내용 추가' })
   @ApiResponse({ status: 201, description: '세션 내용 추가 성공' })
   async create(
@@ -54,7 +54,7 @@ export class SessionContentController {
   }
 
   @Patch('reorder')
-  @Roles(Role.TEACHER, Role.ADMIN)
+  @Roles(Role.TEACHER, Role.ADMIN, Role.PRINCIPAL)
   @ApiOperation({ summary: '세션 내용 순서 변경' })
   @ApiResponse({ status: 200, description: '세션 내용 순서 변경 성공' })
   async reorder(
@@ -65,7 +65,7 @@ export class SessionContentController {
   }
 
   @Patch(':id')
-  @Roles(Role.TEACHER, Role.ADMIN)
+  @Roles(Role.TEACHER, Role.ADMIN, Role.PRINCIPAL)
   @ApiOperation({ summary: '세션 내용 수정' })
   @ApiResponse({ status: 200, description: '세션 내용 수정 성공' })
   async update(
@@ -76,7 +76,7 @@ export class SessionContentController {
   }
 
   @Delete(':id')
-  @Roles(Role.TEACHER, Role.ADMIN)
+  @Roles(Role.TEACHER, Role.ADMIN, Role.PRINCIPAL)
   @ApiOperation({ summary: '세션 내용 삭제' })
   @ApiResponse({ status: 200, description: '세션 내용 삭제 성공' })
   async remove(@Param('id', ParseIntPipe) id: number) {

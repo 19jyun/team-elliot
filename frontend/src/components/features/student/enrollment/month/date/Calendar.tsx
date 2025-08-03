@@ -93,7 +93,6 @@ export default function Calendar({
     const stored = localStorage.getItem('selectedClassCards')
     if (stored) {
       const cards = JSON.parse(stored)
-      console.log('classCards in localStorage:', cards)
       
        loadClassDetails(cards)
     }
@@ -162,7 +161,6 @@ export default function Calendar({
       }
       
       setClassSessions(allSessions)
-      console.log('Loaded class sessions for month', month, ':', allSessions)
     } catch (error) {
       console.error('Failed to load class sessions:', error)
     } finally {
@@ -185,7 +183,6 @@ export default function Calendar({
         }
       });
       
-      console.log('기존 수강 신청 세션들 미리 선택:', preSelectedDates);
       setSelectedDates(preSelectedDates);
     }
   }, [mode, modificationSessions]);

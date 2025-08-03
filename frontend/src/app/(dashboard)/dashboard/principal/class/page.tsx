@@ -1,11 +1,10 @@
 'use client'
 
 import { useSession, signOut } from 'next-auth/react'
-import { useQuery } from '@tanstack/react-query'
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { getPrincipalAllSessions } from '@/api/principal'
+import { usePrincipalData } from '@/hooks/redux/usePrincipalData'
 import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessionModal'
 import { SessionDetailModal } from '@/components/common/Session/SessionDetailModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'
@@ -71,54 +70,16 @@ export default function PrincipalClassPage() {
 
   const { navigateToSubPage } = useDashboardNavigation()
   
+  // Redux store에서 데이터 가져오기
+  const { calendarSessions, isLoading, error } = usePrincipalData()
+  
   // 날짜 클릭 관련 상태 추가
   const [clickedDate, setClickedDate] = useState<Date | null>(null)
   const [isDateModalOpen, setIsDateModalOpen] = useState(false)
-  const [selectedDaySessions, setSelectedDaySessions] = useState<any[]>([])
   
   // 세션 상세 모달 상태 추가
   const [selectedSession, setSelectedSession] = useState<any>(null)
   const [isSessionDetailModalOpen, setIsSessionDetailModalOpen] = useState(false)
-
-  // Principal의 모든 세션 조회
-  const { data: allSessions, isLoading, error } = useQuery({
-    queryKey: ['principal-all-sessions'],
-    queryFn: getPrincipalAllSessions,
-    enabled: status === 'authenticated' && !!session?.user && !!session?.accessToken,
-    retry: false,
-  })
-
-  const sessions = allSessions || []
-
-  // ConnectedCalendar용 데이터 변환
-  const convertedSessions = useMemo(() => {
-    if (!sessions) return [];
-    
-    return sessions.map((session: any) => ({
-      id: session.id,
-      classId: session.classId || session.id,
-      date: session.date,
-      startTime: session.startTime,
-      endTime: session.endTime,
-      currentStudents: session.currentStudents || 0,
-      maxStudents: session.maxStudents || 0,
-      isEnrollable: false, // principal-view에서는 선택 불가
-      isFull: session.currentStudents >= session.maxStudents,
-      isPastStartTime: new Date(session.date + ' ' + session.startTime) < new Date(),
-      isAlreadyEnrolled: false, // principal-view에서는 해당 없음
-      studentEnrollmentStatus: 'CONFIRMED', // principal-view에서는 해당 없음
-      class: {
-        id: session.class?.id || session.classId || session.id,
-        className: session.class?.className || '클래스',
-        level: session.class?.level || 'BEGINNER',
-        tuitionFee: session.class?.tuitionFee?.toString() || '50000',
-        teacher: {
-          id: session.class?.teacher?.id || 0,
-          name: session.class?.teacher?.name || '선생님',
-        },
-      },
-    })) as ClassSession[];
-  }, [sessions]);
 
   // 백엔드에서 받은 캘린더 범위 사용 (새로운 정책 적용)
   const calendarRange = useMemo(() => {
@@ -159,25 +120,16 @@ export default function PrincipalClassPage() {
     )
   }
 
-  // 날짜 클릭 핸들러 (ConnectedCalendar용)
+  // 날짜 클릭 핸들러 (ConnectedCalendar용) - Redux 방식
   const handleDateClick = (dateString: string) => {
     const clickedDateObj = new Date(dateString);
-    
-    // 해당 날짜의 세션들 필터링
-    const daySessions = sessions?.filter((session: any) => {
-      const sessionDate = new Date(session.date);
-      return sessionDate.toDateString() === clickedDateObj.toDateString();
-    }) || [];
-
     setClickedDate(clickedDateObj);
-    setSelectedDaySessions(daySessions);
     setIsDateModalOpen(true);
   }
 
   const closeDateModal = () => {
     setIsDateModalOpen(false)
     setClickedDate(null)
-    setSelectedDaySessions([])
   }
 
   // 세션 클릭 핸들러 추가
@@ -240,7 +192,7 @@ export default function PrincipalClassPage() {
         <div className="flex flex-col w-full bg-white text-stone-700" style={{ height: 'calc(100vh - 450px)' }}>
           <CalendarProvider
             mode="teacher-view"
-            sessions={convertedSessions}
+            sessions={calendarSessions}
             selectedSessionIds={new Set()}
             onSessionSelect={() => {}} // principal-view에서는 선택 기능 없음
             onDateClick={handleDateClick}
@@ -262,20 +214,19 @@ export default function PrincipalClassPage() {
         </div>
       </header>
 
-      {/* Date Session Modal */}
+      {/* Date Session Modal - Redux 방식 */}
       <DateSessionModal
         isOpen={isDateModalOpen}
         selectedDate={clickedDate}
-        sessions={selectedDaySessions}
         onClose={closeDateModal}
         onSessionClick={handleSessionClick}
         role="principal"
       />
 
-      {/* Session Detail Modal */}
+      {/* Session Detail Modal - Redux 방식 */}
       <SessionDetailModal
         isOpen={isSessionDetailModalOpen}
-        session={selectedSession}
+        sessionId={selectedSession?.id}
         onClose={closeSessionDetailModal}
         role="principal"
       />

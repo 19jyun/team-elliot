@@ -129,7 +129,6 @@ export function RefundRequestStep({ refundAmount, cancelledSessionsCount, onComp
         }
       );
 
-      console.log('환불 신청할 세션들:', cancelledSessions);
 
       // 각 취소된 세션에 대해 환불 요청 생성
       const refundRequests = [];
@@ -151,7 +150,6 @@ export function RefundRequestStep({ refundAmount, cancelledSessionsCount, onComp
         try {
           const response = await refundApi.createRefundRequest(refundRequest);
           refundRequests.push(response);
-          console.log('환불 요청 생성 성공:', response);
         } catch (error) {
           console.error('환불 요청 생성 실패:', error);
           throw new Error(`세션 ${cancelledSession.sessionId}의 환불 요청 생성에 실패했습니다.`);

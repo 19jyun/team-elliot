@@ -9,7 +9,7 @@ import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { AnimatedCard } from '@/components/common/AnimatedCard';
 
 // 커스텀 훅들
-import { useAcademyManagement } from '@/hooks/useAcademyManagement';
+import { useTeacherAcademyManagement } from '@/hooks/redux/useTeacherAcademyManagement';
 import { useAcademyForm } from '@/hooks/useAcademyForm';
 import { usePhoneVerification } from '@/hooks/usePhoneVerification';
 
@@ -41,7 +41,7 @@ export default function AcademyManagement({ onBack }: AcademyManagementProps) {
     handleWithdrawalConfirm,
     handleCreateAcademy,
     handleLeaveAcademy,
-  } = useAcademyManagement();
+  } = useTeacherAcademyManagement();
 
   const {
     isExpanded,
@@ -167,7 +167,7 @@ export default function AcademyManagement({ onBack }: AcademyManagementProps) {
               </div>
             ) : (
               <AcademyCard
-                academy={currentAcademy}
+                useRedux={true}
                 variant="teacher"
                 showTeamCode={true}
                 showActionButton={true}

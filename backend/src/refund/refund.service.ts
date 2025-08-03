@@ -5,20 +5,14 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { ActivityLogService } from '../activity-log/activity-log.service';
 import { ClassSessionService } from '../class-session/class-session.service';
 import { RefundRequestDto, RefundReason } from './dto/refund-request.dto';
 import { RefundProcessDto, RefundStatus } from './dto/refund-process.dto';
-import {
-  ACTIVITY_TYPES,
-  ENTITY_TYPES,
-} from '../activity-log/constants/activity-types';
 
 @Injectable()
 export class RefundService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly activityLogService: ActivityLogService,
     private readonly classSessionService: ClassSessionService,
   ) {}
 
@@ -126,30 +120,7 @@ export class RefundService {
       enrollmentStatus: updatedEnrollment.status,
     });
 
-    // 환불 요청 로그
-    await this.activityLogService.logActivityAsync({
-      userId: studentId,
-      userRole: 'STUDENT',
-      action: ACTIVITY_TYPES.PAYMENT.REFUND_REQUEST,
-      entityType: ENTITY_TYPES.SESSION_ENROLLMENT,
-      entityId: dto.sessionEnrollmentId,
-      oldValue: {
-        sessionId: sessionEnrollment.sessionId,
-        className: sessionEnrollment.session.class.className,
-        sessionDate: sessionEnrollment.session.date,
-        status: sessionEnrollment.status,
-      },
-      newValue: {
-        refundRequestId: refundRequest.id,
-        sessionId: sessionEnrollment.sessionId,
-        className: sessionEnrollment.session.class.className,
-        sessionDate: sessionEnrollment.session.date,
-        reason: dto.reason,
-        refundAmount: dto.refundAmount,
-        status: 'PENDING',
-      },
-      description: `${sessionEnrollment.session.class.className} 환불 요청: ${dto.refundAmount.toLocaleString()}원`,
-    });
+
 
     return refundRequest;
   }
@@ -199,30 +170,7 @@ export class RefundService {
       },
     });
 
-    // 환불 요청 취소 로그
-    await this.activityLogService.logActivityAsync({
-      userId: studentId,
-      userRole: 'STUDENT',
-      action: ACTIVITY_TYPES.PAYMENT.REFUND_REQUEST,
-      entityType: ENTITY_TYPES.SESSION_ENROLLMENT,
-      entityId: refundRequest.sessionEnrollmentId,
-      oldValue: {
-        refundRequestId: refundRequest.id,
-        sessionId: refundRequest.sessionEnrollment.sessionId,
-        className: refundRequest.sessionEnrollment.session.class.className,
-        sessionDate: refundRequest.sessionEnrollment.session.date,
-        status: 'PENDING',
-      },
-      newValue: {
-        refundRequestId: refundRequest.id,
-        sessionId: refundRequest.sessionEnrollment.sessionId,
-        className: refundRequest.sessionEnrollment.session.class.className,
-        sessionDate: refundRequest.sessionEnrollment.session.date,
-        status: 'CANCELLED',
-        cancelledAt: cancelledRefundRequest.cancelledAt,
-      },
-      description: `${refundRequest.sessionEnrollment.session.class.className} 환불 요청 취소`,
-    });
+
 
     return cancelledRefundRequest;
   }
@@ -302,41 +250,7 @@ export class RefundService {
       );
     }
 
-    // 환불 처리 로그
-    const action =
-      dto.status === 'APPROVED'
-        ? ACTIVITY_TYPES.PAYMENT.REFUND_COMPLETED
-        : dto.status === 'REJECTED'
-          ? ACTIVITY_TYPES.PAYMENT.REFUND_REJECTED
-          : ACTIVITY_TYPES.PAYMENT.PARTIAL_REFUND;
 
-    await this.activityLogService.logActivityAsync({
-      userId: processorId,
-      userRole: 'ADMIN', // 또는 'TEACHER'
-      action: action,
-      entityType: ENTITY_TYPES.SESSION_ENROLLMENT,
-      entityId: refundRequest.sessionEnrollmentId,
-      oldValue: {
-        refundRequestId: refundRequest.id,
-        sessionId: refundRequest.sessionEnrollment.sessionId,
-        className: refundRequest.sessionEnrollment.session.class.className,
-        sessionDate: refundRequest.sessionEnrollment.session.date,
-        status: 'PENDING',
-        refundAmount: refundRequest.refundAmount,
-      },
-      newValue: {
-        refundRequestId: refundRequest.id,
-        sessionId: refundRequest.sessionEnrollment.sessionId,
-        className: refundRequest.sessionEnrollment.session.class.className,
-        sessionDate: refundRequest.sessionEnrollment.session.date,
-        status: dto.status,
-        refundAmount: refundRequest.refundAmount,
-        actualRefundAmount: processedRefundRequest.actualRefundAmount,
-        processReason: dto.processReason,
-        processedAt: processedRefundRequest.processedAt,
-      },
-      description: `${refundRequest.sessionEnrollment.session.class.className} 환불 ${dto.status === 'APPROVED' ? '승인' : dto.status === 'REJECTED' ? '거부' : '부분 승인'}: ${processedRefundRequest.actualRefundAmount?.toLocaleString()}원`,
-    });
 
     return processedRefundRequest;
   }
@@ -526,20 +440,7 @@ export class RefundService {
       'REFUND_CANCELLED',
     );
 
-    // 활동 로그 기록
-    await this.activityLogService.logActivityAsync({
-      userId: processorId,
-      userRole: 'TEACHER',
-      action: ACTIVITY_TYPES.PAYMENT.REFUND_COMPLETED,
-      entityType: ENTITY_TYPES.SESSION_ENROLLMENT,
-      entityId: refundRequest.sessionEnrollmentId,
-      oldValue: { status: 'REFUND_REQUESTED' },
-      newValue: {
-        status: 'REFUND_CANCELLED',
-        refundAmount: refundRequest.refundAmount,
-      },
-      description: `${refundRequest.student.name}의 환불 요청 승인: ${refundRequest.refundAmount.toLocaleString()}원`,
-    });
+
 
     return result;
   }
@@ -649,17 +550,7 @@ export class RefundService {
       refundRequest.sessionEnrollmentId,
     );
 
-    // 활동 로그 기록
-    await this.activityLogService.logActivityAsync({
-      userId: processorId,
-      userRole: 'TEACHER',
-      action: ACTIVITY_TYPES.PAYMENT.REFUND_REJECTED,
-      entityType: ENTITY_TYPES.SESSION_ENROLLMENT,
-      entityId: refundRequest.sessionEnrollmentId,
-      oldValue: { status: 'REFUND_REQUESTED' },
-      newValue: { status: 'CONFIRMED', reason: data.reason },
-      description: `${refundRequest.student.name}의 환불 요청 거절: ${data.reason}`,
-    });
+
 
     return result;
   }

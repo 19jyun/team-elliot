@@ -8,15 +8,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { User, Phone, Building, Edit, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { getTeacherProfile, updateTeacherProfile } from '@/api/teacher';
-import { TeacherProfile, UpdateProfileRequest } from '@/types/api/teacher';
+import { updateTeacherProfile } from '@/api/teacher';
+import { UpdateProfileRequest } from '@/types/api/teacher';
+import { useTeacherData } from '@/hooks/redux/useTeacherData';
+import { useAppDispatch } from '@/store/hooks';
+import { updateTeacherProfile as updateTeacherProfileAction } from '@/store/slices/teacherSlice';
 
 export function TeacherPersonalInfoManagement() {
-  const [personalInfo, setPersonalInfo] = useState<TeacherProfile | null>(null);
+  const dispatch = useAppDispatch();
   const [isEditing, setIsEditing] = useState(false);
   const [editedInfo, setEditedInfo] = useState<UpdateProfileRequest>({});
   const [isLoading, setIsLoading] = useState(false);
   
+  // Redux store에서 Teacher 데이터 가져오기
+  const { userProfile, academy, isLoading: isDataLoading, error } = useTeacherData();
+
   // 전화번호 인증 관련 상태
   const [isPhoneVerificationRequired, setIsPhoneVerificationRequired] = useState(false);
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
@@ -24,9 +30,15 @@ export function TeacherPersonalInfoManagement() {
   const [timeLeft, setTimeLeft] = useState(180); // 3분 = 180초
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
+  // userProfile 데이터가 로드되면 editedInfo 업데이트
   useEffect(() => {
-    loadPersonalInfo();
-  }, []);
+    if (userProfile) {
+      setEditedInfo({
+        name: userProfile.name || '',
+        phoneNumber: userProfile.phoneNumber || '',
+      });
+    }
+  }, [userProfile]);
 
   // 타이머 효과
   useEffect(() => {
@@ -55,8 +67,8 @@ export function TeacherPersonalInfoManagement() {
 
   // 전화번호 변경 감지
   useEffect(() => {
-    if (isEditing && personalInfo) {
-      const originalPhone = personalInfo.phoneNumber || '';
+    if (isEditing && userProfile) {
+      const originalPhone = userProfile.phoneNumber || '';
       const currentPhone = editedInfo.phoneNumber || '';
       
       if (currentPhone !== originalPhone && currentPhone.length === 11) {
@@ -78,40 +90,26 @@ export function TeacherPersonalInfoManagement() {
         setVerificationCode('');
       }
     }
-  }, [editedInfo.phoneNumber, personalInfo, isEditing]);
+  }, [editedInfo.phoneNumber, userProfile, isEditing]);
 
-  const loadPersonalInfo = async () => {
-    try {
-      setIsLoading(true);
-      const response = await getTeacherProfile();
-      setPersonalInfo(response);
-      setEditedInfo({
-        name: response.name,
-        phoneNumber: response.phoneNumber || '',
-      });
-    } catch (error) {
-      console.error('개인 정보 로드 실패:', error);
-      toast.error('개인 정보를 불러오는데 실패했습니다.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Redux에서 데이터를 가져오므로 별도의 API 호출 불필요
+  // loadPersonalInfo 함수 제거
 
   const handleEdit = () => {
-    if (personalInfo) {
+    if (userProfile) {
       setEditedInfo({
-        name: personalInfo.name,
-        phoneNumber: personalInfo.phoneNumber || '',
+        name: userProfile.name || '',
+        phoneNumber: userProfile.phoneNumber || '',
       });
     }
     setIsEditing(true);
   };
 
   const handleCancel = () => {
-    if (personalInfo) {
+    if (userProfile) {
       setEditedInfo({
-        name: personalInfo.name,
-        phoneNumber: personalInfo.phoneNumber || '',
+        name: userProfile.name || '',
+        phoneNumber: userProfile.phoneNumber || '',
       });
     }
     setIsEditing(false);
@@ -132,7 +130,9 @@ export function TeacherPersonalInfoManagement() {
     try {
       setIsLoading(true);
       const response = await updateTeacherProfile(editedInfo);
-      setPersonalInfo(response);
+      
+      // Redux store 직접 업데이트
+      dispatch(updateTeacherProfileAction(response));
       setIsEditing(false);
       setIsPhoneVerificationRequired(false);
       setIsPhoneVerified(false);
@@ -239,7 +239,7 @@ export function TeacherPersonalInfoManagement() {
     });
   };
 
-  if (isLoading && !personalInfo) {
+  if (isDataLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -247,12 +247,12 @@ export function TeacherPersonalInfoManagement() {
     );
   }
 
-  if (!personalInfo) {
+  if (!userProfile) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <p className="text-gray-500">개인 정보를 불러올 수 없습니다.</p>
-          <Button onClick={loadPersonalInfo} className="mt-4">
+          <Button onClick={() => window.location.reload()} className="mt-4">
             다시 시도
           </Button>
         </div>
@@ -332,7 +332,7 @@ export function TeacherPersonalInfoManagement() {
                 />
               ) : (
                 <div className="p-3 bg-gray-50 rounded-md">
-                  <span className="text-gray-900">{personalInfo.name}</span>
+                  <span className="text-gray-900">{userProfile.name}</span>
                 </div>
               )}
             </div>
@@ -409,8 +409,8 @@ export function TeacherPersonalInfoManagement() {
                 <div className="p-3 bg-gray-50 rounded-md flex items-center gap-2">
                   <Phone className="h-4 w-4 text-gray-500" />
                   <span className="text-gray-900">
-                    {personalInfo.phoneNumber 
-                      ? personalInfo.phoneNumber.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3')
+                    {userProfile.phoneNumber 
+                      ? userProfile.phoneNumber.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3')
                       : '미입력'
                     }
                   </span>
@@ -424,7 +424,7 @@ export function TeacherPersonalInfoManagement() {
               <div className="p-3 bg-gray-50 rounded-md flex items-center gap-2">
                 <Building className="h-4 w-4 text-gray-500" />
                 <span className="text-gray-900">
-                  {personalInfo.academy?.name || '소속된 학원이 없습니다.'}
+                  {academy?.name || '소속된 학원이 없습니다.'}
                 </span>
               </div>
               <p className="text-xs text-gray-500">학원 정보는 학원 관리 탭에서 수정할 수 있습니다.</p>
@@ -438,15 +438,15 @@ export function TeacherPersonalInfoManagement() {
               <div className="space-y-2 text-sm text-gray-600">
                 <div className="flex justify-between">
                   <span>선생님 ID</span>
-                  <span>{personalInfo.id}</span>
+                  <span>{userProfile.id}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>가입일</span>
-                  <span>{formatDateTime(personalInfo.createdAt)}</span>
+                  <span>{userProfile.createdAt ? formatDateTime(userProfile.createdAt) : '정보 없음'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>최종 수정일</span>
-                  <span>{formatDateTime(personalInfo.updatedAt)}</span>
+                  <span>{userProfile.updatedAt ? formatDateTime(userProfile.updatedAt) : '정보 없음'}</span>
                 </div>
               </div>
             </div>

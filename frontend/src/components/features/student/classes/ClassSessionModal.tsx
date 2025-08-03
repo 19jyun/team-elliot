@@ -42,13 +42,15 @@ interface ClassSessionModalProps {
   selectedClass: ClassData | null
   sessions: SessionData[]
   onClose: () => void
+  onSessionClick?: (session: SessionData) => void // 세션 클릭 핸들러 추가
 }
 
 export function ClassSessionModal({ 
   isOpen, 
   selectedClass, 
   sessions, 
-  onClose 
+  onClose,
+  onSessionClick 
 }: ClassSessionModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>('sessions')
   const [isTransitioning, setIsTransitioning] = useState(false)
@@ -78,8 +80,13 @@ export function ClassSessionModal({
   }
 
   const handleSessionClick = (session: any) => {
-    // 세션 클릭 시 클래스 정보 탭으로 전환
-    handleTabChange('class-detail')
+    // onSessionClick prop이 있으면 호출, 없으면 기본 동작 (클래스 정보 탭으로 전환)
+    if (onSessionClick) {
+      onSessionClick(session)
+    } else {
+      // 기본 동작: 클래스 정보 탭으로 전환
+      handleTabChange('class-detail')
+    }
   }
 
   const navigationItems = [

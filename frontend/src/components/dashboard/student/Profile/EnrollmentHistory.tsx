@@ -8,12 +8,11 @@ import { Separator } from '@/components/ui/separator';
 import { Calendar, Clock, BookOpen, CheckCircle, XCircle, AlertCircle, Clock as ClockIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
-import { getEnrollmentHistory } from '@/api/student';
+import { useStudentData } from '@/hooks/redux/useStudentData';
 
 export function EnrollmentHistory() {
   const { pushFocus, popFocus } = useDashboardNavigation();
-  const [enrollmentLogs, setEnrollmentLogs] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const { enrollmentHistory, isLoading, error } = useStudentData();
   const [selectedFilter, setSelectedFilter] = useState<string>('ALL');
 
   useEffect(() => {
@@ -21,24 +20,29 @@ export function EnrollmentHistory() {
     return () => popFocus();
   }, [pushFocus, popFocus]);
 
-  useEffect(() => {
-    loadEnrollmentHistory();
-  }, []);
+  // 에러 처리
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-full">
+        <p className="text-red-500">수강 내역을 불러오는데 실패했습니다.</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
+        >
+          다시 시도
+        </button>
+      </div>
+    );
+  }
 
-  const loadEnrollmentHistory = async () => {
-    try {
-      setIsLoading(true);
-      const response = await getEnrollmentHistory();
-      console.log('Enrollment History Response:', response);
-      setEnrollmentLogs(response);
-    } catch (error) {
-      console.error('Enrollment History Error:', error);
-      toast.error('수강 내역을 불러오는데 실패했습니다.');
-      setEnrollmentLogs([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // 로딩 상태 처리
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-full">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
+      </div>
+    );
+  }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -108,19 +112,11 @@ export function EnrollmentHistory() {
     return log.id;
   };
 
-  const filteredLogs = (enrollmentLogs || []).filter(log => {
+  const filteredLogs = (enrollmentHistory || []).filter(log => {
     if (selectedFilter === 'ALL') return true;
     const status = getEnrollmentStatus(log);
     return status === selectedFilter;
   });
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">수강 내역을 불러오는 중...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col h-full bg-white max-w-[480px] mx-auto">

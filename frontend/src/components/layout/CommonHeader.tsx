@@ -47,7 +47,6 @@ export function CommonHeader() {
     }
   } catch (error) {
     // Context가 아직 준비되지 않은 경우 기본값 사용
-    console.log('Context not ready yet, using default values');
   }
 
   // 기본 대시보드 페이지인지 확인

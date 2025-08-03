@@ -51,7 +51,6 @@ export function AddTeacherModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log(formData)
     setIdError('')
     const isAvailable = await checkDuplicateUserId(formData.userId)
     if (!isAvailable) {

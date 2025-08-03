@@ -1,10 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getTeacherProfile, getTeacherProfileById, updateTeacherProfile } from '@/api/teacher';
+import React, { useState, useEffect, useRef } from 'react';
+import { updateTeacherProfile, updateTeacherProfilePhoto, getTeacherProfileById } from '@/api/teacher';
+import { useTeacherData } from '@/hooks/redux/useTeacherData';
+import { useAppDispatch } from '@/store/hooks';
+import { updateTeacherProfile as updateTeacherProfileAction } from '@/store/slices/teacherSlice';
 import { TeacherProfileResponse, UpdateProfileRequest } from '@/types/api/teacher';
 import { toast } from 'sonner';
+import { getImageUrl } from '@/utils/imageUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,7 +45,7 @@ export function TeacherProfileCard({
   showHeader = true,
   compact = false
 }: TeacherProfileCardProps) {
-  const queryClient = useQueryClient();
+  const dispatch = useAppDispatch();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<UpdateProfileRequest>({});
   const [tempEducation, setTempEducation] = useState<string[]>([]);
@@ -51,54 +54,110 @@ export function TeacherProfileCard({
   const [newEducation, setNewEducation] = useState('');
   const [newSpecialty, setNewSpecialty] = useState('');
   const [newCertification, setNewCertification] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
+  
+  // Photo upload 관련 state
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  // 선생님 프로필 정보 조회
-  const { data: profile, isLoading, error } = useQuery({
-    queryKey: ['teacher-profile', teacherId || 'me'],
-    queryFn: () => getTeacherProfileById(teacherId),
-    retry: false, // 재시도하지 않음
-    staleTime: 5 * 60 * 1000, // 5분간 캐시
-    gcTime: 10 * 60 * 1000, // 10분간 가비지 컬렉션 시간
-  });
+  // 특정 선생님 ID가 있으면 API로 직접 조회, 없으면 Redux 사용
+  const [apiUserProfile, setApiUserProfile] = useState<TeacherProfileResponse | null>(null);
+  const [apiIsLoading, setApiIsLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
-  // 에러 로깅을 useEffect로 처리
+  // Redux store에서 Teacher 데이터 가져오기 (teacherId가 없을 때만 사용)
+  const { userProfile: reduxUserProfile, isLoading: reduxIsLoading, error: reduxError } = useTeacherData();
+
+  // teacherId가 있으면 API로 직접 조회
   useEffect(() => {
-    if (error) {
-      console.error('TeacherProfileCard API 호출 실패:', error);
+    if (teacherId) {
+      const loadTeacherProfile = async () => {
+        try {
+          setApiIsLoading(true);
+          setApiError(null);
+          const profile = await getTeacherProfileById(teacherId);
+          setApiUserProfile(profile);
+        } catch (error: any) {
+          console.error('선생님 프로필 로드 실패:', error);
+          setApiError(error.message || '선생님 정보를 불러올 수 없습니다.');
+        } finally {
+          setApiIsLoading(false);
+        }
+      };
+
+      loadTeacherProfile();
     }
-  }, [error]);
-
-  // teacherId 디버깅
-  useEffect(() => {
-    console.log('TeacherProfileCard에서 teacherId:', teacherId);
   }, [teacherId]);
 
-  // 프로필 업데이트 뮤테이션 (편집 가능한 경우만)
-  const updateProfileMutation = useMutation({
-    mutationFn: updateTeacherProfile,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['teacher-profile'] });
+  // 사용할 데이터 결정
+  const userProfile = teacherId ? apiUserProfile : reduxUserProfile;
+  const isLoading = teacherId ? apiIsLoading : reduxIsLoading;
+  const error = teacherId ? apiError : reduxError;
+
+  // 프로필 업데이트 함수
+  const updateProfile = async (data: UpdateProfileRequest) => {
+    try {
+      setIsUpdating(true);
+      const updatedProfile = await updateTeacherProfile(data);
+      
+      // Redux store 직접 업데이트
+      dispatch(updateTeacherProfileAction(updatedProfile));
       toast.success('프로필이 성공적으로 업데이트되었습니다.');
       setIsEditing(false);
       onSave?.();
-    },
-    onError: (error) => {
+    } catch (error: any) {
       console.error('프로필 업데이트 실패:', error);
       toast.error('프로필 업데이트에 실패했습니다.');
-    },
-  });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Photo upload 관련 함수들
+  const handlePhotoClick = () => {
+    if (isEditing && fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // 파일 크기 검증 (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('파일 크기는 5MB 이하여야 합니다.');
+        return;
+      }
+
+      // 파일 타입 검증
+      if (!file.type.startsWith('image/')) {
+        toast.error('이미지 파일만 업로드 가능합니다.');
+        return;
+      }
+
+      setSelectedPhoto(file);
+      
+      // 미리보기 URL 생성
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewUrl(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   // 편집 모드 시작
   const handleEdit = () => {
-    if (!profile) return;
+    if (!userProfile) return;
     
     setFormData({
-      introduction: profile.introduction,
-      yearsOfExperience: profile.yearsOfExperience,
+      introduction: userProfile.introduction || '',
+      yearsOfExperience: userProfile.yearsOfExperience || 0,
     });
-    setTempEducation(profile.education || []);
-    setTempSpecialties(profile.specialties || []);
-    setTempCertifications(profile.certifications || []);
+    setTempEducation(userProfile.education || []);
+    setTempSpecialties(userProfile.specialties || []);
+    setTempCertifications(userProfile.certifications || []);
     setIsEditing(true);
   };
 
@@ -112,19 +171,46 @@ export function TeacherProfileCard({
     setNewEducation('');
     setNewSpecialty('');
     setNewCertification('');
+    // Photo 관련 상태 초기화
+    setSelectedPhoto(null);
+    setPreviewUrl(null);
     onCancel?.();
   };
 
   // 프로필 저장
-  const handleSave = () => {
-    const updateData: UpdateProfileRequest = {
-      ...formData,
-      education: tempEducation,
-      specialties: tempSpecialties,
-      certifications: tempCertifications,
-    };
-    
-    updateProfileMutation.mutate(updateData);
+  const handleSave = async () => {
+    try {
+      setIsUpdating(true);
+      
+      // 1. 프로필 정보 업데이트
+      const updateData: UpdateProfileRequest = {
+        ...formData,
+        education: tempEducation,
+        specialties: tempSpecialties,
+        certifications: tempCertifications,
+      };
+      
+      const updatedProfile = await updateTeacherProfile(updateData);
+      
+      // 2. 사진 업로드 (선택된 경우)
+      if (selectedPhoto) {
+        await updateTeacherProfilePhoto(selectedPhoto);
+        // 사진 업로드 후 상태 초기화
+        setSelectedPhoto(null);
+        setPreviewUrl(null);
+      }
+      
+      // Redux store 업데이트
+      dispatch(updateTeacherProfileAction(updatedProfile));
+      toast.success('프로필이 성공적으로 업데이트되었습니다.');
+      setIsEditing(false);
+      onSave?.();
+    } catch (error: any) {
+      console.error('프로필 업데이트 실패:', error);
+      toast.error('프로필 업데이트에 실패했습니다.');
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   // 배열 항목 추가
@@ -157,7 +243,7 @@ export function TeacherProfileCard({
     );
   }
 
-  if (!profile) {
+  if (!userProfile) {
     return (
       <div className="text-center py-8 text-gray-500">
         프로필 정보가 없습니다.
@@ -172,56 +258,58 @@ export function TeacherProfileCard({
         <CardContent className="p-4 space-y-4">
           {/* 프로필 사진 및 기본 정보 */}
           <div className="flex items-start gap-4">
-            <Avatar className="h-16 w-16">
-              <AvatarImage src={profile.photoUrl} alt={profile.name} />
-              <AvatarFallback className="text-lg">
-                {profile.name?.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className="h-16 w-16">
+                <AvatarImage src={getImageUrl(userProfile.photoUrl) || ''} alt={userProfile.name} />
+                <AvatarFallback className="text-lg">
+                  {userProfile.name?.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+            </div>
             
             <div className="flex-1 space-y-2">
-              <h3 className="text-lg font-semibold">{profile.name}</h3>
-              {profile.phoneNumber && (
-                <p className="text-gray-600 text-sm">{profile.phoneNumber}</p>
+              <h3 className="text-lg font-semibold">{userProfile.name}</h3>
+              {userProfile.phoneNumber && (
+                <p className="text-gray-600 text-sm">{userProfile.phoneNumber}</p>
               )}
             </div>
           </div>
 
           {/* 소개 */}
-          {profile.introduction && (
+          {userProfile.introduction && (
             <div className="space-y-2">
               <h4 className="font-medium flex items-center gap-2 text-sm">
                 <User className="h-4 w-4" />
                 소개
               </h4>
               <p className="text-gray-700 text-sm whitespace-pre-line">
-                {profile.introduction}
+                {userProfile.introduction}
               </p>
             </div>
           )}
 
           {/* 경력 */}
-          {profile.yearsOfExperience && (
+          {userProfile.yearsOfExperience && (
             <div className="space-y-2">
               <h4 className="font-medium flex items-center gap-2 text-sm">
                 <Clock className="h-4 w-4" />
                 교습 경력
               </h4>
               <p className="text-gray-700 text-sm">
-                {profile.yearsOfExperience}년
+                {userProfile.yearsOfExperience}년
               </p>
             </div>
           )}
 
           {/* 학력 */}
-          {profile.education && profile.education.length > 0 && (
+          {userProfile.education && userProfile.education.length > 0 && (
             <div className="space-y-2">
               <h4 className="font-medium flex items-center gap-2 text-sm">
                 <GraduationCap className="h-4 w-4" />
                 학력/경력
               </h4>
               <div className="flex flex-wrap gap-2">
-                {profile.education.map((item, index) => (
+                {userProfile.education.map((item: string, index: number) => (
                   <Badge key={index} variant="secondary" className="text-xs">
                     {item}
                   </Badge>
@@ -231,14 +319,14 @@ export function TeacherProfileCard({
           )}
 
           {/* 전문 분야 */}
-          {profile.specialties && profile.specialties.length > 0 && (
+          {userProfile.specialties && userProfile.specialties.length > 0 && (
             <div className="space-y-2">
               <h4 className="font-medium flex items-center gap-2 text-sm">
                 <Award className="h-4 w-4" />
                 전문 분야
               </h4>
               <div className="flex flex-wrap gap-2">
-                {profile.specialties.map((item, index) => (
+                {userProfile.specialties.map((item: string, index: number) => (
                   <Badge key={index} variant="outline" className="text-xs">
                     {item}
                   </Badge>
@@ -248,14 +336,14 @@ export function TeacherProfileCard({
           )}
 
           {/* 자격증 */}
-          {profile.certifications && profile.certifications.length > 0 && (
+          {userProfile.certifications && userProfile.certifications.length > 0 && (
             <div className="space-y-2">
               <h4 className="font-medium flex items-center gap-2 text-sm">
                 <Award className="h-4 w-4" />
                 자격증
               </h4>
               <div className="flex flex-wrap gap-2">
-                {profile.certifications.map((item, index) => (
+                {userProfile.certifications.map((item: string, index: number) => (
                   <Badge key={index} variant="default" className="text-xs">
                     {item}
                   </Badge>
@@ -291,16 +379,41 @@ export function TeacherProfileCard({
       <CardContent className="space-y-6">
         {/* 프로필 사진 및 기본 정보 */}
         <div className="flex items-start gap-4">
-          <Avatar className="h-20 w-20">
-            <AvatarImage src={profile.photoUrl} alt={profile.name} />
-            <AvatarFallback className="text-lg">
-              {profile.name?.charAt(0)}
-            </AvatarFallback>
-          </Avatar>
+          <div className="relative">
+            <div 
+              className={`relative ${isEditing ? 'cursor-pointer' : ''}`}
+              onClick={handlePhotoClick}
+            >
+              <Avatar className={`h-20 w-20 ${isEditing ? 'ring-2 ring-blue-500 ring-offset-2 hover:ring-blue-600' : ''}`}>
+                <AvatarImage 
+                  src={previewUrl || getImageUrl(userProfile.photoUrl) || ''} 
+                  alt={userProfile.name} 
+                />
+                <AvatarFallback className="text-lg">
+                  {userProfile.name?.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              {isEditing && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 hover:opacity-100 transition-opacity">
+                  <Camera className="h-6 w-6 text-white" />
+                </div>
+              )}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoChange}
+              className="hidden"
+              id="teacher-photo-upload"
+              aria-label="프로필 사진 업로드"
+              capture="environment"
+            />
+          </div>
           
           <div className="flex-1 space-y-3">
-            <h3 className="text-lg font-semibold">{profile.name}</h3>
-            <p className="text-gray-600">{profile.phoneNumber}</p>
+            <h3 className="text-lg font-semibold">{userProfile.name}</h3>
+            <p className="text-gray-600">{userProfile.phoneNumber}</p>
             {isEditing && (
               <div className="text-xs text-gray-500 space-y-1">
                 <p>• 이름 및 전화번호는 개인정보 관리 페이지에서 수정하실 수 있습니다.</p>
@@ -326,7 +439,7 @@ export function TeacherProfileCard({
             />
           ) : (
             <p className="text-gray-700 whitespace-pre-line">
-              {profile.introduction || '소개가 없습니다.'}
+              {userProfile.introduction || '소개가 없습니다.'}
             </p>
           )}
         </div>
@@ -349,7 +462,7 @@ export function TeacherProfileCard({
             />
           ) : (
             <p className="text-gray-700">
-              {profile.yearsOfExperience ? `${profile.yearsOfExperience}년` : '경력 정보 없음'}
+              {userProfile.yearsOfExperience ? `${userProfile.yearsOfExperience}년` : '경력 정보 없음'}
             </p>
           )}
         </div>
@@ -399,8 +512,8 @@ export function TeacherProfileCard({
             </div>
           ) : (
             <div className="flex flex-wrap gap-2">
-              {profile.education && profile.education.length > 0 ? (
-                profile.education.map((item, index) => (
+              {userProfile.education && userProfile.education.length > 0 ? (
+                userProfile.education.map((item: string, index: number) => (
                   <Badge key={index} variant="secondary">
                     {item}
                   </Badge>
@@ -457,8 +570,8 @@ export function TeacherProfileCard({
             </div>
           ) : (
             <div className="flex flex-wrap gap-2">
-              {profile.specialties && profile.specialties.length > 0 ? (
-                profile.specialties.map((item, index) => (
+              {userProfile.specialties && userProfile.specialties.length > 0 ? (
+                userProfile.specialties.map((item: string, index: number) => (
                   <Badge key={index} variant="outline">
                     {item}
                   </Badge>
@@ -515,8 +628,8 @@ export function TeacherProfileCard({
             </div>
           ) : (
             <div className="flex flex-wrap gap-2">
-              {profile.certifications && profile.certifications.length > 0 ? (
-                profile.certifications.map((item, index) => (
+              {userProfile.certifications && userProfile.certifications.length > 0 ? (
+                userProfile.certifications.map((item: string, index: number) => (
                   <Badge key={index} variant="default">
                     {item}
                   </Badge>
@@ -533,10 +646,10 @@ export function TeacherProfileCard({
           <div className="flex gap-2 pt-4">
             <Button 
               onClick={handleSave} 
-              disabled={updateProfileMutation.isPending}
+              disabled={isUpdating}
               className="flex-1"
             >
-              {updateProfileMutation.isPending ? (
+              {isUpdating ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
               ) : (
                 <Save className="h-4 w-4 mr-2" />

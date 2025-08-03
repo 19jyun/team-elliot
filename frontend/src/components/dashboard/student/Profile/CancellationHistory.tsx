@@ -8,12 +8,11 @@ import { Separator } from '@/components/ui/separator';
 import { Calendar, Clock, BookOpen, CheckCircle, XCircle, AlertCircle, Clock as ClockIcon, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
-import { getCancellationHistory } from '@/api/student';
+import { useStudentData } from '@/hooks/redux/useStudentData';
 
 export function CancellationHistory() {
   const { pushFocus, popFocus } = useDashboardNavigation();
-  const [cancellationLogs, setCancellationLogs] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const { cancellationHistory, isLoading, error } = useStudentData();
   const [selectedFilter, setSelectedFilter] = useState<string>('ALL');
 
   useEffect(() => {
@@ -21,24 +20,29 @@ export function CancellationHistory() {
     return () => popFocus();
   }, [pushFocus, popFocus]);
 
-  useEffect(() => {
-    loadCancellationHistory();
-  }, []);
+  // 에러 처리
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-full">
+        <p className="text-red-500">환불/취소 내역을 불러오는데 실패했습니다.</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
+        >
+          다시 시도
+        </button>
+      </div>
+    );
+  }
 
-  const loadCancellationHistory = async () => {
-    try {
-      setIsLoading(true);
-      const response = await getCancellationHistory();
-      console.log('Cancellation History Response:', response);
-      setCancellationLogs(response);
-    } catch (error) {
-      console.error('Cancellation History Error:', error);
-      toast.error('환불/취소 내역을 불러오는데 실패했습니다.');
-      setCancellationLogs([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // 로딩 상태 처리
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-full">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
+      </div>
+    );
+  }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -130,19 +134,11 @@ export function CancellationHistory() {
     return '금액 정보 없음';
   };
 
-  const filteredLogs = (cancellationLogs || []).filter(log => {
+  const filteredLogs = (cancellationHistory || []).filter(log => {
     if (selectedFilter === 'ALL') return true;
     const status = getCancellationStatus(log);
     return status === selectedFilter;
   });
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">환불/취소 내역을 불러오는 중...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col h-full bg-white max-w-[480px] mx-auto">

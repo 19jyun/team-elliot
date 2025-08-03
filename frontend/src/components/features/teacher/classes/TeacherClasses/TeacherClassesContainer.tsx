@@ -1,16 +1,12 @@
 'use client'
 
 import { useSession, signOut } from 'next-auth/react'
-import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { getTeacherClassesWithSessions } from '@/api/teacher'
 import { ClassList } from '@/components/common/ClassContainer/ClassList'
 import { ClassSessionModal } from '@/components/common/ClassContainer/ClassSessionModal'
-import { TeacherClassesWithSessionsResponse } from '@/types/api/teacher'  
-
-type ClassData = TeacherClassesWithSessionsResponse['classes'][0]
+import { useTeacherData } from '@/hooks/redux/useTeacherData'
 
 export function TeacherClassesContainer() {
   const router = useRouter()
@@ -24,16 +20,8 @@ export function TeacherClassesContainer() {
   const [selectedClass, setSelectedClass] = useState<any>(null)
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false)
 
-  // 선생님 클래스와 세션 정보를 한 번에 조회 (토큰 기반)
-  const { data: myData, isLoading, error } = useQuery({
-    queryKey: ['teacher-classes-with-sessions'],
-    queryFn: getTeacherClassesWithSessions,
-    enabled: status === 'authenticated' && !!session?.user && !!session?.accessToken,
-    retry: false,
-  })
-
-  const myClasses = (myData as TeacherClassesWithSessionsResponse)?.classes || []
-  const mySessions = (myData as TeacherClassesWithSessionsResponse)?.sessions || []
+  // Redux store에서 Teacher 데이터 가져오기
+  const { classes: myClasses, sessions: mySessions, isLoading, error } = useTeacherData()
 
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {
@@ -85,7 +73,7 @@ export function TeacherClassesContainer() {
       {/* 클래스 리스트 */}
       <div className="flex-1 px-5 py-4">
         <ClassList
-          classes={myClasses}
+          classes={myClasses || []}
           onClassClick={handleClassClick}
           showTeacher={false}
           role="teacher"
@@ -97,7 +85,7 @@ export function TeacherClassesContainer() {
       <ClassSessionModal
         isOpen={isSessionModalOpen}
         selectedClass={selectedClass}
-        sessions={mySessions}
+        sessions={mySessions || []}
         onClose={closeSessionModal}
         role="teacher"
       />

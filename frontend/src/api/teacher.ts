@@ -21,6 +21,8 @@ import {
   LeaveAcademyResponse,
   RequestJoinAcademyRequest,
   RequestJoinAcademyResponse,
+  TeacherDataResponse,
+  Principal,
 } from "@/types/api/teacher";
 
 // 프로필 관련 API
@@ -44,25 +46,25 @@ export const getTeacherProfileById = async (
 export const updateTeacherProfile = async (
   data: UpdateProfileRequest
 ): Promise<UpdateProfileResponse> => {
+  const response = await axiosInstance.put("/teachers/me/profile", data);
+  return response.data;
+};
+
+export const updateTeacherProfilePhoto = async (
+  photo: File
+): Promise<UpdateProfileResponse> => {
   const formData = new FormData();
+  formData.append("photo", photo);
 
-  Object.entries(data).forEach(([key, value]) => {
-    if (value !== undefined && value !== null) {
-      if (key === "photo" && value instanceof File) {
-        formData.append(key, value);
-      } else if (Array.isArray(value)) {
-        formData.append(key, JSON.stringify(value));
-      } else {
-        formData.append(key, String(value));
-      }
+  const response = await axiosInstance.put(
+    "/teachers/me/profile/photo",
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
     }
-  });
-
-  const response = await axiosInstance.put("/teachers/me/profile", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  );
   return response.data;
 };
 
@@ -174,5 +176,25 @@ export const requestJoinAcademy = async (
     "/teachers/me/request-join-academy",
     data
   );
+  return response.data;
+};
+
+// 학원 선생님 목록 조회
+export const getAcademyTeachers = async (): Promise<any[]> => {
+  const response = await axiosInstance.get("/teachers/academy");
+  return response.data;
+};
+
+// === Teacher Dashboard Redux 데이터 초기화용 API ===
+
+// TeacherData 전체 초기화 (Redux용)
+export const getTeacherData = async (): Promise<TeacherDataResponse> => {
+  const response = await axiosInstance.get("/teachers/me/data");
+  return response.data;
+};
+
+// 학원 원장 정보 조회
+export const getTeacherAcademyPrincipal = async (): Promise<Principal> => {
+  const response = await axiosInstance.get("/teachers/me/academy/principal");
   return response.data;
 };

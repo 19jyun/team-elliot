@@ -8,7 +8,10 @@ import {
   ParseIntPipe,
   UseGuards,
   Body,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { PrincipalService } from './principal.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -17,6 +20,7 @@ import { GetUser } from '../auth/decorators/get-user.decorator';
 import { Role } from '@prisma/client';
 import { UpdateAcademyDto } from './dto/update-academy.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { principalProfileConfig } from '../config/multer.config';
 
 @Controller('principal')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -54,10 +58,28 @@ export class PrincipalController {
     return this.principalService.getAllStudents(user.id);
   }
 
+  // Principal의 학원 모든 수강신청 조회 (Redux store용)
+  @Get('enrollments')
+  async getAllEnrollments(@GetUser() user: any) {
+    return this.principalService.getAllEnrollments(user.id);
+  }
+
+  // Principal의 학원 모든 환불요청 조회 (Redux store용)
+  @Get('refund-requests')
+  async getAllRefundRequests(@GetUser() user: any) {
+    return this.principalService.getAllRefundRequests(user.id);
+  }
+
   // Principal 정보 조회
   @Get('profile')
   async getPrincipalInfo(@GetUser() user: any) {
     return this.principalService.getPrincipalInfo(user.id);
+  }
+
+  // Principal 전체 데이터 조회 (Redux 초기화용)
+  @Get('me/data')
+  async getPrincipalData(@GetUser() user: any) {
+    return this.principalService.getPrincipalData(user.id);
   }
 
   // Principal 프로필 정보 수정
@@ -67,6 +89,16 @@ export class PrincipalController {
     @Body() updateProfileDto: UpdateProfileDto,
   ) {
     return this.principalService.updateProfile(user.id, updateProfileDto);
+  }
+
+  // Principal 프로필 사진 업데이트
+  @Put('profile/photo')
+  @UseInterceptors(FileInterceptor('photo', principalProfileConfig))
+  async updateProfilePhoto(
+    @GetUser() user: any,
+    @UploadedFile() photo: Express.Multer.File,
+  ) {
+    return this.principalService.updateProfilePhoto(user.id, photo);
   }
 
   // Principal의 세션 수강생 조회

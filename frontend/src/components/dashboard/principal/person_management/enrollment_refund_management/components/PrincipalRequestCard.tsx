@@ -6,7 +6,6 @@ import { parseFromUTCISO } from '@/lib/timeUtils';
 interface PrincipalRequestCardProps {
   request: any;
   requestType: 'enrollment' | 'refund';
-  onClick: () => void;
   onApprove: (id: number) => void;
   onReject: (id: number) => void;
   isProcessing?: boolean;
@@ -15,27 +14,47 @@ interface PrincipalRequestCardProps {
 export function PrincipalRequestCard({ 
   request, 
   requestType, 
-  onClick, 
   onApprove, 
   onReject, 
   isProcessing = false 
 }: PrincipalRequestCardProps) {
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    if (!dateString || dateString === 'Invalid Date') {
+      return '날짜 없음';
+    }
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return '날짜 없음';
+      }
+      return date.toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    } catch (error) {
+      return '날짜 없음';
+    }
   };
 
   const formatTime = (timeString: string) => {
-    // UTC ISO 문자열을 한국 시간으로 변환
-    const koreanTime = parseFromUTCISO(timeString);
-    return koreanTime.toLocaleTimeString('ko-KR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    });
+    if (!timeString || timeString === 'Invalid Date') {
+      return '시간 없음';
+    }
+    try {
+      // UTC ISO 문자열을 한국 시간으로 변환
+      const koreanTime = parseFromUTCISO(timeString);
+      if (isNaN(koreanTime.getTime())) {
+        return '시간 없음';
+      }
+      return koreanTime.toLocaleTimeString('ko-KR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+    } catch (error) {
+      return '시간 없음';
+    }
   };
 
   const getLevelColor = (level: string) => {
@@ -49,8 +68,7 @@ export function PrincipalRequestCard({
 
   return (
     <div
-      onClick={onClick}
-      className="p-4 border border-stone-200 rounded-lg cursor-pointer hover:bg-stone-50 transition-colors"
+      className="p-4 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors"
       style={{ background: getLevelColor(request.session?.class?.level || 'BEGINNER') }}
     >
       {/* 학생 정보 */}

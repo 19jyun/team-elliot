@@ -48,8 +48,6 @@ export function TeacherClassSessionModal({
 
   // 선택된 클래스의 세션만 필터링
   const filteredSessions = propSessions?.filter((session: any) => session.class.id === selectedClass?.id) || []
-  console.log("filteredSessions", filteredSessions)
-  console.log("selectedClass", selectedClass)
 
   // 선택된 세션의 수강생 목록 조회
   const { data: sessionEnrollmentsResponse, isLoading: enrollmentsLoading } = useQuery({

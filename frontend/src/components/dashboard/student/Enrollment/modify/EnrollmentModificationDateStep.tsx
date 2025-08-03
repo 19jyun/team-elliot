@@ -23,7 +23,6 @@ export function EnrollmentModificationDateStep({
   month, 
   onComplete 
 }: EnrollmentModificationDateStepProps) {
-  console.log('EnrollmentModificationDateStep 렌더링:', { classId, month, existingEnrollmentsCount: existingEnrollments?.length });
   const { setSelectedSessions } = useDashboardNavigation()
   const [selectedCount, setSelectedCount] = useState(0);
   const [selectedClasses, setSelectedClasses] = useState<any[]>([]);
@@ -41,7 +40,6 @@ export function EnrollmentModificationDateStep({
         const response = await getClassSessionsForModification(classId);
         setModificationSessions(response.sessions);
         setCalendarRange(response.calendarRange);
-        console.log('수강 변경용 세션 데이터 로드:', response);
         
         // 기존 수강 신청 세션들을 미리 선택
         const preSelectedSessionIds = new Set<number>();
@@ -152,7 +150,7 @@ export function EnrollmentModificationDateStep({
                       originalDates.some(date => !selectedDates.includes(date)) ||
                       selectedDates.some(date => !originalDates.includes(date));
     
-    console.log('수강 변경 계산:', {
+    console.log('수강 변경 계산 결과:', {
       originalEnrolledSessions: originalEnrolledSessions.length,
       originalDates,
       selectedDates,

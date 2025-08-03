@@ -2,14 +2,12 @@
 
 import React from 'react';
 import { useSession } from 'next-auth/react';
-import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { getStudentAvailableSessionsForEnrollment } from '@/api/class-sessions';
-import { GetClassSessionsForEnrollmentResponse } from '@/types/api/class';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { CalendarProvider } from '@/contexts/CalendarContext';
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar';
+import { useStudentData } from '@/hooks/redux/useStudentData';
 
 export function EnrollmentDateStep() {
   const { enrollment, setEnrollmentStep, setSelectedSessions, goBack, navigateToSubPage } = useDashboardNavigation();
@@ -21,45 +19,60 @@ export function EnrollmentDateStep() {
     },
   });
 
-  // SubPage 설정 - 이미 enroll 상태이므로 불필요
-  // React.useEffect(() => {
-  //   navigateToSubPage('enroll');
-  // }, [navigateToSubPage]);
+  // Redux에서 수강 가능한 세션 데이터 가져오기
+  const { availableSessions, isLoading, error } = useStudentData();
 
   const [selectedSessionIds, setSelectedSessionIds] = React.useState<Set<number>>(new Set());
 
-  // 새로운 API를 사용하여 선택된 클래스들의 모든 세션 조회
-  const { data: enrollmentData, isLoading } = useQuery({
-    queryKey: ['studentAvailableSessionsForEnrollment', selectedAcademyId],
-    queryFn: () => getStudentAvailableSessionsForEnrollment(selectedAcademyId!),
-    enabled: selectedAcademyId !== null && status === 'authenticated',
-  });
-
-  // 선택된 클래스들의 세션만 필터링
+  // 선택된 클래스들의 세션만 필터링하고 ClassSession 형식으로 변환
   const selectedClassSessions = React.useMemo(() => {
-    if (!enrollmentData?.sessions || !selectedClassIds.length) return [];
+    if (!availableSessions || !selectedClassIds.length) return [];
     
-    const filteredSessions = enrollmentData.sessions.filter(session => 
+    const filteredSessions = availableSessions.filter(session => 
       selectedClassIds.includes(session.classId)
     );
     
+    // AvailableSession을 ClassSession 형식으로 변환
+    return filteredSessions.map(session => ({
+      id: session.id,
+      classId: session.classId,
+      date: session.date,
+      startTime: session.startTime,
+      endTime: session.endTime,
+      maxStudents: session.maxStudents,
+      currentStudents: session.currentStudents,
+      isEnrollable: session.isEnrollable,
+      isFull: session.isFull,
+      isPastStartTime: session.isPastStartTime,
+      isAlreadyEnrolled: session.isAlreadyEnrolled,
+      studentEnrollmentStatus: session.studentEnrollmentStatus,
+      createdAt: session.createdAt,
+      updatedAt: session.updatedAt,
+      class: {
+        id: session.class.id,
+        className: session.class.className,
+        level: session.class.level,
+        tuitionFee: session.class.tuitionFee.toString(), // number를 string으로 변환
+        teacher: session.class.teacher,
+        academy: session.class.academy,
+      },
+    }));
+  }, [availableSessions, selectedClassIds]);
 
-    
-    return filteredSessions;
-  }, [enrollmentData, selectedClassIds]);
-
-  // 백엔드에서 받은 캘린더 범위 사용
+  // 캘린더 범위 계산
   const calendarRange = React.useMemo(() => {
-    if (!enrollmentData?.calendarRange) {
-      // 백엔드에서 범위를 받지 못한 경우 기본값 사용
+    if (!selectedClassSessions.length) {
+      // 세션이 없는 경우 기본값 사용
       return { startDate: new Date(), endDate: new Date() };
     }
 
-    return {
-      startDate: new Date(enrollmentData.calendarRange.startDate),
-      endDate: new Date(enrollmentData.calendarRange.endDate),
-    };
-  }, [enrollmentData?.calendarRange]);
+    // 선택된 세션들의 날짜 범위 계산
+    const dates = selectedClassSessions.map(session => new Date(session.date));
+    const startDate = new Date(Math.min(...dates.map(d => d.getTime())));
+    const endDate = new Date(Math.max(...dates.map(d => d.getTime())));
+
+    return { startDate, endDate };
+  }, [selectedClassSessions]);
 
   const statusSteps = [
     {
@@ -111,6 +124,23 @@ export function EnrollmentDateStep() {
     setSelectedSessions(selectedSessionsData);
     setEnrollmentStep('payment');
   };
+
+  // 에러 처리
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">세션 정보를 불러오는데 실패했습니다.</p>
+          <button
+            onClick={goBack}
+            className="px-4 py-2 bg-[#AC9592] text-white rounded-lg hover:bg-[#8B7A77] transition-colors"
+          >
+            뒤로가기
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (status === 'loading' || isLoading) {
     return (
@@ -179,7 +209,7 @@ export function EnrollmentDateStep() {
               </button>
             </div>
           </div>
-                ) : (
+        ) : (
           <div className="h-full">
             <CalendarProvider
               mode="enrollment"

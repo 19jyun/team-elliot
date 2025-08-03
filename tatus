@@ -1,0 +1,10 @@
+* c797306 - (HEAD -> feat/redux_websocket, origin/feat/redux_websocket, feat/redux_websocket_simplified) feat: student dashboard uses websocket + redux (24 hours ago) <Jung Hun>
+* 556e28f - feat: redux+websocket structure refactored for multiple roles + teacher dashboard implementation (2 days ago) <19jyun>
+* 187dc44 - feat: redux refactored for other roles (3 days ago) <Jung Hun>
+* 92d2acd - feat: principal dashboard refactored to take use of redux + websocket (3 days ago) <Jung Hun>
+* c708f7a - (origin/main, origin/HEAD, main) Feat/principal dashboard (#17) (3 days ago) <19jyun>
+* 9454c55 - Feat/session attendance (#16) (7 days ago) <19jyun>
+* bd924b7 - Feat/academy management (#15) (8 days ago) <19jyun>
+* c1fec20 - Fix/teacher dashboard (#14) (2 weeks ago) <19jyun>
+* 31bda78 - Fix/student dashboard (#13) (3 weeks ago) <19jyun>
+* db56ab8 - feat: tracks number of enrollments of each session (#12) (3 weeks ago) <19jyun>

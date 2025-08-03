@@ -7,10 +7,14 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateAcademyDto } from './dto/update-academy.dto';
+import { SocketGateway } from '../socket/socket.gateway';
 
 @Injectable()
 export class PrincipalService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private socketGateway: SocketGateway,
+  ) {}
 
   // Principal의 학원 정보 조회
   async getMyAcademy(principalId: number) {
@@ -269,6 +273,115 @@ export class PrincipalService {
     return studentsWithStats;
   }
 
+  // Principal의 학원 모든 수강신청 조회 (Redux store용)
+  async getAllEnrollments(principalId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      include: { academy: true },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    const enrollments = await this.prisma.sessionEnrollment.findMany({
+      where: {
+        session: {
+          class: {
+            academyId: principal.academyId,
+          },
+        },
+      },
+      include: {
+        student: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        session: {
+          include: {
+            class: {
+              select: {
+                id: true,
+                className: true,
+                teacher: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        enrolledAt: 'desc',
+      },
+    });
+
+    return enrollments;
+  }
+
+  // Principal의 학원 모든 환불요청 조회 (Redux store용)
+  async getAllRefundRequests(principalId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      include: { academy: true },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    const refundRequests = await this.prisma.refundRequest.findMany({
+      where: {
+        sessionEnrollment: {
+          session: {
+            class: {
+              academyId: principal.academyId,
+            },
+          },
+        },
+      },
+      include: {
+        sessionEnrollment: {
+          include: {
+            student: {
+              select: {
+                name: true,
+              },
+            },
+            session: {
+              include: {
+                class: {
+                  select: {
+                    className: true,
+                    teacher: {
+                      select: {
+                        name: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        processor: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        requestedAt: 'desc',
+      },
+    });
+
+    return refundRequests;
+  }
+
   // Principal 정보 조회
   async getPrincipalInfo(principalId: number) {
     const principal = await this.prisma.principal.findUnique({
@@ -285,8 +398,187 @@ export class PrincipalService {
     return principal;
   }
 
+  // Principal 전체 데이터 조회 (Redux 초기화용)
+  async getPrincipalData(principalId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      include: {
+        academy: {
+          include: {
+            teachers: {
+              include: {
+                classes: true,
+              },
+            },
+            classes: {
+              include: {
+                teacher: true,
+                classSessions: {
+                  include: {
+                    enrollments: {
+                      include: {
+                        student: true,
+                        payment: true,
+                        refundRequests: {
+                          include: {
+                            student: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            students: {
+              include: {
+                student: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    // Redux store에 맞는 형태로 데이터 구성
+    return {
+      userProfile: {
+        id: principal.id,
+        userId: principal.userId,
+        name: principal.name,
+        email: principal.email,
+        phoneNumber: principal.phoneNumber,
+        introduction: principal.introduction,
+        education: principal.education,
+        certifications: principal.certifications,
+        photoUrl: principal.photoUrl,
+        academy: principal.academy,
+        createdAt: principal.createdAt,
+        updatedAt: principal.updatedAt,
+      },
+      academy: principal.academy,
+      enrollments: principal.academy.classes.flatMap((cls) =>
+        cls.classSessions.flatMap((session) =>
+          session.enrollments.map((enrollment) => ({
+            ...enrollment,
+            session: {
+              id: session.id,
+              date: session.date,
+              startTime: session.startTime,
+              endTime: session.endTime,
+              class: {
+                id: cls.id,
+                className: cls.className,
+                teacher: {
+                  name: cls.teacher.name,
+                },
+              },
+            },
+          })),
+        ),
+      ),
+      refundRequests: principal.academy.classes.flatMap((cls) =>
+        cls.classSessions.flatMap((session) =>
+          session.enrollments.flatMap((enrollment) =>
+            enrollment.refundRequests.map((refund) => ({
+              ...refund,
+              sessionEnrollment: {
+                session: {
+                  id: session.id,
+                  date: session.date,
+                  startTime: session.startTime,
+                  endTime: session.endTime,
+                  class: {
+                    id: cls.id,
+                    className: cls.className,
+                    teacher: {
+                      name: cls.teacher.name,
+                    },
+                  },
+                },
+                date: session.date,
+                startTime: session.startTime,
+                endTime: session.endTime,
+              },
+            })),
+          ),
+        ),
+      ),
+      classes: principal.academy.classes.map((cls) => ({
+        id: cls.id,
+        className: cls.className,
+        classCode: cls.classCode,
+        description: cls.description,
+        maxStudents: cls.maxStudents,
+        tuitionFee: cls.tuitionFee,
+        teacherId: cls.teacherId,
+        academyId: cls.academyId,
+        dayOfWeek: cls.dayOfWeek,
+        startTime: cls.startTime,
+        endTime: cls.endTime,
+        level: cls.level,
+        status: cls.status,
+        startDate: cls.startDate,
+        endDate: cls.endDate,
+        backgroundColor: cls.backgroundColor,
+        teacher: {
+          id: cls.teacher.id,
+          name: cls.teacher.name,
+          phoneNumber: cls.teacher.phoneNumber,
+          introduction: cls.teacher.introduction,
+          photoUrl: cls.teacher.photoUrl,
+        },
+        academy: {
+          id: principal.academy.id,
+          name: principal.academy.name,
+        },
+        classSessions: cls.classSessions.map((session) => ({
+          id: session.id,
+          classId: session.classId,
+          date: session.date,
+          startTime: session.startTime,
+          endTime: session.endTime,
+          currentStudents: session.enrollments.length,
+          maxStudents: cls.maxStudents,
+          enrollments: session.enrollments.map((enrollment) => ({
+            id: enrollment.id,
+            studentId: enrollment.studentId,
+            sessionId: enrollment.sessionId,
+            status: enrollment.status,
+            enrolledAt: enrollment.enrolledAt,
+            student: {
+              id: enrollment.student.id,
+              name: enrollment.student.name,
+              phoneNumber: enrollment.student.phoneNumber,
+            },
+          })),
+        })),
+      })),
+      teachers: principal.academy.teachers.map((teacher) => ({
+        id: teacher.id,
+        name: teacher.name,
+        phoneNumber: teacher.phoneNumber,
+        introduction: teacher.introduction,
+        photoUrl: teacher.photoUrl,
+      })),
+      students: principal.academy.students.map((student) => ({
+        id: student.student.id,
+        name: student.student.name,
+        phoneNumber: student.student.phoneNumber,
+      })),
+    };
+  }
+
   // Principal 프로필 정보 수정
-  async updateProfile(principalId: number, updateProfileDto: any) {
+  async updateProfile(
+    principalId: number,
+    updateProfileDto: any,
+    photo?: Express.Multer.File,
+  ) {
     const principal = await this.prisma.principal.findUnique({
       where: { id: principalId },
     });
@@ -318,10 +610,40 @@ export class PrincipalService {
       updateData.certifications = updateProfileDto.certifications;
     }
 
+    // 사진이 업로드된 경우 URL 생성
+    if (photo) {
+      updateData.photoUrl = `/uploads/principal-photos/${photo.filename}`;
+    }
+
     // Principal 정보 업데이트
     const updatedPrincipal = await this.prisma.principal.update({
       where: { id: principalId },
       data: updateData,
+      include: {
+        academy: true,
+      },
+    });
+
+    return updatedPrincipal;
+  }
+
+  // Principal 프로필 사진 업데이트
+  async updateProfilePhoto(principalId: number, photo: Express.Multer.File) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    // 사진 URL 생성
+    const photoUrl = `/uploads/principal-photos/${photo.filename}`;
+
+    // Principal 사진 업데이트
+    const updatedPrincipal = await this.prisma.principal.update({
+      where: { id: principalId },
+      data: { photoUrl },
       include: {
         academy: true,
       },
@@ -739,6 +1061,13 @@ export class PrincipalService {
       },
     });
 
+    // Socket 이벤트 전송
+    this.socketGateway.notifyEnrollmentStatusChange(
+      enrollmentId,
+      'CONFIRMED',
+      updatedEnrollment,
+    );
+
     return updatedEnrollment;
   }
 
@@ -793,6 +1122,13 @@ export class PrincipalService {
       },
     });
 
+    // Socket 이벤트 전송
+    this.socketGateway.notifyEnrollmentStatusChange(
+      enrollmentId,
+      'REJECTED',
+      updatedEnrollment,
+    );
+
     return updatedEnrollment;
   }
 
@@ -846,6 +1182,13 @@ export class PrincipalService {
         },
       },
     });
+
+    // Socket 이벤트 전송
+    this.socketGateway.notifyRefundRequestStatusChange(
+      refundId,
+      'APPROVED',
+      updatedRefundRequest,
+    );
 
     return updatedRefundRequest;
   }
@@ -906,6 +1249,13 @@ export class PrincipalService {
         },
       },
     });
+
+    // Socket 이벤트 전송
+    this.socketGateway.notifyRefundRequestStatusChange(
+      refundId,
+      'REJECTED',
+      updatedRefundRequest,
+    );
 
     return updatedRefundRequest;
   }

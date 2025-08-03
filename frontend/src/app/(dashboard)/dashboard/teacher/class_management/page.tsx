@@ -66,12 +66,10 @@ export default function TeacherClassManagementPage() {
 
   const handleStudentFeedback = () => {
     // TODO: 수강생 피드백 기능 구현
-    console.log('수강생 피드백 버튼 클릭됨')
   }
 
   const handleFutureFeature = () => {
     // TODO: 추후 기능 구현
-    console.log('추후 기능 버튼 클릭됨')
   }
 
   if (status === 'loading' || isAcademyLoading) {
