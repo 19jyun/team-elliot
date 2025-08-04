@@ -4,7 +4,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { usePrincipalCalendarApi } from '@/hooks/usePrincipalCalendarApi'
+import { usePrincipalCalendarApi } from '@/hooks/calendar/usePrincipalCalendarApi'
 import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessionModal'
 import { SessionDetailModal } from '@/components/common/Session/SessionDetailModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'

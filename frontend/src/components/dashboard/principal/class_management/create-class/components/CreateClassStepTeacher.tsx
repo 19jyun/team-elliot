@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { StatusStep } from './StatusStep';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
-import { usePrincipalApi } from '@/hooks/usePrincipalApi';
+import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 
 interface Teacher {
   id: number;

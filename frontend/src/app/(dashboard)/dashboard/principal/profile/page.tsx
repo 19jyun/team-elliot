@@ -11,7 +11,7 @@ import { LogoutModal } from '@/components/user/LogoutModal'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
 import { logout } from '@/api/auth'
 import FooterLinks from '@/components/common/FooterLinks'
-import { usePrincipalApi } from '@/hooks/usePrincipalApi'
+import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi'
 
 export default function PrincipalProfilePage() {
   const router = useRouter()

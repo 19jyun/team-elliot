@@ -11,8 +11,8 @@ import { SessionContentTab } from '@/components/common/Session/SessionDetailComp
 import { PoseSelectionModal } from '@/components/common/Session/SessionDetailComponents/Pose/PoseSelectionModal'
 import { useAddSessionContent } from '@/hooks/useSessionContents'
 import { BalletPose } from '@/types/api/ballet-pose'
-import { usePrincipalApi } from '@/hooks/usePrincipalApi'
-import { useTeacherApi } from '@/hooks/useTeacherApi'
+import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi'
+import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'
 
 interface SessionDetailModalProps {
   isOpen: boolean

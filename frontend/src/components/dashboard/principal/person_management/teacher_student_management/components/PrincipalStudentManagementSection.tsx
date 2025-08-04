@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { removePrincipalStudent } from '@/api/principal';
 import { useState, useEffect } from 'react';
 import { PrincipalStudentSessionHistoryModal } from './PrincipalStudentSessionHistoryModal';
-import { usePrincipalApi } from '@/hooks/usePrincipalApi';
+import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 
 export default function PrincipalStudentManagementSection() {
   const queryClient = useQueryClient();

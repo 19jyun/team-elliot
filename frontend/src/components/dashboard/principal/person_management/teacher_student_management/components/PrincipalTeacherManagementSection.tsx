@@ -6,7 +6,7 @@ import { Users, Trash2 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { removePrincipalTeacher } from '@/api/principal';
-import { usePrincipalApi } from '@/hooks/usePrincipalApi';
+import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { useEffect } from 'react';
 
 export default function PrincipalTeacherManagementSection() {

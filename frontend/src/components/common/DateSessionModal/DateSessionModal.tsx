@@ -5,7 +5,7 @@ import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { SessionCardList } from '@/components/common/Session/SessionCardList'
-import { useRoleCalendarApi } from '@/hooks/useRoleCalendarApi'
+import { useRoleCalendarApi } from '@/hooks/calendar/useRoleCalendarApi'
 
 interface DateSessionModalProps {
   isOpen: boolean

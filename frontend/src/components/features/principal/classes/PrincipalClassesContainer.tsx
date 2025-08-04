@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
-import { usePrincipalApi } from '@/hooks/usePrincipalApi'
+import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi'
 import { ClassList } from '@/components/common/ClassContainer/ClassList'
 import { CommonClassData } from '@/components/common/ClassContainer/ClassCard'
 import { ClassSessionModal } from '@/components/common/ClassContainer/ClassSessionModal'

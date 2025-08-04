@@ -24,7 +24,7 @@ import {
   Trash2,
   Camera
 } from 'lucide-react';
-import { usePrincipalApi } from '@/hooks/usePrincipalApi';
+import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { getImageUrl } from '@/utils/imageUtils';
 
 interface PrincipalProfileCardProps {

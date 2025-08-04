@@ -4,7 +4,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
-import { usePrincipalApi } from '@/hooks/usePrincipalApi'
+import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi'
 import { useEffect } from 'react'
 
 // 인원 관리 카드 컴포넌트

@@ -28,7 +28,6 @@ export function useTeacherInitialization() {
         dispatch(setLoading(true));
         dispatch(setError(null));
 
-
         // TeacherData 전체 조회
         const teacherData = await getTeacherData();
 

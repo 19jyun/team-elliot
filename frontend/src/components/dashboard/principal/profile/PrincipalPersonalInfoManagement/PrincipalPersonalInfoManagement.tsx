@@ -10,7 +10,7 @@ import { User, Phone, Building, Edit, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { updatePrincipalProfile as updatePrincipalProfileApi } from '@/api/principal';
 import { UpdatePrincipalProfileRequest } from '@/types/api/principal';
-import { usePrincipalApi } from '@/hooks/usePrincipalApi';
+import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 
 export function PrincipalPersonalInfoManagement() {
   const [isEditing, setIsEditing] = useState(false);

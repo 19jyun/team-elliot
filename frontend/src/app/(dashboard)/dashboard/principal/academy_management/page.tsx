@@ -12,7 +12,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { updatePrincipalAcademy as updatePrincipalAcademyApi, getPrincipalAcademy } from '@/api/principal';
 import { UpdatePrincipalAcademyRequest } from '@/types/api/principal';
-import { usePrincipalApi } from '@/hooks/usePrincipalApi';
+import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 
 export default function PrincipalAcademyManagementPage() {
   const router = useRouter();
