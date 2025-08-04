@@ -6,20 +6,26 @@ import { Users, Trash2 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { removePrincipalTeacher } from '@/api/principal';
-import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
+import { usePrincipalApi } from '@/hooks/usePrincipalApi';
+import { useEffect } from 'react';
 
 export default function PrincipalTeacherManagementSection() {
   const queryClient = useQueryClient();
 
-  // Redux store에서 데이터 가져오기
-  const { teachers, isLoading, error } = usePrincipalData();
+  // API 기반 데이터 관리
+  const { teachers, loadTeachers, isLoading, error } = usePrincipalApi();
+
+  // 컴포넌트 마운트 시 선생님 데이터 로드
+  useEffect(() => {
+    loadTeachers();
+  }, [loadTeachers]);
 
   // 선생님 제거 뮤테이션
   const removeTeacherMutation = useMutation({
     mutationFn: removePrincipalTeacher,
     onSuccess: () => {
-      // Redux store 업데이트를 위해 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: ['principal-academy-teachers'] });
+      // API 데이터 재로드
+      loadTeachers();
       toast.success('선생님이 학원에서 제거되었습니다.');
     },
     onError: (error: any) => {
@@ -62,17 +68,13 @@ export default function PrincipalTeacherManagementSection() {
               선생님 목록
             </CardTitle>
             <CardDescription>
-              데이터를 불러오는데 실패했습니다.
+              선생님 목록을 불러오는데 실패했습니다.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-red-500">
-              <p>데이터를 불러오는데 실패했습니다.</p>
-              <Button 
-                onClick={() => window.location.reload()} 
-                className="mt-4"
-                variant="outline"
-              >
+            <div className="text-center py-8">
+              <p className="text-red-500 mb-4">선생님 목록을 불러오는데 실패했습니다.</p>
+              <Button onClick={() => loadTeachers()}>
                 다시 시도
               </Button>
             </div>

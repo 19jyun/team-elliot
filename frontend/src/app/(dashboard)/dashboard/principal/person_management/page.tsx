@@ -1,13 +1,13 @@
 'use client'
 
-import * as React from 'react'
-import { useSession } from 'next-auth/react'
+import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { usePrincipalData } from '@/hooks/redux/usePrincipalData'
-import { useDashboardNavigation } from '@/contexts/DashboardContext'
 import { toast } from 'sonner'
+import { useDashboardNavigation } from '@/contexts/DashboardContext'
+import { usePrincipalApi } from '@/hooks/usePrincipalApi'
+import { useEffect } from 'react'
 
-// 인원 관리 카드 컴포넌트 (Teacher의 ClassManagementCard와 동일한 디자인)
+// 인원 관리 카드 컴포넌트
 const PersonManagementCard: React.FC<{
   title: string
   description?: string
@@ -54,8 +54,13 @@ export default function PrincipalPersonManagementPage() {
   })
   const { navigateToSubPage } = useDashboardNavigation()
 
-  // Redux store에서 데이터 가져오기
-  const { academy, isLoading, error } = usePrincipalData()
+  // API 기반 데이터 관리
+  const { academy, loadAcademy, isLoading, error } = usePrincipalApi()
+
+  // 컴포넌트 마운트 시 academy 데이터 로드
+  useEffect(() => {
+    loadAcademy();
+  }, [loadAcademy]);
 
   const handleEnrollmentRefundManagement = () => {
     // 학원 정보 확인
@@ -88,11 +93,16 @@ export default function PrincipalPersonManagementPage() {
 
   // 에러 처리
   if (error) {
+    if ((error as any)?.response?.status === 401) {
+      signOut({ redirect: true, callbackUrl: '/auth' });
+      return null;
+    }
+    
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <p className="text-red-500">데이터를 불러오는데 실패했습니다.</p>
         <button
-          onClick={() => window.location.reload()}
+          onClick={() => loadAcademy()}
           className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
         >
           다시 시도
