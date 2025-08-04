@@ -24,9 +24,7 @@ import {
   Trash2,
   Camera
 } from 'lucide-react';
-import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
-import { useAppDispatch } from '@/store/hooks';
-import { updatePrincipalProfile } from '@/store/slices/principalSlice';
+import { usePrincipalApi } from '@/hooks/usePrincipalApi';
 import { getImageUrl } from '@/utils/imageUtils';
 
 interface PrincipalProfileCardProps {
@@ -58,17 +56,26 @@ export function PrincipalProfileCard({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const queryClient = useQueryClient();
-  const dispatch = useAppDispatch();
 
-  // Redux store에서 데이터 가져오기
-  const { userProfile, isLoading, error } = usePrincipalData();
+  // API 기반 데이터 관리
+  const { profile, loadProfile, isLoading, error, isPrincipal } = usePrincipalApi();
+
+  // 컴포넌트 마운트 시 프로필 로드
+  useEffect(() => {
+    if (isPrincipal) {
+      loadProfile();
+    }
+  }, [isPrincipal, loadProfile]);
+
+  // 프로필 로딩 상태 (초기 로드 시에만)
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
 
   // 프로필 업데이트 뮤테이션 (편집 가능한 경우만)
   const updateProfileMutation = useMutation({
     mutationFn: updatePrincipalProfileApi,
     onSuccess: (updatedProfile) => {
-      // Redux store 직접 업데이트
-      dispatch(updatePrincipalProfile(updatedProfile));
+      // API 데이터 다시 로드
+      loadProfile();
       toast.success('프로필이 성공적으로 업데이트되었습니다.');
       setIsEditing(false);
       onSave?.();
@@ -83,8 +90,8 @@ export function PrincipalProfileCard({
   const updatePhotoMutation = useMutation({
     mutationFn: updatePrincipalProfilePhotoApi,
     onSuccess: (updatedProfile) => {
-      // Redux store 직접 업데이트
-      dispatch(updatePrincipalProfile(updatedProfile));
+      // API 데이터 다시 로드
+      loadProfile();
       toast.success('프로필 사진이 성공적으로 업로드되었습니다.');
       setSelectedPhoto(null);
       setPreviewUrl(null);
@@ -97,14 +104,14 @@ export function PrincipalProfileCard({
 
   // 편집 모드 시작
   const handleEdit = () => {
-    if (userProfile) {
+    if (profile) {
       setFormData({
-        introduction: userProfile.introduction || '',
-        education: userProfile.education || [],
-        certifications: userProfile.certifications || [],
+        introduction: profile.introduction || '',
+        education: profile.education || [],
+        certifications: profile.certifications || [],
       });
-      setTempEducation(userProfile.education || []);
-      setTempCertifications(userProfile.certifications || []);
+      setTempEducation(profile.education || []);
+      setTempCertifications(profile.certifications || []);
     }
     setIsEditing(true);
   };
@@ -139,8 +146,6 @@ export function PrincipalProfileCard({
       console.error('파일 입력 필드 클릭 실패:', error);
     }
   };
-
-
 
   // 사진 선택 핸들러
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -194,8 +199,6 @@ export function PrincipalProfileCard({
     }
   };
 
-
-
   // 교육사항 추가
   const addEducation = () => {
     if (newEducation.trim()) {
@@ -222,7 +225,10 @@ export function PrincipalProfileCard({
     setTempCertifications(tempCertifications.filter((_, i) => i !== index));
   };
 
-  if (isLoading) {
+  // 초기 로딩 상태 (프로필이 없고 Principal 권한이 있는 경우)
+  const isInitialLoading = !profile && isPrincipal && !error;
+
+  if (isInitialLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -230,13 +236,24 @@ export function PrincipalProfileCard({
     );
   }
 
-  if (error || !userProfile) {
+  if (error || !profile) {
     return (
       <Card className="w-full max-w-2xl mx-auto">
         <CardContent className="p-6">
           <div className="text-center text-gray-500">
             <User className="h-12 w-12 mx-auto mb-4 text-gray-300" />
             <p>프로필 정보를 불러올 수 없습니다.</p>
+            {error && (
+              <p className="text-sm text-red-500 mt-2">{error}</p>
+            )}
+            <Button 
+              onClick={() => loadProfile()} 
+              variant="outline" 
+              size="sm" 
+              className="mt-4"
+            >
+              다시 시도
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -250,42 +267,42 @@ export function PrincipalProfileCard({
         <CardContent className="p-4">
           <div className="flex items-center space-x-3">
             <div className="relative">
-                                                           <div
-                  className={`inline-block transition-all duration-200 ${
-                    isEditing 
-                      ? 'cursor-pointer ring-2 ring-blue-500 hover:opacity-80 hover:ring-blue-600 hover:scale-105 rounded-full' 
-                      : 'cursor-default'
-                  }`}
+              <div
+                className={`inline-block transition-all duration-200 ${
+                  isEditing 
+                    ? 'cursor-pointer ring-2 ring-blue-500 hover:opacity-80 hover:ring-blue-600 hover:scale-105 rounded-full' 
+                    : 'cursor-default'
+                }`}
+                onClick={handlePhotoClick}
+                style={{ touchAction: 'manipulation' }}
+              >
+                <div 
+                  className="h-12 w-12 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center relative z-10"
                   onClick={handlePhotoClick}
-                  style={{ touchAction: 'manipulation' }}
                 >
-                                     <div 
-                     className="h-12 w-12 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center relative z-10"
-                     onClick={handlePhotoClick}
-                   >
-                    {previewUrl || getImageUrl(userProfile.photoUrl) ? (
-                      <img 
-                        src={previewUrl || getImageUrl(userProfile.photoUrl) || ''} 
-                        alt={userProfile.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="text-sm font-semibold text-gray-600">
-                        {userProfile.name?.charAt(0)}
-                      </div>
-                    )}
-                  </div>
+                  {previewUrl || getImageUrl(profile.photoUrl) ? (
+                    <img 
+                      src={previewUrl || getImageUrl(profile.photoUrl) || ''} 
+                      alt={profile.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="text-sm font-semibold text-gray-600">
+                      {profile.name?.charAt(0)}
+                    </div>
+                  )}
                 </div>
+              </div>
               
-                             {isEditing && (
-                 <div 
-                   className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none"
-                   style={{ zIndex: 5 }}
-                 >
-                   <Camera className="h-4 w-4 text-white" />
-                   <span className="absolute bottom-0 text-xs text-white font-medium">클릭</span>
-                 </div>
-               )}
+              {isEditing && (
+                <div 
+                  className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+                  style={{ zIndex: 5 }}
+                >
+                  <Camera className="h-4 w-4 text-white" />
+                  <span className="absolute bottom-0 text-xs text-white font-medium">클릭</span>
+                </div>
+              )}
               
               {isEditing && (
                 <Input
@@ -301,8 +318,8 @@ export function PrincipalProfileCard({
               )}
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold">{userProfile.name}</h3>
-              <p className="text-sm text-gray-600">{userProfile.introduction}</p>
+              <h3 className="font-semibold">{profile.name}</h3>
+              <p className="text-sm text-gray-600">{profile.introduction}</p>
             </div>
           </div>
         </CardContent>
@@ -334,44 +351,42 @@ export function PrincipalProfileCard({
         {/* 프로필 사진 및 기본 정보 */}
         <div className="flex items-start gap-4">
           <div className="relative">
-                         <div
-               className={`inline-block transition-all duration-200 ${
-                 isEditing 
-                   ? 'cursor-pointer ring-2 ring-blue-500 hover:opacity-80 hover:ring-blue-600 hover:scale-105 rounded-full' 
-                   : 'cursor-default'
-               }`}
-               onClick={handlePhotoClick}
-               style={{ touchAction: 'manipulation' }}
-             >
-               <div 
-                 className="h-20 w-20 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center relative z-10"
-                 onClick={handlePhotoClick}
-               >
-                 {previewUrl || getImageUrl(userProfile.photoUrl) ? (
-                   <img 
-                     src={previewUrl || getImageUrl(userProfile.photoUrl) || ''} 
-                     alt={userProfile.name}
-                     className="w-full h-full object-cover"
-                   />
-                 ) : (
-                   <div className="text-lg font-semibold text-gray-600">
-                     {userProfile.name?.charAt(0)}
-                   </div>
-                 )}
-               </div>
-             </div>
-             
-             {isEditing && (
-               <div 
-                 className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none"
-                 style={{ zIndex: 5 }}
-               >
-                 <Camera className="h-6 w-6 text-white" />
-                 <span className="absolute bottom-1 text-xs text-white font-medium">클릭</span>
-               </div>
-             )}
+            <div
+              className={`inline-block transition-all duration-200 ${
+                isEditing 
+                  ? 'cursor-pointer ring-2 ring-blue-500 hover:opacity-80 hover:ring-blue-600 hover:scale-105 rounded-full' 
+                  : 'cursor-default'
+              }`}
+              onClick={handlePhotoClick}
+              style={{ touchAction: 'manipulation' }}
+            >
+              <div 
+                className="h-20 w-20 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center relative z-10"
+                onClick={handlePhotoClick}
+              >
+                {previewUrl || getImageUrl(profile.photoUrl) ? (
+                  <img 
+                    src={previewUrl || getImageUrl(profile.photoUrl) || ''} 
+                    alt={profile.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="text-lg font-semibold text-gray-600">
+                    {profile.name?.charAt(0)}
+                  </div>
+                )}
+              </div>
+            </div>
             
-
+            {isEditing && (
+              <div 
+                className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+                style={{ zIndex: 5 }}
+              >
+                <Camera className="h-6 w-6 text-white" />
+                <span className="absolute bottom-1 text-xs text-white font-medium">클릭</span>
+              </div>
+            )}
             
             {isEditing && (
               <Input
@@ -388,8 +403,8 @@ export function PrincipalProfileCard({
           </div>
           
           <div className="flex-1 space-y-3">
-            <h3 className="text-lg font-semibold">{userProfile.name}</h3>
-            <p className="text-gray-600">{userProfile.phoneNumber}</p>
+            <h3 className="text-lg font-semibold">{profile.name}</h3>
+            <p className="text-gray-600">{profile.phoneNumber}</p>
             {isEditing && (
               <div className="text-xs text-gray-500 space-y-1">
                 <p>• 이름 및 전화번호는 개인정보 관리 페이지에서 수정하실 수 있습니다.</p>
@@ -415,7 +430,7 @@ export function PrincipalProfileCard({
             />
           ) : (
             <p className="text-gray-700 whitespace-pre-wrap">
-              {userProfile.introduction || '소개가 없습니다.'}
+              {profile.introduction || '소개가 없습니다.'}
             </p>
           )}
         </div>
@@ -460,8 +475,8 @@ export function PrincipalProfileCard({
             </div>
           ) : (
             <div className="space-y-2">
-              {userProfile.education && userProfile.education.length > 0 ? (
-                userProfile.education.map((education: string, index: number) => (
+              {profile.education && profile.education.length > 0 ? (
+                profile.education.map((education: string, index: number) => (
                   <Badge key={index} variant="secondary">
                     {education}
                   </Badge>
@@ -511,8 +526,8 @@ export function PrincipalProfileCard({
             </div>
           ) : (
             <div className="space-y-2">
-              {userProfile.certifications && userProfile.certifications.length > 0 ? (
-                userProfile.certifications.map((certification: string, index: number) => (
+              {profile.certifications && profile.certifications.length > 0 ? (
+                profile.certifications.map((certification: string, index: number) => (
                   <Badge key={index} variant="default">
                     {certification}
                   </Badge>

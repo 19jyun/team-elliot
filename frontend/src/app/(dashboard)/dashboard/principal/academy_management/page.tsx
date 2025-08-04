@@ -10,11 +10,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { updatePrincipalAcademy as updatePrincipalAcademyApi } from '@/api/principal';
+import { updatePrincipalAcademy as updatePrincipalAcademyApi, getPrincipalAcademy } from '@/api/principal';
 import { UpdatePrincipalAcademyRequest } from '@/types/api/principal';
-import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
-import { useAppDispatch } from '@/store/hooks';
-import { updatePrincipalAcademy } from '@/store/slices/principalSlice';
+import { usePrincipalApi } from '@/hooks/usePrincipalApi';
 
 export default function PrincipalAcademyManagementPage() {
   const router = useRouter();
@@ -33,10 +31,9 @@ export default function PrincipalAcademyManagementPage() {
     description: '',
   });
   const queryClient = useQueryClient();
-  const dispatch = useAppDispatch();
 
-  // Redux store에서 데이터 가져오기
-  const { academy, isLoading, error } = usePrincipalData();
+  // API 기반 데이터 관리
+  const { academy, loadAcademy, isLoading, error } = usePrincipalApi();
 
   // academy 데이터가 로드되면 formData 업데이트
   useEffect(() => {
@@ -50,12 +47,17 @@ export default function PrincipalAcademyManagementPage() {
     }
   }, [academy]);
 
+  // 초기 데이터 로드
+  useEffect(() => {
+    loadAcademy();
+  }, []);
+
   // 학원 정보 수정 뮤테이션
   const updateAcademyMutation = useMutation({
     mutationFn: updatePrincipalAcademyApi,
     onSuccess: (updatedAcademy) => {
-      // Redux store 직접 업데이트
-      dispatch(updatePrincipalAcademy(updatedAcademy));
+      // API 데이터 다시 로드
+      loadAcademy();
       toast.success('학원 정보가 수정되었습니다.');
       setIsEditing(false);
     },
@@ -103,7 +105,7 @@ export default function PrincipalAcademyManagementPage() {
       <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">데이터를 불러오는데 실패했습니다.</p>
         <button
-          onClick={() => window.location.reload()}
+          onClick={() => loadAcademy()}
           className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
         >
           다시 시도

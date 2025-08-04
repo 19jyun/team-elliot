@@ -1,10 +1,10 @@
 'use client'
 
 import { useSession, signOut } from 'next-auth/react'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { usePrincipalData } from '@/hooks/redux/usePrincipalData'
+import { usePrincipalCalendarApi } from '@/hooks/usePrincipalCalendarApi'
 import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessionModal'
 import { SessionDetailModal } from '@/components/common/Session/SessionDetailModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'
@@ -70,8 +70,8 @@ export default function PrincipalClassPage() {
 
   const { navigateToSubPage } = useDashboardNavigation()
   
-  // Redux store에서 데이터 가져오기
-  const { calendarSessions, isLoading, error } = usePrincipalData()
+  // API 기반 데이터 관리
+  const { calendarSessions, loadSessions, isLoading, error } = usePrincipalCalendarApi()
   
   // 날짜 클릭 관련 상태 추가
   const [clickedDate, setClickedDate] = useState<Date | null>(null)
@@ -80,6 +80,11 @@ export default function PrincipalClassPage() {
   // 세션 상세 모달 상태 추가
   const [selectedSession, setSelectedSession] = useState<any>(null)
   const [isSessionDetailModalOpen, setIsSessionDetailModalOpen] = useState(false)
+
+  // 초기 데이터 로드
+  useEffect(() => {
+    loadSessions();
+  }, []);
 
   // 백엔드에서 받은 캘린더 범위 사용 (새로운 정책 적용)
   const calendarRange = useMemo(() => {
@@ -111,7 +116,7 @@ export default function PrincipalClassPage() {
       <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">데이터를 불러오는데 실패했습니다.</p>
         <button
-          onClick={() => window.location.reload()}
+          onClick={() => loadSessions()}
           className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
         >
           다시 시도
@@ -120,7 +125,7 @@ export default function PrincipalClassPage() {
     )
   }
 
-  // 날짜 클릭 핸들러 (ConnectedCalendar용) - Redux 방식
+  // 날짜 클릭 핸들러 (ConnectedCalendar용) - API 방식
   const handleDateClick = (dateString: string) => {
     const clickedDateObj = new Date(dateString);
     setClickedDate(clickedDateObj);
@@ -214,7 +219,7 @@ export default function PrincipalClassPage() {
         </div>
       </header>
 
-      {/* Date Session Modal - Redux 방식 */}
+      {/* Date Session Modal - API 방식 */}
       <DateSessionModal
         isOpen={isDateModalOpen}
         selectedDate={clickedDate}
@@ -223,7 +228,7 @@ export default function PrincipalClassPage() {
         role="principal"
       />
 
-      {/* Session Detail Modal - Redux 방식 */}
+      {/* Session Detail Modal - API 방식 */}
       <SessionDetailModal
         isOpen={isSessionDetailModalOpen}
         sessionId={selectedSession?.id}

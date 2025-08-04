@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
-import { usePrincipalData } from '@/hooks/redux/usePrincipalData'
+import { usePrincipalApi } from '@/hooks/usePrincipalApi'
 import { ClassList } from '@/components/common/ClassContainer/ClassList'
 import { CommonClassData } from '@/components/common/ClassContainer/ClassCard'
 import { ClassSessionModal } from '@/components/common/ClassContainer/ClassSessionModal'
@@ -22,8 +22,16 @@ export const PrincipalClassesContainer = () => {
   const [selectedClass, setSelectedClass] = useState<any>(null)
   const [isClassSessionModalOpen, setIsClassSessionModalOpen] = useState(false)
 
-  // Redux store에서 Principal 데이터 가져오기
-  const { classes, sessions, isLoading, error } = usePrincipalData()
+  // API 기반 데이터 관리
+  const { classes, sessions, loadClasses, loadSessions, isLoading, error, isPrincipal } = usePrincipalApi()
+
+  // 컴포넌트 마운트 시 데이터 로드
+  useEffect(() => {
+    if (isPrincipal) {
+      loadClasses();
+      loadSessions();
+    }
+  }, []);
 
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {
@@ -45,7 +53,10 @@ export const PrincipalClassesContainer = () => {
       <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">데이터를 불러오는데 실패했습니다.</p>
         <button
-          onClick={() => window.location.reload()}
+          onClick={() => {
+            loadClasses();
+            loadSessions();
+          }}
           className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
         >
           다시 시도
@@ -94,4 +105,4 @@ export const PrincipalClassesContainer = () => {
       />
     </div>
   )
-} 
+}

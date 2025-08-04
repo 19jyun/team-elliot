@@ -12,28 +12,12 @@ export const principalSlice = createSlice({
   name: "principal",
   initialState,
   reducers: {
+    // 실시간 업데이트가 필요한 데이터만 설정
     setPrincipalData: (state, action) => {
       state.data = action.payload;
     },
 
-    updatePrincipalProfile: (state, action) => {
-      if (state.data?.userProfile) {
-        state.data.userProfile = {
-          ...state.data.userProfile,
-          ...action.payload,
-        };
-      }
-    },
-
-    updatePrincipalAcademy: (state, action) => {
-      if (state.data?.academy) {
-        state.data.academy = {
-          ...state.data.academy,
-          ...action.payload,
-        };
-      }
-    },
-
+    // 수강신청 실시간 업데이트
     updatePrincipalEnrollment: (state, action) => {
       if (state.data?.enrollments) {
         const index = state.data.enrollments.findIndex(
@@ -47,6 +31,7 @@ export const principalSlice = createSlice({
       }
     },
 
+    // 환불요청 실시간 업데이트
     updatePrincipalRefundRequest: (state, action) => {
       if (state.data?.refundRequests) {
         const index = state.data.refundRequests.findIndex(
@@ -60,46 +45,7 @@ export const principalSlice = createSlice({
       }
     },
 
-    updatePrincipalClass: (state, action) => {
-      if (state.data?.classes) {
-        const index = state.data.classes.findIndex(
-          (c) => c.id === action.payload.id
-        );
-        if (index !== -1) {
-          state.data.classes[index] = action.payload;
-        } else {
-          state.data.classes.push(action.payload);
-        }
-      }
-    },
-
-    updatePrincipalTeacher: (state, action) => {
-      if (state.data?.teachers) {
-        const index = state.data.teachers.findIndex(
-          (t) => t.id === action.payload.id
-        );
-        if (index !== -1) {
-          state.data.teachers[index] = action.payload;
-        } else {
-          state.data.teachers.push(action.payload);
-        }
-      }
-    },
-
-    updatePrincipalStudent: (state, action) => {
-      if (state.data?.students) {
-        const index = state.data.students.findIndex(
-          (s) => s.id === action.payload.id
-        );
-        if (index !== -1) {
-          state.data.students[index] = action.payload;
-        } else {
-          state.data.students.push(action.payload);
-        }
-      }
-    },
-
-    // Socket 이벤트 액션들 (Principal 전용)
+    // Socket 이벤트 액션들 (실시간 업데이트)
     updatePrincipalEnrollmentFromSocket: (state, action) => {
       const { enrollmentId, status, data } =
         action.payload as SocketEventData<"enrollment_status_changed">;
@@ -134,6 +80,7 @@ export const principalSlice = createSlice({
       }
     },
 
+    // UI 상태 관리
     setLoading: (state, action) => {
       state.isLoading = action.payload;
     },
@@ -154,13 +101,8 @@ export const {
   setPrincipalData,
   setLoading,
   setError,
-  updatePrincipalProfile,
-  updatePrincipalAcademy,
   updatePrincipalEnrollment,
   updatePrincipalRefundRequest,
-  updatePrincipalClass,
-  updatePrincipalTeacher,
-  updatePrincipalStudent,
   updatePrincipalEnrollmentFromSocket,
   updatePrincipalRefundRequestFromSocket,
   clearPrincipalData,

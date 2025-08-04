@@ -6,7 +6,10 @@ import {
   setLoading,
   setError,
 } from "@/store/slices/principalSlice";
-import { getPrincipalData } from "@/api/principal";
+import {
+  getPrincipalAllEnrollments,
+  getPrincipalAllRefundRequests,
+} from "@/api/principal";
 import { toast } from "sonner";
 
 export function usePrincipalInitialization() {
@@ -28,22 +31,29 @@ export function usePrincipalInitialization() {
         dispatch(setLoading(true));
         dispatch(setError(null));
 
+        // 실시간 업데이트가 필요한 데이터만 로드
+        const [enrollments, refundRequests] = await Promise.all([
+          getPrincipalAllEnrollments(),
+          getPrincipalAllRefundRequests(),
+        ]);
 
-        // PrincipalData 전체 조회
-        const principalData = await getPrincipalData();
+        // Redux 상태 업데이트 (실시간 데이터만)
+        dispatch(
+          setPrincipalData({
+            enrollments,
+            refundRequests,
+          })
+        );
 
-        // Redux 상태 업데이트
-        dispatch(setPrincipalData(principalData));
-
-        toast.success("Principal 대시보드가 로드되었습니다.");
+        toast.success("Principal 실시간 데이터가 로드되었습니다.");
       } catch (error: any) {
-        console.error("❌ Principal 데이터 초기화 실패:", error);
+        console.error("❌ Principal 실시간 데이터 초기화 실패:", error);
 
         const errorMessage =
-          error.response?.data?.message || "데이터 로딩에 실패했습니다.";
+          error.response?.data?.message || "실시간 데이터 로딩에 실패했습니다.";
         dispatch(setError(errorMessage));
 
-        toast.error("Principal 데이터 로딩 실패", {
+        toast.error("Principal 실시간 데이터 로딩 실패", {
           description: errorMessage,
         });
       } finally {

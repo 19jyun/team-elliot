@@ -1,13 +1,11 @@
 'use client'
 
-import React, { useMemo } from 'react'
+import React, { useMemo, useEffect } from 'react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { SessionCardList } from '@/components/common/Session/SessionCardList'
-import { usePrincipalData } from '@/hooks/redux/usePrincipalData'
-import { useTeacherData } from '@/hooks/redux/useTeacherData'
-import { useStudentData } from '@/hooks/redux/useStudentData'
+import { useRoleCalendarApi } from '@/hooks/useRoleCalendarApi'
 
 interface DateSessionModalProps {
   isOpen: boolean
@@ -24,29 +22,18 @@ export function DateSessionModal({
   onSessionClick,
   role 
 }: DateSessionModalProps) {
-  // 역할에 따라 다른 Redux store에서 데이터 가져오기
-  const principalData = usePrincipalData();
-  const teacherData = useTeacherData();
-  const studentData = useStudentData();
   
-  // 역할에 따른 데이터 선택
-  const getDataByRole = () => {
-    switch (role) {
-      case 'student':
-        return studentData;
-      case 'teacher':
-        return teacherData;
-      case 'principal':
-        return principalData;
-      default:
-        return principalData;
+  // Role별 API 기반 데이터 관리
+  const { getSessionsByDate, loadSessions } = useRoleCalendarApi(role.toUpperCase() as 'STUDENT' | 'TEACHER' | 'PRINCIPAL');
+
+  // 모달이 열릴 때 세션 데이터 로드
+  useEffect(() => {
+    if (isOpen) {
+      loadSessions();
     }
-  };
+  }, [isOpen, loadSessions]);
 
-  const currentData = getDataByRole();
-  const { getSessionsByDate } = currentData;
-
-  // 선택된 날짜의 세션들을 Redux에서 가져오기
+  // 선택된 날짜의 세션들을 API에서 가져오기
   const sessions = useMemo(() => {
     if (!selectedDate) return [];
     const result = getSessionsByDate(selectedDate);
