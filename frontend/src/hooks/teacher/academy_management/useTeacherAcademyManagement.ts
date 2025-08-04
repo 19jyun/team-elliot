@@ -1,9 +1,7 @@
-import { useState } from "react";
-import { useAppDispatch } from "@/store/hooks";
-import { useTeacherData } from "@/hooks/redux/useTeacherData";
+import { useState, useCallback } from "react";
+import { useTeacherApi } from "@/hooks/teacher/useTeacherApi";
 import { toast } from "sonner";
 import {
-  getMyAcademy,
   changeAcademy,
   createAndJoinAcademy,
   updateAcademy,
@@ -11,16 +9,9 @@ import {
   requestJoinAcademy,
 } from "@/api/teacher";
 import { Academy, CreateAcademyRequest } from "@/types/api/teacher";
-import {
-  setCurrentAcademy,
-  clearCurrentAcademy,
-  setAcademyLoading,
-  setAcademyError,
-} from "@/store/slices/teacherSlice";
 
 export function useTeacherAcademyManagement() {
-  const dispatch = useAppDispatch();
-  const { academy: currentAcademy, isLoading } = useTeacherData();
+  const { academy: currentAcademy, loadAcademy, isLoading } = useTeacherApi();
 
   const [joinCode, setJoinCode] = useState("");
   const [isJoining, setIsJoining] = useState(false);
@@ -30,21 +21,14 @@ export function useTeacherAcademyManagement() {
   );
   const [pendingJoinCode, setPendingJoinCode] = useState("");
 
-  const loadCurrentAcademy = async () => {
+  const loadCurrentAcademy = useCallback(async () => {
     try {
-      dispatch(setAcademyLoading(true));
-      dispatch(setAcademyError(null));
-
-      const academy = await getMyAcademy();
-      dispatch(setCurrentAcademy(academy));
+      await loadAcademy();
     } catch (error) {
       console.error("학원 정보 로드 실패:", error);
-      dispatch(setAcademyError("학원 정보를 불러오는데 실패했습니다."));
       toast.error("학원 정보를 불러오는데 실패했습니다.");
-    } finally {
-      dispatch(setAcademyLoading(false));
     }
-  };
+  }, [loadAcademy]);
 
   const handleJoinAcademy = async () => {
     if (!joinCode.trim()) {
@@ -89,7 +73,6 @@ export function useTeacherAcademyManagement() {
       try {
         // 먼저 현재 학원 탈퇴
         await leaveAcademy();
-        dispatch(clearCurrentAcademy());
         toast.success("학원에서 탈퇴되었습니다.");
 
         // 그 다음 새 학원 가입 요청
@@ -100,49 +83,49 @@ export function useTeacherAcademyManagement() {
           error.response?.data?.message || "학원 변경에 실패했습니다."
         );
       }
-      return;
-    }
-
-    // 단순 탈퇴인 경우
-    try {
-      await leaveAcademy();
-      dispatch(clearCurrentAcademy());
-      toast.success("학원에서 탈퇴되었습니다.");
-    } catch (error: any) {
-      console.error("학원 탈퇴 실패:", error);
-      toast.error(error.response?.data?.message || "학원 탈퇴에 실패했습니다.");
+    } else if (withdrawalType === "leave") {
+      // 단순 탈퇴인 경우
+      try {
+        await leaveAcademy();
+        toast.success("학원에서 탈퇴되었습니다.");
+        // 데이터 재로드
+        await loadAcademy();
+      } catch (error: any) {
+        console.error("학원 탈퇴 실패:", error);
+        toast.error(
+          error.response?.data?.message || "학원 탈퇴에 실패했습니다."
+        );
+      }
     }
   };
 
   const handleCreateAcademy = async (formData: CreateAcademyRequest) => {
     try {
-      dispatch(setAcademyLoading(true));
-      const academy = await createAndJoinAcademy(formData);
-      dispatch(setCurrentAcademy(academy));
+      const result = await createAndJoinAcademy(formData);
       toast.success("학원이 성공적으로 생성되었습니다.");
-      return academy;
+      // 데이터 재로드
+      await loadAcademy();
+      return result;
     } catch (error: any) {
       console.error("학원 생성 실패:", error);
       toast.error(error.response?.data?.message || "학원 생성에 실패했습니다.");
       throw error;
-    } finally {
-      dispatch(setAcademyLoading(false));
     }
   };
 
   const handleUpdateAcademy = async (formData: CreateAcademyRequest) => {
     try {
-      dispatch(setAcademyLoading(true));
-      const academy = await updateAcademy(formData);
-      dispatch(setCurrentAcademy(academy));
-      toast.success("학원 정보가 성공적으로 수정되었습니다.");
-      return academy;
+      const result = await updateAcademy(formData);
+      toast.success("학원 정보가 업데이트되었습니다.");
+      // 데이터 재로드
+      await loadAcademy();
+      return result;
     } catch (error: any) {
-      console.error("학원 수정 실패:", error);
-      toast.error(error.response?.data?.message || "학원 수정에 실패했습니다.");
+      console.error("학원 정보 업데이트 실패:", error);
+      toast.error(
+        error.response?.data?.message || "학원 정보 업데이트에 실패했습니다."
+      );
       throw error;
-    } finally {
-      dispatch(setAcademyLoading(false));
     }
   };
 

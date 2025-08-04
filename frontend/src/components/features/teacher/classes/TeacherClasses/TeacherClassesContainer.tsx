@@ -1,12 +1,12 @@
 'use client'
 
 import { useSession, signOut } from 'next-auth/react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { ClassList } from '@/components/common/ClassContainer/ClassList'
 import { ClassSessionModal } from '@/components/common/ClassContainer/ClassSessionModal'
-import { useTeacherData } from '@/hooks/redux/useTeacherData'
+import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'
 
 export function TeacherClassesContainer() {
   const router = useRouter()
@@ -20,8 +20,13 @@ export function TeacherClassesContainer() {
   const [selectedClass, setSelectedClass] = useState<any>(null)
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false)
 
-  // Redux store에서 Teacher 데이터 가져오기
-  const { classes: myClasses, sessions: mySessions, isLoading, error } = useTeacherData()
+  // API 기반 데이터 관리
+  const { classes: myClasses, sessions: mySessions, loadClasses, isLoading, error } = useTeacherApi()
+
+  // 초기 데이터 로드
+  useEffect(() => {
+    loadClasses();
+  }, []);
 
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {
@@ -43,7 +48,7 @@ export function TeacherClassesContainer() {
       <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">데이터를 불러오는데 실패했습니다.</p>
         <button
-          onClick={() => window.location.reload()}
+          onClick={() => loadClasses()}
           className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
         >
           다시 시도
@@ -64,28 +69,28 @@ export function TeacherClassesContainer() {
 
   return (
     <div className="flex flex-col h-full bg-white">
-      {/* 헤더 */}
-      <div className="flex-shrink-0 px-5 py-6 border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-stone-700">담당 클래스</h1>
-        <p className="mt-2 text-stone-500">현재 담당하고 있는 클래스와 세션을 확인하세요</p>
-      </div>
+      <header className="flex-shrink-0">
+        <div className="flex flex-col px-5 py-6">
+          <h1 className="text-2xl font-bold text-stone-700">
+            내 담당 클래스
+          </h1>
+          <p className="mt-2 text-stone-500">
+            담당하고 있는 클래스들을 확인하세요.
+          </p>
+        </div>
+      </header>
 
-      {/* 클래스 리스트 */}
-      <div className="flex-1 px-5 py-4">
+      <main className="flex-1 overflow-hidden">
         <ClassList
-          classes={myClasses || []}
+          classes={myClasses}
           onClassClick={handleClassClick}
-          showTeacher={false}
           role="teacher"
-          emptyMessage="담당하고 있는 클래스가 없습니다."
         />
-      </div>
+      </main>
 
-      {/* Class Session Modal */}
       <ClassSessionModal
         isOpen={isSessionModalOpen}
         selectedClass={selectedClass}
-        sessions={mySessions || []}
         onClose={closeSessionModal}
         role="teacher"
       />

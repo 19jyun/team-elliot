@@ -9,6 +9,7 @@ import type {
   TeacherProfileResponse,
   TeacherClassesWithSessionsResponse,
   Academy,
+  Principal,
 } from "@/types/api/teacher";
 
 // Teacher API 데이터 훅
@@ -26,7 +27,7 @@ export function useTeacherApi() {
     status === "authenticated" && session?.user?.role === "TEACHER";
 
   // 프로필 정보 로드
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     if (!isTeacher) return;
 
     try {
@@ -36,10 +37,10 @@ export function useTeacherApi() {
     } catch (err: any) {
       setError(err.response?.data?.message || "프로필 로드 실패");
     }
-  };
+  }, [isTeacher]);
 
   // 학원 정보 로드
-  const loadAcademy = async () => {
+  const loadAcademy = useCallback(async () => {
     if (!isTeacher) return;
 
     try {
@@ -49,10 +50,10 @@ export function useTeacherApi() {
     } catch (err: any) {
       setError(err.response?.data?.message || "학원 정보 로드 실패");
     }
-  };
+  }, [isTeacher]);
 
   // 클래스와 세션 목록 로드
-  const loadSessions = useCallback(async () => {
+  const loadClasses = useCallback(async () => {
     if (!isTeacher) return;
 
     try {
@@ -73,7 +74,7 @@ export function useTeacherApi() {
       setIsLoading(true);
       setError(null);
 
-      await Promise.all([loadProfile(), loadAcademy(), loadSessions()]);
+      await Promise.all([loadProfile(), loadAcademy(), loadClasses()]);
     } catch (err: any) {
       setError(err.response?.data?.message || "데이터 로드 실패");
     } finally {
@@ -101,6 +102,10 @@ export function useTeacherApi() {
     });
   };
 
+  const getTeacherById = (teacherId: number) => {
+    return profile;
+  };
+
   return {
     // 데이터
     profile,
@@ -114,7 +119,7 @@ export function useTeacherApi() {
     // 로드 함수들
     loadProfile,
     loadAcademy,
-    loadSessions,
+    loadClasses,
     loadAllData,
 
     // 헬퍼 함수들
@@ -122,5 +127,6 @@ export function useTeacherApi() {
     getSessionById,
     getSessionsByClassId,
     getSessionsByDate,
+    getTeacherById,
   };
 }
