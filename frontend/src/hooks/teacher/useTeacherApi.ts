@@ -4,6 +4,7 @@ import {
   getTeacherProfile,
   getTeacherClassesWithSessions,
   getMyAcademy,
+  getSessionEnrollments,
 } from "@/api/teacher";
 import type {
   TeacherProfileResponse,
@@ -66,6 +67,23 @@ export function useTeacherApi() {
     }
   }, [isTeacher]);
 
+  // 세션 수강생 목록 로드
+  const loadSessionEnrollments = useCallback(
+    async (sessionId: number) => {
+      if (!isTeacher || !sessionId) return null;
+
+      try {
+        setError(null);
+        const data = await getSessionEnrollments(sessionId);
+        return data;
+      } catch (err: any) {
+        setError(err.response?.data?.message || "수강생 목록 로드 실패");
+        return null;
+      }
+    },
+    [isTeacher]
+  );
+
   // 모든 데이터 로드
   const loadAllData = async () => {
     if (!isTeacher) return;
@@ -120,7 +138,9 @@ export function useTeacherApi() {
     loadProfile,
     loadAcademy,
     loadClasses,
+    loadSessions: loadClasses, // loadClasses의 별칭
     loadAllData,
+    loadSessionEnrollments,
 
     // 헬퍼 함수들
     getClassById,

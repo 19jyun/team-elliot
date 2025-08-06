@@ -87,6 +87,9 @@ export const updatePrincipalProfile = async (data: {
   introduction?: string;
   education?: string[];
   certifications?: string[];
+  bankName?: string;
+  accountNumber?: string;
+  accountHolder?: string;
 }) => {
   const response = await axiosInstance.put("/principal/profile", data);
   return response.data;

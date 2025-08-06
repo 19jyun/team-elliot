@@ -38,6 +38,8 @@ export const getEnrollmentHistory = (): Promise<EnrollmentHistoryResponse> => {
 
 // 환불/취소 내역 조회
 export const getCancellationHistory =
-  (): Promise<CancellationHistoryResponse> => {
-    return get<CancellationHistoryResponse>("/student/cancellation-history");
-  };
+  (): Promise<CancellationHistoryResponse> =>
+    get("/student/cancellation-history");
+
+export const getSessionPaymentInfo = (sessionId: number): Promise<any> =>
+  get(`/student/sessions/${sessionId}/payment-info`);

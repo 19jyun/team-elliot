@@ -137,6 +137,10 @@ async function main() {
         '문화예술교육사 자격증',
       ],
       yearsOfExperience: 15,
+      // 은행 정보 추가
+      bankName: '신한은행',
+      accountNumber: '110-123-456789',
+      accountHolder: '김원장',
     },
     create: {
       userId: 'principal123',
@@ -160,6 +164,10 @@ async function main() {
       ],
       yearsOfExperience: 15,
       academyId: academy.id,
+      // 은행 정보 추가
+      bankName: '신한은행',
+      accountNumber: '110-123-456789',
+      accountHolder: '김원장',
     },
   });
 
@@ -493,8 +501,6 @@ async function main() {
       });
     }
   }
-
-
 
   // 테스트용 세션 등록 및 결제 생성
   if (firstClass && firstClass.classSessions.length > 0) {

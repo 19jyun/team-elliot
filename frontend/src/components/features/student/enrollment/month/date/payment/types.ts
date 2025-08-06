@@ -19,9 +19,9 @@ export interface ClassFee {
   price: number;
 }
 
-export interface TeacherPaymentInfo {
-  teacherId: number;
-  teacherName: string;
+export interface PrincipalPaymentInfo {
+  principalId: number;
+  principalName: string;
   bankName: string;
   accountNumber: string;
   accountHolder: string;
@@ -29,3 +29,6 @@ export interface TeacherPaymentInfo {
   totalAmount: number;
   sessions: SelectedSession[];
 }
+
+// 기존 TeacherPaymentInfo를 PrincipalPaymentInfo로 alias
+export type TeacherPaymentInfo = PrincipalPaymentInfo;

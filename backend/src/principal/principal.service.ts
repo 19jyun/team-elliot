@@ -398,6 +398,32 @@ export class PrincipalService {
     return principal;
   }
 
+  // Principal의 은행 정보 조회 (학생이 결제 시 사용)
+  async getPrincipalBankInfo(principalId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      select: {
+        id: true,
+        name: true,
+        bankName: true,
+        accountNumber: true,
+        accountHolder: true,
+      },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    return {
+      principalId: principal.id,
+      principalName: principal.name,
+      bankName: principal.bankName,
+      accountNumber: principal.accountNumber,
+      accountHolder: principal.accountHolder,
+    };
+  }
+
   // Principal 전체 데이터 조회 (Redux 초기화용)
   async getPrincipalData(principalId: number) {
     const principal = await this.prisma.principal.findUnique({
@@ -608,6 +634,19 @@ export class PrincipalService {
 
     if (updateProfileDto.certifications !== undefined) {
       updateData.certifications = updateProfileDto.certifications;
+    }
+
+    // 은행 정보 업데이트 로직 추가
+    if (updateProfileDto.bankName !== undefined) {
+      updateData.bankName = updateProfileDto.bankName;
+    }
+
+    if (updateProfileDto.accountNumber !== undefined) {
+      updateData.accountNumber = updateProfileDto.accountNumber;
+    }
+
+    if (updateProfileDto.accountHolder !== undefined) {
+      updateData.accountHolder = updateProfileDto.accountHolder;
     }
 
     // 사진이 업로드된 경우 URL 생성

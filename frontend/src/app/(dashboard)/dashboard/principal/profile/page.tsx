@@ -61,6 +61,10 @@ export default function PrincipalProfilePage() {
     navigateToSubPage('personal-info')
   }
 
+  const handleBankInfoClick = () => {
+    navigateToSubPage('bank-info')
+  }
+
   const menuLinks = [
     {
       label: '내 프로필 관리',
@@ -71,6 +75,11 @@ export default function PrincipalProfilePage() {
       label: '개인 정보',
       icon: '/icons/group.svg',
       onClick: handlePersonalInfoClick,
+    },
+    {
+      label: '은행 정보',
+      icon: '/icons/group.svg',
+      onClick: handleBankInfoClick,
     },
   ]
 

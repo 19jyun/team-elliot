@@ -7,7 +7,7 @@ import { EnrollmentModificationPaymentStep } from './EnrollmentModificationPayme
 import { EnrollmentCompleteStep } from '../enroll/EnrollmentCompleteStep';
 import { RefundRequestStep } from './RefundRequestStep';
 import { RefundCompleteStep } from './RefundCompleteStep';
-import { useStudentData } from '@/hooks/redux/useStudentData';
+import { useStudentApi } from '@/hooks/student/useStudentApi';
 import { useEnrollmentCalculation } from '@/hooks/useEnrollmentCalculation';
 import { toast } from 'sonner';
 
@@ -20,7 +20,7 @@ interface EnrollmentModificationContainerProps {
 export function EnrollmentModificationContainer({ classId, className, month }: EnrollmentModificationContainerProps) {
   const { enrollment, setEnrollmentStep } = useDashboardNavigation();
   const { currentStep } = enrollment;
-  const { enrollmentHistory, isLoading, error } = useStudentData();
+  const { enrollmentHistory, isLoading, error, loadEnrollmentHistory } = useStudentApi();
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [refundAmount, setRefundAmount] = useState(0);
   const [cancelledSessionsCount, setCancelledSessionsCount] = useState(0);
@@ -31,6 +31,11 @@ export function EnrollmentModificationContainer({ classId, className, month }: E
   useEffect(() => {
     setEnrollmentStep('date-selection');
   }, [setEnrollmentStep]);
+
+  // 수강 신청 내역 로드
+  useEffect(() => {
+    loadEnrollmentHistory();
+  }, [loadEnrollmentHistory]);
 
   // 수강 변경 모드에서는 항상 date-selection 단계로 강제 설정
   const effectiveStep = currentStep === 'main' ? 'date-selection' : currentStep;

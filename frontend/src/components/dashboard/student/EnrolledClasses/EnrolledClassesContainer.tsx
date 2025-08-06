@@ -3,11 +3,12 @@
 import { useSession, signOut } from 'next-auth/react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import React from 'react'
 
 import { EnrolledClassesList } from '@/components/features/student/classes/EnrolledClassesList'
 import { ClassSessionModal } from '@/components/features/student/classes/ClassSessionModal'
 import { StudentSessionDetailModal } from '@/components/features/student/classes/StudentSessionDetailModal'
-import { useStudentData } from '@/hooks/redux/useStudentData'
+import { useStudentApi } from '@/hooks/student/useStudentApi'
 
 export function EnrolledClassesContainer() {
   const router = useRouter()
@@ -25,13 +26,34 @@ export function EnrolledClassesContainer() {
   const [selectedSession, setSelectedSession] = useState<any>(null)
   const [isSessionDetailModalOpen, setIsSessionDetailModalOpen] = useState(false)
 
-  // Redux 데이터 사용
+  // API 데이터 사용
   const { 
-    enrolledClasses, 
     sessionClasses, 
+    convertedSessions, 
     isLoading, 
     error 
-  } = useStudentData()
+  } = useStudentApi()
+
+  // sessionClasses에서 enrolledClasses 추출
+  const enrolledClasses = React.useMemo(() => {
+    if (!sessionClasses || sessionClasses.length === 0) return [];
+    
+    // 클래스별로 그룹화하여 중복 제거
+    const classMap = new Map();
+    sessionClasses.forEach((session: any) => {
+      if (session.class) {
+        const classId = session.class.id;
+        if (!classMap.has(classId)) {
+          classMap.set(classId, {
+            ...session.class,
+            sessions: sessionClasses.filter((s: any) => s.classId === classId)
+          });
+        }
+      }
+    });
+    
+    return Array.from(classMap.values());
+  }, [sessionClasses]);
 
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {

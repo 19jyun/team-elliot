@@ -24,4 +24,20 @@ export class UpdateProfileDto {
   @IsArray()
   @IsString({ each: true })
   certifications?: string[];
+
+  // 은행 정보 필드 추가
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  bankName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  accountNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  accountHolder?: string;
 }

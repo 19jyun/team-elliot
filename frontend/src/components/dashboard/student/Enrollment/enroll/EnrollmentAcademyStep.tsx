@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
-import { useStudentData } from '@/hooks/redux/useStudentData';
+import { useStudentApi } from '@/hooks/student/useStudentApi';
 
 export function EnrollmentAcademyStep() {
   const { enrollment, setEnrollmentStep, setSelectedAcademyId: setContextSelectedAcademyId, goBack, navigateToSubPage } = useDashboardNavigation();
@@ -16,10 +16,15 @@ export function EnrollmentAcademyStep() {
     },
   });
 
-  // Redux에서 academies 데이터 가져오기
-  const { academies, isLoading, error } = useStudentData();
+  // API에서 academies 데이터 가져오기
+  const { academies, isLoading, error, loadAcademies } = useStudentApi();
 
   const [localSelectedAcademyId, setLocalSelectedAcademyId] = React.useState<number | null>(null);
+
+  // 컴포넌트 마운트 시 학원 목록 로드
+  React.useEffect(() => {
+    loadAcademies();
+  }, [loadAcademies]);
 
   const statusSteps = [
     {

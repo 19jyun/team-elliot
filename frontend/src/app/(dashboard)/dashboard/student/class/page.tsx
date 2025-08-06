@@ -9,7 +9,8 @@ import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
 import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessionModal'
 import { StudentSessionDetailModal } from '@/components/features/student/classes/StudentSessionDetailModal'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
-import { useStudentData } from '@/hooks/redux/useStudentData'
+import { useStudentApi } from '@/hooks/student/useStudentApi'
+import { useRoleCalendarApi } from '@/hooks/calendar/useRoleCalendarApi'
 
 export default function StudentDashboard() {
   const router = useRouter()
@@ -22,13 +23,20 @@ export default function StudentDashboard() {
 
   const { navigateToSubPage } = useDashboardNavigation()
 
-  // Redux 데이터 사용
+  // API 데이터 사용
   const { 
-    convertedSessions, 
     calendarRange, 
-    isLoading, 
-    error 
-  } = useStudentData()
+    isLoading: studentApiLoading, 
+    error: studentApiError 
+  } = useStudentApi()
+  const { 
+    calendarSessions, 
+    isLoading: calendarLoading, 
+    error: calendarError 
+  } = useRoleCalendarApi("STUDENT")
+
+  const isLoading = studentApiLoading || calendarLoading
+  const error = studentApiError || calendarError
 
   // 날짜 클릭 관련 상태 추가
   const [clickedDate, setClickedDate] = useState<Date | null>(null)
@@ -132,7 +140,7 @@ export default function StudentDashboard() {
         <div className="flex flex-col w-full bg-white text-stone-700" style={{ height: 'calc(100vh - 450px)' }}>
           <CalendarProvider
             mode="student-view"
-            sessions={convertedSessions}
+            sessions={calendarSessions}
             selectedSessionIds={new Set()}
             onSessionSelect={() => {}} // student-view에서는 선택 기능 없음
             onDateClick={handleDateClick}

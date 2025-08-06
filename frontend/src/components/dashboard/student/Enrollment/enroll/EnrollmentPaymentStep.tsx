@@ -1,11 +1,11 @@
 'use client'
 import React, { useEffect, useState } from 'react';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
-import { batchEnrollSessions } from '@/api/class-sessions';
 import { toast } from 'sonner';
-import { TeacherPaymentBox } from '@/components/features/student/enrollment/month/date/payment/TeacherPaymentBox';
+import { useStudentApi } from '@/hooks/student/useStudentApi';
+import { PrincipalPaymentBox } from '@/components/features/student/enrollment/month/date/payment/PrincipalPaymentBox';
 import { PaymentConfirmFooter } from '@/components/features/student/enrollment/month/date/payment/PaymentConfirmFooter';
-import { SelectedSession, TeacherPaymentInfo } from '@/components/features/student/enrollment/month/date/payment/types';
+import { SelectedSession, PrincipalPaymentInfo } from '@/components/features/student/enrollment/month/date/payment/types';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 
 interface EnrollmentPaymentStepProps {
@@ -16,10 +16,12 @@ interface EnrollmentPaymentStepProps {
 export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps) {
   const { enrollment, setEnrollmentStep } = useDashboardNavigation();
   const { selectedSessions: contextSessions } = enrollment;
+  const { enrollSessions, loadSessionPaymentInfo } = useStudentApi();
   const [selectedSessions, setSelectedSessions] = useState<SelectedSession[]>([]);
-  const [teacherPayments, setTeacherPayments] = useState<TeacherPaymentInfo[]>([]);
+  const [principalPayment, setPrincipalPayment] = useState<PrincipalPaymentInfo | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isLoadingPaymentInfo, setIsLoadingPaymentInfo] = useState(false);
   
   const statusSteps = [
     {
@@ -48,6 +50,96 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
     },
   ]
 
+  // 세션별 결제 정보 로드 - 원장 기준으로 통합
+  const loadPaymentInfoForSessions = async (sessions: SelectedSession[]) => {
+    setIsLoadingPaymentInfo(true);
+    
+    try {
+      let principalInfo: any = null;
+      const classFees: any[] = [];
+      let totalAmount = 0;
+      
+      // 각 세션별로 결제 정보를 가져옴
+      for (const session of sessions) {
+        try {
+          const paymentInfo = await loadSessionPaymentInfo(session.id);
+          
+          if (paymentInfo && paymentInfo.principal) {
+            // 원장 정보는 첫 번째 세션에서 가져옴 (모든 세션이 같은 원장)
+            if (!principalInfo) {
+              principalInfo = paymentInfo.principal;
+            }
+            
+            // 실제 클래스의 tuitionFee를 사용하여 수강료 계산
+            const className = session.class?.className || '클래스';
+            const sessionFee = Number(paymentInfo.tuitionFee) || 0;
+            
+            // 클래스 수강료 정보 추가
+            const existingFee = classFees.find(fee => fee.name === className);
+            if (existingFee) {
+              existingFee.count += 1;
+              existingFee.price += sessionFee;
+            } else {
+              classFees.push({
+                name: className,
+                count: 1,
+                price: sessionFee,
+              });
+            }
+            
+            totalAmount += sessionFee;
+          }
+        } catch (error) {
+          console.error(`세션 ${session.id}의 결제 정보 로드 실패:`, error);
+          // 에러가 발생한 경우 기본값 사용
+          if (!principalInfo) {
+            principalInfo = {
+              bankName: '은행 정보 로드 실패',
+              accountNumber: '계좌번호 로드 실패',
+              accountHolder: '계좌주 로드 실패',
+            };
+          }
+          
+          const className = session.class?.className || '클래스';
+          const sessionFee = Number((session.class as any)?.tuitionFee) || 0;
+          
+          const existingFee = classFees.find(fee => fee.name === className);
+          if (existingFee) {
+            existingFee.count += 1;
+            existingFee.price += sessionFee;
+          } else {
+            classFees.push({
+              name: className,
+              count: 1,
+              price: sessionFee,
+            });
+          }
+          
+          totalAmount += sessionFee;
+        }
+      }
+      
+      // 원장 기준으로 통합된 결제 정보 설정
+      if (principalInfo) {
+        setPrincipalPayment({
+          principalId: 0, // 원장 ID (사용하지 않음)
+          principalName: '원장님', // 원장으로 표시
+          bankName: principalInfo.bankName || '은행 정보 없음',
+          accountNumber: principalInfo.accountNumber || '계좌번호 없음',
+          accountHolder: principalInfo.accountHolder || '계좌주 없음',
+          classFees,
+          totalAmount: Number(totalAmount), // 확실히 숫자로 변환
+          sessions,
+        });
+      }
+    } catch (error) {
+      console.error('결제 정보 로드 실패:', error);
+      toast.error('결제 정보를 불러오는데 실패했습니다.');
+    } finally {
+      setIsLoadingPaymentInfo(false);
+    }
+  };
+
   useEffect(() => {
     // Context에서 세션 정보를 우선 사용하고, 없으면 localStorage에서 가져옴
     let sessions: SelectedSession[] = [];
@@ -63,60 +155,23 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
     }
     
     if (sessions.length > 0) {
+      // 이미 수강 신청한 세션이 있는지 확인
+      const alreadyEnrolledSessions = sessions.filter(session => 
+        session.isAlreadyEnrolled || !session.isEnrollable
+      );
+      
+      if (alreadyEnrolledSessions.length > 0) {
+        toast.error('이미 수강 신청한 세션이 포함되어 있습니다. 다시 선택해주세요.');
+        // 이전 단계로 돌아가기
+        setEnrollmentStep('date-selection');
+        return;
+      }
+      
       setSelectedSessions(sessions);
-      
-      // 새로운 수강 신청 모드: 실제 tuitionFee 사용
-      const teacherMap = new Map<number, TeacherPaymentInfo>();
-      
-      sessions.forEach(session => {
-        const teacherId = session.class?.teacher?.id || 1;
-        const teacherName = session.class?.teacher?.name || '선생님';
-        
-        if (!teacherMap.has(teacherId)) {
-          teacherMap.set(teacherId, {
-            teacherId,
-            teacherName,
-            bankName: '신한은행', // 실제로는 선생님 정보에서 가져와야 함
-            accountNumber: '110-123-456789',
-            accountHolder: teacherName,
-            classFees: [],
-            totalAmount: 0,
-            sessions: [],
-          });
-        }
-        
-        const teacher = teacherMap.get(teacherId)!;
-        teacher.sessions.push(session);
-        
-        // 실제 클래스의 tuitionFee를 사용하여 수강료 계산
-        const className = session.class?.className || '클래스';
-        const sessionFee = parseInt((session.class as any)?.tuitionFee) || 0; // 실제 클래스 수강료 사용
-        
-        // 클래스 수강료 정보 추가
-        teacher.classFees.push({
-          name: className,
-          tuitionFee: (session.class as any)?.tuitionFee,
-          calculatedFee: sessionFee
-        });
-        
-        const existingFee = teacher.classFees.find(fee => fee.name === className);
-        if (existingFee) {
-          existingFee.count += 1;
-          existingFee.price += sessionFee;
-        } else {
-          teacher.classFees.push({
-            name: className,
-            count: 1,
-            price: sessionFee,
-          });
-        }
-        
-        teacher.totalAmount += sessionFee;
-      });
-      
-      setTeacherPayments(Array.from(teacherMap.values()));
+      // 실제 결제 정보 로드
+      loadPaymentInfoForSessions(sessions);
     }
-  }, [contextSessions]);
+  }, [contextSessions, loadSessionPaymentInfo, setEnrollmentStep]);
 
   // 복사 버튼 클릭 시 toast
   const handleCopy = () => {
@@ -134,7 +189,7 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
       const sessionIds = selectedSessions.map(session => session.id);
       
       // 백엔드에 세션별 수강 신청 요청
-      const result = await batchEnrollSessions(sessionIds);
+      const result = await enrollSessions(sessionIds);
       
       if (result.success > 0) {
         toast.success(`${result.success}개 세션의 수강 신청이 완료되었습니다.`);
@@ -174,13 +229,21 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
           minHeight: 0 
         }}>
           <div className="flex flex-col items-center px-4 py-8 gap-6">
-            {teacherPayments.map((teacher, idx) => (
-              <TeacherPaymentBox 
-                key={idx} 
-                teacher={teacher} 
+            {isLoadingPaymentInfo ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700 mb-4" />
+                <p className="text-gray-600">결제 정보를 불러오는 중...</p>
+              </div>
+            ) : principalPayment ? (
+              <PrincipalPaymentBox 
+                principal={principalPayment} 
                 onCopy={handleCopy}
               />
-            ))}
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12">
+                <p className="text-gray-600">결제 정보가 없습니다.</p>
+              </div>
+            )}
           </div>
         </div>
       </main>

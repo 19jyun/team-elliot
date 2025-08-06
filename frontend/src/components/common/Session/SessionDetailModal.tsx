@@ -3,8 +3,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
-import { getSessionEnrollments } from '@/api/teacher'
-import { getPrincipalSessionEnrollments } from '@/api/principal'
 import { SessionEnrollmentsResponse } from '@/types/api/teacher'
 import { AttendanceTab } from '@/components/common/Session/SessionDetailComponents/Attendance/AttendanceTab'
 import { SessionContentTab } from '@/components/common/Session/SessionDetailComponents/Pose/SessionContentTab'
@@ -54,14 +52,16 @@ export function SessionDetailModal({
     sessions: principalSessions,
     loadSessions: loadPrincipalSessions,
     isLoading: principalLoading,
-    error: principalError
+    error: principalError,
+    loadSessionEnrollments: loadPrincipalSessionEnrollments
   } = principalApi;
 
   const {
     sessions: teacherSessions,
     loadSessions: loadTeacherSessions,
     isLoading: teacherLoading,
-    error: teacherError
+    error: teacherError,
+    loadSessionEnrollments: loadTeacherSessionEnrollments
   } = teacherApi;
 
   // 현재 역할에 맞는 데이터 선택
@@ -95,9 +95,9 @@ export function SessionDetailModal({
       // 역할에 따라 다른 API 호출
       let data;
       if (role === 'principal') {
-        data = await getPrincipalSessionEnrollments(sessionId!)
+        data = await loadPrincipalSessionEnrollments(sessionId!)
       } else if (role === 'teacher') {
-        data = await getSessionEnrollments(sessionId!)
+        data = await loadTeacherSessionEnrollments(sessionId!)
       } else {
         throw new Error('지원하지 않는 역할입니다.')
       }

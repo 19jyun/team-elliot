@@ -34,6 +34,11 @@ export function useStudentCalendarApi() {
     }
   }, [isStudent]);
 
+  // 컴포넌트 마운트 시 데이터 로드
+  useEffect(() => {
+    loadSessions();
+  }, [loadSessions]);
+
   const getSessionsByDate = (date: Date) => {
     return sessions.filter((session) => {
       const sessionDate = new Date(session.date);
@@ -58,17 +63,31 @@ export function useStudentCalendarApi() {
     return sessions.find((session) => session.id === sessionId);
   };
 
-  // 캘린더용 세션 데이터 변환
+  // 캘린더용 세션 데이터 변환 (ConnectedCalendar에서 사용하는 형식으로 맞춤)
   const calendarSessions = sessions.map((session) => ({
     id: session.id,
-    title: session.title || session.class?.name || "세션",
+    classId: session.classId || session.id,
     date: session.date,
     startTime: session.startTime,
     endTime: session.endTime,
-    classId: session.classId,
-    class: session.class,
-    enrollments: session.enrollments || [],
-    status: session.status,
+    currentStudents: session.currentStudents || 0,
+    maxStudents: session.maxStudents || 0,
+    isEnrollable: false, // student-view에서는 선택 불가
+    isFull: session.currentStudents >= session.maxStudents,
+    isPastStartTime:
+      new Date(session.date + " " + session.startTime) < new Date(),
+    isAlreadyEnrolled: true, // 이미 수강 중인 세션
+    studentEnrollmentStatus: "CONFIRMED",
+    class: {
+      id: session.class?.id || session.classId || session.id,
+      className: session.class?.className || "클래스",
+      level: session.class?.level || "BEGINNER",
+      tuitionFee: session.class?.tuitionFee?.toString() || "50000",
+      teacher: {
+        id: session.class?.teacher?.id || 0,
+        name: session.class?.teacher?.name || "선생님",
+      },
+    },
   }));
 
   return {

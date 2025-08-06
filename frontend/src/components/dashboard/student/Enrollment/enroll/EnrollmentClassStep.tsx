@@ -9,7 +9,7 @@ import { ClassCard } from '@/components/features/student/enrollment/month/ClassC
 import { ClassDetailModal } from '@/components/features/student/classes/ClassDetailModal';
 import { RefundPolicy } from '@/components/features/student/enrollment/RefundPolicy';
 import { useState } from 'react';
-import { useStudentData } from '@/hooks/redux/useStudentData';
+import { useStudentApi } from '@/hooks/student/useStudentApi';
 
 const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 const daysKor = ['월', '화', '수', '목', '금', '토', '일'];
@@ -40,13 +40,20 @@ export function EnrollmentClassStep() {
     },
   });
 
-  // Redux에서 수강 가능한 클래스 데이터 가져오기
-  const { availableClasses, isLoading, error } = useStudentData();
+  // API에서 수강 가능한 클래스 데이터 가져오기
+  const { availableClasses, isLoading, error, loadAvailableClasses } = useStudentApi();
 
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showClassDetailModal, setShowClassDetailModal] = useState(false);
   const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
   const [showPolicy, setShowPolicy] = useState(true);
+
+  // 선택된 학원이 변경될 때 수강 가능한 클래스 로드
+  React.useEffect(() => {
+    if (selectedAcademyId) {
+      loadAvailableClasses(selectedAcademyId);
+    }
+  }, [selectedAcademyId, loadAvailableClasses]);
 
   // 선택된 학원의 클래스들만 필터링
   const filteredClasses = React.useMemo(() => {

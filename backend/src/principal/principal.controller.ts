@@ -76,6 +76,13 @@ export class PrincipalController {
     return this.principalService.getPrincipalInfo(user.id);
   }
 
+  // Principal의 은행 정보 조회 (학생이 결제 시 사용)
+  @Get('bank-info')
+  @Roles(Role.STUDENT, Role.TEACHER, Role.PRINCIPAL, Role.ADMIN)
+  async getPrincipalBankInfo(@GetUser() user: any) {
+    return this.principalService.getPrincipalBankInfo(user.id);
+  }
+
   // Principal 전체 데이터 조회 (Redux 초기화용)
   @Get('me/data')
   async getPrincipalData(@GetUser() user: any) {

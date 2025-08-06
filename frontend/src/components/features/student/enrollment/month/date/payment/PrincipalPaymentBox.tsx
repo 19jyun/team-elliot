@@ -21,7 +21,4 @@ export function PrincipalPaymentBox({ principal, onCopy }: PrincipalPaymentBoxPr
       <TotalAmount amount={principal.totalAmount} />
     </div>
   );
-}
-
-// 기존 TeacherPaymentBox를 PrincipalPaymentBox로 alias
-export const TeacherPaymentBox = PrincipalPaymentBox; 
+} 

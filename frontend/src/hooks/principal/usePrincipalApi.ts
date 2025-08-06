@@ -7,25 +7,26 @@ import {
   getPrincipalAllTeachers,
   getPrincipalAllStudents,
   getPrincipalAllSessions,
+  getPrincipalSessionEnrollments,
 } from "@/api/principal";
 import type {
   PrincipalProfile,
-  Academy,
-  Class,
-  Teacher,
-  Student,
-  Session,
-} from "@/types/store/principal";
+  PrincipalAcademy,
+  PrincipalClass,
+  PrincipalTeacher,
+  PrincipalStudent,
+  PrincipalSession,
+} from "@/types/api/principal";
 
 // Principal API 데이터 훅
 export function usePrincipalApi() {
   const { data: session, status } = useSession();
   const [profile, setProfile] = useState<PrincipalProfile | null>(null);
-  const [academy, setAcademy] = useState<Academy | null>(null);
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const [academy, setAcademy] = useState<PrincipalAcademy | null>(null);
+  const [classes, setClasses] = useState<PrincipalClass[]>([]);
+  const [teachers, setTeachers] = useState<PrincipalTeacher[]>([]);
+  const [students, setStudents] = useState<PrincipalStudent[]>([]);
+  const [sessions, setSessions] = useState<PrincipalSession[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -111,6 +112,23 @@ export function usePrincipalApi() {
     }
   }, [isPrincipal]);
 
+  // 세션 수강생 목록 로드
+  const loadSessionEnrollments = useCallback(
+    async (sessionId: number) => {
+      if (!isPrincipal || !sessionId) return null;
+
+      try {
+        setError(null);
+        const data = await getPrincipalSessionEnrollments(sessionId);
+        return data;
+      } catch (err: any) {
+        setError(err.response?.data?.message || "수강생 목록 로드 실패");
+        return null;
+      }
+    },
+    [isPrincipal]
+  );
+
   // 모든 데이터 로드
   const loadAllData = async () => {
     if (!isPrincipal) return;
@@ -178,6 +196,7 @@ export function usePrincipalApi() {
     loadStudents,
     loadSessions,
     loadAllData,
+    loadSessionEnrollments,
 
     // 헬퍼 함수들
     getClassById,

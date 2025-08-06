@@ -38,9 +38,6 @@ async function resetDatabase() {
     console.log('📢 공지사항 삭제 중...');
     await prisma.notice.deleteMany();
 
-    console.log('🏦 은행 계좌 삭제 중...');
-    await prisma.bankAccount.deleteMany();
-
     console.log('👥 학원 가입 신청 삭제 중...');
     await prisma.academyJoinRequest.deleteMany();
 
