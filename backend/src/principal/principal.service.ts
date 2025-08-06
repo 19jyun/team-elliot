@@ -1100,13 +1100,6 @@ export class PrincipalService {
       },
     });
 
-    // Socket 이벤트 전송
-    this.socketGateway.notifyEnrollmentStatusChange(
-      enrollmentId,
-      'CONFIRMED',
-      updatedEnrollment,
-    );
-
     return updatedEnrollment;
   }
 
@@ -1161,13 +1154,6 @@ export class PrincipalService {
       },
     });
 
-    // Socket 이벤트 전송
-    this.socketGateway.notifyEnrollmentStatusChange(
-      enrollmentId,
-      'REJECTED',
-      updatedEnrollment,
-    );
-
     return updatedEnrollment;
   }
 
@@ -1221,13 +1207,6 @@ export class PrincipalService {
         },
       },
     });
-
-    // Socket 이벤트 전송
-    this.socketGateway.notifyRefundRequestStatusChange(
-      refundId,
-      'APPROVED',
-      updatedRefundRequest,
-    );
 
     return updatedRefundRequest;
   }
@@ -1288,13 +1267,6 @@ export class PrincipalService {
         },
       },
     });
-
-    // Socket 이벤트 전송
-    this.socketGateway.notifyRefundRequestStatusChange(
-      refundId,
-      'REJECTED',
-      updatedRefundRequest,
-    );
 
     return updatedRefundRequest;
   }

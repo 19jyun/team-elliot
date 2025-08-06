@@ -76,7 +76,9 @@ export function useSocket() {
     const socket = getSocket();
     if (!socket) return;
 
-    const handleConnect = () => setIsConnected(true);
+    const handleConnect = () => {
+      setIsConnected(true);
+    };
     const handleDisconnect = () => setIsConnected(false);
 
     socket.on("connect", handleConnect);

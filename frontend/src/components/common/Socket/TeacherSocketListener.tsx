@@ -1,47 +1,34 @@
 'use client'
 
-import { useAppDispatch } from '@/store/hooks'
 import { useSocketEvent } from '@/hooks/socket/useSocket'
-import { 
-  updateTeacherEnrollmentFromSocket, 
-  updateTeacherSessionFromSocket 
-} from '@/store/slices/teacherSlice'
 import { toast } from 'sonner'
 
 export function TeacherSocketListener() {
-  const dispatch = useAppDispatch()
-
-  // Teacher 전용 이벤트 리스너들
-  useSocketEvent('enrollment_status_changed', (data) => {
-    
-    dispatch(updateTeacherEnrollmentFromSocket(data))
-    
-    const statusText = data.status === 'CONFIRMED' ? '승인' : '거절'
-    toast.success(`수강신청이 ${statusText}되었습니다.`, {
-      description: `${data.data.student.name}님의 수강신청`,
+  // 새로운 실시간 이벤트들 (패킷만 수신, API 호출은 나중에 구현)
+  
+  // 새로운 수강신청 요청 알림
+  useSocketEvent('new_enrollment_request', (data) => {
+    console.log('📨 새로운 수강신청 요청 패킷 수신:', data)
+    toast.info('새로운 수강 신청이 도착했습니다.', {
+      description: '수강신청 목록을 확인해주세요.',
+      duration: 8000,
     })
+    // TODO: API 호출하여 최신 데이터 가져오기
+    // loadEnrollmentRequests()
   })
 
-  useSocketEvent('refund_request_status_changed', (data) => {
-    
-    // TODO: Teacher 환불 요청 업데이트 로직 구현
-    const statusText = data.status === 'APPROVED' ? '승인' : '거절'
-    toast.success(`환불 요청이 ${statusText}되었습니다.`, {
-      description: `${data.data.sessionEnrollment.student.name}님의 환불 요청`,
+  // 새로운 환불 요청 알림
+  useSocketEvent('new_refund_request', (data) => {
+    console.log('📨 새로운 환불 요청 패킷 수신:', data)
+    toast.info('새로운 환불 요청이 도착했습니다.', {
+      description: '환불 요청 목록을 확인해주세요.',
+      duration: 8000,
     })
+    // TODO: API 호출하여 최신 데이터 가져오기
+    // loadRefundRequests()
   })
 
-  useSocketEvent('class_info_changed', (data) => {
-    toast.info('클래스 정보가 업데이트되었습니다.')
-  })
-
-  useSocketEvent('class_reminder', (data) => {
-    toast.warning('수업 시간 알림', {
-      description: `${data.classData.className} - ${data.message}`,
-      duration: 10000,
-    })
-  })
-
+  // 연결 확인
   useSocketEvent('connection_confirmed', (data) => {
     toast.success('실시간 연결이 설정되었습니다.', {
       description: '이제 실시간 업데이트를 받을 수 있습니다.',

@@ -5,6 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { SocketGateway } from '../socket/socket.gateway';
 
 import {
   UpdateEnrollmentStatusDto,
@@ -15,7 +16,10 @@ import { ChangeEnrollmentDto } from './dto/change-enrollment.dto';
 
 @Injectable()
 export class ClassSessionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly socketGateway: SocketGateway,
+  ) {}
 
   /**
    * 클래스 세션 생성
@@ -695,6 +699,14 @@ export class ClassSessionService {
     });
 
     // 활동 로그 기록 (비동기)
+
+    // Socket 이벤트 발생 - 새로운 수강신청 요청 알림
+    this.socketGateway.notifyNewEnrollmentRequest(
+      enrollment.id,
+      enrollment.studentId,
+      enrollment.sessionId,
+      enrollment.session.class.academyId,
+    );
 
     return enrollment;
   }
@@ -2042,6 +2054,12 @@ export class ClassSessionService {
 
     // 활동 로그 기록
 
+    // Socket 이벤트 발생 - 수강신청 승인 알림
+    this.socketGateway.notifyEnrollmentAccepted(
+      updatedEnrollment.id,
+      updatedEnrollment.studentId,
+    );
+
     return updatedEnrollment;
   }
 
@@ -2118,6 +2136,9 @@ export class ClassSessionService {
     });
 
     // 활동 로그 기록
+
+    // Socket 이벤트 발생 - 수강신청 거절 알림
+    this.socketGateway.notifyEnrollmentRejected(result.id, result.studentId);
 
     return result;
   }
