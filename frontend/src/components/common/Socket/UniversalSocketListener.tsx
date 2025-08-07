@@ -7,29 +7,31 @@ import { toast } from 'sonner'
 
 // Principal Redux 액션들
 import { 
-  refreshRefundRequests,
-  refreshEnrollments,
-  refreshClasses,
-  refreshTeachers,
-  refreshStudents,
-  refreshAcademyInfo
+  setPrincipalData,
+  updatePrincipalEnrollmentFromSocket,
+  updatePrincipalRefundRequestFromSocket
 } from '@/store/slices/principalSlice'
 
 // Teacher Redux 액션들
 import {
-  refreshTeacherData,
-  refreshTeacherClasses,
-  refreshTeacherAcademy,
-  refreshTeacherPrincipal
+  setTeacherRealTimeData,
+  updateTeacherEnrollmentFromSocket
 } from '@/store/slices/teacherSlice'
 
 // Student Redux 액션들
 import {
-  refreshStudentData,
-  refreshStudentClasses,
-  refreshStudentEnrollmentHistory,
-  refreshStudentCancellationHistory
+  setStudentData,
+  updateStudentEnrollmentFromSocket,
+  updateStudentCancellationFromSocket,
+  updateAvailableSessionFromSocket,
+  updateAvailableClassFromSocket
 } from '@/store/slices/studentSlice'
+
+// API 함수들
+import { 
+  getPrincipalAllEnrollments, 
+  getPrincipalAllRefundRequests 
+} from '@/api/principal'
 
 export function UniversalSocketListener() {
   const dispatch = useAppDispatch()
@@ -37,71 +39,132 @@ export function UniversalSocketListener() {
   const currentUserId = session?.user?.id
   const currentUserRole = session?.user?.role
 
-  // 범용 데이터 업데이트 이벤트 - 모든 소켓 이벤트를 이 하나로 통합
-  useSocketEvent('data_updated', async (data) => {
+  // 수강신청 상태 변경 이벤트
+  useSocketEvent('enrollment_status_changed', async (data) => {
+    console.log('📢 수강신청 상태 변경:', data)
     
-    // 현재 사용자가 영향을 받는 사용자 목록에 있는지 확인
-    const isAffected = data.affectedUsers.some(
-      user => user.userId === currentUserId && user.userRole === currentUserRole
-    )
-
-    if (!isAffected) {
-      return
-    }
-
     try {
-      // 사용자 역할에 따라 해당하는 Redux 데이터를 새로고침
+      // 역할별로 적절한 API 호출 및 Redux 액션 디스패치
       switch (currentUserRole) {
         case 'PRINCIPAL':
-          await Promise.all([
-            dispatch(refreshEnrollments()).unwrap(),
-            dispatch(refreshRefundRequests()).unwrap(),
-            dispatch(refreshClasses()).unwrap(),
-            dispatch(refreshTeachers()).unwrap(),
-            dispatch(refreshStudents()).unwrap(),
-            dispatch(refreshAcademyInfo()).unwrap(),
-          ])
+          // Principal의 경우 전체 수강신청 목록을 새로 가져와서 업데이트
+          const enrollments = await getPrincipalAllEnrollments()
+          const refundRequests = await getPrincipalAllRefundRequests()
+          
+          dispatch(setPrincipalData({
+            enrollments,
+            refundRequests,
+          }))
           break
-
+          
         case 'TEACHER':
-          await Promise.all([
-            dispatch(refreshTeacherData()).unwrap(),
-            dispatch(refreshTeacherClasses()).unwrap(),
-            dispatch(refreshTeacherAcademy()).unwrap(),
-            dispatch(refreshTeacherPrincipal()).unwrap(),
-          ])
+          // Teacher의 경우 소켓 이벤트로 즉시 업데이트
+          dispatch(updateTeacherEnrollmentFromSocket(data))
           break
-
+          
         case 'STUDENT':
-          await Promise.all([
-            dispatch(refreshStudentData()).unwrap(),
-            dispatch(refreshStudentClasses()).unwrap(),
-            dispatch(refreshStudentEnrollmentHistory()).unwrap(),
-            dispatch(refreshStudentCancellationHistory()).unwrap(),
-          ])
+          // Student의 경우 소켓 이벤트로 즉시 업데이트
+          dispatch(updateStudentEnrollmentFromSocket(data))
           break
-
-        default:
-          console.warn('📢 [Universal] 알 수 없는 사용자 역할:', currentUserRole)
-          return
       }
-
-      // 성공 메시지 표시
-      if (data.message) {
-        toast.success(data.message, {
-          description: '데이터가 업데이트되었습니다.',
-        })
-      } else {
-        toast.info('데이터가 업데이트되었습니다.', {
-          description: `원본 이벤트: ${data.sourceEvent}`,
-        })
-      }
-
     } catch (error) {
-      console.error('❌ [Universal] 데이터 업데이트 실패:', error)
-      toast.error('데이터 업데이트에 실패했습니다.')
+      console.error('❌ 수강신청 상태 업데이트 실패:', error)
     }
   })
 
-  return null // 이 컴포넌트는 UI를 렌더링하지 않음
+  // 환불 요청 상태 변경 이벤트
+  useSocketEvent('refund_request_status_changed', async (data) => {
+    console.log('📢 환불 요청 상태 변경:', data)
+    
+    try {
+      // 역할별로 적절한 API 호출 및 Redux 액션 디스패치
+      switch (currentUserRole) {
+        case 'PRINCIPAL':
+          // Principal의 경우 전체 환불요청 목록을 새로 가져와서 업데이트
+          const enrollments = await getPrincipalAllEnrollments()
+          const refundRequests = await getPrincipalAllRefundRequests()
+          
+          dispatch(setPrincipalData({
+            enrollments,
+            refundRequests,
+          }))
+          break
+          
+        case 'STUDENT':
+          // Student의 경우 소켓 이벤트로 즉시 업데이트
+          dispatch(updateStudentCancellationFromSocket(data))
+          break
+      }
+    } catch (error) {
+      console.error('❌ 환불요청 상태 업데이트 실패:', error)
+    }
+  })
+
+  // 세션 가용성 변경 이벤트 (학생만)
+  useSocketEvent('session_availability_changed', (data) => {
+    if (currentUserRole === 'STUDENT') {
+      dispatch(updateAvailableSessionFromSocket(data))
+    }
+  })
+
+  // 클래스 가용성 변경 이벤트 (학생만)
+  useSocketEvent('class_availability_changed', (data) => {
+    if (currentUserRole === 'STUDENT') {
+      dispatch(updateAvailableClassFromSocket(data))
+    }
+  })
+
+  // 새로운 수강신청 요청 (원장/선생님만)
+  useSocketEvent('new_enrollment_request', async (data) => {
+    console.log('📨 새로운 수강신청 요청:', data)
+    
+    if (currentUserRole === 'PRINCIPAL') {
+      try {
+        // Principal의 경우 전체 수강신청 목록을 새로 가져와서 업데이트
+        const enrollments = await getPrincipalAllEnrollments()
+        const refundRequests = await getPrincipalAllRefundRequests()
+        
+        dispatch(setPrincipalData({
+          enrollments,
+          refundRequests,
+        }))
+        
+        toast.info('새로운 수강 신청이 도착했습니다.', {
+          description: '수강신청 목록을 확인해주세요.',
+          duration: 8000,
+        })
+      } catch (error) {
+        console.error('❌ 수강신청 데이터 업데이트 실패:', error)
+        toast.error('수강신청 데이터 업데이트에 실패했습니다.')
+      }
+    }
+  })
+
+  // 새로운 환불 요청 (원장만)
+  useSocketEvent('new_refund_request', async (data) => {
+    console.log('📨 새로운 환불 요청:', data)
+    
+    if (currentUserRole === 'PRINCIPAL') {
+      try {
+        // Principal의 경우 전체 환불요청 목록을 새로 가져와서 업데이트
+        const enrollments = await getPrincipalAllEnrollments()
+        const refundRequests = await getPrincipalAllRefundRequests()
+        
+        dispatch(setPrincipalData({
+          enrollments,
+          refundRequests,
+        }))
+        
+        toast.info('새로운 환불 요청이 도착했습니다.', {
+          description: '환불 요청 목록을 확인해주세요.',
+          duration: 8000,
+        })
+      } catch (error) {
+        console.error('❌ 환불요청 데이터 업데이트 실패:', error)
+        toast.error('환불요청 데이터 업데이트에 실패했습니다.')
+      }
+    }
+  })
+
+  return null
 } 

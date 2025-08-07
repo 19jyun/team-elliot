@@ -37,6 +37,10 @@ export function usePrincipalInitialization() {
           getPrincipalAllRefundRequests(),
         ]);
 
+        // 디버깅: 환불 요청 데이터 확인
+        console.log("환불 요청 API 응답:", refundRequests);
+        console.log("환불 요청 개수:", refundRequests?.length || 0);
+
         // Redux 상태 업데이트 (실시간 데이터만)
         dispatch(
           setPrincipalData({

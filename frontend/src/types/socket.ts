@@ -48,6 +48,32 @@ export interface SocketEvents {
     refundId: number;
     timestamp: string;
   };
+
+  // 수강신청 상태 변경 (실시간 업데이트용)
+  enrollment_status_changed: {
+    enrollmentId: number;
+    status: string;
+    data: any;
+  };
+
+  // 환불 요청 상태 변경 (실시간 업데이트용)
+  refund_request_status_changed: {
+    refundId: number;
+    status: string;
+    data: any;
+  };
+
+  // 세션 가용성 변경 (학생용)
+  session_availability_changed: {
+    sessionId: number;
+    data: any;
+  };
+
+  // 클래스 가용성 변경 (학생용)
+  class_availability_changed: {
+    classId: number;
+    data: any;
+  };
 }
 
 // 클라이언트에서 서버로 보내는 이벤트 타입

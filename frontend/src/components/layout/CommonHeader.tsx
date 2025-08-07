@@ -21,6 +21,8 @@ export function CommonHeader() {
   let navigationItems: { label: string; value: number }[] = [];
   let activeTab = 0;
   let handleTabChange = (tab: number) => {};
+  let principalPersonManagement: any = null;
+  let principalGoBack: (() => void) | null = null;
   const userRole = session?.user?.role || 'STUDENT';
   
   try {
@@ -44,10 +46,36 @@ export function CommonHeader() {
       navigationItems = ctx.navigationItems;
       activeTab = ctx.activeTab;
       handleTabChange = ctx.handleTabChange;
+      principalPersonManagement = ctx.personManagement;
+      principalGoBack = ctx.goBack;
     }
   } catch (error) {
     // Context가 아직 준비되지 않은 경우 기본값 사용
   }
+
+  // 뒤로가기 버튼이 표시되어야 하는지 확인
+  const shouldShowBackButton = () => {
+    if (subPage !== null) return true;
+    
+    return false;
+  };
+
+  // 뒤로가기 함수 결정
+  const handleGoBack = () => {
+    if (userRole === 'PRINCIPAL' && principalGoBack && principalPersonManagement && subPage === 'enrollment-refund-management') {
+      // Principal의 enrollment-refund-management 서브페이지에서만 PrincipalContext의 goBack 함수 사용
+      // 단, class-list 단계에서는 DashboardContext의 goBack을 사용하여 서브페이지 닫기
+      if (principalPersonManagement.currentStep === 'class-list') {
+        goBack();
+        return;
+      }
+      principalGoBack();
+      return;
+    }
+    
+    // 기본 뒤로가기 (DashboardContext)
+    goBack();
+  };
 
   // 기본 대시보드 페이지인지 확인
   const isDefaultDashboard = () => {
@@ -64,19 +92,14 @@ export function CommonHeader() {
     return pathname === defaultPaths[userRole as keyof typeof defaultPaths] || pathname === '/dashboard';
   };
 
-  // 뒤로가기 버튼이 표시되어야 하는지 확인
-  const shouldShowBackButton = () => {
-    return subPage !== null;
-  };
-
   return (
     <div className="sticky top-0 left-0 right-0 z-50 bg-white shadow-sm border-b border-gray-200 flex-shrink-0">
       {/* 로고 섹션 */}
       <div className="flex items-center justify-between px-2.5 py-4 w-full min-h-[60px]">
         {/* 뒤로가기 버튼 (SubPage가 있을 때만 표시) */}
-        {subPage !== null ? (
+        {shouldShowBackButton() ? (
           <button
-            onClick={goBack}
+            onClick={handleGoBack}
             className="flex items-center justify-center w-8 h-8 text-gray-600 hover:text-gray-800 transition-colors"
             aria-label="뒤로가기"
           >

@@ -8,6 +8,8 @@ import {
   MessageBody,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { JwtService } from '@nestjs/jwt';
+import { PrismaService } from '../prisma/prisma.service';
 
 @WebSocketGateway({
   cors: {
@@ -19,6 +21,11 @@ import { Server, Socket } from 'socket.io';
 export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
+
+  constructor(
+    private jwtService: JwtService,
+    private prisma: PrismaService,
+  ) {}
 
   // 연결된 클라이언트들을 저장
   private connectedClients: Map<
@@ -33,20 +40,23 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       // JWT 토큰 검증 (handshake.auth.token에서 가져옴)
       const token = client.handshake.auth.token;
+      console.log(`🔍 토큰 확인: ${token ? '토큰 있음' : '토큰 없음'}`);
+
       if (!token) {
         console.log(`❌ 토큰 없음: ${client.id}`);
         client.disconnect();
         return;
       }
 
-      // TODO: JWT 토큰 검증 로직 구현
-      // const decoded = this.jwtService.verify(token);
-      // const userId = decoded.sub;
-      // const role = decoded.role;
+      console.log(`🔍 토큰 길이: ${token.length}`);
 
-      // 임시로 하드코딩된 사용자 정보 사용
-      const userId = 7;
-      const role = 'PRINCIPAL';
+      // JWT 토큰 검증 및 디코딩
+      const decoded = this.jwtService.verify(token);
+      const userId = decoded.sub;
+      const role = decoded.role;
+
+      console.log(`🔍 토큰 검증 결과: userId=${userId}, role=${role}`);
+      console.log(`🔍 전체 디코딩 결과:`, decoded);
 
       // 클라이언트 정보 저장
       this.connectedClients.set(client.id, {
@@ -58,6 +68,17 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // 역할별 룸에 조인
       await client.join(`role:${role}`);
       await client.join(`user:${userId}`);
+
+      // 학원 정보가 있으면 학원 룸에도 조인
+      if (role === 'PRINCIPAL' || role === 'TEACHER') {
+        const user = await this.getUserInfo(userId, role);
+        if (user?.academyId) {
+          await client.join(`academy:${user.academyId}`);
+          console.log(`🏫 학원 룸 조인: academy:${user.academyId}`);
+        } else {
+          console.log(`⚠️ 학원 정보 없음: userId=${userId}, role=${role}`);
+        }
+      }
 
       console.log(
         `✅ 클라이언트 연결 성공: ${client.id} (사용자: ${userId}, 역할: ${role})`,
@@ -196,5 +217,36 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // 특정 역할에게 이벤트 전송
   sendToRole(role: string, event: string, data: any) {
     this.server.to(`role:${role}`).emit(event, data);
+  }
+
+  // 사용자 정보 조회
+  private async getUserInfo(
+    userId: number,
+    role: string,
+  ): Promise<{ id: number; academyId?: number } | null> {
+    try {
+      switch (role) {
+        case 'PRINCIPAL':
+          return await this.prisma.principal.findUnique({
+            where: { id: userId },
+            select: { id: true, academyId: true },
+          });
+        case 'TEACHER':
+          return await this.prisma.teacher.findUnique({
+            where: { id: userId },
+            select: { id: true, academyId: true },
+          });
+        case 'STUDENT':
+          return await this.prisma.student.findUnique({
+            where: { id: userId },
+            select: { id: true },
+          });
+        default:
+          return null;
+      }
+    } catch (error) {
+      console.error('사용자 정보 조회 실패:', error);
+      return null;
+    }
   }
 }

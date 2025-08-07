@@ -297,6 +297,7 @@ export class PrincipalService {
           select: {
             id: true,
             name: true,
+            phoneNumber: true,
           },
         },
         session: {
@@ -350,12 +351,14 @@ export class PrincipalService {
             student: {
               select: {
                 name: true,
+                phoneNumber: true,
               },
             },
             session: {
               include: {
                 class: {
                   select: {
+                    id: true,
                     className: true,
                     teacher: {
                       select: {

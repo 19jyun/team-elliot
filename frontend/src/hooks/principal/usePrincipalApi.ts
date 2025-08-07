@@ -8,6 +8,10 @@ import {
   getPrincipalAllStudents,
   getPrincipalAllSessions,
   getPrincipalSessionEnrollments,
+  approvePrincipalEnrollment,
+  rejectPrincipalEnrollment,
+  approvePrincipalRefund,
+  rejectPrincipalRefund,
 } from "@/api/principal";
 import type {
   PrincipalProfile,
@@ -176,6 +180,80 @@ export function usePrincipalApi() {
     });
   };
 
+  // 수강신청 승인
+  const approveEnrollment = async (enrollmentId: number) => {
+    if (!isPrincipal) throw new Error("Principal 권한이 필요합니다.");
+
+    try {
+      setError(null);
+      const data = await approvePrincipalEnrollment(enrollmentId);
+      return data;
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || "수강신청 승인 실패";
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
+
+  // 수강신청 거절
+  const rejectEnrollment = async (
+    enrollmentId: number,
+    reason: string,
+    detailedReason?: string
+  ) => {
+    if (!isPrincipal) throw new Error("Principal 권한이 필요합니다.");
+
+    try {
+      setError(null);
+      const data = await rejectPrincipalEnrollment(enrollmentId, {
+        reason,
+        detailedReason,
+      });
+      return data;
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || "수강신청 거절 실패";
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
+
+  // 환불요청 승인
+  const approveRefund = async (refundId: number) => {
+    if (!isPrincipal) throw new Error("Principal 권한이 필요합니다.");
+
+    try {
+      setError(null);
+      const data = await approvePrincipalRefund(refundId);
+      return data;
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || "환불요청 승인 실패";
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
+
+  // 환불요청 거절
+  const rejectRefund = async (
+    refundId: number,
+    reason: string,
+    detailedReason?: string
+  ) => {
+    if (!isPrincipal) throw new Error("Principal 권한이 필요합니다.");
+
+    try {
+      setError(null);
+      const data = await rejectPrincipalRefund(refundId, {
+        reason,
+        detailedReason,
+      });
+      return data;
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || "환불요청 거절 실패";
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
+
   return {
     // 데이터
     profile,
@@ -204,5 +282,11 @@ export function usePrincipalApi() {
     getStudentById,
     getSessionsByClassId,
     getSessionsByDate,
+
+    // 승인/거절 함수들
+    approveEnrollment,
+    rejectEnrollment,
+    approveRefund,
+    rejectRefund,
   };
 }

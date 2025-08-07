@@ -1,18 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePrincipalContext } from '@/contexts/PrincipalContext';
 import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
-import { 
-  approvePrincipalEnrollment, 
-  rejectPrincipalEnrollment, 
-  approvePrincipalRefund, 
-  rejectPrincipalRefund 
-} from '@/api/principal';
+import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { PrincipalRequestCard } from './PrincipalRequestCard';
-import { PrincipalRejectionFormModal } from './PrincipalRejectionFormModal';
+import { PrincipalRejectionFormModal } from '../modals/PrincipalRejectionFormModal';
 import { toast } from 'sonner';
+import { useAppDispatch } from '@/store/hooks';
+import { updatePrincipalEnrollment, updatePrincipalRefundRequest } from '@/store/slices/principalSlice';
 
 export function PrincipalRequestDetail() {
   const { 
@@ -23,13 +19,21 @@ export function PrincipalRequestDetail() {
   const [showRejectionModal, setShowRejectionModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const queryClient = useQueryClient();
+  const dispatch = useAppDispatch();
+  
+  // usePrincipalApi 훅 사용
+  const { 
+    approveEnrollment, 
+    rejectEnrollment, 
+    approveRefund, 
+    rejectRefund,
+    error: apiError 
+  } = usePrincipalApi();
 
   // Redux store에서 데이터 가져오기
   const { 
     getSessionEnrollments, 
     getSessionRefundRequests, 
-    getStudentById,
     isLoading,
     error 
   } = usePrincipalData();
@@ -41,57 +45,33 @@ export function PrincipalRequestDetail() {
       : getSessionRefundRequests(selectedSessionId)
     : [];
 
-  // 승인 처리 뮤테이션
-  const approveMutation = useMutation({
-    mutationFn: async (requestId: number) => {
-      if (selectedTab === 'enrollment') {
-        return approvePrincipalEnrollment(requestId);
-      } else {
-        return approvePrincipalRefund(requestId);
-      }
-    },
-    onSuccess: () => {
-      toast.success('승인 처리가 완료되었습니다.');
-      // Redux store 업데이트를 위해 앱 데이터 재초기화
-      queryClient.invalidateQueries({ queryKey: ['appData'] });
-    },
-    onError: (error) => {
-      toast.error('승인 처리 중 오류가 발생했습니다.');
-      console.error('Approval error:', error);
-    },
-  });
-
-  // 거절 처리 뮤테이션
-  const rejectMutation = useMutation({
-    mutationFn: async ({ requestId, reason, detailedReason }: { requestId: number; reason: string; detailedReason?: string }) => {
-      if (selectedTab === 'enrollment') {
-        return rejectPrincipalEnrollment(requestId, { reason, detailedReason });
-      } else {
-        return rejectPrincipalRefund(requestId, { reason, detailedReason });
-      }
-    },
-    onSuccess: () => {
-      toast.success('거절 처리가 완료되었습니다.');
-      // Redux store 업데이트를 위해 앱 데이터 재초기화
-      queryClient.invalidateQueries({ queryKey: ['appData'] });
-      setShowRejectionModal(false);
-      setSelectedRequest(null);
-    },
-    onError: (error) => {
-      toast.error('거절 처리 중 오류가 발생했습니다.');
-      console.error('Rejection error:', error);
-    },
-  });
-
+  // 승인 처리 함수
   const handleApprove = async (requestId: number) => {
     setIsProcessing(true);
     try {
-      await approveMutation.mutateAsync(requestId);
+      let data;
+      if (selectedTab === 'enrollment') {
+        data = await approveEnrollment(requestId);
+      } else {
+        data = await approveRefund(requestId);
+      }
+      
+      toast.success('승인 처리가 완료되었습니다.');
+      // Redux 상태 즉시 업데이트
+      if (selectedTab === 'enrollment') {
+        dispatch(updatePrincipalEnrollment(data));
+      } else {
+        dispatch(updatePrincipalRefundRequest(data));
+      }
+    } catch (error: any) {
+      toast.error('승인 처리 중 오류가 발생했습니다.');
+      console.error('Approval error:', error);
     } finally {
       setIsProcessing(false);
     }
   };
 
+  // 거절 처리 함수
   const handleReject = (requestId: number) => {
     setSelectedRequest({ id: requestId });
     setShowRejectionModal(true);
@@ -102,11 +82,25 @@ export function PrincipalRequestDetail() {
     
     setIsProcessing(true);
     try {
-      await rejectMutation.mutateAsync({ 
-        requestId: selectedRequest.id, 
-        reason, 
-        detailedReason 
-      });
+      let data;
+      if (selectedTab === 'enrollment') {
+        data = await rejectEnrollment(selectedRequest.id, reason, detailedReason);
+      } else {
+        data = await rejectRefund(selectedRequest.id, reason, detailedReason);
+      }
+      
+      toast.success('거절 처리가 완료되었습니다.');
+      // Redux 상태 즉시 업데이트
+      if (selectedTab === 'enrollment') {
+        dispatch(updatePrincipalEnrollment(data));
+      } else {
+        dispatch(updatePrincipalRefundRequest(data));
+      }
+      setShowRejectionModal(false);
+      setSelectedRequest(null);
+    } catch (error: any) {
+      toast.error('거절 처리 중 오류가 발생했습니다.');
+      console.error('Rejection error:', error);
     } finally {
       setIsProcessing(false);
     }
@@ -118,7 +112,7 @@ export function PrincipalRequestDetail() {
   };
 
   const handleGoBack = () => {
-    setPersonManagementStep('enrollment-refund');
+    setPersonManagementStep('session-list');
   };
 
   if (isLoading) {
@@ -147,22 +141,6 @@ export function PrincipalRequestDetail() {
 
   return (
     <div className="flex-1 overflow-y-auto px-5 py-4">
-      {/* 헤더 */}
-      <div className="flex items-center justify-between mb-6">
-        <button
-          onClick={handleGoBack}
-          className="flex items-center text-stone-600 hover:text-stone-800 transition-colors"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          뒤로 가기
-        </button>
-        <h2 className="text-lg font-semibold text-stone-900">
-          {selectedTab === 'enrollment' ? '수강 신청' : '환불 요청'} 상세
-        </h2>
-      </div>
-
       {/* 요청 목록 */}
       <div className="space-y-4">
         {requests.length === 0 ? (

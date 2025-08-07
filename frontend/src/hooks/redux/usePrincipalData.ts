@@ -109,7 +109,7 @@ export function usePrincipalData() {
     (sessionId: number) => {
       return (
         principalData?.refundRequests?.filter(
-          (refund: any) => (refund.sessionId || refund.classId) === sessionId
+          (refund: any) => refund.sessionEnrollment?.session?.id === sessionId
         ) || []
       );
     },

@@ -49,8 +49,6 @@ export interface CreateClassState {
   selectedTeacherId: number | null;
 }
 
-
-
 // 포커스 상태 타입
 export type FocusType = 'dashboard' | 'modal' | 'subpage' | 'overlay';
 
@@ -102,7 +100,6 @@ interface DashboardContextType {
   setClassFormData: (data: any) => void;
   setSelectedTeacherId: (teacherId: number | null) => void;
   resetCreateClass: () => void;
-
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
@@ -140,7 +137,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       },
       selectedTeacherId: null,
     },
-
     currentFocus: 'dashboard',
     focusHistory: ['dashboard'],
     isFocusTransitioning: false,
@@ -340,8 +336,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   // 뒤로가기
   const goBack = useCallback(() => {
     setState(prev => {
-
-      
       // 수강 변경 중인 경우 (modify-* 형태의 subPage) 단계별로 뒤로가기
       if (prev.subPage && prev.subPage.startsWith('modify-') && prev.enrollment.currentStep !== 'date-selection') {
         // 수강 변경은 2단계만 있음: date-selection -> payment
@@ -621,7 +615,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       },
     }));
   }, []);
-
 
 
   const value: DashboardContextType = {

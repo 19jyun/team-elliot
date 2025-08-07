@@ -28,12 +28,14 @@ export interface PrincipalCreateClassState {
   selectedTeacherId: number | null;
 }
 
-// Principal 인원 관리 상태 타입
-export type PrincipalPersonManagementStep = 'main' | 'enrollment-refund' | 'teacher-student';
+// Principal 인원 관리 단계 타입
+export type PrincipalPersonManagementStep = 'class-list' | 'session-list' | 'request-detail';
 
+// Principal 인원 관리 상태 인터페이스
 export interface PrincipalPersonManagementState {
   currentStep: PrincipalPersonManagementStep;
   selectedTab: 'enrollment' | 'refund';
+  selectedClassId: number | null;
   selectedSessionId: number | null;
   selectedRequestId: number | null;
   selectedRequestType: 'enrollment' | 'refund' | null;
@@ -50,10 +52,12 @@ interface PrincipalContextType {
   // 인원 관리 관련 메서드들
   setPersonManagementStep: (step: PrincipalPersonManagementStep) => void;
   setPersonManagementTab: (tab: 'enrollment' | 'refund') => void;
+  setSelectedClassId: (classId: number | null) => void;
   setSelectedSessionId: (sessionId: number | null) => void;
   setSelectedRequestId: (requestId: number | null) => void;
   setSelectedRequestType: (requestType: 'enrollment' | 'refund' | null) => void;
   resetPersonManagement: () => void;
+  goBack: () => void;
 }
 
 const PrincipalContext = createContext<PrincipalContextType | undefined>(undefined);
@@ -79,8 +83,9 @@ export function PrincipalProvider({ children }: { children: ReactNode }) {
     selectedTeacherId: null,
   });
   const [personManagement, setPersonManagement] = useState<PrincipalPersonManagementState>({
-    currentStep: 'main',
+    currentStep: 'class-list',
     selectedTab: 'enrollment',
+    selectedClassId: null,
     selectedSessionId: null,
     selectedRequestId: null,
     selectedRequestType: null,
@@ -111,8 +116,9 @@ export function PrincipalProvider({ children }: { children: ReactNode }) {
     });
     // 인원 관리 상태도 초기화
     setPersonManagement({
-      currentStep: 'main',
+      currentStep: 'class-list',
       selectedTab: 'enrollment',
+      selectedClassId: null,
       selectedSessionId: null,
       selectedRequestId: null,
       selectedRequestType: null,
@@ -134,6 +140,14 @@ export function PrincipalProvider({ children }: { children: ReactNode }) {
     setPersonManagement(prev => ({
       ...prev,
       selectedTab: tab,
+    }));
+  }, []);
+
+  // 선택된 클래스 ID 설정
+  const setSelectedClassId = useCallback((classId: number | null) => {
+    setPersonManagement(prev => ({
+      ...prev,
+      selectedClassId: classId,
     }));
   }, []);
 
@@ -164,11 +178,36 @@ export function PrincipalProvider({ children }: { children: ReactNode }) {
   // 인원 관리 상태 초기화
   const resetPersonManagement = useCallback(() => {
     setPersonManagement({
-      currentStep: 'main',
+      currentStep: 'class-list',
       selectedTab: 'enrollment',
+      selectedClassId: null,
       selectedSessionId: null,
       selectedRequestId: null,
       selectedRequestType: null,
+    });
+  }, []);
+
+  // 뒤로가기 함수 - personManagement 단계별 네비게이션 처리
+  const goBack = useCallback(() => {
+    setPersonManagement(prev => {
+      switch (prev.currentStep) {
+        case 'request-detail':
+          return {
+            ...prev,
+            currentStep: 'session-list',
+            selectedRequestId: null,
+            selectedRequestType: null,
+          };
+        case 'session-list':
+          return {
+            ...prev,
+            currentStep: 'class-list',
+            selectedSessionId: null,
+            selectedClassId: null,
+          };
+        default:
+          return prev;
+      }
     });
   }, []);
 
@@ -182,10 +221,12 @@ export function PrincipalProvider({ children }: { children: ReactNode }) {
     handleTabChange,
     setPersonManagementStep,
     setPersonManagementTab,
+    setSelectedClassId,
     setSelectedSessionId,
     setSelectedRequestId,
     setSelectedRequestType,
     resetPersonManagement,
+    goBack,
   };
 
   return <PrincipalContext.Provider value={value}>{children}</PrincipalContext.Provider>;
