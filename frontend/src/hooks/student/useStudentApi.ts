@@ -5,6 +5,7 @@ import {
   getMyProfile,
   updateMyProfile,
   getSessionPaymentInfo,
+  getCancellationHistory,
 } from "@/api/student";
 import { getAcademies, joinAcademy, leaveAcademy } from "@/api/academy";
 import {
@@ -23,6 +24,7 @@ export function useStudentApi() {
   const [availableClasses, setAvailableClasses] = useState<any[]>([]);
   const [availableSessions, setAvailableSessions] = useState<any[]>([]);
   const [enrollmentHistory, setEnrollmentHistory] = useState<any[]>([]);
+  const [cancellationHistory, setCancellationHistory] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [calendarRange, setCalendarRange] = useState<{
     startDate: Date;
@@ -147,6 +149,7 @@ export function useStudentApi() {
     try {
       const data = await getEnrollmentHistory();
       setEnrollmentHistory(data || []);
+      return data || [];
     } catch (err) {
       console.error("수강 신청 내역 로드 실패:", err);
       setError(
@@ -154,6 +157,24 @@ export function useStudentApi() {
           ? err.message
           : "수강 신청 내역을 불러오는데 실패했습니다."
       );
+      throw err;
+    }
+  }, []);
+
+  // 환불/취소 내역 로드 함수
+  const loadCancellationHistory = useCallback(async () => {
+    try {
+      const data = await getCancellationHistory();
+      setCancellationHistory(data || []);
+      return data || [];
+    } catch (err) {
+      console.error("환불/취소 내역 로드 실패:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "환불/취소 내역을 불러오는데 실패했습니다."
+      );
+      throw err;
     }
   }, []);
 
@@ -361,6 +382,7 @@ export function useStudentApi() {
     availableClasses,
     availableSessions,
     enrollmentHistory,
+    cancellationHistory,
     userProfile,
 
     // 변환된 데이터
@@ -382,6 +404,7 @@ export function useStudentApi() {
     loadAvailableClasses,
     loadAvailableSessions,
     loadEnrollmentHistory,
+    loadCancellationHistory,
 
     // 수강 신청
     enrollSessions,

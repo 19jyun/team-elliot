@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useRef } from "react";
 import { useAppDispatch } from "@/store/hooks";
 import { useSession } from "next-auth/react";
 import {
@@ -19,10 +20,12 @@ import { toast } from "sonner";
 export function useStudentInitialization() {
   const dispatch = useAppDispatch();
   const { data: session, status } = useSession();
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     const initializeStudentData = async () => {
-      // Student 역할이 아니면 초기화하지 않음
+      // 이미 초기화되었거나 Student 역할이 아니면 초기화하지 않음
+      if (initializedRef.current) return;
       if (
         status !== "authenticated" ||
         !session?.user ||
@@ -31,10 +34,11 @@ export function useStudentInitialization() {
         return;
       }
 
+      initializedRef.current = true;
+
       try {
         dispatch(setLoading(true));
         dispatch(setError(null));
-
 
         // 1. 수강중인 클래스/세션 정보
         const myClasses = await getMyClasses();
@@ -57,7 +61,6 @@ export function useStudentInitialization() {
         let allAvailableSessions: any[] = [];
 
         if (myAcademies.length > 0) {
-
           // 각 학원별로 수강 가능한 세션 조회
           for (const academy of myAcademies) {
             try {
@@ -95,7 +98,7 @@ export function useStudentInitialization() {
             }
           }
 
-          console.log('수강 가능한 클래스/세션 로드 완료:', {
+          console.log("수강 가능한 클래스/세션 로드 완료:", {
             classes: allAvailableClasses.length,
             sessions: allAvailableSessions.length,
           });
@@ -119,7 +122,9 @@ export function useStudentInitialization() {
           })
         );
 
-        toast.success("Student 대시보드가 로드되었습니다.");
+        toast.success("Student 대시보드가 로드되었습니다.", {
+          id: "student-init",
+        });
       } catch (error: any) {
         console.error("❌ Student 데이터 초기화 실패:", error);
 
@@ -129,6 +134,7 @@ export function useStudentInitialization() {
 
         toast.error("Student 데이터 로딩 실패", {
           description: errorMessage,
+          id: "student-init-error",
         });
       } finally {
         dispatch(setLoading(false));

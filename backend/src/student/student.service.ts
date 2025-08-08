@@ -412,12 +412,7 @@ export class StudentService {
       where: {
         studentId: studentId,
         status: {
-          in: [
-            'PENDING',
-            'CONFIRMED',
-            'REFUND_REQUESTED',
-            'REFUND_REJECTED_CONFIRMED',
-          ],
+          in: ['PENDING', 'CONFIRMED', 'REJECTED', 'REFUND_REQUESTED'],
         },
       },
       include: {
@@ -447,18 +442,17 @@ export class StudentService {
       },
     });
 
-    // 각 enrollment에 대한 환불 거절 사유 정보 조회
+    // 각 enrollment에 대한 거절 사유 정보 조회
     const enrollmentsWithRejectionDetails = await Promise.all(
       enrollments.map(async (enrollment) => {
-        // 환불 요청 거절 사유 조회 (환불 요청이 있는 경우)
-        let refundRejection = null;
-        if (enrollment.refundRequests && enrollment.refundRequests.length > 0) {
-          const latestRefundRequest = enrollment.refundRequests[0];
-          refundRejection = await this.prisma.rejectionDetail.findFirst({
+        // 수강 신청 거절 사유 조회 (REJECTED 상태인 경우)
+        let enrollmentRejection = null;
+        if (enrollment.status === 'REJECTED') {
+          enrollmentRejection = await this.prisma.rejectionDetail.findFirst({
             where: {
-              entityId: latestRefundRequest.id,
-              entityType: 'RefundRequest',
-              rejectionType: 'REFUND_REJECTION',
+              entityId: enrollment.id,
+              entityType: 'SessionEnrollment',
+              rejectionType: 'SESSION_ENROLLMENT_REJECTION',
             },
             include: {
               rejector: {
@@ -471,13 +465,36 @@ export class StudentService {
           });
         }
 
+        // 환불 요청 거절 사유 조회 (환불 요청이 있는 경우)
+        let refundRejection = null;
+        if (enrollment.refundRequests && enrollment.refundRequests.length > 0) {
+          const latestRefundRequest = enrollment.refundRequests[0];
+          if (latestRefundRequest.status === 'REJECTED') {
+            refundRejection = await this.prisma.rejectionDetail.findFirst({
+              where: {
+                entityId: latestRefundRequest.id,
+                entityType: 'RefundRequest',
+                rejectionType: 'REFUND_REJECTION',
+              },
+              include: {
+                rejector: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            });
+          }
+        }
+
         return {
           id: enrollment.id,
           sessionId: enrollment.sessionId,
           status: enrollment.status,
           enrolledAt: enrollment.enrolledAt,
           cancelledAt: enrollment.cancelledAt,
-          description: `${enrollment.session.class.className} - ${enrollment.status === 'PENDING' ? '수강 신청 대기중' : enrollment.status === 'CONFIRMED' ? '수강 신청 승인됨' : enrollment.status === 'REFUND_REQUESTED' ? '환불 요청됨' : '환불 거절됨'}`,
+          description: `${enrollment.session.class.className} - ${enrollment.status === 'PENDING' ? '수강 신청 대기중' : enrollment.status === 'CONFIRMED' ? '수강 신청 승인됨' : enrollment.status === 'REJECTED' ? '수강 신청 거절됨' : '환불 요청됨'}`,
           session: {
             id: enrollment.session.id,
             date: enrollment.session.date,
@@ -492,7 +509,8 @@ export class StudentService {
           },
           payment: enrollment.payment,
           refundRequests: enrollment.refundRequests,
-          // 환불 거절 사유 정보 추가
+          // 거절 사유 정보 추가
+          enrollmentRejection,
           refundRejection,
         };
       }),
@@ -502,7 +520,7 @@ export class StudentService {
   }
 
   /**
-   * 학생의 환불/취소 내역 조회 (session_enrollments 기반)
+   * 학생의 환불/취소 내역 조회 (refund_requests 기반)
    */
   async getCancellationHistory(studentId: number) {
     const student = await this.prisma.student.findUnique({
@@ -513,10 +531,13 @@ export class StudentService {
       throw new NotFoundException('학생을 찾을 수 없습니다.');
     }
 
-    // 환불 요청 내역 조회
+    // 환불 요청 내역 조회 (단순화된 상태만)
     const refundRequests = await this.prisma.refundRequest.findMany({
       where: {
         studentId: studentId,
+        status: {
+          in: ['REFUND_REQUESTED', 'APPROVED', 'REJECTED'],
+        },
       },
       include: {
         sessionEnrollment: {
@@ -543,21 +564,49 @@ export class StudentService {
       },
     });
 
-    return refundRequests.map((refund) => ({
-      id: refund.id,
-      sessionId: refund.sessionEnrollment.session.id,
-      className: refund.sessionEnrollment.session.class.className,
-      teacherName: refund.sessionEnrollment.session.class.teacher.name,
-      sessionDate: refund.sessionEnrollment.session.date,
-      sessionTime: refund.sessionEnrollment.session.startTime,
-      refundAmount: refund.refundAmount,
-      status: refund.status,
-      reason: refund.reason,
-      detailedReason: refund.detailedReason,
-      requestedAt: refund.requestedAt,
-      processedAt: refund.processedAt,
-      cancelledAt: refund.cancelledAt,
-    }));
+    // 각 환불 요청에 대한 거절 사유 조회
+    const refundRequestsWithRejectionDetails = await Promise.all(
+      refundRequests.map(async (refund) => {
+        let rejectionDetail = null;
+        if (refund.status === 'REJECTED') {
+          rejectionDetail = await this.prisma.rejectionDetail.findFirst({
+            where: {
+              entityId: refund.id,
+              entityType: 'RefundRequest',
+              rejectionType: 'REFUND_REJECTION',
+            },
+            include: {
+              rejector: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          });
+        }
+
+        return {
+          id: refund.id,
+          sessionId: refund.sessionEnrollment.session.id,
+          className: refund.sessionEnrollment.session.class.className,
+          teacherName: refund.sessionEnrollment.session.class.teacher.name,
+          sessionDate: refund.sessionEnrollment.session.date,
+          sessionTime: refund.sessionEnrollment.session.startTime,
+          refundAmount: refund.refundAmount,
+          status: refund.status,
+          reason: refund.reason,
+          detailedReason: refund.detailedReason,
+          requestedAt: refund.requestedAt,
+          processedAt: refund.processedAt,
+          cancelledAt: refund.cancelledAt,
+          // 거절 사유 정보 추가
+          rejectionDetail,
+        };
+      }),
+    );
+
+    return refundRequestsWithRejectionDetails;
   }
 
   // 세션별 입금 정보 조회 (결제 시 사용)

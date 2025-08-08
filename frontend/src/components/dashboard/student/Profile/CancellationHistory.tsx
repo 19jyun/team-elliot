@@ -48,16 +48,10 @@ export function CancellationHistory() {
     switch (status) {
       case 'REJECTED':
         return <XCircle className="w-4 h-4 text-red-500" />;
-      case 'REFUND_CANCELLED':
+      case 'APPROVED':
         return <CheckCircle className="w-4 h-4 text-green-500" />;
       case 'REFUND_REQUESTED':
         return <ClockIcon className="w-4 h-4 text-blue-500" />;
-      case 'REFUND_REJECTED_CONFIRMED':
-        return <XCircle className="w-4 h-4 text-red-600" />;
-      case 'CANCELLED':
-        return <XCircle className="w-4 h-4 text-orange-500" />;
-      case 'TEACHER_CANCELLED':
-        return <XCircle className="w-4 h-4 text-purple-500" />;
       default:
         return <AlertCircle className="w-4 h-4 text-gray-500" />;
     }
@@ -66,15 +60,11 @@ export function CancellationHistory() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'REJECTED':
-        return <Badge variant="secondary" className="bg-red-100 text-red-800">거절됨</Badge>;
-      case 'REFUND_CANCELLED':
+        return <Badge variant="secondary" className="bg-red-100 text-red-800">환불거절</Badge>;
+      case 'APPROVED':
         return <Badge variant="secondary" className="bg-green-100 text-green-800">환불완료</Badge>;
       case 'REFUND_REQUESTED':
         return <Badge variant="secondary" className="bg-blue-100 text-blue-800">환불대기</Badge>;
-      case 'CANCELLED':
-        return <Badge variant="secondary" className="bg-orange-100 text-orange-800">학생취소</Badge>;
-      case 'TEACHER_CANCELLED':
-        return <Badge variant="secondary" className="bg-purple-100 text-purple-800">선생님취소</Badge>;
       default:
         return <Badge variant="secondary" className="bg-gray-100 text-gray-800">{status}</Badge>;
     }
@@ -105,33 +95,35 @@ export function CancellationHistory() {
 
   // API 응답에서 클래스명 추출
   const getClassName = (log: any): string => {
-    return log.session.class.className;
+    return log?.className ?? '클래스';
   };
 
   // API 응답에서 세션 날짜 추출
   const getSessionDate = (log: any): string => {
-    return log.session.date;
+    return log?.sessionDate ?? '';
   };
 
   // API 응답에서 세션 ID 추출
   const getSessionId = (log: any): number => {
-    return log.sessionId;
+    return log?.sessionId ?? 0;
   };
 
   // API 응답에서 환불 금액 추출
   const getRefundAmount = (log: any): string => {
-    // 환불 요청이 있는 경우 환불 요청 금액 사용
-    if (log.refundRequests && log.refundRequests.length > 0) {
-      const latestRefundRequest = log.refundRequests[0]; // 가장 최근 환불 요청
-      return `${latestRefundRequest.refundAmount.toLocaleString()}원`;
+    if (typeof log?.refundAmount === 'number') {
+      return `${log.refundAmount.toLocaleString()}원`;
     }
-    
-    // 결제 정보가 있는 경우 결제 금액 사용
-    if (log.payment && log.payment.amount) {
-      return `${log.payment.amount.toLocaleString()}원`;
-    }
-    
     return '금액 정보 없음';
+  };
+
+  // 신청/처리 일시 추출 (백엔드 평면 필드 호환)
+  const getAppliedAt = (log: any): string | undefined => {
+    return log?.requestedAt;
+  };
+
+  // 설명/사유 추출 (백엔드 평면 필드 호환)
+  const getDescription = (log: any): string => {
+    return log?.reason || '';
   };
 
   const filteredLogs = (cancellationHistory || []).filter(log => {
@@ -168,20 +160,12 @@ export function CancellationHistory() {
             환불대기
           </Button>
           <Button
-            variant={selectedFilter === 'REFUND_CANCELLED' ? 'default' : 'outline'}
+            variant={selectedFilter === 'APPROVED' ? 'default' : 'outline'}
             size="sm"
             className="text-xs px-2 py-1 h-7"
-            onClick={() => setSelectedFilter('REFUND_CANCELLED')}
+            onClick={() => setSelectedFilter('APPROVED')}
           >
             환불완료
-          </Button>
-          <Button
-            variant={selectedFilter === 'CANCELLED' ? 'default' : 'outline'}
-            size="sm"
-            className="text-xs px-2 py-1 h-7"
-            onClick={() => setSelectedFilter('CANCELLED')}
-          >
-            학생취소
           </Button>
           <Button
             variant={selectedFilter === 'REJECTED' ? 'default' : 'outline'}
@@ -189,15 +173,7 @@ export function CancellationHistory() {
             className="text-xs px-2 py-1 h-7"
             onClick={() => setSelectedFilter('REJECTED')}
           >
-            거절됨
-          </Button>
-          <Button
-            variant={selectedFilter === 'TEACHER_CANCELLED' ? 'default' : 'outline'}
-            size="sm"
-            className="text-xs px-2 py-1 h-7"
-            onClick={() => setSelectedFilter('TEACHER_CANCELLED')}
-          >
-            선생님취소
+            환불거절
           </Button>
         </div>
       </header>
@@ -219,6 +195,7 @@ export function CancellationHistory() {
                   const sessionDate = getSessionDate(log);
                   const sessionId = getSessionId(log);
                   const refundAmount = getRefundAmount(log);
+                  const appliedAt = getAppliedAt(log);
                   
                   return (
                     <Card key={log.id} className="hover:shadow-md transition-shadow">
@@ -240,7 +217,7 @@ export function CancellationHistory() {
                               </div>
                               <div className="flex items-center gap-2">
                                 <Clock className="w-4 h-4" />
-                                <span>신청일: {formatDateTime(log.enrolledAt)}</span>
+                                <span>신청일: {appliedAt ? formatDateTime(appliedAt) : '-'}</span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <BookOpen className="w-4 h-4" />
@@ -257,40 +234,22 @@ export function CancellationHistory() {
                         <Separator className="my-4" />
                         
                         <div className="text-sm text-gray-500">
-                          <p>{log.description}</p>
+                          <p>{getDescription(log)}</p>
                           
-                          {/* 수강 신청 거절 사유 */}
-                          {log.enrollmentRejection && (
+                          {/* 환불 요청 거절 사유 */}
+                          {log.rejectionDetail && (
                             <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
                               <div className="flex items-center gap-2 mb-2">
                                 <XCircle className="w-4 h-4 text-red-500" />
-                                <span className="font-medium text-red-800">수강 신청 거절 사유</span>
+                                <span className="font-medium text-red-800">환불 요청 거절 사유</span>
                               </div>
-                              <p className="text-red-700 mb-1">{log.enrollmentRejection.reason}</p>
-                              {log.enrollmentRejection.detailedReason && (
-                                <p className="text-red-600 text-xs">{log.enrollmentRejection.detailedReason}</p>
+                              <p className="text-red-700 mb-1">{log.rejectionDetail.reason}</p>
+                              {log.rejectionDetail.detailedReason && (
+                                <p className="text-red-600 text-xs">{log.rejectionDetail.detailedReason}</p>
                               )}
                               <p className="text-red-500 text-xs mt-1">
-                                거절자: {log.enrollmentRejection.rejector.name} | 
-                                거절일: {formatDateTime(log.enrollmentRejection.rejectedAt)}
-                              </p>
-                            </div>
-                          )}
-                          
-                          {/* 환불 요청 거절 사유 */}
-                          {log.refundRejection && (
-                            <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-md">
-                              <div className="flex items-center gap-2 mb-2">
-                                <XCircle className="w-4 h-4 text-orange-500" />
-                                <span className="font-medium text-orange-800">환불 요청 거절 사유</span>
-                              </div>
-                              <p className="text-orange-700 mb-1">{log.refundRejection.reason}</p>
-                              {log.refundRejection.detailedReason && (
-                                <p className="text-orange-600 text-xs">{log.refundRejection.detailedReason}</p>
-                              )}
-                              <p className="text-orange-500 text-xs mt-1">
-                                거절자: {log.refundRejection.rejector.name} | 
-                                거절일: {formatDateTime(log.refundRejection.rejectedAt)}
+                                거절자: {log.rejectionDetail.rejector.name} | 
+                                거절일: {formatDateTime(log.rejectionDetail.rejectedAt)}
                               </p>
                             </div>
                           )}

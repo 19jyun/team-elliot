@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useRef } from "react";
 import { useAppDispatch } from "@/store/hooks";
 import { useSession } from "next-auth/react";
 import {
@@ -12,10 +13,12 @@ import { toast } from "sonner";
 export function useTeacherInitialization() {
   const dispatch = useAppDispatch();
   const { data: session, status } = useSession();
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     const initializeTeacherRealTimeData = async () => {
-      // Teacher 역할이 아니면 초기화하지 않음
+      // 이미 초기화되었거나 Teacher 역할이 아니면 초기화하지 않음
+      if (initializedRef.current) return;
       if (
         status !== "authenticated" ||
         !session?.user ||
@@ -23,6 +26,8 @@ export function useTeacherInitialization() {
       ) {
         return;
       }
+
+      initializedRef.current = true;
 
       try {
         dispatch(setLoading(true));
@@ -52,7 +57,9 @@ export function useTeacherInitialization() {
           })
         );
 
-        toast.success("Teacher 실시간 데이터가 로드되었습니다.");
+        toast.success("Teacher 실시간 데이터가 로드되었습니다.", {
+          id: "teacher-init",
+        });
       } catch (error: any) {
         console.error("❌ Teacher 실시간 데이터 초기화 실패:", error);
 
@@ -62,6 +69,7 @@ export function useTeacherInitialization() {
 
         toast.error("Teacher 실시간 데이터 로딩 실패", {
           description: errorMessage,
+          id: "teacher-init-error",
         });
       } finally {
         dispatch(setLoading(false));
