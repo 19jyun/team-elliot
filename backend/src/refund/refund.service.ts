@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ClassSessionService } from '../class-session/class-session.service';
+import { SocketGateway } from '../socket/socket.gateway';
 import { RefundRequestDto, RefundReason } from './dto/refund-request.dto';
 import { RefundProcessDto, RefundStatus } from './dto/refund-process.dto';
 
@@ -14,6 +15,7 @@ export class RefundService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly classSessionService: ClassSessionService,
+    private readonly socketGateway: SocketGateway,
   ) {}
 
   /**
@@ -120,7 +122,13 @@ export class RefundService {
       enrollmentStatus: updatedEnrollment.status,
     });
 
-
+    // Socket 이벤트 발생 - 새로운 환불 요청 알림
+    this.socketGateway.notifyNewRefundRequest(
+      refundRequest.id,
+      refundRequest.studentId,
+      refundRequest.sessionEnrollment.sessionId,
+      refundRequest.sessionEnrollment.session.class.academyId,
+    );
 
     return refundRequest;
   }
@@ -169,8 +177,6 @@ export class RefundService {
         cancelledAt: new Date(),
       },
     });
-
-
 
     return cancelledRefundRequest;
   }
@@ -250,7 +256,13 @@ export class RefundService {
       );
     }
 
-
+    // Socket 이벤트 발생 - 환불 요청 승인 알림
+    if (dto.status === 'APPROVED' || dto.status === 'PARTIAL_APPROVED') {
+      this.socketGateway.notifyRefundAccepted(
+        processedRefundRequest.id,
+        processedRefundRequest.studentId,
+      );
+    }
 
     return processedRefundRequest;
   }
@@ -440,8 +452,6 @@ export class RefundService {
       'REFUND_CANCELLED',
     );
 
-
-
     return result;
   }
 
@@ -550,7 +560,8 @@ export class RefundService {
       refundRequest.sessionEnrollmentId,
     );
 
-
+    // Socket 이벤트 발생 - 환불 요청 거절 알림
+    this.socketGateway.notifyRefundRejected(result.id, result.studentId);
 
     return result;
   }

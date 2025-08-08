@@ -7,7 +7,7 @@ import { useState } from 'react'
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
 import { useEnrollmentCalculation } from '@/hooks/useEnrollmentCalculation'
-import { getClassSessionsForModification } from '@/api/class-sessions'
+import { useStudentApi } from '@/hooks/student/useStudentApi'
 import { ClassSessionForModification } from '@/types/api/class'
 
 interface EnrollmentModificationDateStepProps {
@@ -24,6 +24,7 @@ export function EnrollmentModificationDateStep({
   onComplete 
 }: EnrollmentModificationDateStepProps) {
   const { setSelectedSessions } = useDashboardNavigation()
+  const { loadModificationSessions } = useStudentApi();
   const [selectedCount, setSelectedCount] = useState(0);
   const [selectedClasses, setSelectedClasses] = useState<any[]>([]);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
@@ -34,10 +35,10 @@ export function EnrollmentModificationDateStep({
   
   // 수강 변경용 세션 데이터 로드
   React.useEffect(() => {
-    const loadModificationSessions = async () => {
+    const loadSessions = async () => {
       setIsLoadingSessions(true);
       try {
-        const response = await getClassSessionsForModification(classId);
+        const response = await loadModificationSessions(classId);
         setModificationSessions(response.sessions);
         setCalendarRange(response.calendarRange);
         
@@ -56,8 +57,8 @@ export function EnrollmentModificationDateStep({
       }
     };
 
-    loadModificationSessions();
-  }, [classId]);
+    loadSessions();
+  }, [classId, loadModificationSessions]);
 
   // 수강 변경 모드로 특정 클래스만 선택된 것으로 처리
   React.useEffect(() => {

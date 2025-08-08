@@ -113,6 +113,9 @@ export interface PrincipalProfile {
   photoUrl?: string;
   education?: string[];
   certifications?: string[];
+  bankName?: string;
+  accountNumber?: string;
+  accountHolder?: string;
   academy?: {
     id: number;
     name: string;
@@ -127,6 +130,9 @@ export interface UpdatePrincipalProfileRequest {
   introduction?: string;
   education?: string[];
   certifications?: string[];
+  bankName?: string;
+  accountNumber?: string;
+  accountHolder?: string;
 }
 
 // API 응답 타입들

@@ -1,16 +1,16 @@
 'use client'
 
 import { useSession, signOut } from 'next-auth/react'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
+import { useRoleCalendarApi } from '@/hooks/calendar/useRoleCalendarApi'
 import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessionModal'
 import { SessionDetailModal } from '@/components/common/Session/SessionDetailModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
 import { ClassSession } from '@/types/api/class'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
-import { useTeacherData } from '@/hooks/redux/useTeacherData'
 
 // Type for extended session
 type ExtendedSession = {
@@ -22,7 +22,7 @@ type ExtendedSession = {
   } & { name?: string | null | undefined; email?: string | null | undefined; image?: string | null | undefined }
 }
 
-export default function TeacherDashboard() {
+export default function TeacherDashboardPage() {
   const router = useRouter()
   const { data: session, status } = useSession({
     required: true,
@@ -33,12 +33,8 @@ export default function TeacherDashboard() {
 
   const { navigateToSubPage } = useDashboardNavigation()
   
-  // Redux에서 Teacher 데이터 가져오기
-  const { 
-    calendarSessions, 
-    isLoading, 
-    error 
-  } = useTeacherData()
+  // API 기반 데이터 관리
+  const { calendarSessions, loadSessions, isLoading, error } = useRoleCalendarApi('TEACHER')
   
   // 날짜 클릭 관련 상태 추가
   const [clickedDate, setClickedDate] = useState<Date | null>(null)
@@ -48,38 +44,14 @@ export default function TeacherDashboard() {
   const [selectedSession, setSelectedSession] = useState<any>(null)
   const [isSessionDetailModalOpen, setIsSessionDetailModalOpen] = useState(false)
 
-  // ConnectedCalendar용 데이터 변환
-  const convertedSessions = useMemo(() => {
-    if (!calendarSessions) return [];
-    
-    return calendarSessions.map((session: any) => ({
-      id: session.id,
-      classId: session.classId || session.id,
-      date: session.date,
-      startTime: session.startTime,
-      endTime: session.endTime,
-      currentStudents: session.currentStudents || 0,
-      maxStudents: session.maxStudents || 0,
-      isEnrollable: false, // teacher-view에서는 선택 불가
-      isFull: session.currentStudents >= session.maxStudents,
-      isPastStartTime: new Date(session.date + ' ' + session.startTime) < new Date(),
-      isAlreadyEnrolled: false, // teacher-view에서는 해당 없음
-      studentEnrollmentStatus: 'CONFIRMED', // teacher-view에서는 해당 없음
-      class: {
-        id: session.class?.id || session.classId || session.id,
-        className: session.class?.className || '클래스',
-        level: session.class?.level || 'BEGINNER',
-        tuitionFee: session.class?.tuitionFee?.toString() || '50000',
-        teacher: {
-          id: session.class?.teacher?.id || 0,
-          name: session.class?.teacher?.name || '선생님',
-        },
-      },
-    })) as ClassSession[];
-  }, [calendarSessions]);
+  // 초기 데이터 로드
+  useEffect(() => {
+    loadSessions();
+  }, []);
 
-  // 캘린더 범위 설정 (기본값 사용)
+  // 백엔드에서 받은 캘린더 범위 사용 (새로운 정책 적용)
   const calendarRange = useMemo(() => {
+    // 백엔드에서 범위를 받지 못한 경우 기본값 사용 (현재 월부터 3개월)
     const now = new Date();
     return {
       startDate: new Date(now.getFullYear(), now.getMonth(), 1),
@@ -99,7 +71,7 @@ export default function TeacherDashboard() {
   // 에러 처리
   if (error) {
     if ((error as any)?.response?.status === 401) {
-              signOut({ redirect: true, callbackUrl: '/auth' });
+      signOut({ redirect: true, callbackUrl: '/auth' });
       return null;
     }
     
@@ -107,7 +79,7 @@ export default function TeacherDashboard() {
       <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">데이터를 불러오는데 실패했습니다.</p>
         <button
-          onClick={() => window.location.reload()}
+          onClick={() => loadSessions()}
           className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
         >
           다시 시도
@@ -116,7 +88,7 @@ export default function TeacherDashboard() {
     )
   }
 
-  // 날짜 클릭 핸들러 (ConnectedCalendar용) - Redux 방식
+  // 날짜 클릭 핸들러 (ConnectedCalendar용) - API 방식
   const handleDateClick = (dateString: string) => {
     const clickedDateObj = new Date(dateString);
     setClickedDate(clickedDateObj);
@@ -132,7 +104,6 @@ export default function TeacherDashboard() {
   const handleSessionClick = (session: any) => {
     setSelectedSession(session)
     setIsSessionDetailModalOpen(true)
-    // setIsDateModalOpen(false) 제거 - 날짜 모달이 닫히지 않도록 함
   }
 
   const closeSessionDetailModal = () => {
@@ -184,7 +155,7 @@ export default function TeacherDashboard() {
         <div className="flex flex-col w-full bg-white text-stone-700" style={{ height: 'calc(100vh - 450px)' }}>
           <CalendarProvider
             mode="teacher-view"
-            sessions={convertedSessions}
+            sessions={calendarSessions}
             selectedSessionIds={new Set()}
             onSessionSelect={() => {}} // teacher-view에서는 선택 기능 없음
             onDateClick={handleDateClick}
@@ -195,7 +166,7 @@ export default function TeacherDashboard() {
         </div>
       </header>
 
-      {/* Date Session Modal */}
+      {/* Date Session Modal - API 방식 */}
       <DateSessionModal
         isOpen={isDateModalOpen}
         selectedDate={clickedDate}
@@ -204,7 +175,7 @@ export default function TeacherDashboard() {
         role="teacher"
       />
 
-      {/* Session Detail Modal */}
+      {/* Session Detail Modal - API 방식 */}
       <SessionDetailModal
         isOpen={isSessionDetailModalOpen}
         sessionId={selectedSession?.id || null}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getMyAcademies, joinAcademy, leaveAcademy, Academy } from '@/api/academy';
+import { Academy } from '@/api/academy';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { ExpandableText } from '@/components/common';
 import { AcademyCard } from '@/components/common/AcademyCard';
-import { useStudentData } from '@/hooks/redux/useStudentData';
+import { useStudentApi } from '@/hooks/student/useStudentApi';
 
 interface LeaveAcademyModalProps {
   isOpen: boolean;
@@ -108,7 +108,7 @@ function LeaveAcademyModal({ isOpen, onClose, onConfirm, academyName }: LeaveAca
 
 export function AcademyManagement() {
   const { pushFocus, popFocus } = useDashboardNavigation();
-  const { academies, isLoading, error } = useStudentData();
+  const { academies, isLoading, error, loadAcademies, joinAcademyApi, leaveAcademyApi } = useStudentApi();
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [joinAcademyCode, setJoinAcademyCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
@@ -120,6 +120,11 @@ export function AcademyManagement() {
     pushFocus('subpage');
     return () => popFocus();
   }, [pushFocus, popFocus]);
+
+  // 컴포넌트 마운트 시 학원 목록 로드
+  useEffect(() => {
+    loadAcademies();
+  }, [loadAcademies]);
 
   // 에러 처리
   if (error) {
@@ -153,10 +158,9 @@ export function AcademyManagement() {
 
     try {
       setIsJoining(true);
-      await joinAcademy({ code: joinAcademyCode.trim() });
+      await joinAcademyApi({ code: joinAcademyCode.trim() });
       toast.success('학원 가입이 완료되었습니다.');
       setJoinAcademyCode('');
-      // loadMyAcademies(); // 목록 새로고침 - useStudentData에서 관리
     } catch (error: any) {
       console.error('학원 가입 실패:', error);
       const message = error.response?.data?.message || '학원 가입에 실패했습니다.';
@@ -176,9 +180,8 @@ export function AcademyManagement() {
 
     try {
       setIsLeaving(true);
-      await leaveAcademy({ academyId: leaveAcademyId });
+      await leaveAcademyApi({ academyId: leaveAcademyId });
       toast.success('학원 탈퇴가 완료되었습니다.');
-      // loadMyAcademies(); // 목록 새로고침 - useStudentData에서 관리
       setLeaveAcademyId(null);
       setLeaveAcademyName('');
     } catch (error: any) {

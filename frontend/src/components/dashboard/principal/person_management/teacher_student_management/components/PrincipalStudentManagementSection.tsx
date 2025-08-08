@@ -6,23 +6,28 @@ import { UserPlus, Trash2, Eye } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { removePrincipalStudent } from '@/api/principal';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PrincipalStudentSessionHistoryModal } from './PrincipalStudentSessionHistoryModal';
-import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
+import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 
 export default function PrincipalStudentManagementSection() {
   const queryClient = useQueryClient();
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
 
-  // Redux store에서 데이터 가져오기
-  const { students, isLoading, error } = usePrincipalData();
+  // API 기반 데이터 관리
+  const { students, loadStudents, isLoading, error } = usePrincipalApi();
+
+  // 컴포넌트 마운트 시 학생 데이터 로드
+  useEffect(() => {
+    loadStudents();
+  }, [loadStudents]);
 
   // 수강생 제거 뮤테이션
   const removeStudentMutation = useMutation({
     mutationFn: removePrincipalStudent,
     onSuccess: () => {
-      // Redux store 업데이트를 위해 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: ['principal-academy-students'] });
+      // API 데이터 재로드
+      loadStudents();
       toast.success('수강생이 학원에서 제거되었습니다.');
     },
     onError: (error: any) => {
@@ -65,17 +70,13 @@ export default function PrincipalStudentManagementSection() {
               수강생 목록
             </CardTitle>
             <CardDescription>
-              데이터를 불러오는데 실패했습니다.
+              수강생 목록을 불러오는데 실패했습니다.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-red-500">
-              <p>데이터를 불러오는데 실패했습니다.</p>
-              <Button 
-                onClick={() => window.location.reload()} 
-                className="mt-4"
-                variant="outline"
-              >
+            <div className="text-center py-8">
+              <p className="text-red-500 mb-4">수강생 목록을 불러오는데 실패했습니다.</p>
+              <Button onClick={() => loadStudents()}>
                 다시 시도
               </Button>
             </div>
@@ -106,9 +107,6 @@ export default function PrincipalStudentManagementSection() {
                     <div>
                       <p className="font-medium">{student.name}</p>
                       <p className="text-sm text-gray-600">{student.phoneNumber}</p>
-                      <p className="text-xs text-gray-500">
-                        총 {student.totalSessions}회 수강, {student.confirmedSessions}회 확정
-                      </p>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -117,8 +115,7 @@ export default function PrincipalStudentManagementSection() {
                       variant="outline" 
                       onClick={() => setSelectedStudent(student)}
                     >
-                      <Eye className="h-4 w-4 mr-1" />
-                      현황 보기
+                      <Eye className="h-4 w-4" />
                     </Button>
                     <Button 
                       size="sm" 
@@ -140,11 +137,11 @@ export default function PrincipalStudentManagementSection() {
         </CardContent>
       </Card>
 
-      {/* 수강생 세션 현황 모달 */}
+      {/* 수강생 세션 히스토리 모달 */}
       {selectedStudent && (
-        <PrincipalStudentSessionHistoryModal 
-          student={selectedStudent} 
-          onClose={() => setSelectedStudent(null)} 
+        <PrincipalStudentSessionHistoryModal
+          student={selectedStudent}
+          onClose={() => setSelectedStudent(null)}
         />
       )}
     </div>

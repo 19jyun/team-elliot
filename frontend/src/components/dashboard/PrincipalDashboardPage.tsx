@@ -15,6 +15,7 @@ import { CreateClassContainer } from './principal/class_management/create-class/
 import PrincipalAcademyManagementPage from '@/app/(dashboard)/dashboard/principal/academy_management/page';
 import { PrincipalProfileManagement } from './principal/profile/PrincipalProfileManagement/PrincipalProfileManagement';
 import { PrincipalPersonalInfoManagement } from './principal/profile/PrincipalPersonalInfoManagement/PrincipalPersonalInfoManagement';
+import { PrincipalBankInfoManagement } from './principal/profile/PrincipalBankInfoManagement/PrincipalBankInfoManagement';
 import { EnrollmentRefundManagementContainer } from './principal/person_management/enrollment_refund_management/containers/EnrollmentRefundManagementContainer';
 import { TeacherStudentManagementContainer } from './principal/person_management/teacher_student_management/containers/TeacherStudentManagementContainer';
 import { ReduxTestComponent } from '@/components/common/ReduxTestComponent';
@@ -44,6 +45,8 @@ function PrincipalDashboardContent() {
         return <PrincipalProfileManagement />;
       case 'personal-info':
         return <PrincipalPersonalInfoManagement />;
+      case 'bank-info':
+        return <PrincipalBankInfoManagement />;
       case 'enrollment-refund-management':
         return <EnrollmentRefundManagementContainer />;
       case 'teacher-student-management':

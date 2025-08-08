@@ -2,11 +2,11 @@
 import React, { useEffect, useState } from 'react';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { toast } from 'sonner';
-import { TeacherPaymentBox } from '@/components/features/student/enrollment/month/date/payment/TeacherPaymentBox';
+import { PrincipalPaymentBox } from '@/components/features/student/enrollment/month/date/payment/PrincipalPaymentBox';
 import { PaymentConfirmFooter } from '@/components/features/student/enrollment/month/date/payment/PaymentConfirmFooter';
-import { SelectedSession, TeacherPaymentInfo } from '@/components/features/student/enrollment/month/date/payment/types';
+import { SelectedSession, PrincipalPaymentInfo } from '@/components/features/student/enrollment/month/date/payment/types';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
-import { batchModifyEnrollments } from '@/api/class-sessions';
+import { useStudentApi } from '@/hooks/student/useStudentApi';
 
 interface EnrollmentModificationPaymentStepProps {
   additionalAmount?: number;
@@ -21,8 +21,9 @@ export function EnrollmentModificationPaymentStep({
 }: EnrollmentModificationPaymentStepProps) {
   const { enrollment, setEnrollmentStep, goBack } = useDashboardNavigation();
   const { selectedSessions: contextSessions } = enrollment;
+  const { modifyEnrollments } = useStudentApi();
   const [selectedSessions, setSelectedSessions] = useState<SelectedSession[]>([]);
-  const [teacherPayments, setTeacherPayments] = useState<TeacherPaymentInfo[]>([]);
+  const [principalPayment, setPrincipalPayment] = useState<PrincipalPaymentInfo | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   
@@ -92,84 +93,40 @@ export function EnrollmentModificationPaymentStep({
     if (sessions.length > 0 && modificationInfo) {
       setSelectedSessions(sessions);
       
-      // 수강 변경 모드: 변경된 금액만 표시
-      const teacherMap = new Map<number, TeacherPaymentInfo>();
-      
-      // 수강 변경 모드에서는 변경된 세션만 계산
+      // 수강 변경 모드: 원장 기준으로 통합된 결제 정보
       if (modificationInfo.changeType === 'additional_payment' && modificationInfo.netChangeCount > 0) {
-        // 추가 결제가 필요한 경우: 새로 추가된 세션만 계산
-        
-        // 새로 추가된 세션들을 찾기 위해 기존 수강 신청 정보와 비교
-        const existingEnrollmentsData = localStorage.getItem('existingEnrollments');
-        let existingDates: string[] = [];
-        
-        if (existingEnrollmentsData) {
-          const existingEnrollments = JSON.parse(existingEnrollmentsData);
-          existingDates = existingEnrollments
-            .filter((enrollment: any) => 
-              enrollment.enrollment && 
-              (enrollment.enrollment.status === "CONFIRMED" || enrollment.enrollment.status === "PENDING")
-            )
-            .map((enrollment: any) => new Date(enrollment.date).toISOString().split("T")[0]);
-        }
-        
-        // 새로 추가된 세션들만 필터링
-        const newSessions = sessions.filter(session => {
-          const sessionDate = new Date(session.date).toISOString().split("T")[0];
-          return !existingDates.includes(sessionDate);
+        // 추가 결제 모드: 변경된 금액만 표시
+        setPrincipalPayment({
+          principalId: 0,
+          principalName: '원장님',
+          bankName: '신한은행', // 기본값 (실제로는 API에서 가져와야 함)
+          accountNumber: '110-123-456789',
+          accountHolder: '김원장',
+          classFees: [{
+            name: '추가 수강료',
+            count: modificationInfo.newSessionsCount,
+            price: modificationInfo.changeAmount,
+          }],
+          totalAmount: modificationInfo.changeAmount,
+          sessions: sessions,
         });
-        
-        
-        // newSessionsCount와 실제 필터링된 세션 수가 일치하는지 확인
-        if (newSessions.length === modificationInfo.newSessionsCount) {
-          // PaymentBox에는 newSessions만 사용
-          newSessions.forEach(session => {
-            const teacherId = session.class?.teacher?.id || 1;
-            const teacherName = session.class?.teacher?.name || '선생님';
-            
-            if (!teacherMap.has(teacherId)) {
-              teacherMap.set(teacherId, {
-                teacherId,
-                teacherName,
-                bankName: '신한은행',
-                accountNumber: '110-123-456789',
-                accountHolder: teacherName,
-                classFees: [],
-                totalAmount: 0,
-                sessions: [],
-              });
-            }
-            
-            const teacher = teacherMap.get(teacherId)!;
-            teacher.sessions.push(session);
-            
-            const className = session.class?.className || '클래스';
-            
-            const sessionPrice = parseInt(session.class?.tuitionFee || '50000');
-            
-            const existingFee = teacher.classFees.find(fee => fee.name === className);
-            if (existingFee) {
-              existingFee.count += 1;
-              existingFee.price += sessionPrice;
-            } else {
-              teacher.classFees.push({
-                name: className,
-                count: 1,
-                price: sessionPrice,
-              });
-            }
-            
-            teacher.totalAmount += sessionPrice;
-          });
-        } else {
-          console.warn('newSessionsCount와 실제 필터링된 세션 수가 일치하지 않습니다:', {
-            expected: modificationInfo.newSessionsCount,
-            actual: newSessions.length
-          });
-        }
+      } else if (modificationInfo.changeType === 'refund' && modificationInfo.netChangeCount < 0) {
+        // 환불 모드: 환불 금액 표시
+        setPrincipalPayment({
+          principalId: 0,
+          principalName: '원장님',
+          bankName: '신한은행', // 기본값
+          accountNumber: '110-123-456789',
+          accountHolder: '김원장',
+          classFees: [{
+            name: '환불 금액',
+            count: Math.abs(modificationInfo.netChangeCount),
+            price: Math.abs(modificationInfo.changeAmount),
+          }],
+          totalAmount: Math.abs(modificationInfo.changeAmount),
+          sessions: sessions,
+        });
       }
-      
-      setTeacherPayments(Array.from(teacherMap.values()));
     }
   }, [contextSessions, modificationInfo]);
 
@@ -238,7 +195,7 @@ export function EnrollmentModificationPaymentStep({
       });
 
       // batchModifyEnrollments API 호출
-      const result = await batchModifyEnrollments({
+      const result = await modifyEnrollments({
         cancellations,
         newEnrollments,
         reason: '수강 변경'
@@ -248,7 +205,7 @@ export function EnrollmentModificationPaymentStep({
       setEnrollmentStep('complete');
       onComplete?.(); // 수강 변경 완료 시 콜백 호출
     } catch (error) {
-      console.error('Enrollment error:', error);
+      console.error('Modification error:', error);
       toast.error(error instanceof Error ? error.message : '처리 중 오류가 발생했습니다.');
     } finally {
       setIsProcessing(false);
@@ -266,18 +223,16 @@ export function EnrollmentModificationPaymentStep({
         </div>
 
         <div className="self-center pb-4 text-base font-medium tracking-normal leading-snug text-center" style={{ color: '#595959' }}>
-          {modificationInfo ? (
+          {modificationInfo?.changeType === 'additional_payment' ? (
             <>
-              {modificationInfo.changeType === 'additional_payment' ? (
-                <span className="font-bold text-[#595959]">추가 결제를 완료해주세요!</span>
-              ) : modificationInfo.changeType === 'refund' ? (
-                <span className="font-bold text-[#595959]">환불 정보를 입력해주세요!</span>
-              ) : (
-                <span className="font-bold text-[#595959]">수강 변경을 완료해주세요!</span>
-              )}
+              <span className="font-bold text-[#595959]">추가 수강료 송금을 마무리 해주세요!</span><br />
+              <span className="text-[#595959]">입금이 확인되지 않으면 변경이 취소될 수 있습니다.</span>
             </>
           ) : (
-            <span className="font-bold text-[#595959]">수강 변경을 완료해주세요!</span>
+            <>
+              <span className="font-bold text-[#595959]">환불 정보를 확인해주세요!</span><br />
+              <span className="text-[#595959]">환불 금액은 영업일 기준 3-5일 내에 입금됩니다.</span>
+            </>
           )}
         </div>
       </header>
@@ -289,13 +244,16 @@ export function EnrollmentModificationPaymentStep({
           minHeight: 0 
         }}>
           <div className="flex flex-col items-center px-4 py-8 gap-6">
-            {teacherPayments.map((teacher, idx) => (
-              <TeacherPaymentBox 
-                key={idx} 
-                teacher={teacher} 
+            {principalPayment ? (
+              <PrincipalPaymentBox 
+                principal={principalPayment} 
                 onCopy={handleCopy}
               />
-            ))}
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12">
+                <p className="text-gray-600">결제 정보가 없습니다.</p>
+              </div>
+            )}
           </div>
         </div>
       </main>

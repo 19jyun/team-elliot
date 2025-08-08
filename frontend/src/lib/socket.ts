@@ -26,6 +26,14 @@ export const initializeSocket = async (): Promise<Socket> => {
     const session = await getSession();
     const token = session?.accessToken;
 
+    console.log("🔍 소켓 연결 시도 - 세션 정보:", {
+      hasSession: !!session,
+      hasToken: !!token,
+      tokenLength: token?.length,
+      userId: session?.user?.id,
+      role: session?.user?.role,
+    });
+
     if (!token) {
       throw new Error("인증 토큰이 없습니다.");
     }
@@ -48,12 +56,14 @@ export const initializeSocket = async (): Promise<Socket> => {
     // 연결 이벤트 리스너 (한 번만 로그 출력)
     let hasLoggedConnection = false;
     socket.on("connect", () => {
+      console.log("✅ 소켓 연결 성공:", socket?.id);
       if (!hasLoggedConnection) {
         hasLoggedConnection = true;
       }
     });
 
     socket.on("disconnect", (reason) => {
+      console.log("🔌 소켓 연결 해제:", reason);
     });
 
     socket.on("connect_error", (error) => {
@@ -61,6 +71,7 @@ export const initializeSocket = async (): Promise<Socket> => {
     });
 
     socket.on("reconnect", (attemptNumber) => {
+      console.log("🔄 소켓 재연결 성공:", attemptNumber);
     });
 
     socket.on("reconnect_error", (error) => {
@@ -69,6 +80,7 @@ export const initializeSocket = async (): Promise<Socket> => {
 
     return socket;
   } catch (error) {
+    console.error("❌ 소켓 초기화 실패:", error);
     isInitializing = false;
     throw error;
   } finally {

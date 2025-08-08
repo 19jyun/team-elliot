@@ -67,8 +67,11 @@ export interface EnrollmentHistory {
     };
   };
   enrolledAt: string;
-  status: "ENROLLED" | "CANCELLED" | "TEACHER_CANCELLED";
+  status: "PENDING" | "CONFIRMED" | "REJECTED" | "REFUND_REQUESTED";
   description?: string;
+  // 거절 사유 정보
+  enrollmentRejection?: RejectionDetail;
+  refundRejection?: RejectionDetail;
 }
 
 // 거절 사유 타입
@@ -87,40 +90,19 @@ export interface RejectionDetail {
 export interface CancellationHistory {
   id: number;
   sessionId: number;
-  session: {
-    id: number;
-    date: string;
-    startTime: string;
-    endTime: string;
-    class: {
-      id: number;
-      className: string;
-      teacherName: string;
-    };
-  };
-  enrolledAt: string;
-  status:
-    | "REFUND_REQUESTED"
-    | "REFUND_CANCELLED"
-    | "REFUND_REJECTED_CONFIRMED"
-    | "REJECTED"
-    | "CANCELLED"
-    | "TEACHER_CANCELLED";
-  description?: string;
-  payment?: {
-    id: number;
-    amount: number;
-    status: string;
-  };
-  refundRequests?: Array<{
-    id: number;
-    refundAmount: number;
-    status: string;
-    requestedAt: string;
-  }>;
+  className: string;
+  teacherName: string;
+  sessionDate: string;
+  sessionTime: string;
+  refundAmount: number;
+  status: "REFUND_REQUESTED" | "APPROVED" | "REJECTED";
+  reason: string;
+  detailedReason?: string;
+  requestedAt: string;
+  processedAt?: string;
+  cancelledAt?: string;
   // 거절 사유 정보
-  enrollmentRejection?: RejectionDetail;
-  refundRejection?: RejectionDetail;
+  rejectionDetail?: RejectionDetail;
 }
 
 // 수강 내역 응답 타입 (백엔드에서 배열을 직접 반환)

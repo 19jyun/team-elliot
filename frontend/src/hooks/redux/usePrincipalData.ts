@@ -1,7 +1,7 @@
 import { useAppSelector } from "@/store/hooks";
 import { useMemo, useCallback } from "react";
 
-// Principal 대시보드에서 사용할 데이터 훅
+// Principal 실시간 데이터 훅 (Redux 기반)
 export function usePrincipalData() {
   const {
     data: principalData,
@@ -9,78 +9,9 @@ export function usePrincipalData() {
     error,
   } = useAppSelector((state) => state.principal);
 
-  // 클래스를 세션 형태로 변환
-  const sessions = useMemo(() => {
-    if (!principalData?.classes || principalData.classes.length === 0) {
-      return [];
-    }
-
-    // 모든 클래스의 classSessions를 추출하여 하나의 배열로 합치기
-    const allSessions = principalData.classes.flatMap((cls: any) => {
-      if (!cls.classSessions || cls.classSessions.length === 0) {
-        return [];
-      }
-
-      return cls.classSessions.map((session: any) => ({
-        id: session.id,
-        classId: session.classId,
-        date: session.date,
-        startTime: session.startTime,
-        endTime: session.endTime,
-        currentStudents: session.currentStudents || 0,
-        maxStudents: session.maxStudents || 0,
-        class: {
-          id: cls.id,
-          className: cls.className,
-          level: cls.level,
-          tuitionFee: cls.tuitionFee?.toString() || "50000",
-          teacher: {
-            id: cls.teacherId || 0,
-            name: cls.teacher?.name || "선생님",
-          },
-        },
-      }));
-    });
-
-    return allSessions;
-  }, [principalData?.classes]);
-
-  // 캘린더용 세션 데이터 변환 (ConnectedCalendar에서 사용)
-  const calendarSessions = useMemo(() => {
-    if (!sessions) return [];
-
-    const result = sessions.map((session: any) => ({
-      id: session.id,
-      classId: session.classId || session.id,
-      date: session.date,
-      startTime: session.startTime,
-      endTime: session.endTime,
-      currentStudents: session.currentStudents || 0,
-      maxStudents: session.maxStudents || 0,
-      isEnrollable: false, // principal-view에서는 선택 불가
-      isFull: session.currentStudents >= session.maxStudents,
-      isPastStartTime:
-        new Date(session.date + " " + session.startTime) < new Date(),
-      isAlreadyEnrolled: false, // principal-view에서는 해당 없음
-      studentEnrollmentStatus: "CONFIRMED", // principal-view에서는 해당 없음
-      class: {
-        id: session.class?.id || session.classId || session.id,
-        className: session.class?.className || "클래스",
-        level: session.class?.level || "BEGINNER",
-        tuitionFee: session.class?.tuitionFee?.toString() || "50000",
-        teacher: {
-          id: session.class?.teacher?.id || 0,
-          name: session.class?.teacher?.name || "선생님",
-        },
-      },
-    }));
-
-    return result;
-  }, [sessions]);
-
   // 수강신청 대기 중인 세션들
   const pendingEnrollmentSessions = useMemo(() => {
-    if (!principalData?.enrollments || !principalData?.classes) return [];
+    if (!principalData?.enrollments) return [];
 
     const pendingEnrollments = principalData.enrollments.filter(
       (enrollment) => enrollment.status === "PENDING"
@@ -91,17 +22,16 @@ export function usePrincipalData() {
     pendingEnrollments.forEach((enrollment) => {
       const sessionId = enrollment.sessionId;
       if (!sessionMap.has(sessionId)) {
-        // enrollment.session에서 세션 정보 가져오기
         const sessionInfo = {
           sessionId,
           className: enrollment.session?.class?.className || "클래스명 없음",
           date: enrollment.session?.date || "",
           startTime: enrollment.session?.startTime || "",
           endTime: enrollment.session?.endTime || "",
-          level: "BEGINNER", // 기본값
+          level: "BEGINNER",
           teacherName: enrollment.session?.class?.teacher?.name || "미지정",
-          currentStudents: 0, // 기본값
-          maxStudents: 0, // 기본값
+          currentStudents: 0,
+          maxStudents: 0,
           pendingCount: 0,
           enrollments: [],
         };
@@ -115,11 +45,11 @@ export function usePrincipalData() {
     });
 
     return Array.from(sessionMap.values());
-  }, [principalData?.enrollments, principalData?.classes]);
+  }, [principalData?.enrollments]);
 
   // 환불요청 대기 중인 세션들
   const pendingRefundSessions = useMemo(() => {
-    if (!principalData?.refundRequests || !principalData?.classes) return [];
+    if (!principalData?.refundRequests) return [];
 
     const pendingRefunds = principalData.refundRequests.filter(
       (refund) => refund.status === "PENDING"
@@ -134,7 +64,6 @@ export function usePrincipalData() {
         refund.classId ||
         0;
       if (!sessionMap.has(sessionId)) {
-        // refund.sessionEnrollment.session에서 세션 정보 가져오기
         const sessionInfo = {
           sessionId,
           className:
@@ -143,11 +72,11 @@ export function usePrincipalData() {
           date: refund.sessionEnrollment?.session?.date || "",
           startTime: refund.sessionEnrollment?.session?.startTime || "",
           endTime: refund.sessionEnrollment?.session?.endTime || "",
-          level: "BEGINNER", // 기본값
+          level: "BEGINNER",
           teacherName:
             refund.sessionEnrollment?.session?.class?.teacher?.name || "미지정",
-          currentStudents: 0, // 기본값
-          maxStudents: 0, // 기본값
+          currentStudents: 0,
+          maxStudents: 0,
           pendingCount: 0,
           refundRequests: [],
         };
@@ -161,7 +90,7 @@ export function usePrincipalData() {
     });
 
     return Array.from(sessionMap.values());
-  }, [principalData?.refundRequests, principalData?.classes]);
+  }, [principalData?.refundRequests]);
 
   // 특정 세션의 수강신청 목록
   const getSessionEnrollments = useCallback(
@@ -180,123 +109,70 @@ export function usePrincipalData() {
     (sessionId: number) => {
       return (
         principalData?.refundRequests?.filter(
-          (refund: any) => (refund.sessionId || refund.classId) === sessionId
+          (refund: any) => refund.sessionEnrollment?.session?.id === sessionId
         ) || []
       );
     },
     [principalData?.refundRequests]
   );
 
-  // 특정 학생 정보
-  const getStudentById = useCallback(
-    (studentId: number) => {
-      return principalData?.students?.find(
-        (student) => student.id === studentId
-      );
-    },
-    [principalData?.students]
-  );
+  // 수강신청 통계
+  const enrollmentStats = useMemo(() => {
+    if (!principalData?.enrollments) {
+      return { total: 0, pending: 0, confirmed: 0, rejected: 0 };
+    }
 
-  // 특정 선생님 정보
-  const getTeacherById = useCallback(
-    (teacherId: number) => {
-      return principalData?.teachers?.find(
-        (teacher) => teacher.id === teacherId
-      );
-    },
-    [principalData?.teachers]
-  );
+    const stats = {
+      total: principalData.enrollments.length,
+      pending: principalData.enrollments.filter((e) => e.status === "PENDING")
+        .length,
+      confirmed: principalData.enrollments.filter(
+        (e) => e.status === "CONFIRMED"
+      ).length,
+      rejected: principalData.enrollments.filter((e) => e.status === "REJECTED")
+        .length,
+    };
 
-  // 특정 클래스 정보
-  const getClassById = useCallback(
-    (classId: number) => {
-      return principalData?.classes?.find((cls) => cls.id === classId);
-    },
-    [principalData?.classes]
-  );
+    return stats;
+  }, [principalData?.enrollments]);
 
-  // 특정 날짜의 세션들 가져오기
-  const getSessionsByDate = useCallback(
-    (date: Date) => {
-      if (!sessions) return [];
+  // 환불요청 통계
+  const refundStats = useMemo(() => {
+    if (!principalData?.refundRequests) {
+      return { total: 0, pending: 0, approved: 0, rejected: 0 };
+    }
 
-      const result = sessions.filter((session: any) => {
-        const sessionDate = new Date(session.date);
-        return sessionDate.toDateString() === date.toDateString();
-      });
+    const stats = {
+      total: principalData.refundRequests.length,
+      pending: principalData.refundRequests.filter(
+        (r) => r.status === "PENDING"
+      ).length,
+      approved: principalData.refundRequests.filter(
+        (r) => r.status === "APPROVED"
+      ).length,
+      rejected: principalData.refundRequests.filter(
+        (r) => r.status === "REJECTED"
+      ).length,
+    };
 
-      return result;
-    },
-    [sessions]
-  );
-
-  // 특정 세션 정보 가져오기
-  const getSessionById = useCallback(
-    (sessionId: number) => {
-      if (!principalData?.classes) return null;
-
-      // 모든 클래스의 classSessions에서 해당 sessionId를 찾기
-      for (const cls of principalData.classes as any[]) {
-        if (cls.classSessions) {
-          const session = cls.classSessions.find(
-            (s: any) => s.id === sessionId
-          );
-          if (session) {
-            const result = {
-              id: session.id,
-              classId: session.classId,
-              date: session.date,
-              startTime: session.startTime,
-              endTime: session.endTime,
-              currentStudents: session.currentStudents || 0,
-              maxStudents: session.maxStudents || 0,
-              class: {
-                id: cls.id,
-                className: cls.className,
-                level: cls.level,
-                tuitionFee: cls.tuitionFee?.toString() || "50000",
-                teacher: {
-                  id: cls.teacherId || 0,
-                  name: cls.teacher?.name || "선생님",
-                },
-              },
-            };
-            return result;
-          }
-        }
-      }
-
-      return null;
-    },
-    [principalData?.classes]
-  );
+    return stats;
+  }, [principalData?.refundRequests]);
 
   return {
-    // 기본 데이터
-    user: principalData?.userProfile,
-    userProfile: principalData?.userProfile,
-    academy: principalData?.academy,
-    enrollments: principalData?.enrollments,
-    refundRequests: principalData?.refundRequests,
-    classes: principalData?.classes,
-    teachers: principalData?.teachers,
-    students: principalData?.students,
-    sessions, // 추가: 세션 형태로 변환된 데이터
-    calendarSessions, // 추가: 캘린더용 세션 데이터
+    // 실시간 데이터
+    enrollments: principalData?.enrollments || [],
+    refundRequests: principalData?.refundRequests || [],
     isLoading,
     error,
 
     // 파생 데이터
     pendingEnrollmentSessions,
     pendingRefundSessions,
+    enrollmentStats,
+    refundStats,
 
     // 헬퍼 함수들
     getSessionEnrollments,
     getSessionRefundRequests,
-    getStudentById,
-    getTeacherById,
-    getClassById,
-    getSessionsByDate, // 추가: 날짜별 세션 필터링
-    getSessionById, // 추가: 세션 ID로 세션 찾기
   };
 }

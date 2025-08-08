@@ -11,7 +11,6 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { StudentModule } from './student/student.module';
 import { SmsModule } from './sms/sms.module';
-import { BankingModule } from './banking/banking.module';
 
 import { RefundModule } from './refund/refund.module';
 import { BalletPoseModule } from './ballet-pose/ballet-pose.module';
@@ -36,7 +35,6 @@ import { SocketModule } from './socket/socket.module';
     AcademyModule,
     StudentModule,
     SmsModule,
-    BankingModule,
 
     RefundModule,
     BalletPoseModule,

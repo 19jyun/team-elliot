@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useRef } from "react";
 import { useAppDispatch } from "@/store/hooks";
 import { useSession } from "next-auth/react";
 import {
@@ -6,16 +7,21 @@ import {
   setLoading,
   setError,
 } from "@/store/slices/principalSlice";
-import { getPrincipalData } from "@/api/principal";
+import {
+  getPrincipalAllEnrollments,
+  getPrincipalAllRefundRequests,
+} from "@/api/principal";
 import { toast } from "sonner";
 
 export function usePrincipalInitialization() {
   const dispatch = useAppDispatch();
   const { data: session, status } = useSession();
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     const initializePrincipalData = async () => {
-      // Principal 역할이 아니면 초기화하지 않음
+      // 이미 초기화되었거나 Principal 역할이 아니면 초기화하지 않음
+      if (initializedRef.current) return;
       if (
         status !== "authenticated" ||
         !session?.user ||
@@ -24,27 +30,43 @@ export function usePrincipalInitialization() {
         return;
       }
 
+      initializedRef.current = true;
+
       try {
         dispatch(setLoading(true));
         dispatch(setError(null));
 
+        // 실시간 업데이트가 필요한 데이터만 로드
+        const [enrollments, refundRequests] = await Promise.all([
+          getPrincipalAllEnrollments(),
+          getPrincipalAllRefundRequests(),
+        ]);
 
-        // PrincipalData 전체 조회
-        const principalData = await getPrincipalData();
+        // 디버깅: 환불 요청 데이터 확인
+        console.log("환불 요청 API 응답:", refundRequests);
+        console.log("환불 요청 개수:", refundRequests?.length || 0);
 
-        // Redux 상태 업데이트
-        dispatch(setPrincipalData(principalData));
+        // Redux 상태 업데이트 (실시간 데이터만)
+        dispatch(
+          setPrincipalData({
+            enrollments,
+            refundRequests,
+          })
+        );
 
-        toast.success("Principal 대시보드가 로드되었습니다.");
+        toast.success("Principal 실시간 데이터가 로드되었습니다.", {
+          id: "principal-init",
+        });
       } catch (error: any) {
-        console.error("❌ Principal 데이터 초기화 실패:", error);
+        console.error("❌ Principal 실시간 데이터 초기화 실패:", error);
 
         const errorMessage =
-          error.response?.data?.message || "데이터 로딩에 실패했습니다.";
+          error.response?.data?.message || "실시간 데이터 로딩에 실패했습니다.";
         dispatch(setError(errorMessage));
 
-        toast.error("Principal 데이터 로딩 실패", {
+        toast.error("Principal 실시간 데이터 로딩 실패", {
           description: errorMessage,
+          id: "principal-init-error",
         });
       } finally {
         dispatch(setLoading(false));

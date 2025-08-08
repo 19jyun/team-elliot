@@ -297,6 +297,7 @@ export class PrincipalService {
           select: {
             id: true,
             name: true,
+            phoneNumber: true,
           },
         },
         session: {
@@ -350,12 +351,14 @@ export class PrincipalService {
             student: {
               select: {
                 name: true,
+                phoneNumber: true,
               },
             },
             session: {
               include: {
                 class: {
                   select: {
+                    id: true,
                     className: true,
                     teacher: {
                       select: {
@@ -396,6 +399,32 @@ export class PrincipalService {
     }
 
     return principal;
+  }
+
+  // Principal의 은행 정보 조회 (학생이 결제 시 사용)
+  async getPrincipalBankInfo(principalId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      select: {
+        id: true,
+        name: true,
+        bankName: true,
+        accountNumber: true,
+        accountHolder: true,
+      },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    return {
+      principalId: principal.id,
+      principalName: principal.name,
+      bankName: principal.bankName,
+      accountNumber: principal.accountNumber,
+      accountHolder: principal.accountHolder,
+    };
   }
 
   // Principal 전체 데이터 조회 (Redux 초기화용)
@@ -608,6 +637,19 @@ export class PrincipalService {
 
     if (updateProfileDto.certifications !== undefined) {
       updateData.certifications = updateProfileDto.certifications;
+    }
+
+    // 은행 정보 업데이트 로직 추가
+    if (updateProfileDto.bankName !== undefined) {
+      updateData.bankName = updateProfileDto.bankName;
+    }
+
+    if (updateProfileDto.accountNumber !== undefined) {
+      updateData.accountNumber = updateProfileDto.accountNumber;
+    }
+
+    if (updateProfileDto.accountHolder !== undefined) {
+      updateData.accountHolder = updateProfileDto.accountHolder;
     }
 
     // 사진이 업로드된 경우 URL 생성
@@ -1061,12 +1103,16 @@ export class PrincipalService {
       },
     });
 
-    // Socket 이벤트 전송
-    this.socketGateway.notifyEnrollmentStatusChange(
-      enrollmentId,
-      'CONFIRMED',
-      updatedEnrollment,
-    );
+    // 소켓 알림: 수강신청 승인
+    try {
+      this.socketGateway.notifyEnrollmentAccepted(
+        updatedEnrollment.id,
+        updatedEnrollment.studentId,
+      );
+    } catch (e) {
+      // 소켓 알림 실패는 비핵심 경로이므로 로깅만 수행
+      console.warn('Socket notifyEnrollmentAccepted failed:', e);
+    }
 
     return updatedEnrollment;
   }
@@ -1106,30 +1152,64 @@ export class PrincipalService {
       throw new BadRequestException('이미 처리된 수강 신청입니다.');
     }
 
-    // 수강 신청 거절
-    const updatedEnrollment = await this.prisma.sessionEnrollment.update({
-      where: { id: enrollmentId },
-      data: {
-        status: 'REJECTED',
-      },
-      include: {
-        student: true,
-        session: {
-          include: {
-            class: true,
-          },
-        },
-      },
+    // Principal 정보를 User 테이블에서 찾거나 생성
+    let user = await this.prisma.user.findUnique({
+      where: { userId: principal.userId },
     });
 
-    // Socket 이벤트 전송
-    this.socketGateway.notifyEnrollmentStatusChange(
-      enrollmentId,
-      'REJECTED',
-      updatedEnrollment,
-    );
+    if (!user) {
+      // Principal 정보를 User 테이블에 추가
+      user = await this.prisma.user.create({
+        data: {
+          userId: principal.userId,
+          password: principal.password,
+          name: principal.name,
+          role: 'PRINCIPAL',
+        },
+      });
+    }
 
-    return updatedEnrollment;
+    // 트랜잭션으로 수강 신청 거절 및 거절 상세 정보 생성
+    const result = await this.prisma.$transaction(async (prisma) => {
+      // 수강 신청 거절
+      const updatedEnrollment = await prisma.sessionEnrollment.update({
+        where: { id: enrollmentId },
+        data: {
+          status: 'REJECTED',
+        },
+        include: {
+          student: true,
+          session: {
+            include: {
+              class: true,
+            },
+          },
+        },
+      });
+
+      // 거절 상세 정보 생성
+      await prisma.rejectionDetail.create({
+        data: {
+          rejectionType: 'SESSION_ENROLLMENT_REJECTION',
+          entityId: enrollmentId,
+          entityType: 'SessionEnrollment',
+          reason: rejectData.reason,
+          detailedReason: rejectData.detailedReason,
+          rejectedBy: user.id,
+        },
+      });
+
+      return updatedEnrollment;
+    });
+
+    // 소켓 알림: 수강신청 거절
+    try {
+      this.socketGateway.notifyEnrollmentRejected(result.id, result.studentId);
+    } catch (e) {
+      console.warn('Socket notifyEnrollmentRejected failed:', e);
+    }
+
+    return result;
   }
 
   // 환불 요청 승인
@@ -1183,12 +1263,15 @@ export class PrincipalService {
       },
     });
 
-    // Socket 이벤트 전송
-    this.socketGateway.notifyRefundRequestStatusChange(
-      refundId,
-      'APPROVED',
-      updatedRefundRequest,
-    );
+    // 소켓 알림: 환불 요청 승인
+    try {
+      this.socketGateway.notifyRefundAccepted(
+        updatedRefundRequest.id,
+        updatedRefundRequest.sessionEnrollment.studentId,
+      );
+    } catch (e) {
+      console.warn('Socket notifyRefundAccepted failed:', e);
+    }
 
     return updatedRefundRequest;
   }
@@ -1230,34 +1313,71 @@ export class PrincipalService {
       throw new BadRequestException('이미 처리된 환불 요청입니다.');
     }
 
-    // 환불 요청 거절
-    const updatedRefundRequest = await this.prisma.refundRequest.update({
-      where: { id: refundId },
-      data: {
-        status: 'REJECTED',
-      },
-      include: {
-        sessionEnrollment: {
-          include: {
-            student: true,
-            session: {
-              include: {
-                class: true,
+    // Principal 정보를 User 테이블에서 찾거나 생성
+    let user = await this.prisma.user.findUnique({
+      where: { userId: principal.userId },
+    });
+
+    if (!user) {
+      // Principal 정보를 User 테이블에 추가
+      user = await this.prisma.user.create({
+        data: {
+          userId: principal.userId,
+          password: principal.password,
+          name: principal.name,
+          role: 'PRINCIPAL',
+        },
+      });
+    }
+
+    // 트랜잭션으로 환불 요청 거절 및 거절 상세 정보 생성
+    const result = await this.prisma.$transaction(async (prisma) => {
+      // 환불 요청 거절
+      const updatedRefundRequest = await prisma.refundRequest.update({
+        where: { id: refundId },
+        data: {
+          status: 'REJECTED',
+        },
+        include: {
+          sessionEnrollment: {
+            include: {
+              student: true,
+              session: {
+                include: {
+                  class: true,
+                },
               },
             },
           },
         },
-      },
+      });
+
+      // 거절 상세 정보 생성
+      await prisma.rejectionDetail.create({
+        data: {
+          rejectionType: 'REFUND_REJECTION',
+          entityId: refundId,
+          entityType: 'RefundRequest',
+          reason: rejectData.reason,
+          detailedReason: rejectData.detailedReason,
+          rejectedBy: user.id,
+        },
+      });
+
+      return updatedRefundRequest;
     });
 
-    // Socket 이벤트 전송
-    this.socketGateway.notifyRefundRequestStatusChange(
-      refundId,
-      'REJECTED',
-      updatedRefundRequest,
-    );
+    // 소켓 알림: 환불 요청 거절
+    try {
+      this.socketGateway.notifyRefundRejected(
+        result.id,
+        result.sessionEnrollment.studentId,
+      );
+    } catch (e) {
+      console.warn('Socket notifyRefundRejected failed:', e);
+    }
 
-    return updatedRefundRequest;
+    return result;
   }
 
   // === 선생님/수강생 관리 메소드들 ===

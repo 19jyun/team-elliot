@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { ClassDetail } from '@/components/features/student/classes/ClassDetail'
 import { SessionDetailTab } from '@/components/features/student/classes/SessionDetailTab'
-import { useStudentData } from '@/hooks/redux/useStudentData'
+import { useStudentApi } from '@/hooks/student/useStudentApi'
 
 interface StudentSessionDetailModalProps {
   isOpen: boolean
@@ -31,22 +31,21 @@ export function StudentSessionDetailModal({
   onClose,
   onlyDetail = false 
 }: StudentSessionDetailModalProps) {
-  const { getClassById, isLoading } = useStudentData();
+  const { isLoading } = useStudentApi();
   const [classDetails, setClassDetails] = useState<any>(null)
   const [activeTab, setActiveTab] = useState<TabType>('class')
 
   // 모든 useEffect를 조건부 return 이전에 호출
   useEffect(() => {
-    if (isOpen && session?.class?.id) {
-      // Redux에서 클래스 정보 가져오기
-      const classData = getClassById(session.class.id);
-      setClassDetails(classData);
+    if (isOpen && session?.class) {
+      // session에서 직접 클래스 정보 가져오기
+      setClassDetails(session.class);
     } else {
       // 모달이 닫히거나 session이 없을 때 상태 초기화
       setClassDetails(null)
       setActiveTab('class')
     }
-  }, [isOpen, session?.class?.id, getClassById])
+  }, [isOpen, session?.class])
 
   // onlyDetail이 true이면 기본 탭을 session으로 설정
   useEffect(() => {

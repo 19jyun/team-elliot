@@ -8,15 +8,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { User, Phone, Building, Edit, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { getPrincipalProfile, updatePrincipalProfile as updatePrincipalProfileApi } from '@/api/principal';
+import { updatePrincipalProfile as updatePrincipalProfileApi } from '@/api/principal';
 import { UpdatePrincipalProfileRequest } from '@/types/api/principal';
-import type { PrincipalProfile } from '@/store/types';
-import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
-import { useAppDispatch } from '@/store/hooks';
-import { updatePrincipalProfile } from '@/store/slices/principalSlice';
+import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 
 export function PrincipalPersonalInfoManagement() {
-  const [personalInfo, setPersonalInfo] = useState<PrincipalProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedInfo, setEditedInfo] = useState<UpdatePrincipalProfileRequest>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -28,21 +24,25 @@ export function PrincipalPersonalInfoManagement() {
   const [timeLeft, setTimeLeft] = useState(180); // 3분 = 180초
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
-  const dispatch = useAppDispatch();
+  // API 기반 데이터 관리
+  const { profile, loadProfile, error, isPrincipal } = usePrincipalApi();
 
-  // Redux store에서 데이터 가져오기
-  const { userProfile, isLoading: isDataLoading, error } = usePrincipalData();
-
-  // userProfile 데이터가 로드되면 personalInfo 업데이트
+  // 컴포넌트 마운트 시 프로필 로드
   useEffect(() => {
-    if (userProfile) {
-      setPersonalInfo(userProfile);
+    if (isPrincipal) {
+      loadProfile();
+    }
+  }, [isPrincipal, loadProfile]);
+
+  // profile 데이터가 로드되면 editedInfo 업데이트 (편집 모드가 아닐 때만)
+  useEffect(() => {
+    if (profile && !isEditing) {
       setEditedInfo({
-        name: userProfile.name || '',
-        phoneNumber: userProfile.phoneNumber || '',
+        name: profile.name || '',
+        phoneNumber: profile.phoneNumber || '',
       });
     }
-  }, [userProfile]);
+  }, [profile, isEditing]);
 
   // 타이머 효과
   useEffect(() => {
@@ -71,15 +71,19 @@ export function PrincipalPersonalInfoManagement() {
 
   // 전화번호 변경 감지
   useEffect(() => {
-    if (isEditing && personalInfo) {
-      const originalPhone = personalInfo.phoneNumber || '';
+    if (isEditing && profile) {
+      const originalPhone = profile.phoneNumber || '';
       const currentPhone = editedInfo.phoneNumber || '';
       
+      // 전화번호가 실제로 변경되었을 때만 인증 상태 리셋
       if (currentPhone !== originalPhone && currentPhone.length === 11) {
-        setIsPhoneVerificationRequired(true);
-        setIsPhoneVerified(false);
-        setTimeLeft(180);
-        setIsTimerRunning(false); // 타이머는 인증 버튼 클릭 시 시작
+        // 이미 인증이 필요한 상태가 아니라면 새로 설정
+        if (!isPhoneVerificationRequired) {
+          setIsPhoneVerificationRequired(true);
+          setIsPhoneVerified(false);
+          setTimeLeft(180);
+          setIsTimerRunning(false);
+        }
       } else if (currentPhone === originalPhone) {
         setIsPhoneVerificationRequired(false);
         setIsPhoneVerified(false);
@@ -94,38 +98,21 @@ export function PrincipalPersonalInfoManagement() {
         setVerificationCode('');
       }
     }
-  }, [editedInfo.phoneNumber, personalInfo, isEditing]);
-
-  const loadPersonalInfo = async () => {
-    try {
-      setIsLoading(true);
-      const response = await getPrincipalProfile();
-      setPersonalInfo(response);
-      setEditedInfo({
-        name: response.name || '',
-        phoneNumber: response.phoneNumber || '',
-      });
-    } catch (error) {
-      console.error('개인정보 로드 실패:', error);
-      toast.error('개인정보를 불러오는데 실패했습니다.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [editedInfo.phoneNumber, profile, isEditing, isPhoneVerificationRequired]);
 
   const handleEdit = () => {
     setIsEditing(true);
     setEditedInfo({
-      name: personalInfo?.name || '',
-      phoneNumber: personalInfo?.phoneNumber || '',
+      name: profile?.name || '',
+      phoneNumber: profile?.phoneNumber || '',
     });
   };
 
   const handleCancel = () => {
     setIsEditing(false);
     setEditedInfo({
-      name: personalInfo?.name || '',
-      phoneNumber: personalInfo?.phoneNumber || '',
+      name: profile?.name || '',
+      phoneNumber: profile?.phoneNumber || '',
     });
     handleCancelVerification();
   };
@@ -143,12 +130,11 @@ export function PrincipalPersonalInfoManagement() {
 
     try {
       setIsLoading(true);
-      const response = await updatePrincipalProfileApi(editedInfo);
+      await updatePrincipalProfileApi(editedInfo);
       
-      // Redux store 직접 업데이트
-      dispatch(updatePrincipalProfile(response));
+      // API 데이터 다시 로드
+      loadProfile();
       
-      await loadPersonalInfo(); // 업데이트된 정보 다시 로드
       setIsEditing(false);
       handleCancelVerification();
       toast.success('개인정보가 성공적으로 업데이트되었습니다.');
@@ -163,6 +149,7 @@ export function PrincipalPersonalInfoManagement() {
   const handleVerifyPhone = () => {
     // 인증 버튼 클릭 시 타이머 시작
     if (!isTimerRunning) {
+      console.log('인증 버튼 클릭 - 타이머 시작');
       setIsTimerRunning(true);
       setTimeLeft(180);
       toast.success('인증번호가 발송되었습니다.');
@@ -170,8 +157,9 @@ export function PrincipalPersonalInfoManagement() {
     }
     
     // 확인 버튼 클릭 시 인증 완료 처리
+    console.log('인증 확인 버튼 클릭 - 인증 완료');
     setIsPhoneVerified(true);
-    setIsTimerRunning(false);
+    // 타이머는 계속 실행 (인증번호 입력 필드 유지)
     setVerificationCode(''); // 인증번호 입력 필드 초기화
     toast.success('전화번호 인증이 완료되었습니다.');
   };
@@ -194,10 +182,32 @@ export function PrincipalPersonalInfoManagement() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  if (isLoading && !personalInfo) {
+  // 초기 로딩 상태 (프로필이 없고 Principal 권한이 있는 경우)
+  const isInitialLoading = !profile && isPrincipal && !error;
+
+  if (isInitialLoading) {
     return (
       <div className="flex items-center justify-center min-h-full">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
+      </div>
+    );
+  }
+
+  if (error || !profile) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-full">
+        <p className="text-red-500">데이터를 불러오는데 실패했습니다.</p>
+        {error && (
+          <p className="text-sm text-red-500 mt-2">{error}</p>
+        )}
+        <Button
+          onClick={() => loadProfile()}
+          variant="outline"
+          size="sm"
+          className="mt-4"
+        >
+          다시 시도
+        </Button>
       </div>
     );
   }
@@ -273,7 +283,7 @@ export function PrincipalPersonalInfoManagement() {
                   disabled={isLoading}
                 />
               ) : (
-                <p className="text-gray-700 py-2">{personalInfo?.name || '이름이 없습니다.'}</p>
+                <p className="text-gray-700 py-2">{profile.name || '이름이 없습니다.'}</p>
               )}
             </div>
 
@@ -313,7 +323,7 @@ export function PrincipalPersonalInfoManagement() {
                   </div>
                   
                   {/* 인증번호 입력 필드 */}
-                  {isPhoneVerificationRequired && !isPhoneVerified && isTimerRunning && (
+                  {isPhoneVerificationRequired && isTimerRunning && (
                     <div className="flex gap-2">
                       <div className="flex-1 relative">
                         <Input
@@ -352,7 +362,7 @@ export function PrincipalPersonalInfoManagement() {
                   )}
                 </div>
               ) : (
-                <p className="text-gray-700 py-2">{personalInfo?.phoneNumber || '전화번호가 없습니다.'}</p>
+                <p className="text-gray-700 py-2">{profile.phoneNumber || '전화번호가 없습니다.'}</p>
               )}
             </div>
 
@@ -365,7 +375,7 @@ export function PrincipalPersonalInfoManagement() {
                 소속 학원
               </label>
               <p className="text-gray-700 py-2">
-                {personalInfo?.academy?.name || '소속 학원이 없습니다.'}
+                {profile.academy?.name || '소속 학원이 없습니다.'}
               </p>
             </div>
           </CardContent>

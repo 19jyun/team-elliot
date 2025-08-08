@@ -68,6 +68,20 @@ export class StudentController {
     return this.studentService.getCancellationHistory(user.id);
   }
 
+  // 세션별 입금 정보 조회 (결제 시 사용)
+  @Get('sessions/:sessionId/payment-info')
+  @ApiOperation({ summary: '세션별 입금 정보 조회' })
+  @ApiResponse({
+    status: 200,
+    description: '세션의 입금 정보를 반환합니다.',
+  })
+  async getSessionPaymentInfo(
+    @CurrentUser() user: any,
+    @Param('sessionId', ParseIntPipe) sessionId: number,
+  ) {
+    return this.studentService.getSessionPaymentInfo(user.id, sessionId);
+  }
+
   // === 학원 관리 API (선생님용) ===
 
   // 수강생을 학원에서 제거

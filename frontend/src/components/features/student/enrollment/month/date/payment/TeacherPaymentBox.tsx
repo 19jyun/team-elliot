@@ -1,24 +1,27 @@
-import { TeacherPaymentInfo } from './types';
+import { PrincipalPaymentInfo } from './types';
 import { BankInfo } from './BankInfo';
 import { ClassFeeList } from './ClassFeeList';
 import { TotalAmount } from './TotalAmount';
 
-interface TeacherPaymentBoxProps {
-  teacher: TeacherPaymentInfo;
+interface PrincipalPaymentBoxProps {
+  principal: PrincipalPaymentInfo;
   onCopy: () => void;
 }
 
-export function TeacherPaymentBox({ teacher, onCopy }: TeacherPaymentBoxProps) {
+export function PrincipalPaymentBox({ principal, onCopy }: PrincipalPaymentBoxProps) {
   return (
     <div className="border rounded-xl p-5 bg-white shadow flex flex-col items-start min-w-[320px] w-full flex-shrink-0 mx-auto text-sm py-5">
       <BankInfo 
-        bankName={teacher.bankName}
-        accountNumber={teacher.accountNumber}
-        accountHolder={teacher.accountHolder}
+        bankName={principal.bankName}
+        accountNumber={principal.accountNumber}
+        accountHolder={principal.accountHolder}
         onCopy={onCopy}
       />
-      <ClassFeeList classFees={teacher.classFees} />
-      <TotalAmount amount={teacher.totalAmount} />
+      <ClassFeeList classFees={principal.classFees} />
+      <TotalAmount amount={principal.totalAmount} />
     </div>
   );
-} 
+}
+
+// 기존 TeacherPaymentBox를 PrincipalPaymentBox로 alias
+export const TeacherPaymentBox = PrincipalPaymentBox; 

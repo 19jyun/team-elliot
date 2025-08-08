@@ -8,12 +8,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { User, Phone, Mail, Calendar, Edit, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { updateMyProfile } from '@/api/student';
 import { UpdateProfileRequest } from '@/types/api/student';
-import { useStudentData } from '@/hooks/redux/useStudentData';
+import { useStudentApi } from '@/hooks/student/useStudentApi';
 
 export function PersonalInfoManagement() {
-  const { userProfile, isLoading, error } = useStudentData();
+  const { userProfile, isLoading, error, loadUserProfile, updateUserProfile } = useStudentApi();
   const [isEditing, setIsEditing] = useState(false);
   const [editedInfo, setEditedInfo] = useState<UpdateProfileRequest>({});
   const [isUpdating, setIsUpdating] = useState(false);
@@ -25,7 +24,12 @@ export function PersonalInfoManagement() {
   const [timeLeft, setTimeLeft] = useState(180); // 3분 = 180초
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
-  // Redux에서 가져온 데이터로 초기화
+  // 컴포넌트 마운트 시 프로필 로드
+  useEffect(() => {
+    loadUserProfile();
+  }, [loadUserProfile]);
+
+  // API에서 가져온 데이터로 초기화
   useEffect(() => {
     if (userProfile) {
       setEditedInfo({
@@ -133,8 +137,7 @@ export function PersonalInfoManagement() {
 
     try {
       setIsUpdating(true);
-      const response = await updateMyProfile(editedInfo);
-      // Redux 상태 업데이트는 useStudentData 훅에서 처리
+      await updateUserProfile(editedInfo);
       setIsEditing(false);
       setIsPhoneVerificationRequired(false);
       setIsPhoneVerified(false);

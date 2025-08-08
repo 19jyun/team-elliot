@@ -7,7 +7,7 @@ import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { CalendarProvider } from '@/contexts/CalendarContext';
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar';
-import { useStudentData } from '@/hooks/redux/useStudentData';
+import { useStudentApi } from '@/hooks/student/useStudentApi';
 
 export function EnrollmentDateStep() {
   const { enrollment, setEnrollmentStep, setSelectedSessions, goBack, navigateToSubPage } = useDashboardNavigation();
@@ -19,10 +19,17 @@ export function EnrollmentDateStep() {
     },
   });
 
-  // Redux에서 수강 가능한 세션 데이터 가져오기
-  const { availableSessions, isLoading, error } = useStudentData();
+  // API에서 수강 가능한 세션 데이터 가져오기
+  const { availableSessions, isLoading, error, loadAvailableClasses } = useStudentApi();
 
   const [selectedSessionIds, setSelectedSessionIds] = React.useState<Set<number>>(new Set());
+
+  // 선택된 학원이 변경될 때 수강 가능한 세션 로드
+  React.useEffect(() => {
+    if (selectedAcademyId) {
+      loadAvailableClasses(selectedAcademyId);
+    }
+  }, [selectedAcademyId, loadAvailableClasses]);
 
   // 선택된 클래스들의 세션만 필터링하고 ClassSession 형식으로 변환
   const selectedClassSessions = React.useMemo(() => {

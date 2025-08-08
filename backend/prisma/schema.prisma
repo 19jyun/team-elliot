@@ -75,6 +75,11 @@ model Principal {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
+  // 은행 정보 필드 추가
+  bankName      String?  @map("bank_name") @db.VarChar(50)
+  accountNumber String?  @map("account_number") @db.VarChar(20)
+  accountHolder String?  @map("account_holder") @db.VarChar(50)
+  
   academy     Academy  @relation(fields: [academyId], references: [id], onDelete: Cascade)
 
   @@map("principals")
@@ -148,7 +153,6 @@ model Teacher {
   certifications    String[] // 자격증 정보
   yearsOfExperience Int?          @map("years_of_experience") // 교습 경력 연수
   academyId         Int?          @map("academy_id") // 소속 학원 (nullable로 변경)
-  bankAccount       BankAccount? // 계좌 정보 (1:1 관계)
   availableTimes    Json?         @map("available_times") // 강의 가능 시간 (JSON 형식)
   classes           Class[] // 담당 클래스
   classDetails      ClassDetail[] // 클래스 상세 정보
@@ -160,18 +164,6 @@ model Teacher {
   creationRequests  AcademyCreationRequest[] // 학원 생성 신청들
 
   @@map("teachers")
-}
-
-// 강사 계좌 정보 모델
-model BankAccount {
-  id            Int     @id @default(autoincrement())
-  teacherId     Int     @unique @map("teacher_id") // 1:1 관계를 위한 unique 제약
-  bankName      String  @map("bank_name")
-  accountNumber String  @map("account_number")
-  accountHolder String  @map("account_holder")
-  teacher       Teacher @relation(fields: [teacherId], references: [id])
-
-  @@map("bank_accounts")
 }
 
 // 수업 모델 - 개설된 클래스 정보

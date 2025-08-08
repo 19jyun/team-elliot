@@ -5,6 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { SocketGateway } from '../socket/socket.gateway';
 
 import {
   UpdateEnrollmentStatusDto,
@@ -13,11 +14,11 @@ import {
 } from './dto/update-enrollment-status.dto';
 import { ChangeEnrollmentDto } from './dto/change-enrollment.dto';
 
-
 @Injectable()
 export class ClassSessionService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly socketGateway: SocketGateway,
   ) {}
 
   /**
@@ -69,8 +70,6 @@ export class ClassSessionService {
         },
       },
     });
-
-
 
     return session;
   }
@@ -223,6 +222,7 @@ export class ClassSessionService {
           enrollment.status === 'CONFIRMED' ||
           enrollment.status === 'PENDING' ||
           enrollment.status === 'REFUND_REJECTED_CONFIRMED',
+        // REFUND_REQUESTED는 제외하여 환불 대기중인 세션도 수강 신청 가능하도록 함
       );
 
       const isEnrollable = !isPastStartTime && !isFull && !isAlreadyEnrolled;
@@ -548,7 +548,8 @@ export class ClassSessionService {
         (enrollment) =>
           enrollment.status === 'CONFIRMED' ||
           enrollment.status === 'PENDING' ||
-          enrollment.status === 'REFUND_REJECTED_CONFIRMED',
+          enrollment.status === 'REFUND_REJECTED_CONFIRMED' ||
+          enrollment.status === 'REFUND_REQUESTED',
       );
 
       const isEnrollable = !isPastStartTime && !isFull && !isAlreadyEnrolled;
@@ -617,9 +618,12 @@ export class ClassSessionService {
     if (existingEnrollment) {
       // 활성 상태인 경우 중복 신청 불가
       if (
-        ['PENDING', 'CONFIRMED', 'REFUND_REJECTED_CONFIRMED'].includes(
-          existingEnrollment.status,
-        )
+        [
+          'PENDING',
+          'CONFIRMED',
+          'REFUND_REJECTED_CONFIRMED',
+          'REFUND_REQUESTED',
+        ].includes(existingEnrollment.status)
       ) {
         throw new BadRequestException('이미 수강 신청한 세션입니다.');
       }
@@ -651,7 +655,6 @@ export class ClassSessionService {
           student: true,
         },
       });
-
 
       return updatedEnrollment;
     }
@@ -696,6 +699,14 @@ export class ClassSessionService {
     });
 
     // 활동 로그 기록 (비동기)
+
+    // Socket 이벤트 발생 - 새로운 수강신청 요청 알림
+    this.socketGateway.notifyNewEnrollmentRequest(
+      enrollment.id,
+      enrollment.studentId,
+      enrollment.sessionId,
+      enrollment.session.class.academyId,
+    );
 
     return enrollment;
   }
@@ -1743,8 +1754,7 @@ export class ClassSessionService {
       return 'APPROVE_ENROLLMENT';
     if (newStatus === SessionEnrollmentStatus.CANCELLED)
       return 'REJECT_ENROLLMENT';
-    if (newStatus === 'CONFIRMED')
-      return 'COMPLETE_ENROLLMENT';
+    if (newStatus === 'CONFIRMED') return 'COMPLETE_ENROLLMENT';
     return 'UPDATE_ENROLLMENT_STATUS';
   }
 
@@ -2044,6 +2054,12 @@ export class ClassSessionService {
 
     // 활동 로그 기록
 
+    // Socket 이벤트 발생 - 수강신청 승인 알림
+    this.socketGateway.notifyEnrollmentAccepted(
+      updatedEnrollment.id,
+      updatedEnrollment.studentId,
+    );
+
     return updatedEnrollment;
   }
 
@@ -2120,6 +2136,9 @@ export class ClassSessionService {
     });
 
     // 활동 로그 기록
+
+    // Socket 이벤트 발생 - 수강신청 거절 알림
+    this.socketGateway.notifyEnrollmentRejected(result.id, result.studentId);
 
     return result;
   }

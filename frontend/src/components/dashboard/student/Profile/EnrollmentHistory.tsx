@@ -50,8 +50,8 @@ export function EnrollmentHistory() {
         return <ClockIcon className="w-4 h-4 text-yellow-500" />;
       case 'CONFIRMED':
         return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'REFUND_REJECTED_CONFIRMED':
-        return <XCircle className="w-4 h-4 text-red-600" />;
+      case 'REJECTED':
+        return <XCircle className="w-4 h-4 text-red-500" />;
       case 'REFUND_REQUESTED':
         return <ClockIcon className="w-4 h-4 text-blue-500" />;
       default:
@@ -62,11 +62,11 @@ export function EnrollmentHistory() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'PENDING':
-        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">대기중</Badge>;
+        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">승인대기</Badge>;
       case 'CONFIRMED':
         return <Badge variant="secondary" className="bg-green-100 text-green-800">승인됨</Badge>;
-      case 'REFUND_REJECTED_CONFIRMED':
-        return <Badge variant="secondary" className="bg-red-100 text-red-800">환불거절</Badge>;
+      case 'REJECTED':
+        return <Badge variant="secondary" className="bg-red-100 text-red-800">거절됨</Badge>;
       case 'REFUND_REQUESTED':
         return <Badge variant="secondary" className="bg-blue-100 text-blue-800">환불대기</Badge>;
       default:
@@ -162,12 +162,12 @@ export function EnrollmentHistory() {
             환불대기
           </Button>
           <Button
-            variant={selectedFilter === 'REFUND_REJECTED_CONFIRMED' ? 'default' : 'outline'}
+            variant={selectedFilter === 'REJECTED' ? 'default' : 'outline'}
             size="sm"
             className="text-xs px-2 py-1 h-7"
-            onClick={() => setSelectedFilter('REFUND_REJECTED_CONFIRMED')}
+            onClick={() => setSelectedFilter('REJECTED')}
           >
-            환불거절
+            거절됨
           </Button>
         </div>
       </header>
@@ -220,18 +220,36 @@ export function EnrollmentHistory() {
                         <div className="text-sm text-gray-500">
                           <p>{log.description}</p>
                           
-                          {/* 환불 요청 거절 사유 */}
-                          {log.refundRejection && (
+                          {/* 수강 신청 거절 사유 */}
+                          {log.enrollmentRejection && (
                             <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
                               <div className="flex items-center gap-2 mb-2">
                                 <XCircle className="w-4 h-4 text-red-500" />
-                                <span className="font-medium text-red-800">환불 요청 거절 사유</span>
+                                <span className="font-medium text-red-800">수강 신청 거절 사유</span>
                               </div>
-                              <p className="text-red-700 mb-1">{log.refundRejection.reason}</p>
-                              {log.refundRejection.detailedReason && (
-                                <p className="text-red-600 text-xs">{log.refundRejection.detailedReason}</p>
+                              <p className="text-red-700 mb-1">{log.enrollmentRejection.reason}</p>
+                              {log.enrollmentRejection.detailedReason && (
+                                <p className="text-red-600 text-xs">{log.enrollmentRejection.detailedReason}</p>
                               )}
                               <p className="text-red-500 text-xs mt-1">
+                                거절자: {log.enrollmentRejection.rejector.name} | 
+                                거절일: {formatDateTime(log.enrollmentRejection.rejectedAt)}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* 환불 요청 거절 사유 */}
+                          {log.refundRejection && (
+                            <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-md">
+                              <div className="flex items-center gap-2 mb-2">
+                                <XCircle className="w-4 h-4 text-orange-500" />
+                                <span className="font-medium text-orange-800">환불 요청 거절 사유</span>
+                              </div>
+                              <p className="text-orange-700 mb-1">{log.refundRejection.reason}</p>
+                              {log.refundRejection.detailedReason && (
+                                <p className="text-orange-600 text-xs">{log.refundRejection.detailedReason}</p>
+                              )}
+                              <p className="text-orange-500 text-xs mt-1">
                                 거절자: {log.refundRejection.rejector.name} | 
                                 거절일: {formatDateTime(log.refundRejection.rejectedAt)}
                               </p>

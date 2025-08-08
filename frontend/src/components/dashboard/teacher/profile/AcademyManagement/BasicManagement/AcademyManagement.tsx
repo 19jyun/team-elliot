@@ -9,7 +9,7 @@ import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { AnimatedCard } from '@/components/common/AnimatedCard';
 
 // 커스텀 훅들
-import { useTeacherAcademyManagement } from '@/hooks/redux/useTeacherAcademyManagement';
+import { useTeacherAcademyManagement } from '@/hooks/teacher/academy_management/useTeacherAcademyManagement';
 import { useAcademyForm } from '@/hooks/useAcademyForm';
 import { usePhoneVerification } from '@/hooks/usePhoneVerification';
 
@@ -37,6 +37,7 @@ export default function AcademyManagement({ onBack }: AcademyManagementProps) {
     withdrawalModal,
     setWithdrawalModal,
     withdrawalType,
+    loadCurrentAcademy,
     handleJoinAcademy,
     handleWithdrawalConfirm,
     handleCreateAcademy,
@@ -71,11 +72,14 @@ export default function AcademyManagement({ onBack }: AcademyManagementProps) {
     // 컴포넌트가 마운트될 때 포커스를 subpage로 설정
     pushFocus('subpage');
     
+    // 학원 데이터 로드
+    loadCurrentAcademy();
+    
     return () => {
       // 컴포넌트가 언마운트될 때 이전 포커스로 복원
       popFocus();
     };
-  }, [pushFocus, popFocus]);
+  }, [pushFocus, popFocus, loadCurrentAcademy]);
 
   const handleToggleExpand = () => {
     if (isExpanded) {
@@ -167,7 +171,7 @@ export default function AcademyManagement({ onBack }: AcademyManagementProps) {
               </div>
             ) : (
               <AcademyCard
-                useRedux={true}
+                academy={currentAcademy}
                 variant="teacher"
                 showTeamCode={true}
                 showActionButton={true}

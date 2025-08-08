@@ -1,12 +1,11 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { TeacherSessionCardList } from './TeacherSessionCardList'
 import { TeacherClassDetail } from './TeacherClassDetail'
 import { SessionEnrollmentList } from './SessionEnrollmentList'
-import { getSessionEnrollments } from '@/api/index'
+import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'
 import { ClassSession } from '@/types/api/class'
 
 interface Session extends ClassSession {
@@ -36,6 +35,10 @@ export function TeacherClassSessionModal({
   const [activeTab, setActiveTab] = useState<TabType>('sessions')
   const [selectedSession, setSelectedSession] = useState<Session | null>(null)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [sessionEnrollments, setSessionEnrollments] = useState<any[]>([])
+  const [isLoadingEnrollments, setIsLoadingEnrollments] = useState(false)
+
+  const { loadSessionEnrollments } = useTeacherApi()
 
   // 모달이 닫힐 때 상태 초기화
   useEffect(() => {
@@ -43,6 +46,7 @@ export function TeacherClassSessionModal({
       setActiveTab('sessions')
       setSelectedSession(null)
       setIsTransitioning(false)
+      setSessionEnrollments([])
     }
   }, [isOpen])
 
@@ -50,11 +54,17 @@ export function TeacherClassSessionModal({
   const filteredSessions = propSessions?.filter((session: any) => session.class.id === selectedClass?.id) || []
 
   // 선택된 세션의 수강생 목록 조회
-  const { data: sessionEnrollmentsResponse, isLoading: enrollmentsLoading } = useQuery({
-    queryKey: ['session-enrollments', selectedSession?.id],
-    queryFn: () => getSessionEnrollments(selectedSession?.id || 0),
-    enabled: isOpen && !!selectedSession?.id,
-  })
+  useEffect(() => {
+    if (selectedSession?.id) {
+      const fetchEnrollments = async () => {
+        setIsLoadingEnrollments(true)
+        const data = await loadSessionEnrollments(selectedSession.id)
+        setSessionEnrollments(data?.enrollments || [])
+        setIsLoadingEnrollments(false)
+      }
+      fetchEnrollments()
+    }
+  }, [selectedSession?.id, loadSessionEnrollments])
 
   if (!isOpen || !selectedClass) return null
 
@@ -104,7 +114,7 @@ export function TeacherClassSessionModal({
       </div>
 
       {/* Content Container */}
-      <div className="relative overflow-hidden" style={{ height: 'calc(100vh - 300px)' }}>
+      <div className="flex flex-col overflow-hidden" style={{ height: '600px' }}>
         <div 
           className={`flex transition-transform duration-300 ease-in-out ${
             isTransitioning ? 'pointer-events-none' : ''
@@ -116,20 +126,24 @@ export function TeacherClassSessionModal({
           }}
         >
           {/* Sessions Tab */}
-          <div className="w-1/2 flex-shrink-0 h-full">
-            <TeacherSessionCardList
-              sessions={filteredSessions}
-              onSessionClick={handleSessionClick}
-              isLoading={false}
-            />
+          <div className="w-1/2 flex-shrink-0 px-1">
+            <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+              <TeacherSessionCardList
+                sessions={filteredSessions}
+                onSessionClick={handleSessionClick}
+                isLoading={false}
+              />
+            </div>
           </div>
 
           {/* Class Detail Tab */}
-          <div className="w-1/2 flex-shrink-0 h-full">
-            <TeacherClassDetail
-              classId={selectedClass.id}
-              classData={selectedClass}
-            />
+          <div className="w-1/2 flex-shrink-0 px-1">
+            <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+              <TeacherClassDetail
+                classId={selectedClass.id}
+                classData={selectedClass}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -145,8 +159,8 @@ export function TeacherClassSessionModal({
           title={`${selectedSession.class?.className || 'Unknown'} - ${new Date(selectedSession.date).toLocaleDateString()} 수강생 목록`}
         >
           <SessionEnrollmentList
-            sessionEnrollments={(sessionEnrollmentsResponse?.enrollments as any) || []}
-            isLoading={enrollmentsLoading}
+            sessionEnrollments={sessionEnrollments}
+            isLoading={isLoadingEnrollments}
             session={selectedSession as any}
           />
         </SlideUpModal>

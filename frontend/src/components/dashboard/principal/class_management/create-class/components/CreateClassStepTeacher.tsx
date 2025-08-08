@@ -1,11 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useDashboardNavigation } from '@/contexts/DashboardContext';
-import { StatusStep } from './StatusStep';
-import { useQuery } from '@tanstack/react-query';
-import { getAcademyTeachers } from '@/api/teacher';
 import { toast } from 'sonner';
+import { StatusStep } from './StatusStep';
+import { useDashboardNavigation } from '@/contexts/DashboardContext';
+import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 
 interface Teacher {
   id: number;
@@ -21,12 +20,13 @@ export function CreateClassStepTeacher() {
   
   const [selectedTeacher, setSelectedTeacher] = useState<number | null>(selectedTeacherId);
 
-  // 학원 소속 선생님 목록 조회
-  const { data: teachers, isLoading, error } = useQuery({
-    queryKey: ['academy-teachers'],
-    queryFn: getAcademyTeachers,
-    enabled: true,
-  });
+  // Principal API 훅 사용
+  const { teachers, loadTeachers, isLoading, error } = usePrincipalApi();
+
+  // 컴포넌트 마운트 시 선생님 데이터 로드
+  useEffect(() => {
+    loadTeachers();
+  }, [loadTeachers]);
 
   const handleTeacherSelect = (teacherId: number) => {
     setSelectedTeacher(teacherId);
@@ -117,7 +117,7 @@ export function CreateClassStepTeacher() {
           <div className="text-center">
             <p className="text-red-500 mb-4">선생님 목록을 불러오는데 실패했습니다.</p>
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => loadTeachers()}
               className="px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
             >
               다시 시도
@@ -130,7 +130,6 @@ export function CreateClassStepTeacher() {
 
   return (
     <div className="flex flex-col h-full bg-white relative">
-      {/* 헤더 */}
       <header className="flex-shrink-0 flex flex-col bg-white border-b border-gray-200 py-5 min-h-[120px] relative">
         <div className="flex gap-10 self-center w-full text-sm font-medium tracking-normal leading-snug max-w-[297px] mt-2 mb-2">
           {statusSteps.map((step, index) => (
@@ -138,7 +137,7 @@ export function CreateClassStepTeacher() {
           ))}
         </div>
         <div className="self-center pb-4 text-base font-medium tracking-normal leading-snug text-center text-zinc-600">
-          강의를 담당할 선생님을 선택해주세요.
+          선생님을 선택해주세요.
         </div>
       </header>
 
@@ -232,7 +231,6 @@ export function CreateClassStepTeacher() {
               )}
             </div>
           </div>
-
           {/* 버튼 */}
           <div className="flex gap-3 mt-8">
             <button

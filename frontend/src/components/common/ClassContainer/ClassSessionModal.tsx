@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { SessionCardList } from '@/components/common/Session/SessionCardList'
 import { ClassDetail } from './ClassDetail'
@@ -109,7 +108,7 @@ export function ClassSessionModal({
         </div>
 
         {/* Content Container */}
-        <div className="relative overflow-hidden" style={{ height: 'calc(100vh - 300px)' }}>
+        <div className="flex flex-col overflow-hidden" style={{ height: '600px' }}>
           <div 
             className={`flex transition-transform duration-300 ease-in-out ${
               isTransitioning ? 'pointer-events-none' : ''
@@ -121,21 +120,25 @@ export function ClassSessionModal({
             }}
           >
             {/* Sessions Tab */}
-            <div className="w-1/2 flex-shrink-0 h-full">
-              <SessionCardList
-                sessions={filteredSessions}
-                onSessionClick={handleSessionClick}
-                role={role}
-              />
+            <div className="w-1/2 flex-shrink-0 px-1">
+              <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                <SessionCardList
+                  sessions={filteredSessions}
+                  onSessionClick={handleSessionClick}
+                  role={role}
+                />
+              </div>
             </div>
 
             {/* Class Detail Tab */}
-            <div className="w-1/2 flex-shrink-0 h-full">
-              <ClassDetail
-                classId={selectedClass.id}
-                classData={selectedClass}
-                role={role}
-              />
+            <div className="w-1/2 flex-shrink-0 px-1">
+              <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                <ClassDetail
+                  classId={selectedClass.id}
+                  classData={selectedClass}
+                  role={role}
+                />
+              </div>
             </div>
           </div>
         </div>
