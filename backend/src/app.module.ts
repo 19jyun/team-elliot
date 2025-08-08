@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { PrismaService } from './prisma/prisma.service';
-import { AdminModule } from './admin/admin.module';
 import { TeacherModule } from './teacher/teacher.module';
 import { ClassModule } from './class/class.module';
 import { ClassSessionModule } from './class-session/class-session.module';
@@ -28,7 +27,6 @@ import { SocketModule } from './socket/socket.module';
       serveRoot: '/uploads',
     }),
     AuthModule,
-    AdminModule,
     TeacherModule,
     ClassModule,
     ClassSessionModule,

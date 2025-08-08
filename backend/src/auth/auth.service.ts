@@ -18,26 +18,6 @@ export class AuthService {
   ) {}
 
   async validateUser(userId: string, password: string) {
-    // admin 체크
-    const admin = await this.prisma.user.findFirst({
-      where: {
-        userId: userId,
-        role: 'ADMIN',
-      },
-      select: {
-        id: true,
-        userId: true,
-        password: true,
-        name: true,
-        role: true,
-      },
-    });
-
-    if (admin && (await bcrypt.compare(password, admin.password))) {
-      const { password, ...result } = admin;
-      return result;
-    }
-
     // principal 체크
     const principal = await this.prisma.principal.findUnique({
       where: {

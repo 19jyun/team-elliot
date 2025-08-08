@@ -565,4 +565,378 @@ export class RefundService {
 
     return result;
   }
+
+  // Principal의 학원 모든 환불요청 조회
+  async getPrincipalRefundRequests(principalId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      include: { academy: true },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    const refundRequests = await this.prisma.refundRequest.findMany({
+      where: {
+        sessionEnrollment: {
+          session: {
+            class: {
+              academyId: principal.academyId,
+            },
+          },
+        },
+      },
+      include: {
+        sessionEnrollment: {
+          include: {
+            student: {
+              select: {
+                name: true,
+                phoneNumber: true,
+              },
+            },
+            session: {
+              include: {
+                class: {
+                  select: {
+                    id: true,
+                    className: true,
+                    teacher: {
+                      select: {
+                        name: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        processor: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        requestedAt: 'desc',
+      },
+    });
+
+    return refundRequests;
+  }
+
+  // Principal의 환불 요청 대기 세션 목록 조회
+  async getPrincipalSessionsWithRefundRequests(principalId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      include: { academy: true },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    const sessions = await this.prisma.classSession.findMany({
+      where: {
+        class: {
+          academyId: principal.academyId,
+        },
+        enrollments: {
+          some: {
+            status: 'REFUND_REQUESTED',
+            refundRequests: {
+              some: {
+                status: 'PENDING',
+              },
+            },
+          },
+        },
+      },
+      include: {
+        class: {
+          select: {
+            id: true,
+            className: true,
+            level: true,
+          },
+        },
+        enrollments: {
+          where: {
+            status: 'REFUND_REQUESTED',
+            refundRequests: {
+              some: {
+                status: 'PENDING',
+              },
+            },
+          },
+          include: {
+            refundRequests: {
+              where: {
+                status: 'PENDING',
+              },
+              select: {
+                id: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        date: 'asc',
+      },
+    });
+
+    return sessions.map((session) => ({
+      id: session.id,
+      className: session.class.className,
+      sessionDate: session.date,
+      startTime: session.startTime,
+      endTime: session.endTime,
+      requestCount: session.enrollments.reduce(
+        (total, enrollment) => total + enrollment.refundRequests.length,
+        0,
+      ),
+      class: {
+        level: session.class.level,
+      },
+    }));
+  }
+
+  // Principal의 특정 세션 환불 요청 목록 조회
+  async getPrincipalSessionRefundRequests(
+    sessionId: number,
+    principalId: number,
+  ) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      include: { academy: true },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    // 해당 세션이 Principal의 학원에 속하는지 확인
+    const session = await this.prisma.classSession.findFirst({
+      where: {
+        id: sessionId,
+        class: {
+          academyId: principal.academyId,
+        },
+      },
+    });
+
+    if (!session) {
+      throw new ForbiddenException('해당 세션에 접근할 권한이 없습니다.');
+    }
+
+    const refundRequests = await this.prisma.refundRequest.findMany({
+      where: {
+        sessionEnrollment: {
+          sessionId,
+          status: 'REFUND_REQUESTED',
+        },
+        status: 'PENDING',
+      },
+      include: {
+        sessionEnrollment: {
+          include: {
+            student: {
+              select: {
+                id: true,
+                name: true,
+                phoneNumber: true,
+              },
+            },
+            session: {
+              include: {
+                class: {
+                  select: {
+                    id: true,
+                    className: true,
+                    level: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        requestedAt: 'asc',
+      },
+    });
+
+    return refundRequests;
+  }
+
+  // Principal이 환불 요청 승인
+  async approveRefundByPrincipal(refundId: number, principalId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      include: { academy: true },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    // 해당 환불 요청이 Principal의 학원에 속하는지 확인
+    const refundRequest = await this.prisma.refundRequest.findFirst({
+      where: {
+        id: refundId,
+        sessionEnrollment: {
+          session: {
+            class: {
+              academyId: principal.academyId,
+            },
+          },
+        },
+      },
+    });
+
+    if (!refundRequest) {
+      throw new ForbiddenException('해당 환불 요청에 접근할 권한이 없습니다.');
+    }
+
+    if (refundRequest.status !== 'PENDING') {
+      throw new BadRequestException('이미 처리된 환불 요청입니다.');
+    }
+
+    // 환불 요청 승인
+    const updatedRefundRequest = await this.prisma.refundRequest.update({
+      where: { id: refundId },
+      data: { status: 'APPROVED' },
+      include: {
+        sessionEnrollment: {
+          include: {
+            student: true,
+            session: {
+              include: {
+                class: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // 소켓 알림: 환불 요청 승인
+    try {
+      this.socketGateway.notifyRefundAccepted(
+        updatedRefundRequest.id,
+        updatedRefundRequest.sessionEnrollment.studentId,
+      );
+    } catch (e) {
+      console.warn('Socket notifyRefundAccepted failed:', e);
+    }
+
+    return updatedRefundRequest;
+  }
+
+  // Principal이 환불 요청 거절
+  async rejectRefundByPrincipal(
+    refundId: number,
+    rejectData: { reason: string; detailedReason?: string },
+    principalId: number,
+  ) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      include: { academy: true },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    // 해당 환불 요청이 Principal의 학원에 속하는지 확인
+    const refundRequest = await this.prisma.refundRequest.findFirst({
+      where: {
+        id: refundId,
+        sessionEnrollment: {
+          session: {
+            class: {
+              academyId: principal.academyId,
+            },
+          },
+        },
+      },
+    });
+
+    if (!refundRequest) {
+      throw new ForbiddenException('해당 환불 요청에 접근할 권한이 없습니다.');
+    }
+
+    if (refundRequest.status !== 'PENDING') {
+      throw new BadRequestException('이미 처리된 환불 요청입니다.');
+    }
+
+    // Principal 정보를 User 테이블에서 찾거나 생성
+    let user = await this.prisma.user.findUnique({
+      where: { userId: principal.userId },
+    });
+
+    if (!user) {
+      // Principal 정보를 User 테이블에 추가
+      user = await this.prisma.user.create({
+        data: {
+          userId: principal.userId,
+          password: principal.password,
+          name: principal.name,
+          role: 'PRINCIPAL',
+        },
+      });
+    }
+
+    // 트랜잭션으로 환불 요청 거절 및 거절 상세 정보 생성
+    const result = await this.prisma.$transaction(async (prisma) => {
+      // 환불 요청 거절
+      const updatedRefundRequest = await prisma.refundRequest.update({
+        where: { id: refundId },
+        data: {
+          status: 'REJECTED',
+        },
+        include: {
+          sessionEnrollment: {
+            include: {
+              student: true,
+              session: {
+                include: {
+                  class: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // 거절 상세 정보 생성
+      await prisma.rejectionDetail.create({
+        data: {
+          rejectionType: 'REFUND_REJECTION',
+          entityId: refundId,
+          entityType: 'RefundRequest',
+          reason: rejectData.reason,
+          detailedReason: rejectData.detailedReason,
+          rejectedBy: user.id,
+        },
+      });
+
+      return updatedRefundRequest;
+    });
+
+    // 소켓 알림: 환불 요청 거절
+    try {
+      this.socketGateway.notifyRefundRejected(
+        result.id,
+        result.sessionEnrollment.studentId,
+      );
+    } catch (e) {
+      console.warn('Socket notifyRefundRejected failed:', e);
+    }
+
+    return result;
+  }
 }

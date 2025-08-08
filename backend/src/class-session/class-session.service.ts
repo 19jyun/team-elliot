@@ -2142,4 +2142,494 @@ export class ClassSessionService {
 
     return result;
   }
+
+  // Principal의 학원 모든 수강신청 조회
+  async getPrincipalEnrollments(principalId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      include: { academy: true },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    const enrollments = await this.prisma.sessionEnrollment.findMany({
+      where: {
+        session: {
+          class: {
+            academyId: principal.academyId,
+          },
+        },
+      },
+      include: {
+        student: {
+          select: {
+            id: true,
+            name: true,
+            phoneNumber: true,
+          },
+        },
+        session: {
+          include: {
+            class: {
+              select: {
+                id: true,
+                className: true,
+                teacher: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        enrolledAt: 'desc',
+      },
+    });
+
+    return enrollments;
+  }
+
+  // Principal의 학원 모든 세션 조회
+  async getPrincipalSessions(principalId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      include: {
+        academy: {
+          include: {
+            classes: {
+              include: {
+                teacher: true,
+                classSessions: {
+                  include: {
+                    enrollments: {
+                      include: {
+                        student: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    // 현재 시간 (KST 기준)
+    const now = new Date();
+    const kstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+
+    // 모든 세션을 평면화하여 반환 (아직 기간이 지나지 않은 세션만)
+    const allSessions = [];
+    for (const classItem of principal.academy.classes) {
+      for (const session of classItem.classSessions) {
+        // 세션의 종료 시간 계산
+        const sessionDate = new Date(session.date);
+        const sessionEndTime = new Date(sessionDate);
+
+        // endTime을 시간과 분으로 파싱
+        const endTimeStr = session.endTime.toTimeString().slice(0, 5); // "HH:MM" 형식
+        const [hours, minutes] = endTimeStr.split(':').map(Number);
+        sessionEndTime.setHours(hours, minutes, 0, 0);
+
+        // KST로 변환
+        const kstSessionEndTime = new Date(
+          sessionEndTime.getTime() + 9 * 60 * 60 * 1000,
+        );
+
+        // 아직 기간이 지나지 않은 세션만 포함 (현재 시간이 세션 종료 시간보다 이전)
+        if (kstNow < kstSessionEndTime) {
+          // enrollmentCount와 confirmedCount 계산
+          const enrollmentCount = session.enrollments.length; // 실제 enrollment 개수
+          const confirmedCount = session.enrollments.filter(
+            (enrollment) => enrollment.status === 'CONFIRMED',
+          ).length;
+
+          allSessions.push({
+            id: session.id,
+            classId: session.classId,
+            date: session.date,
+            startTime: session.startTime,
+            endTime: session.endTime,
+            maxStudents: session.maxStudents,
+            currentStudents: session.currentStudents,
+            enrollmentCount,
+            confirmedCount,
+            class: {
+              id: classItem.id,
+              className: classItem.className,
+              level: classItem.level,
+              teacher: classItem.teacher,
+            },
+          });
+        }
+      }
+    }
+
+    return allSessions;
+  }
+
+  // Principal의 세션 수강생 조회
+  async getPrincipalSessionEnrollments(sessionId: number, principalId: number) {
+    // Principal이 해당 세션에 접근할 권한이 있는지 확인
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      include: {
+        academy: {
+          include: {
+            classes: {
+              include: {
+                classSessions: {
+                  where: { id: sessionId },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    // 해당 세션이 Principal의 학원에 속하는지 확인
+    const sessionExists = principal.academy.classes.some((classItem) =>
+      classItem.classSessions.some((session) => session.id === sessionId),
+    );
+
+    if (!sessionExists) {
+      throw new ForbiddenException('해당 세션에 접근할 권한이 없습니다.');
+    }
+
+    // 세션의 수강생 목록 조회
+    const enrollments = await this.prisma.sessionEnrollment.findMany({
+      where: { sessionId },
+      include: {
+        student: {
+          select: {
+            id: true,
+            name: true,
+            phoneNumber: true,
+            level: true,
+          },
+        },
+        payment: {
+          select: {
+            id: true,
+            amount: true,
+            status: true,
+            paidAt: true,
+          },
+        },
+      },
+      orderBy: { enrolledAt: 'asc' },
+    });
+
+    // 상태별 카운트 계산
+    const statusCounts = enrollments.reduce(
+      (acc, enrollment) => {
+        acc[enrollment.status] = (acc[enrollment.status] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
+    return {
+      enrollments,
+      totalCount: enrollments.length,
+      statusCounts,
+    };
+  }
+
+  // Principal의 수강 신청 대기 세션 목록 조회
+  async getPrincipalSessionsWithEnrollmentRequests(principalId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      include: { academy: true },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    const sessions = await this.prisma.classSession.findMany({
+      where: {
+        class: {
+          academyId: principal.academyId,
+        },
+        enrollments: {
+          some: {
+            status: 'PENDING',
+          },
+        },
+      },
+      include: {
+        class: {
+          select: {
+            id: true,
+            className: true,
+            level: true,
+          },
+        },
+        enrollments: {
+          where: {
+            status: 'PENDING',
+          },
+          select: {
+            id: true,
+          },
+        },
+      },
+      orderBy: {
+        date: 'asc',
+      },
+    });
+
+    return sessions.map((session) => ({
+      id: session.id,
+      className: session.class.className,
+      sessionDate: session.date,
+      startTime: session.startTime,
+      endTime: session.endTime,
+      requestCount: session.enrollments.length,
+      class: {
+        level: session.class.level,
+      },
+    }));
+  }
+
+  // Principal의 특정 세션 수강 신청 요청 목록 조회
+  async getPrincipalSessionEnrollmentRequests(
+    sessionId: number,
+    principalId: number,
+  ) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      include: { academy: true },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    // 해당 세션이 Principal의 학원에 속하는지 확인
+    const session = await this.prisma.classSession.findFirst({
+      where: {
+        id: sessionId,
+        class: {
+          academyId: principal.academyId,
+        },
+      },
+    });
+
+    if (!session) {
+      throw new ForbiddenException('해당 세션에 접근할 권한이 없습니다.');
+    }
+
+    const enrollments = await this.prisma.sessionEnrollment.findMany({
+      where: {
+        sessionId,
+        status: 'PENDING',
+      },
+      include: {
+        student: {
+          select: {
+            id: true,
+            name: true,
+            phoneNumber: true,
+          },
+        },
+        session: {
+          include: {
+            class: {
+              select: {
+                id: true,
+                className: true,
+                level: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        enrolledAt: 'asc',
+      },
+    });
+
+    return enrollments;
+  }
+
+  // Principal이 수강 신청 승인
+  async approveEnrollmentByPrincipal(
+    enrollmentId: number,
+    principalId: number,
+  ) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      include: { academy: true },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    // 해당 enrollment가 Principal의 학원에 속하는지 확인
+    const enrollment = await this.prisma.sessionEnrollment.findFirst({
+      where: {
+        id: enrollmentId,
+        session: {
+          class: {
+            academyId: principal.academyId,
+          },
+        },
+      },
+      include: {
+        session: {
+          include: {
+            class: true,
+          },
+        },
+      },
+    });
+
+    if (!enrollment) {
+      throw new ForbiddenException('해당 수강 신청에 접근할 권한이 없습니다.');
+    }
+
+    if (enrollment.status !== 'PENDING') {
+      throw new BadRequestException('이미 처리된 수강 신청입니다.');
+    }
+
+    // 수강 신청 승인
+    const updatedEnrollment = await this.prisma.sessionEnrollment.update({
+      where: { id: enrollmentId },
+      data: { status: 'CONFIRMED' },
+      include: {
+        student: true,
+        session: {
+          include: {
+            class: true,
+          },
+        },
+      },
+    });
+
+    // 소켓 알림: 수강신청 승인
+    try {
+      this.socketGateway.notifyEnrollmentAccepted(
+        updatedEnrollment.id,
+        updatedEnrollment.studentId,
+      );
+    } catch (e) {
+      // 소켓 알림 실패는 비핵심 경로이므로 로깅만 수행
+      console.warn('Socket notifyEnrollmentAccepted failed:', e);
+    }
+
+    return updatedEnrollment;
+  }
+
+  // Principal이 수강 신청 거절
+  async rejectEnrollmentByPrincipal(
+    enrollmentId: number,
+    rejectData: { reason: string; detailedReason?: string },
+    principalId: number,
+  ) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      include: { academy: true },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    // 해당 enrollment가 Principal의 학원에 속하는지 확인
+    const enrollment = await this.prisma.sessionEnrollment.findFirst({
+      where: {
+        id: enrollmentId,
+        session: {
+          class: {
+            academyId: principal.academyId,
+          },
+        },
+      },
+    });
+
+    if (!enrollment) {
+      throw new ForbiddenException('해당 수강 신청에 접근할 권한이 없습니다.');
+    }
+
+    if (enrollment.status !== 'PENDING') {
+      throw new BadRequestException('이미 처리된 수강 신청입니다.');
+    }
+
+    // Principal 정보를 User 테이블에서 찾거나 생성
+    let user = await this.prisma.user.findUnique({
+      where: { userId: principal.userId },
+    });
+
+    if (!user) {
+      // Principal 정보를 User 테이블에 추가
+      user = await this.prisma.user.create({
+        data: {
+          userId: principal.userId,
+          password: principal.password,
+          name: principal.name,
+          role: 'PRINCIPAL',
+        },
+      });
+    }
+
+    // 트랜잭션으로 수강 신청 거절 및 거절 상세 정보 생성
+    const result = await this.prisma.$transaction(async (prisma) => {
+      // 수강 신청 거절
+      const updatedEnrollment = await prisma.sessionEnrollment.update({
+        where: { id: enrollmentId },
+        data: {
+          status: 'REJECTED',
+        },
+        include: {
+          student: true,
+          session: {
+            include: {
+              class: true,
+            },
+          },
+        },
+      });
+
+      // 거절 상세 정보 생성
+      await prisma.rejectionDetail.create({
+        data: {
+          rejectionType: 'SESSION_ENROLLMENT_REJECTION',
+          entityId: enrollmentId,
+          entityType: 'SessionEnrollment',
+          reason: rejectData.reason,
+          detailedReason: rejectData.detailedReason,
+          rejectedBy: user.id,
+        },
+      });
+
+      return updatedEnrollment;
+    });
+
+    // 소켓 알림: 수강신청 거절
+    try {
+      this.socketGateway.notifyEnrollmentRejected(result.id, result.studentId);
+    } catch (e) {
+      console.warn('Socket notifyEnrollmentRejected failed:', e);
+    }
+
+    return result;
+  }
 }

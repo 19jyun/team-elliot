@@ -4,13 +4,9 @@ import {
   Post,
   Put,
   Body,
-  Param,
   UseGuards,
   UseInterceptors,
   UploadedFile,
-  ParseIntPipe,
-  Query,
-  Delete,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { TeacherService } from './teacher.service';
@@ -20,7 +16,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { teacherProfileConfig } from '../config/multer.config';
 import { Role } from '@prisma/client';
-import { CreateClassDto } from '../admin/dto/create-class.dto';
+import { CreateClassDto } from '../types/class.types';
 import { CreateAcademyDto } from '../academy/dto/create-academy.dto';
 import { UpdateAcademyDto } from '../academy/dto/update-academy.dto';
 import { JoinAcademyRequestDto } from '../academy/dto/join-academy-request.dto';
@@ -119,30 +115,6 @@ export class TeacherController {
     return this.teacherService.changeAcademy(user.id, body.code);
   }
 
-  // 선생님이 새 학원 생성
-  @Post('me/create-academy')
-  @Roles(Role.TEACHER)
-  @ApiOperation({ summary: '새 학원 생성' })
-  @ApiResponse({ status: 201, description: '새 학원이 생성되었습니다.' })
-  async createAcademy(
-    @GetUser() user: any,
-    @Body() createAcademyDto: CreateAcademyDto,
-  ) {
-    return this.teacherService.createAcademy(createAcademyDto, user.id);
-  }
-
-  // 학원 정보 수정 (관리자만)
-  @Put('me/academy')
-  @Roles(Role.TEACHER)
-  @ApiOperation({ summary: '학원 정보 수정 (관리자만)' })
-  @ApiResponse({ status: 200, description: '학원 정보가 수정되었습니다.' })
-  async updateAcademy(
-    @GetUser() user: any,
-    @Body() updateAcademyDto: UpdateAcademyDto,
-  ) {
-    return this.teacherService.updateAcademy(user.id, updateAcademyDto);
-  }
-
   // 학원 탈퇴 (관리자 불가)
   @Post('me/leave-academy')
   @Roles(Role.TEACHER)
@@ -150,57 +122,5 @@ export class TeacherController {
   @ApiResponse({ status: 200, description: '학원 탈퇴가 완료되었습니다.' })
   async leaveAcademy(@GetUser() user: any) {
     return this.teacherService.leaveAcademy(user.id);
-  }
-
-  // 선생님이 새 학원을 생성하고 자동으로 소속되기
-  @Post('me/create-and-join-academy')
-  @Roles(Role.TEACHER)
-  @ApiOperation({ summary: '새 학원 생성 및 자동 소속' })
-  @ApiResponse({
-    status: 201,
-    description: '새 학원이 생성되고 자동으로 소속되었습니다.',
-  })
-  async createAndJoinAcademy(
-    @GetUser() user: any,
-    @Body() createAcademyDto: CreateAcademyDto,
-  ) {
-    return this.teacherService.createAndJoinAcademy(user.id, createAcademyDto);
-  }
-
-  // 관리자용 API들 (기존 유지)
-  @Get(':id')
-  @Roles(Role.ADMIN)
-  async getTeacherProfile(@Param('id', ParseIntPipe) id: number) {
-    return this.teacherService.getTeacherProfile(id);
-  }
-
-  // 학생/선생님/관리자 모두 접근 가능한 공개 프로필 API
-  @Get(':id/profile')
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
-  @ApiOperation({ summary: '선생님 공개 프로필 조회' })
-  @ApiResponse({ status: 200, description: '선생님 프로필 조회 성공' })
-  async getPublicTeacherProfile(@Param('id', ParseIntPipe) id: number) {
-    return this.teacherService.getTeacherProfile(id);
-  }
-
-  @Put(':id/profile')
-  @Roles(Role.ADMIN)
-  async updateProfile(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateData: any,
-  ) {
-    return this.teacherService.updateProfile(id, updateData);
-  }
-
-  @Get(':id/classes')
-  @Roles(Role.ADMIN)
-  async getTeacherClasses(@Param('id', ParseIntPipe) id: number) {
-    return this.teacherService.getTeacherClasses(id);
-  }
-
-  @Get(':id/classes-with-sessions')
-  @Roles(Role.ADMIN)
-  async getTeacherClassesWithSessions(@Param('id', ParseIntPipe) id: number) {
-    return this.teacherService.getTeacherClassesWithSessions(id);
   }
 }

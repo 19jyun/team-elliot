@@ -22,10 +22,10 @@ import { GetUser } from '../auth/decorators/get-user.decorator';
 export class AcademyController {
   constructor(private readonly academyService: AcademyService) {}
 
-  // 관리자용 API
+  // 원장용 API
   @Post()
-  @Roles('ADMIN')
-  @ApiOperation({ summary: '학원 생성 (관리자)' })
+  @Roles('PRINCIPAL')
+  @ApiOperation({ summary: '학원 생성 (원장)' })
   @ApiResponse({
     status: 201,
     description: '학원이 성공적으로 생성되었습니다.',
@@ -35,8 +35,8 @@ export class AcademyController {
   }
 
   @Delete(':id')
-  @Roles('ADMIN')
-  @ApiOperation({ summary: '학원 삭제 (관리자)' })
+  @Roles('PRINCIPAL')
+  @ApiOperation({ summary: '학원 삭제 (원장)' })
   @ApiResponse({
     status: 200,
     description: '학원이 성공적으로 삭제되었습니다.',

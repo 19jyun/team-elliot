@@ -191,128 +191,29 @@ export class StudentService {
 
   // 학원 관련 메서드들 - AcademyService 위임
   async getMyAcademies(studentId: number) {
-    return this.academyService.getMyAcademies(studentId);
+    return this.academyService.getStudentAcademies(studentId);
   }
 
   async joinAcademy(studentId: number, joinAcademyDto: JoinAcademyDto) {
-    return this.academyService.joinAcademy(studentId, joinAcademyDto);
+    return this.academyService.joinAcademyByStudent(studentId, joinAcademyDto);
   }
 
   async leaveAcademy(studentId: number, leaveAcademyDto: LeaveAcademyDto) {
-    return this.academyService.leaveAcademy(studentId, leaveAcademyDto);
+    return this.academyService.leaveAcademyByStudent(
+      studentId,
+      leaveAcademyDto,
+    );
   }
 
-  // 수강생을 학원에서 제거 (관리자용)
-  async removeStudentFromAcademy(adminTeacherId: number, studentId: number) {
-    // 권한 확인
-    const adminTeacher = await this.prisma.teacher.findUnique({
-      where: { id: adminTeacherId },
-      include: {
-        academy: {
-          include: {
-            principal: true,
-          },
-        },
-      },
-    });
-
-    if (!adminTeacher?.academy) {
-      throw new NotFoundException('소속된 학원이 없습니다.');
-    }
-
-    const isPrincipal = adminTeacher.academy.principal?.id === adminTeacherId;
-    if (!isPrincipal) {
-      throw new ForbiddenException('학원 관리 권한이 없습니다.');
-    }
-
-    // 수강생이 해당 학원에 속하는지 확인
-    const studentAcademy = await this.prisma.studentAcademy.findUnique({
-      where: {
-        studentId_academyId: {
-          studentId: studentId,
-          academyId: adminTeacher.academy.id,
-        },
-      },
-    });
-
-    if (!studentAcademy) {
-      throw new NotFoundException('해당 수강생을 찾을 수 없습니다.');
-    }
-
-    // 수강생의 모든 세션 수강 내역과 관련 데이터 삭제
-    await this.prisma.$transaction(async (tx) => {
-      // 1. 수강생의 세션 수강 신청 내역 삭제
-      await tx.sessionEnrollment.deleteMany({
-        where: {
-          studentId: studentId,
-          session: {
-            class: {
-              academyId: adminTeacher.academy.id,
-            },
-          },
-        },
-      });
-
-      // 2. 수강생의 클래스 수강 신청 내역 삭제
-      await tx.enrollment.deleteMany({
-        where: {
-          studentId: studentId,
-          class: {
-            academyId: adminTeacher.academy.id,
-          },
-        },
-      });
-
-      // 3. 수강생의 출석 기록 삭제
-      await tx.attendance.deleteMany({
-        where: {
-          studentId: studentId,
-          class: {
-            academyId: adminTeacher.academy.id,
-          },
-        },
-      });
-
-      // 4. 수강생의 결제 내역 삭제
-      await tx.payment.deleteMany({
-        where: {
-          studentId: studentId,
-          sessionEnrollment: {
-            session: {
-              class: {
-                academyId: adminTeacher.academy.id,
-              },
-            },
-          },
-        },
-      });
-
-      // 5. 수강생의 환불 요청 내역 삭제
-      await tx.refundRequest.deleteMany({
-        where: {
-          studentId: studentId,
-          sessionEnrollment: {
-            session: {
-              class: {
-                academyId: adminTeacher.academy.id,
-              },
-            },
-          },
-        },
-      });
-
-      // 6. 수강생을 학원에서 제거
-      await tx.studentAcademy.delete({
-        where: {
-          studentId_academyId: {
-            studentId: studentId,
-            academyId: adminTeacher.academy.id,
-          },
-        },
-      });
-    });
-
-    return { message: '수강생이 학원에서 제거되었습니다.' };
+  // 수강생을 학원에서 제거 (원장용)
+  async removeStudentFromAcademy(
+    principalTeacherId: number,
+    studentId: number,
+  ) {
+    return this.academyService.removeStudentFromAcademyByTeacherComplete(
+      principalTeacherId,
+      studentId,
+    );
   }
 
   async getMyProfile(studentId: number) {
@@ -690,5 +591,157 @@ export class StudentService {
         accountHolder: session.class.academy.principal.accountHolder,
       },
     };
+  }
+
+  // Principal의 학원 모든 학생 조회
+  async getPrincipalStudents(principalId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      include: {
+        academy: {
+          include: {
+            students: {
+              include: {
+                student: {
+                  include: {
+                    sessionEnrollments: {
+                      include: {
+                        session: {
+                          include: {
+                            class: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    // 학생 정보를 평면화하여 반환
+    const students = await Promise.all(
+      principal.academy.students.map(async (studentAcademy) => {
+        const student = studentAcademy.student;
+        const activeEnrollments = student.sessionEnrollments.filter(
+          (enrollment) =>
+            [
+              'PENDING',
+              'CONFIRMED',
+              'REFUND_REQUESTED',
+              'REFUND_REJECTED_CONFIRMED',
+            ].includes(enrollment.status),
+        );
+
+        return {
+          id: student.id,
+          name: student.name,
+          phoneNumber: student.phoneNumber,
+          level: student.level,
+          joinedAt: studentAcademy.joinedAt,
+          activeEnrollmentsCount: activeEnrollments.length,
+        };
+      }),
+    );
+
+    return students;
+  }
+
+  // Principal이 학생 제거
+  async removeStudentByPrincipal(studentId: number, principalId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      include: { academy: true },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    // 해당 수강생이 Principal의 학원에 속하는지 확인
+    const studentAcademy = await this.prisma.studentAcademy.findFirst({
+      where: {
+        studentId,
+        academyId: principal.academyId,
+      },
+    });
+
+    if (!studentAcademy) {
+      throw new ForbiddenException('해당 수강생에 접근할 권한이 없습니다.');
+    }
+
+    // 수강생을 학원에서 제거
+    await this.prisma.studentAcademy.delete({
+      where: { id: studentAcademy.id },
+    });
+
+    return { message: '수강생이 학원에서 제거되었습니다.' };
+  }
+
+  // Principal이 학생의 세션 수강 현황 조회
+  async getStudentSessionHistoryByPrincipal(
+    studentId: number,
+    principalId: number,
+  ) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      include: { academy: true },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    // 해당 수강생이 Principal의 학원에 속하는지 확인
+    const studentAcademy = await this.prisma.studentAcademy.findFirst({
+      where: {
+        studentId,
+        academyId: principal.academyId,
+      },
+    });
+
+    if (!studentAcademy) {
+      throw new ForbiddenException('해당 수강생에 접근할 권한이 없습니다.');
+    }
+
+    // 수강생의 모든 세션 수강 현황 조회
+    const sessionHistory = await this.prisma.sessionEnrollment.findMany({
+      where: {
+        studentId,
+        session: {
+          class: {
+            academyId: principal.academyId,
+          },
+        },
+      },
+      include: {
+        session: {
+          include: {
+            class: {
+              include: {
+                teacher: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        enrolledAt: 'desc',
+      },
+    });
+
+    return sessionHistory;
   }
 }

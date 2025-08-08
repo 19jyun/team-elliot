@@ -16,6 +16,6 @@ export class AuthResponseEntity {
     id: number;
     userId: string;
     name: string;
-    role: 'STUDENT' | 'TEACHER' | 'ADMIN';
+    role: 'STUDENT' | 'TEACHER' | 'PRINCIPAL';
   };
 }

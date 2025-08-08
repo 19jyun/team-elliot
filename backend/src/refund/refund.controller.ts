@@ -70,7 +70,7 @@ export class RefundController {
    * 전체 환불 요청 목록 조회 (관리자용)
    */
   @Get('all')
-  @Roles(Role.ADMIN)
+  @Roles(Role.PRINCIPAL)
   @ApiOperation({ summary: '전체 환불 요청 목록 조회' })
   @ApiResponse({
     status: 200,
@@ -84,7 +84,7 @@ export class RefundController {
    * 환불 요청 상세 조회
    */
   @Get(':refundRequestId')
-  @Roles(Role.ADMIN, Role.STUDENT)
+  @Roles(Role.PRINCIPAL, Role.STUDENT)
   @ApiOperation({ summary: '환불 요청 상세 조회' })
   @ApiResponse({
     status: 200,

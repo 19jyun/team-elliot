@@ -30,7 +30,7 @@ export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
   @Post()
-  @Roles(Role.STUDENT, Role.ADMIN)
+  @Roles(Role.STUDENT)
   @ApiOperation({ summary: '결제 생성' })
   @ApiCreatedResponse({ description: '결제가 생성되었습니다.' })
   async createPayment(@Body() dto: CreatePaymentDto) {
@@ -38,7 +38,7 @@ export class PaymentController {
   }
 
   @Get('session-enrollment/:sessionEnrollmentId')
-  @Roles(Role.STUDENT, Role.ADMIN, Role.TEACHER)
+  @Roles(Role.STUDENT, Role.TEACHER)
   @ApiOperation({ summary: '세션 수강 신청별 결제 정보 조회' })
   @ApiOkResponse({ description: '결제 정보를 반환합니다.' })
   async getPaymentBySessionEnrollment(
@@ -50,7 +50,7 @@ export class PaymentController {
   }
 
   @Get('student/:studentId')
-  @Roles(Role.STUDENT, Role.ADMIN)
+  @Roles(Role.STUDENT)
   @ApiOperation({ summary: '학생별 결제 내역 조회' })
   @ApiOkResponse({ description: '학생의 결제 내역을 반환합니다.' })
   async getStudentPayments(
@@ -60,7 +60,7 @@ export class PaymentController {
   }
 
   @Put('session-enrollment/:sessionEnrollmentId')
-  @Roles(Role.ADMIN)
+  @Roles(Role.TEACHER)
   @ApiOperation({ summary: '결제 정보 업데이트' })
   @ApiOkResponse({ description: '결제 정보가 업데이트되었습니다.' })
   async updatePayment(
@@ -71,7 +71,7 @@ export class PaymentController {
   }
 
   @Delete('session-enrollment/:sessionEnrollmentId')
-  @Roles(Role.ADMIN)
+  @Roles(Role.TEACHER)
   @ApiOperation({ summary: '결제 삭제' })
   @ApiOkResponse({ description: '결제가 삭제되었습니다.' })
   async deletePayment(
