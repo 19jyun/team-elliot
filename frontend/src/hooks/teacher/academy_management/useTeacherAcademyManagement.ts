@@ -1,13 +1,7 @@
 import { useState, useCallback } from "react";
 import { useTeacherApi } from "@/hooks/teacher/useTeacherApi";
 import { toast } from "sonner";
-import {
-  changeAcademy,
-  createAndJoinAcademy,
-  updateAcademy,
-  leaveAcademy,
-  requestJoinAcademy,
-} from "@/api/teacher";
+import { leaveAcademy, requestJoinAcademy } from "@/api/teacher";
 import { Academy, CreateAcademyRequest } from "@/types/api/teacher";
 
 export function useTeacherAcademyManagement() {
@@ -99,34 +93,16 @@ export function useTeacherAcademyManagement() {
     }
   };
 
-  const handleCreateAcademy = async (formData: CreateAcademyRequest) => {
-    try {
-      const result = await createAndJoinAcademy(formData);
-      toast.success("학원이 성공적으로 생성되었습니다.");
-      // 데이터 재로드
-      await loadAcademy();
-      return result;
-    } catch (error: any) {
-      console.error("학원 생성 실패:", error);
-      toast.error(error.response?.data?.message || "학원 생성에 실패했습니다.");
-      throw error;
-    }
+  const handleCreateAcademy = async (_formData: CreateAcademyRequest) => {
+    // 교사는 학원 생성 권한이 없음
+    toast.error("학원 생성은 원장만 가능합니다.");
+    return Promise.reject(new Error("Teacher cannot create academy"));
   };
 
-  const handleUpdateAcademy = async (formData: CreateAcademyRequest) => {
-    try {
-      const result = await updateAcademy(formData);
-      toast.success("학원 정보가 업데이트되었습니다.");
-      // 데이터 재로드
-      await loadAcademy();
-      return result;
-    } catch (error: any) {
-      console.error("학원 정보 업데이트 실패:", error);
-      toast.error(
-        error.response?.data?.message || "학원 정보 업데이트에 실패했습니다."
-      );
-      throw error;
-    }
+  const handleUpdateAcademy = async (_formData: CreateAcademyRequest) => {
+    // 교사는 학원 정보 수정 권한이 없음
+    toast.error("학원 정보 수정은 원장만 가능합니다.");
+    return Promise.reject(new Error("Teacher cannot update academy"));
   };
 
   const handleLeaveAcademy = () => {

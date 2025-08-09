@@ -13,28 +13,17 @@ export {
 // 역할별 slice들
 export {
   default as teacherReducer,
-  setTeacherData,
-  updateTeacherProfile,
-  updateTeacherAcademy,
-  updateTeacherPrincipal,
-  updateTeacherClass,
-  updateTeacherSession,
+  setTeacherRealTimeData,
   updateTeacherEnrollment,
   updateTeacherEnrollmentFromSocket,
-  updateTeacherSessionFromSocket,
   clearTeacherData,
 } from "./teacherSlice";
 
 export {
   default as principalReducer,
   setPrincipalData,
-  updatePrincipalProfile,
-  updatePrincipalAcademy,
   updatePrincipalEnrollment,
   updatePrincipalRefundRequest,
-  updatePrincipalClass,
-  updatePrincipalTeacher,
-  updatePrincipalStudent,
   updatePrincipalEnrollmentFromSocket,
   updatePrincipalRefundRequestFromSocket,
   clearPrincipalData,
@@ -46,8 +35,4 @@ export {
   clearStudentData,
 } from "./studentSlice";
 
-export {
-  default as adminReducer,
-  setAdminData,
-  clearAdminData,
-} from "./adminSlice";
+// ADMIN slice 제거됨

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { StatusStep } from './StatusStep';
-import { createTeacherClass } from '@/api/class';
+import { createPrincipalClass } from '@/api/principal';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 
@@ -67,8 +67,8 @@ export function CreateClassStepDetail() {
     try {
       setIsSubmitting(true);
       
-      // 실제 API 호출
-      const response = await createTeacherClass(requestData);
+      // 실제 API 호출 (Principal 전용)
+      await createPrincipalClass(requestData);
       
       toast.success('강의가 성공적으로 생성되었습니다!');
       

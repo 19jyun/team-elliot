@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { User, Phone, Building, Edit, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { updatePrincipalProfile as updatePrincipalProfileApi } from '@/api/principal';
 import { UpdatePrincipalProfileRequest } from '@/types/api/principal';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 
@@ -25,7 +24,7 @@ export function PrincipalPersonalInfoManagement() {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
   // API 기반 데이터 관리
-  const { profile, loadProfile, error, isPrincipal } = usePrincipalApi();
+  const { profile, loadProfile, error, isPrincipal, updateProfile } = usePrincipalApi();
 
   // 컴포넌트 마운트 시 프로필 로드
   useEffect(() => {
@@ -130,7 +129,7 @@ export function PrincipalPersonalInfoManagement() {
 
     try {
       setIsLoading(true);
-      await updatePrincipalProfileApi(editedInfo);
+      await updateProfile(editedInfo);
       
       // API 데이터 다시 로드
       loadProfile();

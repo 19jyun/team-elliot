@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { updatePrincipalProfile as updatePrincipalProfileApi, updatePrincipalProfilePhoto as updatePrincipalProfilePhotoApi } from '@/api/principal';
 import { UpdatePrincipalProfileRequest } from '@/types/api/principal';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -70,33 +69,33 @@ export function PrincipalProfileCard({
   // 프로필 로딩 상태 (초기 로드 시에만)
   const [isProfileLoading, setIsProfileLoading] = useState(false);
 
-  // 프로필 업데이트 뮤테이션 (편집 가능한 경우만)
+  // 프로필 업데이트/사진 업로드 뮤테이션
+  const { updateProfile, updateProfilePhoto } = usePrincipalApi();
   const updateProfileMutation = useMutation({
-    mutationFn: updatePrincipalProfileApi,
-    onSuccess: (updatedProfile) => {
+    mutationFn: (data: UpdatePrincipalProfileRequest) => updateProfile(data),
+    onSuccess: () => {
       // API 데이터 다시 로드
       loadProfile();
       toast.success('프로필이 성공적으로 업데이트되었습니다.');
       setIsEditing(false);
       onSave?.();
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
       console.error('프로필 업데이트 실패:', error);
       toast.error('프로필 업데이트에 실패했습니다.');
     },
   });
 
-  // 사진 업로드 뮤테이션
   const updatePhotoMutation = useMutation({
-    mutationFn: updatePrincipalProfilePhotoApi,
-    onSuccess: (updatedProfile) => {
+    mutationFn: (photo: File) => updateProfilePhoto(photo),
+    onSuccess: () => {
       // API 데이터 다시 로드
       loadProfile();
       toast.success('프로필 사진이 성공적으로 업로드되었습니다.');
       setSelectedPhoto(null);
       setPreviewUrl(null);
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
       console.error('사진 업로드 실패:', error);
       toast.error('사진 업로드에 실패했습니다.');
     },

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { getPrincipalAllSessions } from "@/api/principal";
-import { getClassSessions } from "@/api/class-sessions";
+import { getClassSessionsForEnrollment as getClassSessions } from "@/api/student";
 import type { ClassSession } from "@/types/api/class";
 
 // 캘린더용 API 훅

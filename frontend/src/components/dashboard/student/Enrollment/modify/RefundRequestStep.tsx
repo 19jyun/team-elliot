@@ -5,8 +5,9 @@ import { toast } from 'sonner';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { InfoBubble } from '@/components/common/InfoBubble';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
-import { refundApi } from '@/api/refund';
+// 역할 분리: 환불 생성/취소는 학생 전용 API 파일로 이동 필요 (추후 구현 예정)
 import { RefundReason } from '@/types/api/refund';
+import { useStudentApi } from '@/hooks/student/useStudentApi';
 
 interface RefundRequestStepProps {
   refundAmount: number;
@@ -38,6 +39,7 @@ export function RefundRequestStep({ refundAmount, cancelledSessionsCount, onComp
   const [saveAccount, setSaveAccount] = useState(false);
   const [refundReason, setRefundReason] = useState<RefundReason>(RefundReason.PERSONAL_SCHEDULE);
   const [detailedReason, setDetailedReason] = useState('');
+  const { createRefundRequest } = useStudentApi();
 
   const statusSteps = [
     {
@@ -148,7 +150,7 @@ export function RefundRequestStep({ refundAmount, cancelledSessionsCount, onComp
         };
 
         try {
-          const response = await refundApi.createRefundRequest(refundRequest);
+          const response = await createRefundRequest(refundRequest);
           refundRequests.push(response);
         } catch (error) {
           console.error('환불 요청 생성 실패:', error);

@@ -805,35 +805,88 @@ export class RefundService {
       throw new BadRequestException('이미 처리된 환불 요청입니다.');
     }
 
-    // 환불 요청 승인
-    const updatedRefundRequest = await this.prisma.refundRequest.update({
-      where: { id: refundId },
-      data: { status: 'APPROVED' },
-      include: {
-        sessionEnrollment: {
-          include: {
-            student: true,
-            session: {
-              include: {
-                class: true,
+    // Principal 정보를 User 테이블에서 찾거나 생성 (processedBy 기록용)
+    let user = await this.prisma.user.findUnique({
+      where: { userId: principal.userId },
+    });
+
+    if (!user) {
+      user = await this.prisma.user.create({
+        data: {
+          userId: principal.userId,
+          password: principal.password,
+          name: principal.name,
+          role: 'PRINCIPAL',
+        },
+      });
+    }
+
+    // 트랜잭션으로 환불 승인 + 결제/수강신청 상태 변경
+    const result = await this.prisma.$transaction(async (prisma) => {
+      const updatedRefundRequest = await prisma.refundRequest.update({
+        where: { id: refundId },
+        data: {
+          status: 'APPROVED',
+          processedBy: user.id,
+          processedAt: new Date(),
+          actualRefundAmount: refundRequest.refundAmount,
+        },
+        include: {
+          sessionEnrollment: {
+            include: {
+              student: true,
+              session: {
+                include: {
+                  class: true,
+                },
               },
             },
           },
         },
-      },
+      });
+
+      // 결제 상태 업데이트 (존재 시)
+      await prisma.payment
+        .update({
+          where: { sessionEnrollmentId: refundRequest.sessionEnrollmentId },
+          data: { status: 'REFUNDED' },
+        })
+        .catch(() => undefined);
+
+      // 수강신청 상태를 REFUND_CANCELLED로 변경
+      const updatedEnrollment = await prisma.sessionEnrollment.update({
+        where: { id: refundRequest.sessionEnrollmentId },
+        data: {
+          status: 'REFUND_CANCELLED',
+          cancelledAt: new Date(),
+        },
+        include: {
+          session: true,
+        },
+      });
+
+      return { updatedRefundRequest, updatedEnrollment };
     });
+
+    // 세션 현재 인원 감소 (CONFIRMED -> REFUND_CANCELLED)
+    await this.classSessionService.updateSessionCurrentStudents(
+      result.updatedEnrollment.sessionId,
+      'CONFIRMED',
+      'REFUND_CANCELLED',
+      result.updatedEnrollment.id,
+    );
 
     // 소켓 알림: 환불 요청 승인
     try {
       this.socketGateway.notifyRefundAccepted(
-        updatedRefundRequest.id,
-        updatedRefundRequest.sessionEnrollment.studentId,
+        result.updatedRefundRequest.id,
+        result.updatedRefundRequest.sessionEnrollment.studentId,
       );
     } catch (e) {
       console.warn('Socket notifyRefundAccepted failed:', e);
     }
 
-    return updatedRefundRequest;
+    return result.updatedRefundRequest;
   }
 
   // Principal이 환불 요청 거절
@@ -890,9 +943,8 @@ export class RefundService {
       });
     }
 
-    // 트랜잭션으로 환불 요청 거절 및 거절 상세 정보 생성
+    // 트랜잭션으로 환불 요청 거절 + 수강신청 상태 복원 + 거절 상세 정보 생성
     const result = await this.prisma.$transaction(async (prisma) => {
-      // 환불 요청 거절
       const updatedRefundRequest = await prisma.refundRequest.update({
         where: { id: refundId },
         data: {
@@ -912,6 +964,16 @@ export class RefundService {
         },
       });
 
+      // 수강신청 상태를 REFUND_REJECTED_CONFIRMED로 변경 (환불 거절로 수강 지속)
+      const updatedEnrollment = await prisma.sessionEnrollment.update({
+        where: { id: refundRequest.sessionEnrollmentId },
+        data: {
+          status: 'REFUND_REJECTED_CONFIRMED',
+          cancelledAt: null,
+        },
+        include: { session: true },
+      });
+
       // 거절 상세 정보 생성
       await prisma.rejectionDetail.create({
         data: {
@@ -924,19 +986,28 @@ export class RefundService {
         },
       });
 
-      return updatedRefundRequest;
+      return { updatedRefundRequest, updatedEnrollment };
     });
+
+    // currentStudents 조정: 기존 구현 정책상 REFUND_REQUESTED에서 기여 플래그는 유지되므로 증감 없음
+    // 그래도 상태 이력 일관성을 위해 헬퍼 호출 (내부 hasContributed 기반으로 변화 없으면 no-op)
+    await this.classSessionService.updateSessionCurrentStudents(
+      result.updatedEnrollment.sessionId,
+      'REFUND_REQUESTED',
+      'REFUND_REJECTED_CONFIRMED',
+      result.updatedEnrollment.id,
+    );
 
     // 소켓 알림: 환불 요청 거절
     try {
       this.socketGateway.notifyRefundRejected(
-        result.id,
-        result.sessionEnrollment.studentId,
+        result.updatedRefundRequest.id,
+        result.updatedRefundRequest.sessionEnrollment.studentId,
       );
     } catch (e) {
       console.warn('Socket notifyRefundRejected failed:', e);
     }
 
-    return result;
+    return result.updatedRefundRequest;
   }
 }

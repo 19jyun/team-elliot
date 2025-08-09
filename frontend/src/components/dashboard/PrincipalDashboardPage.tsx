@@ -18,7 +18,6 @@ import { PrincipalPersonalInfoManagement } from './principal/profile/PrincipalPe
 import { PrincipalBankInfoManagement } from './principal/profile/PrincipalBankInfoManagement/PrincipalBankInfoManagement';
 import { EnrollmentRefundManagementContainer } from './principal/person_management/enrollment_refund_management/containers/EnrollmentRefundManagementContainer';
 import { TeacherStudentManagementContainer } from './principal/person_management/teacher_student_management/containers/TeacherStudentManagementContainer';
-import { ReduxTestComponent } from '@/components/common/ReduxTestComponent';
 import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSocketListener';
 import { SocketStatus } from '@/components/common/Socket/SocketStatus';
 import { usePrincipalInitialization } from '@/hooks/redux/usePrincipalInitialization';

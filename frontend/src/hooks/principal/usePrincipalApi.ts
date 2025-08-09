@@ -12,6 +12,18 @@ import {
   rejectPrincipalEnrollment,
   approvePrincipalRefund,
   rejectPrincipalRefund,
+  updatePrincipalProfile,
+  updatePrincipalProfilePhoto,
+  createPrincipalClass,
+  getSessionContents as apiGetSessionContents,
+  addSessionContent as apiAddSessionContent,
+  updateSessionContent as apiUpdateSessionContent,
+  deleteSessionContent as apiDeleteSessionContent,
+  reorderSessionContents as apiReorderSessionContents,
+  removePrincipalTeacher,
+  removePrincipalStudent,
+  getPrincipalStudentSessionHistory,
+  updatePrincipalAcademy,
 } from "@/api/principal";
 import type {
   PrincipalProfile,
@@ -20,7 +32,10 @@ import type {
   PrincipalTeacher,
   PrincipalStudent,
   PrincipalSession,
+  UpdatePrincipalProfileRequest,
 } from "@/types/api/principal";
+import type { BalletPose, PoseDifficulty } from "@/types/api/ballet-pose";
+import axios from "@/lib/axios";
 
 // Principal API 데이터 훅
 export function usePrincipalApi() {
@@ -156,6 +171,76 @@ export function usePrincipalApi() {
     }
   };
 
+  // 업데이트/액션 래퍼들 (컴포넌트에서 API 직접 호출 금지 목적)
+  const updateProfile = async (data: UpdatePrincipalProfileRequest) => {
+    return updatePrincipalProfile(data);
+  };
+  const updateProfilePhoto = async (photo: File) => {
+    return updatePrincipalProfilePhoto(photo);
+  };
+
+  // 클래스 생성
+  const createClass = async (data: any) => {
+    return createPrincipalClass(data);
+  };
+
+  // 세션 컨텐츠 관리
+  const getSessionContents = async (sessionId: number) => {
+    return apiGetSessionContents(sessionId);
+  };
+  const addSessionContent = async (
+    sessionId: number,
+    data: { poseId: number; note?: string }
+  ) => {
+    return apiAddSessionContent(sessionId, data);
+  };
+  const updateSessionContent = async (
+    sessionId: number,
+    contentId: number,
+    data: { poseId?: number; note?: string }
+  ) => {
+    return apiUpdateSessionContent(sessionId, contentId, data);
+  };
+  const deleteSessionContent = async (sessionId: number, contentId: number) => {
+    return apiDeleteSessionContent(sessionId, contentId);
+  };
+  const reorderSessionContents = async (
+    sessionId: number,
+    orderedContentIds: number[]
+  ) => {
+    return apiReorderSessionContents(sessionId, { orderedContentIds });
+  };
+
+  // 인원 관리
+  const removeTeacher = async (teacherId: number) => {
+    return removePrincipalTeacher(teacherId);
+  };
+  const removeStudent = async (studentId: number) => {
+    return removePrincipalStudent(studentId);
+  };
+  const getStudentSessionHistory = async (studentId: number) => {
+    return getPrincipalStudentSessionHistory(studentId);
+  };
+
+  // 학원 정보 업데이트
+  const updateAcademy = async (data: any) => {
+    return updatePrincipalAcademy(data);
+  };
+
+  // 발레 포즈 (Principal에서 사용)
+  const fetchBalletPoses = async (
+    difficulty?: PoseDifficulty
+  ): Promise<BalletPose[]> => {
+    const res = await axios.get("/ballet-poses", {
+      params: difficulty ? { difficulty } : undefined,
+    });
+    return res.data;
+  };
+  const fetchBalletPose = async (id: number): Promise<BalletPose> => {
+    const res = await axios.get(`/ballet-poses/${id}`);
+    return res.data;
+  };
+
   // 헬퍼 함수들
   const getClassById = (classId: number) => {
     return classes.find((cls) => cls.id === classId);
@@ -288,5 +373,23 @@ export function usePrincipalApi() {
     rejectEnrollment,
     approveRefund,
     rejectRefund,
+    updateProfile,
+    updateProfilePhoto,
+    // 생성/수정 관련
+    createClass,
+    updateAcademy,
+    // 발레 포즈
+    fetchBalletPoses,
+    fetchBalletPose,
+    // 세션 컨텐츠 관련
+    getSessionContents,
+    addSessionContent,
+    updateSessionContent,
+    deleteSessionContent,
+    reorderSessionContents,
+    // 인원 관리 관련
+    removeTeacher,
+    removeStudent,
+    getStudentSessionHistory,
   };
 }

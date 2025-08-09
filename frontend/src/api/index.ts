@@ -1,46 +1,9 @@
-// Principal API
-export {
-  getPrincipalAcademy,
-  getPrincipalAllClasses,
-  getPrincipalAllTeachers,
-  getPrincipalAllStudents,
-  getPrincipalAllEnrollments,
-  getPrincipalAllRefundRequests,
-  getPrincipalProfile,
-  getPrincipalSessionsWithPendingRequests,
-  getPrincipalSessionEnrollments,
-  getPrincipalSessionRequests,
-  approvePrincipalEnrollment,
-  rejectPrincipalEnrollment,
-  approvePrincipalRefund,
-  rejectPrincipalRefund,
-  updatePrincipalProfile,
-  updatePrincipalAcademy,
-  getPrincipalAcademyTeachers,
-  getPrincipalAcademyStudents,
-  removePrincipalTeacher,
-  removePrincipalStudent,
-  getPrincipalStudentSessionHistory,
-} from "./principal";
+// 역할별 API만 re-export
+export * as PrincipalAPI from "./principal";
+export * as StudentAPI from "./student";
+export * as TeacherAPI from "./teacher";
 
-// Admin API
-export {
-  getStudents,
-  getTeachers,
-  getClasses,
-  createStudent,
-  deleteStudent,
-  createTeacher,
-  deleteTeacher,
-} from "./admin";
-
-// Student API
-export { getMyClasses } from "./student";
-
-// Teacher API
-export { getTeacherClasses, getAcademyTeachers } from "./teacher";
-
-// Auth API
+// 인증만 공용 노출
 export {
   login,
   signup,
@@ -48,33 +11,3 @@ export {
   checkDuplicateUserId,
   withdrawal,
 } from "./auth";
-
-// Academy API
-export { createAcademy, joinAcademy, leaveAcademy } from "./academy";
-
-// Class API
-export {
-  getClassDetails,
-  getAllClasses,
-  createClass,
-  createTeacherClass,
-  updateClass,
-  deleteClass,
-  enrollClass,
-  unenrollClass,
-  getClassesByMonth,
-  getClassCards,
-  getClassesWithSessionsByMonth,
-} from "./class";
-
-// Refund API
-export { refundApi } from "./refund";
-
-// Activity Log API
-export {
-
-  LOG_LEVELS,
-  getActivityTypeLabel,
-  getLogLevelLabel,
-  getLogLevelColor,
-

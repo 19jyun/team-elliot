@@ -11,4 +11,4 @@ export const useTeacherData = () => useAppSelector((state) => state.teacher);
 export const usePrincipalData = () =>
   useAppSelector((state) => state.principal);
 export const useStudentData = () => useAppSelector((state) => state.student);
-export const useAdminData = () => useAppSelector((state) => state.admin);
+// ADMIN 데이터 훅 제거됨

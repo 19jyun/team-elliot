@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Users, Trash2 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { removePrincipalTeacher } from '@/api/principal';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { useEffect } from 'react';
 
@@ -13,7 +12,7 @@ export default function PrincipalTeacherManagementSection() {
   const queryClient = useQueryClient();
 
   // API 기반 데이터 관리
-  const { teachers, loadTeachers, isLoading, error } = usePrincipalApi();
+  const { teachers, loadTeachers, isLoading, error, removeTeacher } = usePrincipalApi();
 
   // 컴포넌트 마운트 시 선생님 데이터 로드
   useEffect(() => {
@@ -22,7 +21,7 @@ export default function PrincipalTeacherManagementSection() {
 
   // 선생님 제거 뮤테이션
   const removeTeacherMutation = useMutation({
-    mutationFn: removePrincipalTeacher,
+    mutationFn: removeTeacher,
     onSuccess: () => {
       // API 데이터 재로드
       loadTeachers();

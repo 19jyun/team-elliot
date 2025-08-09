@@ -8,7 +8,6 @@ import { useEffect } from 'react';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { useStudentContext, studentNavigationItems } from '@/contexts/StudentContext';
 import { useTeacherContext, teacherNavigationItems } from '@/contexts/TeacherContext';
-import { useAdminContext, adminNavigationItems } from '@/contexts/AdminContext';
 import { usePrincipalContext, principalNavigationItems } from '@/contexts/PrincipalContext';
 
 export function CommonHeader() {
@@ -33,11 +32,6 @@ export function CommonHeader() {
       handleTabChange = ctx.handleTabChange;
     } else if (userRole === 'TEACHER') {
       const ctx = useTeacherContext();
-      navigationItems = ctx.navigationItems;
-      activeTab = ctx.activeTab;
-      handleTabChange = ctx.handleTabChange;
-    } else if (userRole === 'ADMIN') {
-      const ctx = useAdminContext();
       navigationItems = ctx.navigationItems;
       activeTab = ctx.activeTab;
       handleTabChange = ctx.handleTabChange;
@@ -85,9 +79,8 @@ export function CommonHeader() {
     const defaultPaths = {
       STUDENT: '/dashboard/student',
       TEACHER: '/dashboard/teacher',
-      ADMIN: '/dashboard/admin',
       PRINCIPAL: '/dashboard/principal',
-    };
+    } as const;
     
     return pathname === defaultPaths[userRole as keyof typeof defaultPaths] || pathname === '/dashboard';
   };

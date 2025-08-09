@@ -4,14 +4,13 @@ import { useSession } from 'next-auth/react'
 import { PrincipalSocketListener } from './PrincipalSocketListener'
 import { TeacherSocketListener } from './TeacherSocketListener'
 import { StudentSocketListener } from './StudentSocketListener'
-import { AdminSocketListener } from './AdminSocketListener'
 
 // 역할별 리스너 매핑
 const roleListeners = {
   PRINCIPAL: PrincipalSocketListener,
   TEACHER: TeacherSocketListener,
   STUDENT: StudentSocketListener,
-  ADMIN: AdminSocketListener,
+  // ADMIN 제거됨
 }
 
 export function RoleBasedSocketListener() {

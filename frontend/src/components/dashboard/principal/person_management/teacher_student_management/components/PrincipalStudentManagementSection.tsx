@@ -3,19 +3,17 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { UserPlus, Trash2, Eye } from 'lucide-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { removePrincipalStudent } from '@/api/principal';
+import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { useState, useEffect } from 'react';
 import { PrincipalStudentSessionHistoryModal } from './PrincipalStudentSessionHistoryModal';
-import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 
 export default function PrincipalStudentManagementSection() {
-  const queryClient = useQueryClient();
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
 
   // API 기반 데이터 관리
-  const { students, loadStudents, isLoading, error } = usePrincipalApi();
+  const { students, loadStudents, isLoading, error, removeStudent } = usePrincipalApi();
 
   // 컴포넌트 마운트 시 학생 데이터 로드
   useEffect(() => {
@@ -24,7 +22,7 @@ export default function PrincipalStudentManagementSection() {
 
   // 수강생 제거 뮤테이션
   const removeStudentMutation = useMutation({
-    mutationFn: removePrincipalStudent,
+    mutationFn: removeStudent,
     onSuccess: () => {
       // API 데이터 재로드
       loadStudents();
