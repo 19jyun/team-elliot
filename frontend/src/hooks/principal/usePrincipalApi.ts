@@ -54,7 +54,7 @@ export function usePrincipalApi() {
     status === "authenticated" && session?.user?.role === "PRINCIPAL";
 
   // 프로필 정보 로드
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     if (!isPrincipal) return;
 
     try {
@@ -64,10 +64,10 @@ export function usePrincipalApi() {
     } catch (err: any) {
       setError(err.response?.data?.message || "프로필 로드 실패");
     }
-  };
+  }, [isPrincipal]);
 
   // 학원 정보 로드
-  const loadAcademy = async () => {
+  const loadAcademy = useCallback(async () => {
     if (!isPrincipal) return;
 
     try {
@@ -77,7 +77,7 @@ export function usePrincipalApi() {
     } catch (err: any) {
       setError(err.response?.data?.message || "학원 정보 로드 실패");
     }
-  };
+  }, [isPrincipal]);
 
   // 클래스 목록 로드
   const loadClasses = useCallback(async () => {
@@ -93,7 +93,7 @@ export function usePrincipalApi() {
   }, [isPrincipal]);
 
   // 선생님 목록 로드
-  const loadTeachers = async () => {
+  const loadTeachers = useCallback(async () => {
     if (!isPrincipal) return;
 
     try {
@@ -103,10 +103,10 @@ export function usePrincipalApi() {
     } catch (err: any) {
       setError(err.response?.data?.message || "선생님 목록 로드 실패");
     }
-  };
+  }, [isPrincipal]);
 
   // 학생 목록 로드
-  const loadStudents = async () => {
+  const loadStudents = useCallback(async () => {
     if (!isPrincipal) return;
 
     try {
@@ -116,7 +116,7 @@ export function usePrincipalApi() {
     } catch (err: any) {
       setError(err.response?.data?.message || "학생 목록 로드 실패");
     }
-  };
+  }, [isPrincipal]);
 
   // 세션 목록 로드
   const loadSessions = useCallback(async () => {
@@ -149,7 +149,7 @@ export function usePrincipalApi() {
   );
 
   // 모든 데이터 로드
-  const loadAllData = async () => {
+  const loadAllData = useCallback(async () => {
     if (!isPrincipal) return;
 
     try {
@@ -169,7 +169,15 @@ export function usePrincipalApi() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [
+    isPrincipal,
+    loadProfile,
+    loadAcademy,
+    loadClasses,
+    loadTeachers,
+    loadStudents,
+    loadSessions,
+  ]);
 
   // 업데이트/액션 래퍼들 (컴포넌트에서 API 직접 호출 금지 목적)
   const updateProfile = async (data: UpdatePrincipalProfileRequest) => {
