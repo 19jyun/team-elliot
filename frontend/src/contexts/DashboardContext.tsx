@@ -161,12 +161,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           { label: '수업 관리', href: '/dashboard/teacher/class_management', index: 1 },
           { label: '나의 정보', href: '/dashboard/teacher/profile', index: 2 },
         ];
-      case 'ADMIN':
-        return [
-          { label: '수강생 관리', href: '/dashboard/admin/students', index: 0 },
-          { label: '선생님 관리', href: '/dashboard/admin/teachers', index: 1 },
-          { label: '수업 관리', href: '/dashboard/admin/classes', index: 2 },
-        ];
+      // ADMIN 제거됨
       default:
         return [];
     }

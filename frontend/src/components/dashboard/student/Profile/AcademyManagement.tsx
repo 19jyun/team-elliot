@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Academy } from '@/api/academy';
+// 역할 분리: 타입은 로컬 정의 또는 적절한 타입에서 가져오기
+type Academy = { id: number; name: string };
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

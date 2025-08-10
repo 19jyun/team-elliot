@@ -28,6 +28,26 @@ export const getPrincipalAllClasses = async () => {
   return response.data;
 };
 
+// Principal의 클래스 생성
+export const createPrincipalClass = async (data: {
+  className: string;
+  description: string;
+  maxStudents: number;
+  tuitionFee: number;
+  teacherId: number;
+  academyId: number;
+  dayOfWeek: string;
+  level: string;
+  startDate: string;
+  endDate: string;
+  startTime: string;
+  endTime: string;
+  backgroundColor?: string;
+}) => {
+  const response = await axiosInstance.post("/principal/classes", data);
+  return response.data;
+};
+
 // 4. Principal의 학원에 속한 모든 선생님 조회
 export const getPrincipalAllTeachers = async () => {
   const response = await axiosInstance.get("/principal/teachers");
@@ -56,6 +76,58 @@ export const getPrincipalAllRefundRequests = async () => {
 export const getPrincipalSessionEnrollments = async (sessionId: number) => {
   const response = await axiosInstance.get(
     `/principal/sessions/${sessionId}/enrollments`
+  );
+  return response.data;
+};
+
+// === Principal 세션 컨텐츠 관리 API ===
+export const getSessionContents = async (sessionId: number) => {
+  const response = await axiosInstance.get(
+    `/principal/sessions/${sessionId}/contents`
+  );
+  return response.data;
+};
+
+export const addSessionContent = async (
+  sessionId: number,
+  data: { poseId: number; note?: string }
+) => {
+  const response = await axiosInstance.post(
+    `/principal/sessions/${sessionId}/contents`,
+    data
+  );
+  return response.data;
+};
+
+export const updateSessionContent = async (
+  sessionId: number,
+  contentId: number,
+  data: { poseId?: number; note?: string }
+) => {
+  const response = await axiosInstance.put(
+    `/principal/sessions/${sessionId}/contents/${contentId}`,
+    data
+  );
+  return response.data;
+};
+
+export const deleteSessionContent = async (
+  sessionId: number,
+  contentId: number
+) => {
+  const response = await axiosInstance.delete(
+    `/principal/sessions/${sessionId}/contents/${contentId}`
+  );
+  return response.data;
+};
+
+export const reorderSessionContents = async (
+  sessionId: number,
+  data: { orderedContentIds: number[] }
+) => {
+  const response = await axiosInstance.put(
+    `/principal/sessions/${sessionId}/contents/reorder`,
+    data
   );
   return response.data;
 };

@@ -74,6 +74,8 @@ export function logFocusTransition(
   reason?: string
 ): void {
   if (process.env.NODE_ENV === "development") {
+    // eslint-disable-next-line no-console
+    console.debug(
       `[Focus] ${FOCUS_DESCRIPTIONS[from]} → ${FOCUS_DESCRIPTIONS[to]}${
         reason ? ` (${reason})` : ""
       }`

@@ -6,10 +6,7 @@ import {
   updatePrincipalEnrollmentFromSocket,
   updatePrincipalRefundRequestFromSocket,
 } from "@/store/slices/principalSlice";
-import {
-  updateTeacherEnrollmentFromSocket,
-  updateTeacherSessionFromSocket,
-} from "@/store/slices/teacherSlice";
+import { updateTeacherEnrollmentFromSocket } from "@/store/slices/teacherSlice";
 import {
   updateStudentEnrollmentFromSocket,
   updateStudentCancellationFromSocket,
@@ -123,25 +120,7 @@ const roleEventHandlers = {
       });
     },
   },
-  ADMIN: {
-    enrollment_status_changed: (dispatch: any, data: any) => {
-      toast.info("수강신청 상태가 변경되었습니다.");
-    },
-    refund_request_status_changed: (dispatch: any, data: any) => {
-      toast.info("환불 요청 상태가 변경되었습니다.");
-    },
-    class_info_changed: (dispatch: any, data: any) => {
-      toast.info("클래스 정보가 업데이트되었습니다.");
-    },
-    academy_info_changed: (dispatch: any, data: any) => {
-      toast.info("학원 정보가 업데이트되었습니다.");
-    },
-    connection_confirmed: (dispatch: any, data: any) => {
-      toast.success("실시간 연결이 설정되었습니다.", {
-        description: "이제 실시간 업데이트를 받을 수 있습니다.",
-      });
-    },
-  },
+  // ADMIN 제거됨
 };
 
 export function useRoleBasedSocketListener() {

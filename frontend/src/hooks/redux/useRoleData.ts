@@ -1,23 +1,13 @@
 import { useAppSelector } from "@/store/hooks";
 import { useMemo } from "react";
-import type {
-  PrincipalData,
-  StudentData,
-  TeacherData,
-  AdminData,
-} from "@/store/types";
+import type { PrincipalData, StudentData, TeacherData } from "@/store/types";
 
 // 역할별 데이터를 동적으로 가져오는 범용 훅
 export function useRoleData() {
-  const {
-    user,
-    principalData,
-    studentData,
-    teacherData,
-    adminData,
-    isLoading,
-    error,
-  } = useAppSelector((state) => state.appData);
+  const { user, isLoading, error } = useAppSelector((state) => state.common);
+  const principalData = useAppSelector((state) => state.principal.data);
+  const studentData = useAppSelector((state) => state.student.data);
+  const teacherData = useAppSelector((state) => state.teacher.data);
 
   const roleData = useMemo(() => {
     switch (user?.role) {
@@ -27,12 +17,10 @@ export function useRoleData() {
         return studentData;
       case "TEACHER":
         return teacherData;
-      case "ADMIN":
-        return adminData;
       default:
         return null;
     }
-  }, [user?.role, principalData, studentData, teacherData, adminData]);
+  }, [user?.role, principalData, studentData, teacherData]);
 
   return {
     roleData,
@@ -57,6 +45,4 @@ export function isTeacherData(data: any): data is TeacherData {
   return data && "profile" in data;
 }
 
-export function isAdminData(data: any): data is AdminData {
-  return data && "students" in data && "teachers" in data;
-}
+// ADMIN 제거됨

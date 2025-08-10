@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { updateTeacherProfile, updateTeacherProfilePhoto, getTeacherProfileById } from '@/api/teacher';
 import { UpdateProfileRequest, TeacherProfileResponse } from '@/types/api/teacher';
 import { toast } from 'sonner';
 import { getImageUrl } from '@/utils/imageUtils';
@@ -60,9 +59,10 @@ export function TeacherProfileCard({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 특정 선생님 프로필을 조회하는 경우를 위한 상태
-  const [specificTeacherProfile, setSpecificTeacherProfile] = useState<TeacherProfileResponse | null>(null);
-  const [isLoadingSpecific, setIsLoadingSpecific] = useState(false);
-  const [errorSpecific, setErrorSpecific] = useState<string | null>(null);
+  // 특정 ID 조회 기능은 학생용 컴포넌트로 분리됨
+  const [specificTeacherProfile] = useState<TeacherProfileResponse | null>(null);
+  const [isLoadingSpecific] = useState(false);
+  const [errorSpecific] = useState<string | null>(null);
 
   // API 기반 데이터 관리 (현재 로그인한 선생님용)
   const { profile, loadProfile, isLoading, error, isTeacher } = useTeacherApi();
@@ -76,31 +76,15 @@ export function TeacherProfileCard({
   const currentError = teacherId ? errorSpecific : error;
 
   // 특정 선생님 프로필 로드
-  const loadSpecificTeacherProfile = async () => {
-    if (!teacherId) return;
-    
-    try {
-      setIsLoadingSpecific(true);
-      setErrorSpecific(null);
-      const data = await getTeacherProfileById(teacherId);
-      setSpecificTeacherProfile(data);
-    } catch (err: any) {
-      setErrorSpecific(err.response?.data?.message || "선생님 프로필 로드 실패");
-    } finally {
-      setIsLoadingSpecific(false);
-    }
-  };
+  const loadSpecificTeacherProfile = async () => {};
 
   // 컴포넌트 마운트 시 프로필 로드
   useEffect(() => {
-    if (teacherId) {
-      // 특정 선생님 프로필 조회
-      loadSpecificTeacherProfile();
-    } else if (isTeacher && !profile) {
+    if (isTeacher && !profile) {
       // 현재 로그인한 선생님 프로필 조회
       loadProfile();
     }
-  }, [teacherId, isTeacher, profile]);
+  }, [isTeacher, profile]);
 
   // 편집 가능 여부 결정
   // 1. isEditable이 false이거나
@@ -109,8 +93,9 @@ export function TeacherProfileCard({
   const canEdit = isEditable && isCurrentTeacher;
 
   // 프로필 업데이트 뮤테이션
+  const teacherApi = useTeacherApi();
   const updateProfileMutation = useMutation({
-    mutationFn: updateTeacherProfile,
+    mutationFn: teacherApi.updateProfile,
     onSuccess: () => {
       // API 데이터 다시 로드
       loadProfile();
@@ -126,7 +111,7 @@ export function TeacherProfileCard({
 
   // 사진 업로드 뮤테이션
   const updatePhotoMutation = useMutation({
-    mutationFn: updateTeacherProfilePhoto,
+    mutationFn: teacherApi.updateProfilePhoto,
     onSuccess: () => {
       // API 데이터 다시 로드
       loadProfile();

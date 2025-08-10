@@ -1,61 +1,51 @@
 import { apiClient } from "./apiClient";
-import {
+import type {
   CreateRefundRequestDto,
-  ProcessRefundRequestDto,
-  RefundRequestResponse,
-  RefundRequestListResponse,
-  GetRefundRequestsParams,
-  RefundStatistics,
-  CreateRefundRequestResponse,
   CancelRefundRequestResponse,
+  CreateRefundRequestResponse,
+  RefundRequestListResponse,
+  RefundRequestResponse,
+  RefundStatistics,
+  ProcessRefundRequestDto,
   ProcessRefundRequestResponse,
+  GetRefundRequestsParams,
 } from "@/types/api/refund";
 
-// 환불 API 클라이언트
+// 학생/원장 호환용 Refund API (기존 컴포넌트 유지 목적)
 export const refundApi = {
-  // 환불 요청 생성
   createRefundRequest: (
     data: CreateRefundRequestDto
   ): Promise<CreateRefundRequestResponse> => {
     return apiClient.post("/refunds/request", data);
   },
 
-  // 환불 요청 취소
   cancelRefundRequest: (
     refundRequestId: number
   ): Promise<CancelRefundRequestResponse> => {
     return apiClient.delete(`/refunds/request/${refundRequestId}`);
   },
 
-  // 환불 요청 처리 (관리자/강사용)
-  processRefundRequest: (
-    data: ProcessRefundRequestDto
-  ): Promise<ProcessRefundRequestResponse> => {
-    return apiClient.put("/refunds/process", data);
-  },
-
-  // 학생별 환불 요청 목록 조회
+  // 학생 전용 목록
   getStudentRefundRequests: (
     params?: GetRefundRequestsParams
   ): Promise<{ data: RefundRequestListResponse }> => {
     return apiClient.get("/refunds/student", { params });
   },
 
-  // 전체 환불 요청 목록 조회 (관리자/강사용)
+  // 원장 전용 목록
   getAllRefundRequests: (
     params?: GetRefundRequestsParams
   ): Promise<{ data: RefundRequestListResponse }> => {
     return apiClient.get("/refunds/all", { params });
   },
 
-  // 환불 요청 상세 조회
   getRefundRequest: (
     refundRequestId: number
   ): Promise<{ data: RefundRequestResponse }> => {
     return apiClient.get(`/refunds/${refundRequestId}`);
   },
 
-  // 환불 통계 조회 (관리자/강사용)
+  // 통계(선택적): 백엔드에 없으면 사용 안 함
   getRefundStatistics: (
     startDate?: string,
     endDate?: string
@@ -64,5 +54,12 @@ export const refundApi = {
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
     return apiClient.get("/refunds/statistics", { params });
+  },
+
+  // 처리 로직(선택적): 백엔드에 process 엔드포인트가 없으면 미사용
+  processRefundRequest: (
+    data: ProcessRefundRequestDto
+  ): Promise<ProcessRefundRequestResponse> => {
+    return apiClient.put("/refunds/process", data);
   },
 };

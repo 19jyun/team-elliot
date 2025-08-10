@@ -2524,6 +2524,14 @@ export class ClassSessionService {
       },
     });
 
+    // 세션 현재 학생 수 증가 (PENDING -> CONFIRMED)
+    await this.updateSessionCurrentStudents(
+      enrollment.sessionId,
+      'PENDING',
+      'CONFIRMED',
+      enrollmentId,
+    );
+
     // 소켓 알림: 수강신청 승인
     try {
       this.socketGateway.notifyEnrollmentAccepted(

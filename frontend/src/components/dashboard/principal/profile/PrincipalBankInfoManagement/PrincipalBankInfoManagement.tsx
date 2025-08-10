@@ -7,9 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { Building, CreditCard, Edit, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { updatePrincipalProfile as updatePrincipalProfileApi } from '@/api/principal';
-import { UpdatePrincipalProfileRequest } from '@/types/api/principal';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
+import { UpdatePrincipalProfileRequest } from '@/types/api/principal';
 
 export function PrincipalBankInfoManagement() {
   const [isEditing, setIsEditing] = useState(false);
@@ -57,6 +56,7 @@ export function PrincipalBankInfoManagement() {
     });
   };
 
+  const { updateProfile } = usePrincipalApi();
   const handleSave = async () => {
     if (!editedInfo.bankName?.trim()) {
       toast.error('은행명을 입력해주세요.');
@@ -75,7 +75,7 @@ export function PrincipalBankInfoManagement() {
 
     try {
       setIsLoading(true);
-      await updatePrincipalProfileApi(editedInfo);
+      await updateProfile(editedInfo);
       
       // API 데이터 다시 로드
       loadProfile();

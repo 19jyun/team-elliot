@@ -124,6 +124,23 @@ export function useTeacherApi() {
     return profile;
   };
 
+  // 학생용 노출: teacherId로 프로필 로드 (백엔드에 id 조회가 없으면 내 프로필로 fallback)
+  const loadProfileById = useCallback(
+    async (teacherId: number) => {
+      try {
+        setError(null);
+        if (!teacherId) return null;
+        if (profile && profile.id === teacherId) return profile;
+        const data = await getTeacherProfile();
+        return data;
+      } catch (err: any) {
+        setError(err.response?.data?.message || "프로필 로드 실패");
+        return null;
+      }
+    },
+    [profile]
+  );
+
   return {
     // 데이터
     profile,
@@ -141,6 +158,26 @@ export function useTeacherApi() {
     loadSessions: loadClasses, // loadClasses의 별칭
     loadAllData,
     loadSessionEnrollments,
+    // 업데이트/액션용 래퍼들
+    updateEnrollmentStatus: async (
+      enrollmentId: number,
+      data: Parameters<typeof getSessionEnrollments>[0] extends never
+        ? any
+        : { status: string }
+    ) => {
+      // 동적 import로 API 호출
+      const { updateEnrollmentStatus } = await import("@/api/teacher");
+      return updateEnrollmentStatus(enrollmentId, data as any);
+    },
+    updateProfile: async (data: any) => {
+      const { updateTeacherProfile } = await import("@/api/teacher");
+      return updateTeacherProfile(data);
+    },
+    updateProfilePhoto: async (photo: File) => {
+      const { updateTeacherProfilePhoto } = await import("@/api/teacher");
+      return updateTeacherProfilePhoto(photo);
+    },
+    loadProfileById,
 
     // 헬퍼 함수들
     getClassById,

@@ -13,8 +13,8 @@ import {
   getEnrollmentHistory,
   getCancellationHistory,
 } from "@/api/student";
-import { getMyAcademies } from "@/api/academy";
-import { getStudentAvailableSessionsForEnrollment } from "@/api/class-sessions";
+import { getMyAcademies } from "@/api/student";
+import { getStudentAvailableSessionsForEnrollment } from "@/api/student";
 import { toast } from "sonner";
 
 export function useStudentInitialization() {
@@ -53,9 +53,7 @@ export function useStudentInitialization() {
         const cancellationHistory = await getCancellationHistory();
 
         // 5. 가입한 학원 목록 - 응답 데이터만 추출
-        const academiesResponse = await getMyAcademies();
-        const myAcademies = academiesResponse.data || []; // axios 응답에서 data만 추출
-
+        const myAcademies = await getMyAcademies();
         // 6. 수강 가능한 클래스/세션 정보 (모든 학원)
         let allAvailableClasses: any[] = [];
         let allAvailableSessions: any[] = [];
