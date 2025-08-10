@@ -15,7 +15,7 @@ import { ClassService } from './class.service';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CreateClassDto } from '../admin/dto/create-class.dto';
+import { CreateClassDto } from '../types/class.types';
 import { UpdateClassStatusDto } from './dto/update-class-status.dto';
 import { Role } from '@prisma/client';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -43,20 +43,20 @@ export class ClassController {
   }
 
   @Post()
-  @Roles(Role.ADMIN)
+  @Roles(Role.PRINCIPAL)
   async createClass(@Body() data: CreateClassDto) {
     // DTO에서 이미 UTC ISO 문자열로 변환된 데이터를 그대로 사용
     return this.classService.createClass(data);
   }
 
   @Put(':id')
-  @Roles(Role.TEACHER, Role.ADMIN)
+  @Roles(Role.PRINCIPAL)
   async updateClass(@Param('id', ParseIntPipe) id: number, @Body() data: any) {
     return this.classService.updateClass(id, data);
   }
 
   @Put(':id/details')
-  @Roles(Role.TEACHER, Role.ADMIN)
+  @Roles(Role.PRINCIPAL)
   @ApiOperation({ summary: '클래스 상세 정보 수정' })
   @ApiResponse({ status: 200, description: '클래스 상세 정보 수정 성공' })
   async updateClassDetails(
@@ -75,13 +75,13 @@ export class ClassController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.PRINCIPAL)
   async deleteClass(@Param('id', ParseIntPipe) id: number) {
     return this.classService.deleteClass(id);
   }
 
   @Put(':id/status')
-  @Roles(Role.TEACHER)
+  @Roles(Role.PRINCIPAL)
   @ApiOperation({ summary: '강의 상태 변경 (승인/거절)' })
   @ApiResponse({ status: 200, description: '강의 상태 변경 성공' })
   async updateClassStatus(
@@ -98,7 +98,7 @@ export class ClassController {
   }
 
   @Get('academy/draft')
-  @Roles(Role.TEACHER)
+  @Roles(Role.PRINCIPAL)
   @ApiOperation({ summary: '학원의 DRAFT 상태 강의 목록 조회' })
   @ApiResponse({ status: 200, description: 'DRAFT 상태 강의 목록 조회 성공' })
   async getDraftClasses(@CurrentUser() user: any) {
@@ -116,7 +116,7 @@ export class ClassController {
   }
 
   @Get('academy/active')
-  @Roles(Role.TEACHER)
+  @Roles(Role.PRINCIPAL)
   @ApiOperation({ summary: '학원의 활성 강의 목록 조회' })
   @ApiResponse({ status: 200, description: '활성 강의 목록 조회 성공' })
   async getActiveClasses(@CurrentUser() user: any) {
@@ -143,7 +143,7 @@ export class ClassController {
   }
 
   @Delete(':id/enroll')
-  @Roles(Role.STUDENT, Role.ADMIN)
+  @Roles(Role.STUDENT)
   async unenrollClass(
     @Param('id', ParseIntPipe) classId: number,
     @Body('studentId', ParseIntPipe) studentId: number,
@@ -175,13 +175,13 @@ export class ClassController {
   }
 
   @Post(':id/generate-sessions')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.PRINCIPAL)
   async generateSessionsForClass(@Param('id', ParseIntPipe) classId: number) {
     return this.classService.generateSessionsForExistingClass(classId);
   }
 
   @Post(':id/generate-sessions/period')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.PRINCIPAL)
   async generateSessionsForPeriod(
     @Param('id', ParseIntPipe) classId: number,
     @Body() data: { startDate: string; endDate: string },

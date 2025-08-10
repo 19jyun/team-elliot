@@ -382,7 +382,7 @@ export class ClassService {
       throw new NotFoundException('강의를 찾을 수 없습니다.');
     }
 
-    // 권한 확인 (OWNER/ADMIN만 상태 변경 가능)
+    // 권한 확인 (PRINCIPAL만 상태 변경 가능)
     const isPrincipal = classInfo.academy.principal?.id === teacherId;
 
     if (!isPrincipal) {
@@ -885,5 +885,38 @@ export class ClassService {
     return {
       message: '지정된 기간의 클래스 세션이 성공적으로 생성되었습니다.',
     };
+  }
+
+  // Principal의 학원 모든 클래스 조회
+  async getPrincipalClasses(principalId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      include: {
+        academy: {
+          include: {
+            classes: {
+              include: {
+                teacher: true,
+                classSessions: {
+                  include: {
+                    enrollments: {
+                      include: {
+                        student: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal not found');
+    }
+
+    return principal.academy.classes;
   }
 }

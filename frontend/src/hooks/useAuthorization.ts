@@ -1,14 +1,23 @@
-import { useSession } from 'next-auth/react';
-import { ROLE_PERMISSIONS, PERMISSION_DESCRIPTIONS, Permission, UserRole } from '@/types/auth';
+import { useSession } from "next-auth/react";
+import {
+  ROLE_PERMISSIONS,
+  PERMISSION_DESCRIPTIONS,
+  Permission,
+  UserRole,
+} from "@/types/auth";
 
 export const useAuthorization = () => {
   const { data: session, status } = useSession();
   const userRole = session?.user?.role;
 
   const hasPermission = (permission: Permission): boolean => {
-    if (status === 'loading') return false;
+    if (status === "loading") return false;
     if (!session || !userRole) return false;
-    return ROLE_PERMISSIONS[userRole].includes(permission);
+    const key = (
+      userRole as string
+    ).toLowerCase() as keyof typeof ROLE_PERMISSIONS;
+    const permissions = ROLE_PERMISSIONS[key] ?? [];
+    return (permissions as readonly Permission[]).includes(permission);
   };
 
   const hasAllPermissions = (permissions: Permission[]): boolean => {
@@ -25,17 +34,21 @@ export const useAuthorization = () => {
 
   const getUserPermissions = (): Permission[] => {
     if (!userRole) return [];
-    return ROLE_PERMISSIONS[userRole];
+    const key = (
+      userRole as string
+    ).toLowerCase() as keyof typeof ROLE_PERMISSIONS;
+    return [...(ROLE_PERMISSIONS[key] ?? [])] as Permission[];
   };
 
-  const isRole = (role: UserRole): boolean => userRole === role;
-  const isAdmin = (): boolean => isRole('admin');
-  const isTeacher = (): boolean => isRole('teacher');
-  const isStudent = (): boolean => isRole('student');
+  const isRole = (role: UserRole): boolean =>
+    (userRole as string)?.toLowerCase() === role;
+  const isAdmin = (): boolean => false; // ADMIN 제거됨
+  const isTeacher = (): boolean => isRole("TEACHER");
+  const isStudent = (): boolean => isRole("STUDENT");
 
   const getAuthorizationError = (permission: Permission): string | null => {
-    if (status === 'loading') return '권한을 확인하는 중입니다...';
-    if (!session) return '로그인이 필요합니다.';
+    if (status === "loading") return "권한을 확인하는 중입니다...";
+    if (!session) return "로그인이 필요합니다.";
     if (!hasPermission(permission)) {
       return `${PERMISSION_DESCRIPTIONS[permission]} 권한이 없습니다.`;
     }
@@ -53,7 +66,7 @@ export const useAuthorization = () => {
     isStudent,
     userRole,
     isAuthenticated: !!session,
-    isLoading: status === 'loading',
+    isLoading: status === "loading",
     getAuthorizationError,
   };
 };

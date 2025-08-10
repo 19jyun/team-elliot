@@ -3,26 +3,12 @@ import {
   TeacherProfileResponse,
   UpdateProfileRequest,
   UpdateProfileResponse,
-  TeacherClassesResponse,
   TeacherClassesWithSessionsResponse,
   SessionEnrollmentsResponse,
   UpdateEnrollmentStatusRequest,
   UpdateEnrollmentStatusResponse,
   BatchUpdateEnrollmentStatusRequest,
   BatchUpdateEnrollmentStatusResponse,
-  UpdateClassDetailsRequest,
-  UpdateClassDetailsResponse,
-  Academy,
-  CreateAcademyRequest,
-  ChangeAcademyRequest,
-  CreateAndJoinAcademyRequest,
-  CreateAndJoinAcademyResponse,
-  UpdateAcademyRequest,
-  LeaveAcademyResponse,
-  RequestJoinAcademyRequest,
-  RequestJoinAcademyResponse,
-  TeacherDataResponse,
-  Principal,
 } from "@/types/api/teacher";
 
 // 프로필 관련 API
@@ -31,17 +17,7 @@ export const getTeacherProfile = async (): Promise<TeacherProfileResponse> => {
   return response.data;
 };
 
-export const getTeacherProfileById = async (
-  teacherId?: number
-): Promise<TeacherProfileResponse> => {
-  if (teacherId) {
-    const response = await axiosInstance.get(`/teachers/${teacherId}/profile`);
-    return response.data;
-  } else {
-    const response = await axiosInstance.get("/teachers/me");
-    return response.data;
-  }
-};
+// ID 기반 조회는 백엔드 미지원 → 제거
 
 export const updateTeacherProfile = async (
   data: UpdateProfileRequest
@@ -69,10 +45,7 @@ export const updateTeacherProfilePhoto = async (
 };
 
 // 클래스 관련 API
-export const getTeacherClasses = async (): Promise<TeacherClassesResponse> => {
-  const response = await axiosInstance.get("/teachers/me/classes");
-  return response.data;
-};
+// 교사용: 내 클래스 및 세션 묶음 조회
 
 export const getTeacherClassesWithSessions =
   async (): Promise<TeacherClassesWithSessionsResponse> => {
@@ -113,23 +86,15 @@ export const batchUpdateEnrollmentStatus = async (
   return response.data;
 };
 
-export const updateClassDetails = async (
-  classId: number,
-  data: UpdateClassDetailsRequest
-): Promise<UpdateClassDetailsResponse> => {
-  const response = await axiosInstance.put(`/classes/${classId}`, data);
-  return response.data;
-};
+// 클래스 상세 수정은 원장 전용 → 제거
 
-// 학원 관련 API
-export const getMyAcademy = async (): Promise<Academy | null> => {
+// 학원 관련 API (교사용)
+export const getMyAcademy = async (): Promise<any | null> => {
   const response = await axiosInstance.get("/teachers/me/academy");
   return response.data;
 };
 
-export const changeAcademy = async (
-  data: ChangeAcademyRequest
-): Promise<Academy> => {
+export const changeAcademy = async (data: { code: string }): Promise<any> => {
   const response = await axiosInstance.post(
     "/teachers/me/change-academy",
     data
@@ -137,64 +102,22 @@ export const changeAcademy = async (
   return response.data;
 };
 
-export const createAcademy = async (
-  data: CreateAcademyRequest
-): Promise<Academy> => {
-  const response = await axiosInstance.post(
-    "/teachers/me/create-academy",
-    data
-  );
-  return response.data;
-};
+// 백엔드 미지원: 학원 생성/생성+가입 API 제거
 
-export const createAndJoinAcademy = async (
-  data: CreateAndJoinAcademyRequest
-): Promise<CreateAndJoinAcademyResponse> => {
-  const response = await axiosInstance.post(
-    "/teachers/me/create-and-join-academy",
-    data
-  );
-  return response.data;
-};
+// 백엔드 미지원: 학원 수정 제거
 
-export const updateAcademy = async (
-  data: UpdateAcademyRequest
-): Promise<Academy> => {
-  const response = await axiosInstance.put("/teachers/me/academy", data);
-  return response.data;
-};
-
-export const leaveAcademy = async (): Promise<LeaveAcademyResponse> => {
+export const leaveAcademy = async (): Promise<any> => {
   const response = await axiosInstance.post("/teachers/me/leave-academy");
   return response.data;
 };
 
-export const requestJoinAcademy = async (
-  data: RequestJoinAcademyRequest
-): Promise<RequestJoinAcademyResponse> => {
+export const requestJoinAcademy = async (data: {
+  code: string;
+}): Promise<any> => {
   const response = await axiosInstance.post(
     "/teachers/me/request-join-academy",
     data
   );
   return response.data;
 };
-
-// 학원 선생님 목록 조회
-export const getAcademyTeachers = async (): Promise<any[]> => {
-  const response = await axiosInstance.get("/teachers/academy");
-  return response.data;
-};
-
-// === Teacher Dashboard Redux 데이터 초기화용 API ===
-
-// TeacherData 전체 초기화 (Redux용)
-export const getTeacherData = async (): Promise<TeacherDataResponse> => {
-  const response = await axiosInstance.get("/teachers/me/data");
-  return response.data;
-};
-
-// 학원 원장 정보 조회
-export const getTeacherAcademyPrincipal = async (): Promise<Principal> => {
-  const response = await axiosInstance.get("/teachers/me/academy/principal");
-  return response.data;
-};
+// 백엔드 미지원: 학원 선생 목록/원장 정보/Redux 초기화 API 제거

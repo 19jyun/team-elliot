@@ -1,56 +1,15 @@
-import { get, post, del } from "./apiClient";
-import {
-  GetStudentsResponse,
-  GetTeachersResponse,
-  GetClassesResponse,
-  GetWithdrawalStatsResponse,
-  CreateStudentRequest,
-  CreateStudentResponse,
-  CreateTeacherRequest,
-  CreateTeacherResponse,
-  CreateClassRequest,
-  CreateClassResponse,
-  ResetStudentPasswordRequest,
-  ResetStudentPasswordResponse,
-} from "../types/api/admin";
+import { post } from "./apiClient";
 
-export const getStudents = (): Promise<GetStudentsResponse> =>
-  get("/admin/students");
-export const getTeachers = (): Promise<GetTeachersResponse> =>
-  get("/admin/teachers");
-export const getClasses = (): Promise<GetClassesResponse> =>
-  get("/admin/classes");
-export const getWithdrawalStats = (): Promise<GetWithdrawalStatsResponse> =>
-  get("/admin/withdrawal-stats");
-export const createStudent = (
-  data: CreateStudentRequest
-): Promise<CreateStudentResponse> => post("/admin/students", data);
-export const createTeacher = (
-  data: CreateTeacherRequest
-): Promise<CreateTeacherResponse> => post("/admin/teachers", data);
-export const createClass = (
-  data: CreateClassRequest
-): Promise<CreateClassResponse> => post("/admin/classes", data);
-export const deleteStudent = (id: number): Promise<void> =>
-  del(`/admin/students/${id}`);
-export const deleteTeacher = (id: number): Promise<void> =>
-  del(`/admin/teachers/${id}`);
-export const deleteClass = (id: number): Promise<void> =>
-  del(`/admin/classes/${id}`);
-export const resetStudentPassword = (
-  id: number,
-  data: ResetStudentPasswordRequest
-): Promise<ResetStudentPasswordResponse> =>
-  post(`/admin/students/${id}/reset-password`, data);
+// 임시 호환용: 관리자 기능 제거 후 남은 호출을 /auth/signup으로 위임
+// 새 흐름에서는 선생님이 직접 회원가입하거나(역할: TEACHER), 원장은 코드를 공유해 초대합니다.
 
-// 클래스 세션 생성 관련 API
-export const generateSessionsForClass = (
-  classId: number
-): Promise<{ message: string }> =>
-  post(`/classes/${classId}/generate-sessions`);
+type CreateTeacherRequest = {
+  name: string;
+  userId: string;
+  password: string;
+  phoneNumber?: string;
+  introduction?: string;
+};
 
-export const generateSessionsForPeriod = (
-  classId: number,
-  data: { startDate: string; endDate: string }
-): Promise<{ message: string }> =>
-  post(`/classes/${classId}/generate-sessions/period`, data);
+export const createTeacher = (data: CreateTeacherRequest) =>
+  post("/auth/signup", { ...data, role: "TEACHER" });

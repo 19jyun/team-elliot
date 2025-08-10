@@ -47,7 +47,7 @@ export class BalletPoseController {
   }
 
   @Post()
-  @Roles(Role.ADMIN)
+  @Roles(Role.PRINCIPAL)
   @UseInterceptors(FileInterceptor('image', balletPoseConfig))
   @ApiOperation({ summary: '발레 자세 생성' })
   @ApiResponse({ status: 201, description: '발레 자세 생성 성공' })
@@ -59,7 +59,7 @@ export class BalletPoseController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.PRINCIPAL)
   @UseInterceptors(FileInterceptor('image', balletPoseConfig))
   @ApiOperation({ summary: '발레 자세 수정' })
   @ApiResponse({ status: 200, description: '발레 자세 수정 성공' })
@@ -72,7 +72,7 @@ export class BalletPoseController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.PRINCIPAL)
   @ApiOperation({ summary: '발레 자세 삭제' })
   @ApiResponse({ status: 200, description: '발레 자세 삭제 성공' })
   async remove(@Param('id', ParseIntPipe) id: number) {

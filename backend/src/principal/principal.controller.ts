@@ -78,7 +78,7 @@ export class PrincipalController {
 
   // Principal의 은행 정보 조회 (학생이 결제 시 사용)
   @Get('bank-info')
-  @Roles(Role.STUDENT, Role.TEACHER, Role.PRINCIPAL, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.PRINCIPAL)
   async getPrincipalBankInfo(@GetUser() user: any) {
     return this.principalService.getPrincipalBankInfo(user.id);
   }

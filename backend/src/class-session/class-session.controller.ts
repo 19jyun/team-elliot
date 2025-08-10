@@ -36,7 +36,7 @@ export class ClassSessionController {
    * 클래스 세션 생성
    */
   @Post()
-  @Roles(Role.TEACHER, Role.ADMIN)
+  @Roles(Role.TEACHER)
   @ApiOperation({ summary: '클래스 세션 생성' })
   @ApiResponse({ status: 201, description: '세션 생성 성공' })
   async createClassSession(
@@ -56,7 +56,7 @@ export class ClassSessionController {
    * 클래스 세션 수정
    */
   @Put(':sessionId')
-  @Roles(Role.TEACHER, Role.ADMIN)
+  @Roles(Role.TEACHER)
   @ApiOperation({ summary: '클래스 세션 수정' })
   @ApiResponse({ status: 200, description: '세션 수정 성공' })
   async updateClassSession(
@@ -80,7 +80,7 @@ export class ClassSessionController {
    * 클래스 세션 삭제
    */
   @Delete(':sessionId')
-  @Roles(Role.TEACHER, Role.ADMIN)
+  @Roles(Role.TEACHER)
   @ApiOperation({ summary: '클래스 세션 삭제' })
   @ApiResponse({ status: 200, description: '세션 삭제 성공' })
   async deleteClassSession(
@@ -96,7 +96,7 @@ export class ClassSessionController {
    * 선생님의 수강 신청 목록 조회
    */
   @Get('teacher/enrollments')
-  @Roles(Role.TEACHER, Role.ADMIN)
+  @Roles(Role.TEACHER)
   @ApiOperation({ summary: '선생님의 수강 신청 목록 조회' })
   @ApiResponse({ status: 200, description: '수강 신청 목록 조회 성공' })
   async getTeacherEnrollments(
@@ -125,7 +125,7 @@ export class ClassSessionController {
    * 개별 수강 신청 상태 업데이트 (승인/거부)
    */
   @Put('enrollments/:enrollmentId/status')
-  @Roles(Role.TEACHER, Role.ADMIN)
+  @Roles(Role.TEACHER)
   @ApiOperation({ summary: '수강 신청 상태 업데이트 (승인/거부)' })
   @ApiResponse({ status: 200, description: '상태 업데이트 성공' })
   async updateEnrollmentStatus(
@@ -144,7 +144,7 @@ export class ClassSessionController {
    * 배치 수강 신청 상태 업데이트
    */
   @Put('enrollments/batch-status')
-  @Roles(Role.TEACHER, Role.ADMIN)
+  @Roles(Role.TEACHER)
   @ApiOperation({ summary: '배치 수강 신청 상태 업데이트' })
   @ApiResponse({ status: 200, description: '배치 상태 업데이트 성공' })
   async batchUpdateEnrollmentStatus(
@@ -161,7 +161,7 @@ export class ClassSessionController {
    * 출석 체크
    */
   @Put('enrollments/:enrollmentId/attendance')
-  @Roles(Role.TEACHER, Role.ADMIN)
+  @Roles(Role.TEACHER)
   @ApiOperation({ summary: '출석 체크' })
   @ApiResponse({ status: 200, description: '출석 체크 성공' })
   async checkAttendance(
@@ -180,7 +180,7 @@ export class ClassSessionController {
    * 특정 세션의 수강생 목록 조회
    */
   @Get(':sessionId/enrollments')
-  @Roles(Role.TEACHER, Role.ADMIN)
+  @Roles(Role.TEACHER)
   @ApiOperation({ summary: '특정 세션의 수강생 목록 조회' })
   @ApiResponse({ status: 200, description: '세션별 수강생 목록 조회 성공' })
   async getSessionEnrollments(
@@ -194,7 +194,7 @@ export class ClassSessionController {
    * 수업 완료 처리 (스케줄러용)
    */
   @Post('complete-sessions')
-  @Roles(Role.ADMIN)
+  @Roles(Role.TEACHER)
   @ApiOperation({ summary: '수업 완료 처리 (스케줄러용)' })
   @ApiResponse({ status: 200, description: '수업 완료 처리 성공' })
   async completeSessions() {
@@ -270,7 +270,7 @@ export class ClassSessionController {
   // ===== 조회 API =====
 
   @Get('class/:classId')
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER)
   @ApiOperation({ summary: '클래스별 세션 목록 조회' })
   async getClassSessions(
     @Param('classId', ParseIntPipe) classId: number,

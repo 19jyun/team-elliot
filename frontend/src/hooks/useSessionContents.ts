@@ -1,11 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  getSessionContents,
-  addSessionContent,
-  updateSessionContent,
-  deleteSessionContent,
-  reorderSessionContents,
-} from "@/api/session-content";
+import axios from "@/lib/axios";
 import {
   CreateSessionContentRequest,
   UpdateSessionContentRequest,
@@ -17,7 +11,10 @@ import { toast } from "sonner";
 export const useSessionContents = (sessionId: number) => {
   return useQuery({
     queryKey: ["session-contents", sessionId],
-    queryFn: () => getSessionContents(sessionId),
+    queryFn: async () => {
+      const res = await axios.get(`/class-sessions/${sessionId}/contents`);
+      return res.data;
+    },
     enabled: !!sessionId,
     staleTime: 2 * 60 * 1000, // 2분
   });
@@ -28,8 +25,13 @@ export const useAddSessionContent = (sessionId: number) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: CreateSessionContentRequest) =>
-      addSessionContent(sessionId, data),
+    mutationFn: async (data: CreateSessionContentRequest) => {
+      const res = await axios.post(
+        `/class-sessions/${sessionId}/contents`,
+        data
+      );
+      return res.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["session-contents", sessionId],
@@ -54,7 +56,10 @@ export const useUpdateSessionContent = (sessionId: number) => {
     }: {
       contentId: number;
       data: UpdateSessionContentRequest;
-    }) => updateSessionContent(sessionId, contentId, data),
+    }) =>
+      axios
+        .patch(`/class-sessions/${sessionId}/contents/${contentId}`, data)
+        .then((r) => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["session-contents", sessionId],
@@ -74,7 +79,9 @@ export const useDeleteSessionContent = (sessionId: number) => {
 
   return useMutation({
     mutationFn: (contentId: number) =>
-      deleteSessionContent(sessionId, contentId),
+      axios
+        .delete(`/class-sessions/${sessionId}/contents/${contentId}`)
+        .then((r) => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["session-contents", sessionId],
@@ -93,8 +100,16 @@ export const useReorderSessionContents = (sessionId: number) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: ReorderSessionContentsRequest) =>
-      reorderSessionContents(sessionId, data),
+    mutationFn: async (data: ReorderSessionContentsRequest) => {
+      const ids =
+        (data as any).orderedContentIds ?? (data as any).contentIds ?? [];
+      const contentIds: string[] = (ids as Array<string | number>).map(String);
+      const res = await axios.patch(
+        `/class-sessions/${sessionId}/contents/reorder`,
+        { contentIds }
+      );
+      return res.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["session-contents", sessionId],

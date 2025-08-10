@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { getPrincipalStudentSessionHistory } from '@/api/principal';
+import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { format } from 'date-fns';
 import { CheckCircle, XCircle, AlertCircle, Clock } from 'lucide-react';
 import { SlideUpModal } from '@/components/common/SlideUpModal';
@@ -17,12 +17,13 @@ interface PrincipalStudentSessionHistoryModalProps {
 export function PrincipalStudentSessionHistoryModal({ student, onClose }: PrincipalStudentSessionHistoryModalProps) {
   const [history, setHistory] = useState<any[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { getStudentSessionHistory } = usePrincipalApi();
 
   useEffect(() => {
     const fetchHistory = async () => {
       setIsLoading(true);
       try {
-        const response = await getPrincipalStudentSessionHistory(student.id);
+        const response = await getStudentSessionHistory(Number(student.id));
         setHistory(response);
       } catch (error: any) {
         toast.error(error.response?.data?.message || '수강생 현황 조회에 실패했습니다.');

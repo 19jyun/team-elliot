@@ -12,12 +12,12 @@ describe('AuthService - Login', () => {
   let prismaService: PrismaService;
   let jwtService: JwtService;
 
-  const mockAdmin = {
+  const mockPrincipal = {
     id: 1,
-    userId: 'admin123',
-    password: 'hashed_admin123_password',
-    name: 'Admin User',
-    role: 'ADMIN',
+    userId: 'principal123',
+    password: 'hashed_principal123_password',
+    name: 'Principal User',
+    role: 'PRINCIPAL',
   };
   const mockTeacher = {
     id: 2,
@@ -57,16 +57,16 @@ describe('AuthService - Login', () => {
 
   describe('login', () => {
     describe('successful login scenarios', () => {
-      it('should successfully login admin with correct credentials', async () => {
-        const userId = 'admin123';
-        const password = 'admin123';
+      it('should successfully login principal with correct credentials', async () => {
+        const userId = 'principal123';
+        const password = 'principal123';
         const expectedToken = 'mock-jwt-token';
-        mockPrismaService.user.findFirst.mockResolvedValue(mockAdmin);
+        mockPrismaService.user.findFirst.mockResolvedValue(mockPrincipal);
         (bcrypt.compare as jest.Mock).mockResolvedValue(true);
         mockJwtService.sign.mockReturnValue(expectedToken);
         const result = await service.login(userId, password);
         expect(mockPrismaService.user.findFirst).toHaveBeenCalledWith({
-          where: { userId: userId, role: 'ADMIN' },
+          where: { userId: userId, role: 'PRINCIPAL' },
           select: {
             id: true,
             userId: true,
@@ -77,20 +77,20 @@ describe('AuthService - Login', () => {
         });
         expect(bcrypt.compare).toHaveBeenCalledWith(
           password,
-          mockAdmin.password,
+          mockPrincipal.password,
         );
         expect(mockJwtService.sign).toHaveBeenCalledWith({
-          userId: mockAdmin.userId,
-          sub: mockAdmin.id,
-          role: mockAdmin.role,
+          userId: mockPrincipal.userId,
+          sub: mockPrincipal.id,
+          role: mockPrincipal.role,
         });
         expect(result).toEqual({
           access_token: expectedToken,
           user: {
-            id: mockAdmin.id,
-            userId: mockAdmin.userId,
-            name: mockAdmin.name,
-            role: mockAdmin.role,
+            id: mockPrincipal.id,
+            userId: mockPrincipal.userId,
+            name: mockPrincipal.name,
+            role: mockPrincipal.role,
           },
         });
       });
@@ -159,9 +159,9 @@ describe('AuthService - Login', () => {
       });
     });
     describe('failed login scenarios', () => {
-      it('should throw UnauthorizedException for non-existent admin', async () => {
-        const userId = 'nonexistent_admin';
-        const password = 'admin123';
+      it('should throw UnauthorizedException for non-existent principal', async () => {
+        const userId = 'nonexistent_principal';
+        const password = 'principal123';
         mockPrismaService.user.findFirst.mockResolvedValue(null);
         mockPrismaService.teacher.findUnique.mockResolvedValue(null);
         mockPrismaService.student.findUnique.mockResolvedValue(null);
@@ -172,10 +172,10 @@ describe('AuthService - Login', () => {
           '아이디 또는 비밀번호가 올바르지 않습니다.',
         );
       });
-      it('should throw UnauthorizedException for admin with wrong password', async () => {
-        const userId = 'admin123';
+      it('should throw UnauthorizedException for principal with wrong password', async () => {
+        const userId = 'principal123';
         const password = 'wrong_password';
-        mockPrismaService.user.findFirst.mockResolvedValue(mockAdmin);
+        mockPrismaService.user.findFirst.mockResolvedValue(mockPrincipal);
         (bcrypt.compare as jest.Mock).mockResolvedValue(false);
         await expect(service.login(userId, password)).rejects.toThrow(
           UnauthorizedException,
@@ -213,7 +213,7 @@ describe('AuthService - Login', () => {
       });
       it('should throw UnauthorizedException for empty userId', async () => {
         const userId = '';
-        const password = 'admin123';
+        const password = 'principal123';
         mockPrismaService.user.findFirst.mockResolvedValue(null);
         mockPrismaService.teacher.findUnique.mockResolvedValue(null);
         mockPrismaService.student.findUnique.mockResolvedValue(null);
@@ -222,9 +222,9 @@ describe('AuthService - Login', () => {
         );
       });
       it('should throw UnauthorizedException for empty password', async () => {
-        const userId = 'admin123';
+        const userId = 'principal123';
         const password = '';
-        mockPrismaService.user.findFirst.mockResolvedValue(mockAdmin);
+        mockPrismaService.user.findFirst.mockResolvedValue(mockPrincipal);
         (bcrypt.compare as jest.Mock).mockResolvedValue(false);
         await expect(service.login(userId, password)).rejects.toThrow(
           UnauthorizedException,
@@ -233,17 +233,17 @@ describe('AuthService - Login', () => {
     });
     describe('edge cases', () => {
       it('should handle bcrypt comparison errors gracefully', async () => {
-        const userId = 'admin123';
-        const password = 'admin123';
-        mockPrismaService.user.findFirst.mockResolvedValue(mockAdmin);
+        const userId = 'principal123';
+        const password = 'principal123';
+        mockPrismaService.user.findFirst.mockResolvedValue(mockPrincipal);
         (bcrypt.compare as jest.Mock).mockRejectedValue(
           new Error('bcrypt error'),
         );
         await expect(service.login(userId, password)).rejects.toThrow(Error);
       });
       it('should handle database errors gracefully', async () => {
-        const userId = 'admin123';
-        const password = 'admin123';
+        const userId = 'principal123';
+        const password = 'principal123';
         mockPrismaService.user.findFirst.mockRejectedValue(
           new Error('Database connection error'),
         );

@@ -7,13 +7,20 @@ import {
   getSessionPaymentInfo,
   getCancellationHistory,
 } from "@/api/student";
-import { getAcademies, joinAcademy, leaveAcademy } from "@/api/academy";
+import { getAcademies, joinAcademy, leaveAcademy } from "@/api/student";
 import {
   getStudentAvailableSessionsForEnrollment,
   batchEnrollSessions,
   getClassSessionsForModification,
   batchModifyEnrollments,
-} from "@/api/class-sessions";
+} from "@/api/student";
+import { refundApi } from "@/api/refund";
+import type {
+  CreateRefundRequestDto,
+  CreateRefundRequestResponse,
+} from "@/types/api/refund";
+import type { ClassDetailsResponse } from "@/types/api/class";
+import axios from "@/lib/axios";
 
 // Student 대시보드에서 사용할 API 훅
 export function useStudentApi() {
@@ -62,7 +69,7 @@ export function useStudentApi() {
   const loadAcademies = useCallback(async () => {
     try {
       const data = await getAcademies();
-      setAcademies(data.data || []);
+      setAcademies(data);
     } catch (err) {
       console.error("학원 목록 로드 실패:", err);
       setError(
@@ -84,14 +91,16 @@ export function useStudentApi() {
       const sessions = data.sessions || [];
 
       // 세션에서 클래스 정보를 추출하여 중복 제거
-      const classMap = new Map();
-      sessions.forEach((session) => {
+      const classMap = new Map<number, any>();
+      sessions.forEach((session: any) => {
         if (session.class) {
           const classId = session.class.id;
           if (!classMap.has(classId)) {
             classMap.set(classId, {
               ...session.class,
-              availableSessions: sessions.filter((s) => s.classId === classId),
+              availableSessions: sessions.filter(
+                (s: any) => s.classId === classId
+              ),
             });
           }
         }
@@ -215,6 +224,25 @@ export function useStudentApi() {
     []
   );
 
+  // 환불 요청 생성 (학생용)
+  const createRefundRequest = useCallback(
+    async (
+      data: CreateRefundRequestDto
+    ): Promise<CreateRefundRequestResponse> => {
+      try {
+        const res = await refundApi.createRefundRequest(data);
+        return res;
+      } catch (err) {
+        console.error("환불 요청 생성 실패:", err);
+        setError(
+          err instanceof Error ? err.message : "환불 요청 생성에 실패했습니다."
+        );
+        throw err;
+      }
+    },
+    []
+  );
+
   // 사용자 프로필 로드 함수
   const loadUserProfile = useCallback(async () => {
     try {
@@ -230,12 +258,25 @@ export function useStudentApi() {
     }
   }, []);
 
-  // 사용자 프로필 업데이트 함수
+  // 사용자 프로필 업데이트 함수 (변경된 필드만 전송, 날짜 ISO 포맷 변환)
   const updateUserProfile = useCallback(
     async (profileData: any) => {
       try {
-        const result = await updateMyProfile(profileData);
-        // 업데이트 후 프로필 다시 로드
+        const sanitized: Record<string, any> = {};
+        Object.entries(profileData || {}).forEach(([key, value]) => {
+          if (value === "" || value === undefined || value === null) return;
+          if (key === "birthDate" && typeof value === "string") {
+            // 'YYYY-MM-DD' 입력을 ISO 8601 문자열로 변환
+            const date = new Date(value);
+            if (!isNaN(date.getTime())) {
+              sanitized[key] = date.toISOString();
+              return;
+            }
+          }
+          sanitized[key] = value;
+        });
+
+        const result = await updateMyProfile(sanitized);
         await loadUserProfile();
         return result;
       } catch (err) {
@@ -303,6 +344,14 @@ export function useStudentApi() {
       );
       throw err;
     }
+  }, []);
+
+  // 클래스 상세 조회 (학생 화면용)
+  const getClassDetails = useCallback(async (classId: number) => {
+    const res = await axios.get<ClassDetailsResponse>(
+      `/classes/${classId}/details`
+    );
+    return res.data;
   }, []);
 
   // 컴포넌트 마운트 시 데이터 로드
@@ -412,6 +461,8 @@ export function useStudentApi() {
     // 수강 변경
     loadModificationSessions,
     modifyEnrollments,
+    // 환불
+    createRefundRequest,
 
     // 프로필 관리
     loadUserProfile,
@@ -423,5 +474,8 @@ export function useStudentApi() {
 
     // 세션별 입금 정보
     loadSessionPaymentInfo,
+
+    // 클래스 상세
+    getClassDetails,
   };
 }

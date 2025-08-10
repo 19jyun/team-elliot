@@ -27,5 +27,6 @@ export interface UpdateSessionContentRequest {
 }
 
 export interface ReorderSessionContentsRequest {
-  contentIds: string[];
+  // 백엔드 DTO는 contentIds: string[] 요구
+  contentIds: Array<string | number>;
 }

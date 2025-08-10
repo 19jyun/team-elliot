@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { getClassDetails } from '@/api/class';
+// 역할 분리: 학생 화면에서 필요 시 별도 학생용 API로 대체 또는 서버 컴포넌트에서 주입
 import { ClassDetailsResponse } from '@/types/api/class';
 import { toast } from 'sonner';
 import cn from 'classnames';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { TeacherProfileCard } from '@/components/common/TeacherProfileCard';
+import { useStudentApi } from '@/hooks/student/useStudentApi';
 
 interface ClassDetailProps {
   classId: number;
@@ -33,6 +34,7 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
   const [classDetails, setClassDetails] = useState<ClassDetailsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { navigateToSubPage } = useDashboardNavigation();
+  const { getClassDetails } = useStudentApi();
 
   useEffect(() => {
     if (classId) {

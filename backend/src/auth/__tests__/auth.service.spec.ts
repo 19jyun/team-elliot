@@ -13,12 +13,12 @@ describe('AuthService', () => {
   let prismaService: PrismaService;
   let jwtService: JwtService;
 
-  const mockAdmin = {
+  const mockPrincipal = {
     id: 1,
-    userId: 'admin123',
-    password: 'hashed_admin123_password',
-    name: 'Admin User',
-    role: 'ADMIN',
+    userId: 'principal123',
+    password: 'hashed_principal123_password',
+    name: 'Principal User',
+    role: 'PRINCIPAL',
   };
 
   const mockTeacher = {
@@ -76,12 +76,12 @@ describe('AuthService', () => {
   });
 
   describe('validateUser', () => {
-    it('should validate admin user correctly', async () => {
+    it('should validate principal user correctly', async () => {
       // Arrange
-      const userId = 'admin123';
-      const password = 'admin123';
+      const userId = 'principal123';
+      const password = 'principal123';
 
-      mockPrismaService.user.findFirst.mockResolvedValue(mockAdmin);
+      mockPrismaService.user.findFirst.mockResolvedValue(mockPrincipal);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       // Act
@@ -89,10 +89,10 @@ describe('AuthService', () => {
 
       // Assert
       expect(result).toEqual({
-        id: mockAdmin.id,
-        userId: mockAdmin.userId,
-        name: mockAdmin.name,
-        role: mockAdmin.role,
+        id: mockPrincipal.id,
+        userId: mockPrincipal.userId,
+        name: mockPrincipal.name,
+        role: mockPrincipal.role,
       });
     });
 

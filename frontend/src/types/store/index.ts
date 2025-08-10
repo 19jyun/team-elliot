@@ -4,14 +4,13 @@
 export * from "./common";
 
 // 역할별 타입들
-export * from "./teacher";
-export * from "./principal";
-export * from "./student";
-export * from "./admin";
+export type { TeacherData, TeacherState } from "./teacher";
+export type { PrincipalData, PrincipalState } from "./principal";
+export type { StudentData, StudentState } from "./student";
+// ADMIN 타입 제거됨
 
 // 역할별 데이터 유니온 타입
 export type RoleSpecificData =
   | { role: "PRINCIPAL"; data: import("./principal").PrincipalData }
   | { role: "STUDENT"; data: import("./student").StudentData }
-  | { role: "TEACHER"; data: import("./teacher").TeacherData }
-  | { role: "ADMIN"; data: import("./admin").AdminData };
+  | { role: "TEACHER"; data: import("./teacher").TeacherData };

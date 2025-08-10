@@ -3,7 +3,6 @@ import commonReducer from "./slices/commonSlice";
 import teacherReducer from "./slices/teacherSlice";
 import principalReducer from "./slices/principalSlice";
 import studentReducer from "./slices/studentSlice";
-import adminReducer from "./slices/adminSlice";
 import uiReducer from "./slices/uiSlice";
 
 export const store = configureStore({
@@ -12,7 +11,7 @@ export const store = configureStore({
     teacher: teacherReducer,
     principal: principalReducer,
     student: studentReducer,
-    admin: adminReducer,
+    // admin 제거됨
     ui: uiReducer,
   },
   middleware: (getDefaultMiddleware) =>

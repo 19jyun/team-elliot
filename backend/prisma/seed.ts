@@ -92,18 +92,6 @@ async function generateSessionsForClass(classId: number, classData: any) {
 async function main() {
   const hashedPassword = await bcrypt.hash('admin123', 10);
 
-  // admin 계정 생성
-  await prisma.user.upsert({
-    where: { userId: 'admin123' },
-    update: {},
-    create: {
-      userId: 'admin123',
-      password: hashedPassword,
-      name: '관리자',
-      role: 'ADMIN',
-    },
-  });
-
   // 학원 생성
   const academy = await prisma.academy.upsert({
     where: { code: 'TEAM_ELLIOT_001' },

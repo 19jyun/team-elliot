@@ -8,12 +8,22 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateAcademyDto } from './dto/update-academy.dto';
 import { SocketGateway } from '../socket/socket.gateway';
+import { ClassService } from '../class/class.service';
+import { ClassSessionService } from '../class-session/class-session.service';
+import { RefundService } from '../refund/refund.service';
+import { TeacherService } from '../teacher/teacher.service';
+import { StudentService } from '../student/student.service';
 
 @Injectable()
 export class PrincipalService {
   constructor(
     private prisma: PrismaService,
     private socketGateway: SocketGateway,
+    private classService: ClassService,
+    private classSessionService: ClassSessionService,
+    private refundService: RefundService,
+    private teacherService: TeacherService,
+    private studentService: StudentService,
   ) {}
 
   // Principal의 학원 정보 조회
@@ -61,328 +71,32 @@ export class PrincipalService {
 
   // Principal의 학원 모든 세션 조회
   async getAllSessions(principalId: number) {
-    const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
-      include: {
-        academy: {
-          include: {
-            classes: {
-              include: {
-                teacher: true,
-                classSessions: {
-                  include: {
-                    enrollments: {
-                      include: {
-                        student: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!principal) {
-      throw new NotFoundException('Principal not found');
-    }
-
-    // 현재 시간 (KST 기준)
-    const now = new Date();
-    const kstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-
-    // 모든 세션을 평면화하여 반환 (아직 기간이 지나지 않은 세션만)
-    const allSessions = [];
-    for (const classItem of principal.academy.classes) {
-      for (const session of classItem.classSessions) {
-        // 세션의 종료 시간 계산
-        const sessionDate = new Date(session.date);
-        const sessionEndTime = new Date(sessionDate);
-
-        // endTime을 시간과 분으로 파싱
-        const endTimeStr = session.endTime.toTimeString().slice(0, 5); // "HH:MM" 형식
-        const [hours, minutes] = endTimeStr.split(':').map(Number);
-        sessionEndTime.setHours(hours, minutes, 0, 0);
-
-        // KST로 변환
-        const kstSessionEndTime = new Date(
-          sessionEndTime.getTime() + 9 * 60 * 60 * 1000,
-        );
-
-        // 아직 기간이 지나지 않은 세션만 포함 (현재 시간이 세션 종료 시간보다 이전)
-        if (kstNow < kstSessionEndTime) {
-          // enrollmentCount와 confirmedCount 계산
-          const enrollmentCount = session.enrollments.length; // 실제 enrollment 개수
-          const confirmedCount = session.enrollments.filter(
-            (enrollment) => enrollment.status === 'CONFIRMED',
-          ).length;
-
-          allSessions.push({
-            id: session.id,
-            classId: session.classId,
-            date: session.date,
-            startTime: session.startTime,
-            endTime: session.endTime,
-            maxStudents: session.maxStudents,
-            currentStudents: session.currentStudents,
-            enrollmentCount,
-            confirmedCount,
-            class: {
-              id: classItem.id,
-              className: classItem.className,
-              level: classItem.level,
-              teacher: classItem.teacher,
-            },
-          });
-        }
-      }
-    }
-
-    return allSessions;
+    return this.classSessionService.getPrincipalSessions(principalId);
   }
 
   // Principal의 학원 모든 클래스 조회
   async getAllClasses(principalId: number) {
-    const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
-      include: {
-        academy: {
-          include: {
-            classes: {
-              include: {
-                teacher: true,
-                classSessions: {
-                  include: {
-                    enrollments: {
-                      include: {
-                        student: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!principal) {
-      throw new NotFoundException('Principal not found');
-    }
-
-    return principal.academy.classes;
+    return this.classService.getPrincipalClasses(principalId);
   }
 
   // Principal의 학원 모든 강사 조회
   async getAllTeachers(principalId: number) {
-    const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
-      include: {
-        academy: {
-          include: {
-            teachers: {
-              include: {
-                classes: {
-                  include: {
-                    classSessions: true,
-                  },
-                },
-              },
-            },
-            principal: true,
-          },
-        },
-      },
-    });
-
-    if (!principal) {
-      throw new NotFoundException('Principal not found');
-    }
-
-    return principal.academy.teachers;
+    return this.teacherService.getPrincipalTeachers(principalId);
   }
 
   // Principal의 학원 모든 학생 조회
   async getAllStudents(principalId: number) {
-    const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
-      include: {
-        academy: {
-          include: {
-            students: {
-              include: {
-                student: {
-                  include: {
-                    sessionEnrollments: {
-                      include: {
-                        session: {
-                          include: {
-                            class: true,
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!principal) {
-      throw new NotFoundException('Principal not found');
-    }
-
-    // 각 수강생의 수강 통계 계산
-    const studentsWithStats = await Promise.all(
-      principal.academy.students.map(async (studentAcademy) => {
-        const enrollments = await this.prisma.sessionEnrollment.findMany({
-          where: {
-            studentId: studentAcademy.studentId,
-            session: {
-              class: {
-                academyId: principal.academyId,
-              },
-            },
-          },
-        });
-
-        const totalSessions = enrollments.length;
-        const confirmedSessions = enrollments.filter(
-          (e) => e.status === 'CONFIRMED',
-        ).length;
-        const pendingSessions = enrollments.filter(
-          (e) => e.status === 'PENDING',
-        ).length;
-
-        return {
-          ...studentAcademy.student,
-          joinedAt: studentAcademy.joinedAt,
-          totalSessions,
-          confirmedSessions,
-          pendingSessions,
-        };
-      }),
-    );
-
-    return studentsWithStats;
+    return this.studentService.getPrincipalStudents(principalId);
   }
 
   // Principal의 학원 모든 수강신청 조회 (Redux store용)
   async getAllEnrollments(principalId: number) {
-    const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
-      include: { academy: true },
-    });
-
-    if (!principal) {
-      throw new NotFoundException('Principal not found');
-    }
-
-    const enrollments = await this.prisma.sessionEnrollment.findMany({
-      where: {
-        session: {
-          class: {
-            academyId: principal.academyId,
-          },
-        },
-      },
-      include: {
-        student: {
-          select: {
-            id: true,
-            name: true,
-            phoneNumber: true,
-          },
-        },
-        session: {
-          include: {
-            class: {
-              select: {
-                id: true,
-                className: true,
-                teacher: {
-                  select: {
-                    name: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        enrolledAt: 'desc',
-      },
-    });
-
-    return enrollments;
+    return this.classSessionService.getPrincipalEnrollments(principalId);
   }
 
   // Principal의 학원 모든 환불요청 조회 (Redux store용)
   async getAllRefundRequests(principalId: number) {
-    const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
-      include: { academy: true },
-    });
-
-    if (!principal) {
-      throw new NotFoundException('Principal not found');
-    }
-
-    const refundRequests = await this.prisma.refundRequest.findMany({
-      where: {
-        sessionEnrollment: {
-          session: {
-            class: {
-              academyId: principal.academyId,
-            },
-          },
-        },
-      },
-      include: {
-        sessionEnrollment: {
-          include: {
-            student: {
-              select: {
-                name: true,
-                phoneNumber: true,
-              },
-            },
-            session: {
-              include: {
-                class: {
-                  select: {
-                    id: true,
-                    className: true,
-                    teacher: {
-                      select: {
-                        name: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-        processor: {
-          select: {
-            name: true,
-          },
-        },
-      },
-      orderBy: {
-        requestedAt: 'desc',
-      },
-    });
-
-    return refundRequests;
+    return this.refundService.getPrincipalRefundRequests(principalId);
   }
 
   // Principal 정보 조회
@@ -696,75 +410,10 @@ export class PrincipalService {
 
   // Principal의 세션 수강생 조회
   async getSessionEnrollments(sessionId: number, principalId: number) {
-    // Principal이 해당 세션에 접근할 권한이 있는지 확인
-    const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
-      include: {
-        academy: {
-          include: {
-            classes: {
-              include: {
-                classSessions: {
-                  where: { id: sessionId },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!principal) {
-      throw new NotFoundException('Principal not found');
-    }
-
-    // 해당 세션이 Principal의 학원에 속하는지 확인
-    const sessionExists = principal.academy.classes.some((classItem) =>
-      classItem.classSessions.some((session) => session.id === sessionId),
+    return this.classSessionService.getPrincipalSessionEnrollments(
+      sessionId,
+      principalId,
     );
-
-    if (!sessionExists) {
-      throw new ForbiddenException('해당 세션에 접근할 권한이 없습니다.');
-    }
-
-    // 세션의 수강생 목록 조회
-    const enrollments = await this.prisma.sessionEnrollment.findMany({
-      where: { sessionId },
-      include: {
-        student: {
-          select: {
-            id: true,
-            name: true,
-            phoneNumber: true,
-            level: true,
-          },
-        },
-        payment: {
-          select: {
-            id: true,
-            amount: true,
-            status: true,
-            paidAt: true,
-          },
-        },
-      },
-      orderBy: { enrolledAt: 'asc' },
-    });
-
-    // 상태별 카운트 계산
-    const statusCounts = enrollments.reduce(
-      (acc, enrollment) => {
-        acc[enrollment.status] = (acc[enrollment.status] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
-
-    return {
-      enrollments,
-      totalCount: enrollments.length,
-      statusCounts,
-    };
   }
 
   // Principal의 학원 정보 수정
@@ -796,325 +445,40 @@ export class PrincipalService {
 
   // Principal의 수강 신청 대기 세션 목록 조회
   async getSessionsWithEnrollmentRequests(principalId: number) {
-    const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
-      include: { academy: true },
-    });
-
-    if (!principal) {
-      throw new NotFoundException('Principal not found');
-    }
-
-    const sessions = await this.prisma.classSession.findMany({
-      where: {
-        class: {
-          academyId: principal.academyId,
-        },
-        enrollments: {
-          some: {
-            status: 'PENDING',
-          },
-        },
-      },
-      include: {
-        class: {
-          select: {
-            id: true,
-            className: true,
-            level: true,
-          },
-        },
-        enrollments: {
-          where: {
-            status: 'PENDING',
-          },
-          select: {
-            id: true,
-          },
-        },
-      },
-      orderBy: {
-        date: 'asc',
-      },
-    });
-
-    return sessions.map((session) => ({
-      id: session.id,
-      className: session.class.className,
-      sessionDate: session.date,
-      startTime: session.startTime,
-      endTime: session.endTime,
-      requestCount: session.enrollments.length,
-      class: {
-        level: session.class.level,
-      },
-    }));
+    return this.classSessionService.getPrincipalSessionsWithEnrollmentRequests(
+      principalId,
+    );
   }
 
   // Principal의 환불 요청 대기 세션 목록 조회
   async getSessionsWithRefundRequests(principalId: number) {
-    const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
-      include: { academy: true },
-    });
-
-    if (!principal) {
-      throw new NotFoundException('Principal not found');
-    }
-
-    const sessions = await this.prisma.classSession.findMany({
-      where: {
-        class: {
-          academyId: principal.academyId,
-        },
-        enrollments: {
-          some: {
-            status: 'REFUND_REQUESTED',
-            refundRequests: {
-              some: {
-                status: 'PENDING',
-              },
-            },
-          },
-        },
-      },
-      include: {
-        class: {
-          select: {
-            id: true,
-            className: true,
-            level: true,
-          },
-        },
-        enrollments: {
-          where: {
-            status: 'REFUND_REQUESTED',
-            refundRequests: {
-              some: {
-                status: 'PENDING',
-              },
-            },
-          },
-          include: {
-            refundRequests: {
-              where: {
-                status: 'PENDING',
-              },
-              select: {
-                id: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        date: 'asc',
-      },
-    });
-
-    return sessions.map((session) => ({
-      id: session.id,
-      className: session.class.className,
-      sessionDate: session.date,
-      startTime: session.startTime,
-      endTime: session.endTime,
-      requestCount: session.enrollments.reduce(
-        (total, enrollment) => total + enrollment.refundRequests.length,
-        0,
-      ),
-      class: {
-        level: session.class.level,
-      },
-    }));
+    return this.refundService.getPrincipalSessionsWithRefundRequests(
+      principalId,
+    );
   }
 
   // 특정 세션의 수강 신청 요청 목록 조회
   async getSessionEnrollmentRequests(sessionId: number, principalId: number) {
-    const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
-      include: { academy: true },
-    });
-
-    if (!principal) {
-      throw new NotFoundException('Principal not found');
-    }
-
-    // 해당 세션이 Principal의 학원에 속하는지 확인
-    const session = await this.prisma.classSession.findFirst({
-      where: {
-        id: sessionId,
-        class: {
-          academyId: principal.academyId,
-        },
-      },
-    });
-
-    if (!session) {
-      throw new ForbiddenException('해당 세션에 접근할 권한이 없습니다.');
-    }
-
-    const enrollments = await this.prisma.sessionEnrollment.findMany({
-      where: {
-        sessionId,
-        status: 'PENDING',
-      },
-      include: {
-        student: {
-          select: {
-            id: true,
-            name: true,
-            phoneNumber: true,
-          },
-        },
-        session: {
-          include: {
-            class: {
-              select: {
-                id: true,
-                className: true,
-                level: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        enrolledAt: 'asc',
-      },
-    });
-
-    return enrollments;
+    return this.classSessionService.getPrincipalSessionEnrollmentRequests(
+      sessionId,
+      principalId,
+    );
   }
 
   // 특정 세션의 환불 요청 목록 조회
   async getSessionRefundRequests(sessionId: number, principalId: number) {
-    const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
-      include: { academy: true },
-    });
-
-    if (!principal) {
-      throw new NotFoundException('Principal not found');
-    }
-
-    // 해당 세션이 Principal의 학원에 속하는지 확인
-    const session = await this.prisma.classSession.findFirst({
-      where: {
-        id: sessionId,
-        class: {
-          academyId: principal.academyId,
-        },
-      },
-    });
-
-    if (!session) {
-      throw new ForbiddenException('해당 세션에 접근할 권한이 없습니다.');
-    }
-
-    const refundRequests = await this.prisma.refundRequest.findMany({
-      where: {
-        sessionEnrollment: {
-          sessionId,
-          status: 'REFUND_REQUESTED',
-        },
-        status: 'PENDING',
-      },
-      include: {
-        sessionEnrollment: {
-          include: {
-            student: {
-              select: {
-                id: true,
-                name: true,
-                phoneNumber: true,
-              },
-            },
-            session: {
-              include: {
-                class: {
-                  select: {
-                    id: true,
-                    className: true,
-                    level: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        requestedAt: 'asc',
-      },
-    });
-
-    return refundRequests;
+    return this.refundService.getPrincipalSessionRefundRequests(
+      sessionId,
+      principalId,
+    );
   }
 
   // 수강 신청 승인
   async approveEnrollment(enrollmentId: number, principalId: number) {
-    const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
-      include: { academy: true },
-    });
-
-    if (!principal) {
-      throw new NotFoundException('Principal not found');
-    }
-
-    // 해당 enrollment가 Principal의 학원에 속하는지 확인
-    const enrollment = await this.prisma.sessionEnrollment.findFirst({
-      where: {
-        id: enrollmentId,
-        session: {
-          class: {
-            academyId: principal.academyId,
-          },
-        },
-      },
-      include: {
-        session: {
-          include: {
-            class: true,
-          },
-        },
-      },
-    });
-
-    if (!enrollment) {
-      throw new ForbiddenException('해당 수강 신청에 접근할 권한이 없습니다.');
-    }
-
-    if (enrollment.status !== 'PENDING') {
-      throw new BadRequestException('이미 처리된 수강 신청입니다.');
-    }
-
-    // 수강 신청 승인
-    const updatedEnrollment = await this.prisma.sessionEnrollment.update({
-      where: { id: enrollmentId },
-      data: { status: 'CONFIRMED' },
-      include: {
-        student: true,
-        session: {
-          include: {
-            class: true,
-          },
-        },
-      },
-    });
-
-    // 소켓 알림: 수강신청 승인
-    try {
-      this.socketGateway.notifyEnrollmentAccepted(
-        updatedEnrollment.id,
-        updatedEnrollment.studentId,
-      );
-    } catch (e) {
-      // 소켓 알림 실패는 비핵심 경로이므로 로깅만 수행
-      console.warn('Socket notifyEnrollmentAccepted failed:', e);
-    }
-
-    return updatedEnrollment;
+    return this.classSessionService.approveEnrollmentByPrincipal(
+      enrollmentId,
+      principalId,
+    );
   }
 
   // 수강 신청 거절
@@ -1123,157 +487,16 @@ export class PrincipalService {
     rejectData: { reason: string; detailedReason?: string },
     principalId: number,
   ) {
-    const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
-      include: { academy: true },
-    });
-
-    if (!principal) {
-      throw new NotFoundException('Principal not found');
-    }
-
-    // 해당 enrollment가 Principal의 학원에 속하는지 확인
-    const enrollment = await this.prisma.sessionEnrollment.findFirst({
-      where: {
-        id: enrollmentId,
-        session: {
-          class: {
-            academyId: principal.academyId,
-          },
-        },
-      },
-    });
-
-    if (!enrollment) {
-      throw new ForbiddenException('해당 수강 신청에 접근할 권한이 없습니다.');
-    }
-
-    if (enrollment.status !== 'PENDING') {
-      throw new BadRequestException('이미 처리된 수강 신청입니다.');
-    }
-
-    // Principal 정보를 User 테이블에서 찾거나 생성
-    let user = await this.prisma.user.findUnique({
-      where: { userId: principal.userId },
-    });
-
-    if (!user) {
-      // Principal 정보를 User 테이블에 추가
-      user = await this.prisma.user.create({
-        data: {
-          userId: principal.userId,
-          password: principal.password,
-          name: principal.name,
-          role: 'PRINCIPAL',
-        },
-      });
-    }
-
-    // 트랜잭션으로 수강 신청 거절 및 거절 상세 정보 생성
-    const result = await this.prisma.$transaction(async (prisma) => {
-      // 수강 신청 거절
-      const updatedEnrollment = await prisma.sessionEnrollment.update({
-        where: { id: enrollmentId },
-        data: {
-          status: 'REJECTED',
-        },
-        include: {
-          student: true,
-          session: {
-            include: {
-              class: true,
-            },
-          },
-        },
-      });
-
-      // 거절 상세 정보 생성
-      await prisma.rejectionDetail.create({
-        data: {
-          rejectionType: 'SESSION_ENROLLMENT_REJECTION',
-          entityId: enrollmentId,
-          entityType: 'SessionEnrollment',
-          reason: rejectData.reason,
-          detailedReason: rejectData.detailedReason,
-          rejectedBy: user.id,
-        },
-      });
-
-      return updatedEnrollment;
-    });
-
-    // 소켓 알림: 수강신청 거절
-    try {
-      this.socketGateway.notifyEnrollmentRejected(result.id, result.studentId);
-    } catch (e) {
-      console.warn('Socket notifyEnrollmentRejected failed:', e);
-    }
-
-    return result;
+    return this.classSessionService.rejectEnrollmentByPrincipal(
+      enrollmentId,
+      rejectData,
+      principalId,
+    );
   }
 
   // 환불 요청 승인
   async approveRefund(refundId: number, principalId: number) {
-    const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
-      include: { academy: true },
-    });
-
-    if (!principal) {
-      throw new NotFoundException('Principal not found');
-    }
-
-    // 해당 환불 요청이 Principal의 학원에 속하는지 확인
-    const refundRequest = await this.prisma.refundRequest.findFirst({
-      where: {
-        id: refundId,
-        sessionEnrollment: {
-          session: {
-            class: {
-              academyId: principal.academyId,
-            },
-          },
-        },
-      },
-    });
-
-    if (!refundRequest) {
-      throw new ForbiddenException('해당 환불 요청에 접근할 권한이 없습니다.');
-    }
-
-    if (refundRequest.status !== 'PENDING') {
-      throw new BadRequestException('이미 처리된 환불 요청입니다.');
-    }
-
-    // 환불 요청 승인
-    const updatedRefundRequest = await this.prisma.refundRequest.update({
-      where: { id: refundId },
-      data: { status: 'APPROVED' },
-      include: {
-        sessionEnrollment: {
-          include: {
-            student: true,
-            session: {
-              include: {
-                class: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    // 소켓 알림: 환불 요청 승인
-    try {
-      this.socketGateway.notifyRefundAccepted(
-        updatedRefundRequest.id,
-        updatedRefundRequest.sessionEnrollment.studentId,
-      );
-    } catch (e) {
-      console.warn('Socket notifyRefundAccepted failed:', e);
-    }
-
-    return updatedRefundRequest;
+    return this.refundService.approveRefundByPrincipal(refundId, principalId);
   }
 
   // 환불 요청 거절
@@ -1282,228 +505,30 @@ export class PrincipalService {
     rejectData: { reason: string; detailedReason?: string },
     principalId: number,
   ) {
-    const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
-      include: { academy: true },
-    });
-
-    if (!principal) {
-      throw new NotFoundException('Principal not found');
-    }
-
-    // 해당 환불 요청이 Principal의 학원에 속하는지 확인
-    const refundRequest = await this.prisma.refundRequest.findFirst({
-      where: {
-        id: refundId,
-        sessionEnrollment: {
-          session: {
-            class: {
-              academyId: principal.academyId,
-            },
-          },
-        },
-      },
-    });
-
-    if (!refundRequest) {
-      throw new ForbiddenException('해당 환불 요청에 접근할 권한이 없습니다.');
-    }
-
-    if (refundRequest.status !== 'PENDING') {
-      throw new BadRequestException('이미 처리된 환불 요청입니다.');
-    }
-
-    // Principal 정보를 User 테이블에서 찾거나 생성
-    let user = await this.prisma.user.findUnique({
-      where: { userId: principal.userId },
-    });
-
-    if (!user) {
-      // Principal 정보를 User 테이블에 추가
-      user = await this.prisma.user.create({
-        data: {
-          userId: principal.userId,
-          password: principal.password,
-          name: principal.name,
-          role: 'PRINCIPAL',
-        },
-      });
-    }
-
-    // 트랜잭션으로 환불 요청 거절 및 거절 상세 정보 생성
-    const result = await this.prisma.$transaction(async (prisma) => {
-      // 환불 요청 거절
-      const updatedRefundRequest = await prisma.refundRequest.update({
-        where: { id: refundId },
-        data: {
-          status: 'REJECTED',
-        },
-        include: {
-          sessionEnrollment: {
-            include: {
-              student: true,
-              session: {
-                include: {
-                  class: true,
-                },
-              },
-            },
-          },
-        },
-      });
-
-      // 거절 상세 정보 생성
-      await prisma.rejectionDetail.create({
-        data: {
-          rejectionType: 'REFUND_REJECTION',
-          entityId: refundId,
-          entityType: 'RefundRequest',
-          reason: rejectData.reason,
-          detailedReason: rejectData.detailedReason,
-          rejectedBy: user.id,
-        },
-      });
-
-      return updatedRefundRequest;
-    });
-
-    // 소켓 알림: 환불 요청 거절
-    try {
-      this.socketGateway.notifyRefundRejected(
-        result.id,
-        result.sessionEnrollment.studentId,
-      );
-    } catch (e) {
-      console.warn('Socket notifyRefundRejected failed:', e);
-    }
-
-    return result;
+    return this.refundService.rejectRefundByPrincipal(
+      refundId,
+      rejectData,
+      principalId,
+    );
   }
 
   // === 선생님/수강생 관리 메소드들 ===
 
   // 선생님을 학원에서 제거
   async removeTeacher(teacherId: number, principalId: number) {
-    const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
-      include: { academy: true },
-    });
-
-    if (!principal) {
-      throw new NotFoundException('Principal not found');
-    }
-
-    // 해당 선생님이 Principal의 학원에 속하는지 확인
-    const teacher = await this.prisma.teacher.findFirst({
-      where: {
-        id: teacherId,
-        academyId: principal.academyId,
-      },
-    });
-
-    if (!teacher) {
-      throw new ForbiddenException('해당 선생님에 접근할 권한이 없습니다.');
-    }
-
-    // Principal은 제거할 수 없음
-    if (teacherId === principal.id) {
-      throw new ForbiddenException('Principal은 제거할 수 없습니다.');
-    }
-
-    // 선생님을 학원에서 제거
-    await this.prisma.teacher.update({
-      where: { id: teacherId },
-      data: { academyId: null },
-    });
-
-    return { message: '선생님이 학원에서 제거되었습니다.' };
+    return this.teacherService.removeTeacherByPrincipal(teacherId, principalId);
   }
 
   // 수강생을 학원에서 제거
   async removeStudent(studentId: number, principalId: number) {
-    const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
-      include: { academy: true },
-    });
-
-    if (!principal) {
-      throw new NotFoundException('Principal not found');
-    }
-
-    // 해당 수강생이 Principal의 학원에 속하는지 확인
-    const studentAcademy = await this.prisma.studentAcademy.findFirst({
-      where: {
-        studentId,
-        academyId: principal.academyId,
-      },
-    });
-
-    if (!studentAcademy) {
-      throw new ForbiddenException('해당 수강생에 접근할 권한이 없습니다.');
-    }
-
-    // 수강생을 학원에서 제거
-    await this.prisma.studentAcademy.delete({
-      where: { id: studentAcademy.id },
-    });
-
-    return { message: '수강생이 학원에서 제거되었습니다.' };
+    return this.studentService.removeStudentByPrincipal(studentId, principalId);
   }
 
   // 수강생의 세션 수강 현황 조회
   async getStudentSessionHistory(studentId: number, principalId: number) {
-    const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
-      include: { academy: true },
-    });
-
-    if (!principal) {
-      throw new NotFoundException('Principal not found');
-    }
-
-    // 해당 수강생이 Principal의 학원에 속하는지 확인
-    const studentAcademy = await this.prisma.studentAcademy.findFirst({
-      where: {
-        studentId,
-        academyId: principal.academyId,
-      },
-    });
-
-    if (!studentAcademy) {
-      throw new ForbiddenException('해당 수강생에 접근할 권한이 없습니다.');
-    }
-
-    // 수강생의 모든 세션 수강 현황 조회
-    const sessionHistory = await this.prisma.sessionEnrollment.findMany({
-      where: {
-        studentId,
-        session: {
-          class: {
-            academyId: principal.academyId,
-          },
-        },
-      },
-      include: {
-        session: {
-          include: {
-            class: {
-              include: {
-                teacher: {
-                  select: {
-                    id: true,
-                    name: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        enrolledAt: 'desc',
-      },
-    });
-
-    return sessionHistory;
+    return this.studentService.getStudentSessionHistoryByPrincipal(
+      studentId,
+      principalId,
+    );
   }
 }
