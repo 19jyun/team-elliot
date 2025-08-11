@@ -3,12 +3,14 @@ import { NotFoundException } from '@nestjs/common';
 import { StudentService } from '../student.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ClassService } from '../../class/class.service';
+import { AcademyService } from '../../academy/academy.service';
 import { Decimal } from '@prisma/client/runtime/library';
 
 describe('StudentService', () => {
   let service: StudentService;
   let prismaService: PrismaService;
   let classService: ClassService;
+  let academyService: AcademyService;
 
   const mockPrismaService = {
     student: {
@@ -24,6 +26,11 @@ describe('StudentService', () => {
     unenrollStudent: jest.fn(),
   };
 
+  const mockAcademyService = {
+    joinAcademy: jest.fn(),
+    leaveAcademy: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -36,12 +43,17 @@ describe('StudentService', () => {
           provide: ClassService,
           useValue: mockClassService,
         },
+        {
+          provide: AcademyService,
+          useValue: mockAcademyService,
+        },
       ],
     }).compile();
 
     service = module.get<StudentService>(StudentService);
     prismaService = module.get<PrismaService>(PrismaService);
     classService = module.get<ClassService>(ClassService);
+    academyService = module.get<AcademyService>(AcademyService);
   });
 
   afterEach(() => {
@@ -87,6 +99,46 @@ describe('StudentService', () => {
             },
           },
         ],
+        sessionEnrollments: [
+          {
+            status: 'CONFIRMED',
+            session: {
+              class: {
+                id: 1,
+                name: '수학',
+                description: '기초 수학',
+                maxStudents: 20,
+                currentStudents: 15,
+                price: new Decimal(100000),
+                startDate: new Date('2024-01-01'),
+                endDate: new Date('2024-12-31'),
+                teacher: {
+                  id: 1,
+                  name: '김선생님',
+                },
+              },
+            },
+          },
+          {
+            status: 'CONFIRMED',
+            session: {
+              class: {
+                id: 2,
+                name: '영어',
+                description: '기초 영어',
+                maxStudents: 15,
+                currentStudents: 10,
+                price: new Decimal(120000),
+                startDate: new Date('2024-01-01'),
+                endDate: new Date('2024-12-31'),
+                teacher: {
+                  id: 2,
+                  name: '이선생님',
+                },
+              },
+            },
+          },
+        ],
       };
 
       mockPrismaService.student.findUnique.mockResolvedValue(mockStudent);
@@ -110,9 +162,60 @@ describe('StudentService', () => {
               },
             },
           },
+          sessionEnrollments: {
+            include: {
+              session: {
+                include: {
+                  class: {
+                    include: {
+                      teacher: {
+                        select: {
+                          id: true,
+                          name: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
       });
-      expect(result).toEqual(mockStudent.enrollments.map((e) => e.class));
+      expect(result).toEqual({
+        enrollmentClasses: [
+          {
+            id: 1,
+            name: '수학',
+            description: '기초 수학',
+            maxStudents: 20,
+            currentStudents: 15,
+            price: new Decimal(100000),
+            startDate: new Date('2024-01-01'),
+            endDate: new Date('2024-12-31'),
+            teacher: {
+              id: 1,
+              name: '김선생님',
+            },
+          },
+          {
+            id: 2,
+            name: '영어',
+            description: '기초 영어',
+            maxStudents: 15,
+            currentStudents: 10,
+            price: new Decimal(120000),
+            startDate: new Date('2024-01-01'),
+            endDate: new Date('2024-12-31'),
+            teacher: {
+              id: 2,
+              name: '이선생님',
+            },
+          },
+        ],
+        sessionClasses: [],
+        calendarRange: expect.any(Object),
+      });
     });
 
     it('should throw NotFoundException when student not found', async () => {
