@@ -1,0 +1,24 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": "..",
+  "testEnvironment": "node",
+  "testRegex": ".*\\.integration\\.spec\\.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "setupFilesAfterEnv": ["<rootDir>/src/__tests__/integration/setup/test-setup.ts"],
+  "testTimeout": 30000,
+  "collectCoverageFrom": [
+    "src/**/*.(t|j)s",
+    "!src/**/*.spec.ts",
+    "!src/**/*.integration.spec.ts",
+    "!src/**/*.e2e-spec.ts"
+  ],
+  "coverageDirectory": "../coverage/integration",
+  "modulePaths": ["<rootDir>/../src"],
+  "globals": {
+    "NODE_ENV": "test",
+    "JWT_SECRET": "test-jwt-secret-key-for-testing-only",
+    "DATABASE_URL": "postgresql://postgres:postgres@localhost:5433/ballet_class_test_db"
+  }
+}

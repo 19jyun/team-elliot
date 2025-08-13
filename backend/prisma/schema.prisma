@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,260 +7,217 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  TEACHER
-  STUDENT
-  PRINCIPAL
-}
-
-
-
-// 거절 타입 enum
-enum RejectionType {
-  ENROLLMENT_REJECTION    // 수강 신청 거절
-  REFUND_REJECTION       // 환불 요청 거절
-  SESSION_ENROLLMENT_REJECTION // 세션 수강 신청 거절
-}
-
-// 학원 요청 상태 enum
-enum AcademyRequestStatus {
-  PENDING   // 대기중
-  APPROVED  // 승인됨
-  REJECTED  // 거절됨
-}
-
-
-
-// 학원 모델
 model Academy {
-  id          Int      @id @default(autoincrement())
-  name        String   @db.VarChar(100) // 학원 이름
-  phoneNumber String   @map("phone_number") @db.VarChar(20) // 학원 연락처
-  address     String   @db.Text // 학원 주소
-  description String   @db.Text // 학원 설명
-  code        String   @unique @db.VarChar(50) // 학원 고유 코드
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  teachers    Teacher[] // 소속 강사들
-  classes     Class[] // 소속 수업들
-  students    StudentAcademy[] // 가입한 학생들
-
-  joinRequests AcademyJoinRequest[] // 학원 가입 신청들
-  principal   Principal? // 학원 원장 (1대1 관계)
+  id           Int                  @id @default(autoincrement())
+  name         String               @db.VarChar(100)
+  phoneNumber  String               @map("phone_number") @db.VarChar(20)
+  address      String
+  description  String
+  code         String               @unique @db.VarChar(50)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  joinRequests AcademyJoinRequest[]
+  classes      Class[]
+  principal    Principal?
+  students     StudentAcademy[]
+  teachers     Teacher[]
 
   @@map("academies")
 }
 
-// 학원 원장 모델 - 학원과 1대1 관계
 model Principal {
-  id          Int      @id @default(autoincrement())
-  userId      String   @unique @db.VarChar(255)
-  password    String   @db.VarChar(255)
-  name        String   @db.VarChar(100)
-  phoneNumber String?  @map("phone_number") @db.VarChar(20)
-  email       String?  @db.VarChar(255)
-  introduction String? @db.Text // 원장 소개
-  photoUrl    String?  @map("photo_url") @db.VarChar(255)
-  education   String[] // 학력/경력 사항
-  certifications String[] // 자격증 정보
-  yearsOfExperience Int? @map("years_of_experience") // 원장 경력 연수
-  academyId   Int      @unique @map("academy_id") // 학원과 1대1 관계
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // 은행 정보 필드 추가
-  bankName      String?  @map("bank_name") @db.VarChar(50)
-  accountNumber String?  @map("account_number") @db.VarChar(20)
-  accountHolder String?  @map("account_holder") @db.VarChar(50)
-  
-  academy     Academy  @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  id                Int      @id @default(autoincrement())
+  userId            String   @unique @db.VarChar(255)
+  password          String   @db.VarChar(255)
+  name              String   @db.VarChar(100)
+  phoneNumber       String?  @map("phone_number") @db.VarChar(20)
+  email             String?  @db.VarChar(255)
+  introduction      String?
+  photoUrl          String?  @map("photo_url") @db.VarChar(255)
+  education         String[]
+  certifications    String[]
+  yearsOfExperience Int?     @map("years_of_experience")
+  academyId         Int      @unique @map("academy_id")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  accountHolder     String?  @map("account_holder") @db.VarChar(50)
+  accountNumber     String?  @map("account_number") @db.VarChar(20)
+  bankName          String?  @map("bank_name") @db.VarChar(50)
+  academy           Academy  @relation(fields: [academyId], references: [id], onDelete: Cascade)
 
   @@map("principals")
 }
 
-
-
-// 학생-학원 관계 모델 (다대다 관계)
 model StudentAcademy {
   id        Int      @id @default(autoincrement())
   studentId Int      @map("student_id")
   academyId Int      @map("academy_id")
   joinedAt  DateTime @default(now())
-  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   academy   Academy  @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, academyId])
   @@map("student_academies")
 }
 
-// 기본 사용자 모델 - 모든 사용자 타입(관리자, 강사, 학생)의 공통 정보
 model User {
-  id        Int      @id @default(autoincrement())
-  userId    String   @unique
-  password  String
-  name      String
-  role      Role // enum으로 변경
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  notices   Notice[] // 공지사항 작성자 관계
-  processedRefunds RefundRequest[] @relation("RefundProcessor") // 처리한 환불 요청들
-  rejectionDetails RejectionDetail[] // 거절 내역
+  id               Int               @id @default(autoincrement())
+  userId           String            @unique
+  password         String
+  name             String
+  role             Role
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  notices          Notice[]
+  processedRefunds RefundRequest[]   @relation("RefundProcessor")
+  rejectionDetails RejectionDetail[]
 
   @@map("users")
 }
 
-// 학생 모델 - 수강생 정보
 model Student {
-  id                Int                 @id @default(autoincrement())
-  userId            String              @unique @db.VarChar(255)
-  password          String              @db.VarChar(255)
-  name              String              @db.VarChar(100)
-  phoneNumber       String?             @map("phone_number") @db.VarChar(20)
-  emergencyContact  String?             @map("emergency_contact") @db.VarChar(20) // 비상연락처
-  birthDate         DateTime?           @map("birth_date") // 생년월일
-  notes             String?             @db.Text // 특이사항 (알러지, 부상 이력 등)
-  level             String?             @db.VarChar(50) // 수강생 레벨
-  enrollments       Enrollment[] // 수강 신청 내역
-  attendances       Attendance[] // 출석 기록
-  payments          Payment[] // 결제 내역
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
+  id                 Int                 @id @default(autoincrement())
+  userId             String              @unique @db.VarChar(255)
+  password           String              @db.VarChar(255)
+  name               String              @db.VarChar(100)
+  phoneNumber        String?             @map("phone_number") @db.VarChar(20)
+  emergencyContact   String?             @map("emergency_contact") @db.VarChar(20)
+  birthDate          DateTime?           @map("birth_date")
+  notes              String?
+  level              String?             @db.VarChar(50)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  attendances        Attendance[]
+  enrollments        Enrollment[]
+  payments           Payment[]
+  refundRequests     RefundRequest[]
   sessionEnrollments SessionEnrollment[]
-  academies         StudentAcademy[] // 가입한 학원들
-  refundRequests    RefundRequest[] // 환불 요청 내역
+  academies          StudentAcademy[]
 
   @@map("students")
 }
 
-// 강사 모델 - 강사 정보
 model Teacher {
-  id                Int           @id @default(autoincrement())
-  userId            String        @unique @db.VarChar(255)
-  password          String        @db.VarChar(255)
-  name              String        @db.VarChar(100)
-  phoneNumber       String?       @map("phone_number") @db.VarChar(20)
-  introduction      String?       @db.Text // 강사 소개
-  photoUrl          String?       @map("photo_url") @db.VarChar(255)
-  education         String[] // 학력/경력 사항
-  specialties       String[] // 전문 분야 (예: 클래식 발레, 모던 발레 등)
-  certifications    String[] // 자격증 정보
-  yearsOfExperience Int?          @map("years_of_experience") // 교습 경력 연수
-  academyId         Int?          @map("academy_id") // 소속 학원 (nullable로 변경)
-  availableTimes    Json?         @map("available_times") // 강의 가능 시간 (JSON 형식)
-  classes           Class[] // 담당 클래스
-  classDetails      ClassDetail[] // 클래스 상세 정보
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  academy           Academy?      @relation(fields: [academyId], references: [id])
-
-  joinRequests      AcademyJoinRequest[] // 학원 가입 신청들
-  creationRequests  AcademyCreationRequest[] // 학원 생성 신청들
+  id                Int                      @id @default(autoincrement())
+  userId            String                   @unique @db.VarChar(255)
+  password          String                   @db.VarChar(255)
+  name              String                   @db.VarChar(100)
+  phoneNumber       String?                  @map("phone_number") @db.VarChar(20)
+  introduction      String?
+  photoUrl          String?                  @map("photo_url") @db.VarChar(255)
+  education         String[]
+  specialties       String[]
+  certifications    String[]
+  yearsOfExperience Int?                     @map("years_of_experience")
+  availableTimes    Json?                    @map("available_times")
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  academyId         Int?                     @map("academy_id")
+  creationRequests  AcademyCreationRequest[]
+  joinRequests      AcademyJoinRequest[]
+  classDetails      ClassDetail[]
+  classes           Class[]
+  academy           Academy?                 @relation(fields: [academyId], references: [id])
 
   @@map("teachers")
 }
 
-// 수업 모델 - 개설된 클래스 정보
 model Class {
-  id                    Int            @id @default(autoincrement())
-  className             String         @map("class_name") @db.VarChar(100)
-  classCode             String         @unique @map("class_code") @db.VarChar(50)
-  description           String?        @db.Text
-  maxStudents           Int            @map("max_students")
-  tuitionFee            Decimal        @map("tuition_fee") @db.Decimal(10, 2)
-  teacherId             Int            @map("teacher_id")
-  academyId             Int            @map("academy_id") // 소속 학원 (필수)
-  dayOfWeek             String         @map("day_of_week") @db.VarChar(10)
-  startTime             DateTime       @map("start_time") @db.Time()
-  endTime               DateTime       @map("end_time") @db.Time()
-  level                 String         @db.VarChar(50)
-  status                String         @default("DRAFT")
-  startDate             DateTime       @map("start_date")
-  endDate               DateTime       @map("end_date")
-  backgroundColor       String?        @map("background_color") @db.VarChar(50)
-  teacher               Teacher        @relation(fields: [teacherId], references: [id])
-  academy               Academy        @relation(fields: [academyId], references: [id])
-  classDetailId         Int?           @map("class_detail_id")
-  classDetail           ClassDetail?   @relation(fields: [classDetailId], references: [id])
-  notices               Notice[]
-  classSessions         ClassSession[]
-  enrollments           Enrollment[]
-  attendances           Attendance[]
+  id              Int            @id @default(autoincrement())
+  className       String         @map("class_name") @db.VarChar(100)
+  classCode       String         @unique @map("class_code") @db.VarChar(50)
+  description     String?
+  maxStudents     Int            @map("max_students")
+  tuitionFee      Decimal        @map("tuition_fee") @db.Decimal(10, 2)
+  teacherId       Int            @map("teacher_id")
+  dayOfWeek       String         @map("day_of_week") @db.VarChar(10)
+  level           String         @db.VarChar(50)
+  status          String         @default("DRAFT")
+  startDate       DateTime       @map("start_date")
+  endDate         DateTime       @map("end_date")
+  classDetailId   Int?           @map("class_detail_id")
+  backgroundColor String?        @map("background_color") @db.VarChar(50)
+  startTime       DateTime       @map("start_time") @db.Time(6)
+  endTime         DateTime       @map("end_time") @db.Time(6)
+  academyId       Int            @map("academy_id")
+  attendances     Attendance[]
+  classSessions   ClassSession[]
+  academy         Academy        @relation(fields: [academyId], references: [id])
+  classDetail     ClassDetail?   @relation(fields: [classDetailId], references: [id])
+  teacher         Teacher        @relation(fields: [teacherId], references: [id])
+  enrollments     Enrollment[]
+  notices         Notice[]
 
   @@map("classes")
 }
 
-// 수업 상세 정보 모델
 model ClassDetail {
   id            Int      @id @default(autoincrement())
-  description   String   @db.Text
+  description   String
   teacherId     Int      @map("teacher_id")
   locationName  String   @map("location_name")
   mapImageUrl   String   @map("map_image_url")
-  requiredItems String[] @map("required_items") // 준비물 목록
-  curriculum    String[] // 커리큘럼 주차별 계획
-  classes       Class[]
+  requiredItems String[] @map("required_items")
+  curriculum    String[]
   teacher       Teacher  @relation(fields: [teacherId], references: [id])
+  classes       Class[]
 
   @@map("class_details")
 }
 
-// 수강 신청 모델
 model Enrollment {
   id          Int          @id @default(autoincrement())
-  classId     Int          @map("class_id")
   studentId   Int          @map("student_id")
-  status      String       @default("PENDING") // 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED'
-  enrolledAt  DateTime     @default(now())
+  classId     Int          @map("class_id")
+  status      String       @default("PENDING")
   cancelledAt DateTime?
+  enrolledAt  DateTime     @default(now())
+  attendances Attendance[]
   class       Class        @relation(fields: [classId], references: [id])
   student     Student      @relation(fields: [studentId], references: [id])
   payments    Payment[]
-  attendances Attendance[]
 
   @@unique([classId, studentId])
   @@map("enrollments")
 }
 
-// 출석 관리 모델
 model Attendance {
   id           Int        @id @default(autoincrement())
   enrollmentId Int        @map("enrollment_id")
   classId      Int        @map("class_id")
   studentId    Int        @map("student_id")
   date         DateTime
-  status       String // 'PRESENT' | 'ABSENT' | 'LATE'
-  note         String? // 특이사항
-  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id])
+  status       String
+  note         String?
   class        Class      @relation(fields: [classId], references: [id])
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id])
   student      Student    @relation(fields: [studentId], references: [id])
 
   @@map("attendances")
 }
 
-// 결제 관리 모델
 model Payment {
   id                  Int               @id @default(autoincrement())
-  sessionEnrollmentId Int               @unique @map("session_enrollment_id")
   studentId           Int               @map("student_id")
   amount              Decimal           @db.Decimal(10, 2)
-  status              String // PENDING | COMPLETED | FAILED | REFUNDED
-  method              String // CARD | BANK_TRANSFER | CASH
+  status              String
+  method              String
   paidAt              DateTime?
+  enrollmentId        Int?
+  sessionEnrollmentId Int               @unique @map("session_enrollment_id")
+  enrollment          Enrollment?       @relation(fields: [enrollmentId], references: [id])
   sessionEnrollment   SessionEnrollment @relation(fields: [sessionEnrollmentId], references: [id])
   student             Student           @relation(fields: [studentId], references: [id])
-  enrollment          Enrollment?       @relation(fields: [enrollmentId], references: [id])
-  enrollmentId        Int?
 
   @@map("payments")
 }
 
-// 공지사항 모델
 model Notice {
   id          Int      @id @default(autoincrement())
   title       String
-  content     String   @db.Text
+  content     String
   authorId    Int      @map("author_id")
-  classId     Int?     @map("class_id") // null이면 전체 공지
+  classId     Int?     @map("class_id")
   isImportant Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -276,14 +227,13 @@ model Notice {
   @@map("notices")
 }
 
-// 탈퇴 이력 모델
 model WithdrawalHistory {
   id             Int      @id @default(autoincrement())
-  userId         String // 탈퇴한 사용자의 userId
-  userName       String // 탈퇴한 사용자의 이름
-  userRole       String // 탈퇴한 사용자의 역할 (student/teacher)
-  reason         String   @db.Text
-  reasonCategory String // 'DISSATISFACTION' | 'UNUSED' | 'PRIVACY' | 'OTHER'
+  userId         String
+  userName       String
+  userRole       String
+  reason         String
+  reasonCategory String
   withdrawalDate DateTime @default(now())
   createdAt      DateTime @default(now())
 
@@ -291,82 +241,73 @@ model WithdrawalHistory {
 }
 
 model ClassSession {
-  id             Int                 @id @default(autoincrement())
-  classId        Int                 @map("class_id")
-  date           DateTime            @map("session_date")
-  startTime      DateTime            @map("start_time")
-  endTime        DateTime            @map("end_time")
-  maxStudents    Int                 @map("max_students")
-  currentStudents Int                @default(0) @map("current_students")
-  class          Class               @relation(fields: [classId], references: [id])
-  enrollments    SessionEnrollment[]
-  contents       SessionContent[]    // 세션 내용 추가
+  id              Int                 @id @default(autoincrement())
+  classId         Int                 @map("class_id")
+  date            DateTime            @map("session_date")
+  startTime       DateTime            @map("start_time")
+  endTime         DateTime            @map("end_time")
+  currentStudents Int                 @default(0) @map("current_students")
+  maxStudents     Int                 @map("max_students")
+  class           Class               @relation(fields: [classId], references: [id])
+  contents        SessionContent[]
+  enrollments     SessionEnrollment[]
 
   @@unique([classId, date])
   @@map("class_sessions")
 }
 
 model SessionEnrollment {
-  id          Int          @id @default(autoincrement())
-  studentId   Int          @map("student_id")
-  sessionId   Int          @map("session_id")
-  status      String       @default("PENDING") // PENDING | CONFIRMED | REJECTED | CANCELLED | REFUND_REQUESTED | REFUND_CANCELLED | REFUND_REJECTED_CONFIRMED | TEACHER_CANCELLED
-  enrolledAt  DateTime     @default(now())
-  cancelledAt DateTime?
-  rejectedAt  DateTime?    @map("rejected_at") // 환불 요청 거절 시간
-  hasContributedToCurrentStudents Boolean @default(false) @map("has_contributed_to_current_students") // current_students에 기여했는지 여부
-  session     ClassSession @relation(fields: [sessionId], references: [id])
-  student     Student      @relation(fields: [studentId], references: [id])
-  payment     Payment?
-  refundRequests RefundRequest[] // 환불 요청 내역
+  id                              Int             @id @default(autoincrement())
+  studentId                       Int             @map("student_id")
+  sessionId                       Int             @map("session_id")
+  status                          String          @default("PENDING")
+  enrolledAt                      DateTime        @default(now())
+  cancelledAt                     DateTime?
+  rejectedAt                      DateTime?       @map("rejected_at")
+  hasContributedToCurrentStudents Boolean         @default(false) @map("has_contributed_to_current_students")
+  payment                         Payment?
+  refundRequests                  RefundRequest[]
+  session                         ClassSession    @relation(fields: [sessionId], references: [id])
+  student                         Student         @relation(fields: [studentId], references: [id])
 
   @@unique([studentId, sessionId])
   @@map("session_enrollments")
 }
 
-
-
-// 환불 요청 모델
 model RefundRequest {
   id                  Int               @id @default(autoincrement())
   sessionEnrollmentId Int               @map("session_enrollment_id")
   studentId           Int               @map("student_id")
-  reason              String            // 환불 사유
-  detailedReason      String?           @map("detailed_reason") @db.Text
+  reason              String
+  detailedReason      String?           @map("detailed_reason")
   refundAmount        Decimal           @map("refund_amount") @db.Decimal(10, 2)
-  status              String            @default("PENDING") // PENDING | APPROVED | REJECTED | PARTIAL_APPROVED | CANCELLED
-  processReason       String?           @map("process_reason") @db.Text
+  status              String            @default("PENDING")
+  processReason       String?           @map("process_reason")
   actualRefundAmount  Decimal?          @map("actual_refund_amount") @db.Decimal(10, 2)
-  processedBy         Int?              @map("processed_by") // 처리한 관리자/강사 ID
+  processedBy         Int?              @map("processed_by")
   processedAt         DateTime?         @map("processed_at")
   requestedAt         DateTime          @default(now()) @map("requested_at")
   cancelledAt         DateTime?         @map("cancelled_at")
-  
-  // 계좌 정보 필드 추가
-  bankName            String?           @map("bank_name") @db.VarChar(50)
-  accountNumber       String?           @map("account_number") @db.VarChar(20)
   accountHolder       String?           @map("account_holder") @db.VarChar(50)
-  
+  accountNumber       String?           @map("account_number") @db.VarChar(20)
+  bankName            String?           @map("bank_name") @db.VarChar(50)
+  processor           User?             @relation("RefundProcessor", fields: [processedBy], references: [id])
   sessionEnrollment   SessionEnrollment @relation(fields: [sessionEnrollmentId], references: [id])
   student             Student           @relation(fields: [studentId], references: [id])
-  processor           User?             @relation("RefundProcessor", fields: [processedBy], references: [id])
 
   @@map("refund_requests")
 }
 
-// 거절 상세 정보 모델 - 수강 신청/환불 요청 거절을 통합 관리
 model RejectionDetail {
-  id              Int            @id @default(autoincrement())
-  rejectionType   RejectionType  @map("rejection_type") // 거절 타입
-  entityId        Int            @map("entity_id") // 관련 엔티티 ID (Enrollment.id, RefundRequest.id, SessionEnrollment.id)
-  entityType      String         @map("entity_type") // 관련 엔티티 타입 ("Enrollment", "RefundRequest", "SessionEnrollment")
-  reason          String         @db.Text // 거절 사유
-  detailedReason  String?        @map("detailed_reason") @db.Text // 상세 거절 사유
-  rejectedBy      Int            @map("rejected_by") // 거절한 관리자/강사 ID
-  rejectedAt      DateTime       @default(now()) @map("rejected_at")
-  
-  // 관계 설정
-  rejector        User           @relation(fields: [rejectedBy], references: [id])
+  id             Int           @id @default(autoincrement())
+  rejectionType  RejectionType @map("rejection_type")
+  entityId       Int           @map("entity_id")
+  entityType     String        @map("entity_type")
+  reason         String
+  detailedReason String?       @map("detailed_reason")
+  rejectedBy     Int           @map("rejected_by")
+  rejectedAt     DateTime      @default(now()) @map("rejected_at")
+  rejector       User          @relation(fields: [rejectedBy], references: [id])
 
   @@index([rejectionType, entityId])
   @@index([rejectedBy, rejectedAt])
@@ -374,78 +315,87 @@ model RejectionDetail {
   @@map("rejection_details")
 }
 
-// 학원 가입 신청 모델
 model AcademyJoinRequest {
-  id        Int                 @id @default(autoincrement())
-  teacherId Int                 @map("teacher_id")
-  academyId Int                 @map("academy_id")
+  id        Int                  @id @default(autoincrement())
+  teacherId Int                  @map("teacher_id")
+  academyId Int                  @map("academy_id")
   status    AcademyRequestStatus @default(PENDING)
-  message   String?             @db.Text // 신청 메시지
-  createdAt DateTime            @default(now())
-  updatedAt DateTime            @updatedAt
-  
-  teacher   Teacher             @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  academy   Academy             @relation(fields: [academyId], references: [id], onDelete: Cascade)
-  
+  message   String?
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+  academy   Academy              @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  teacher   Teacher              @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
   @@unique([teacherId, academyId])
   @@index([academyId, status])
   @@index([teacherId, status])
   @@map("academy_join_requests")
 }
 
-// 학원 생성 신청 모델
 model AcademyCreationRequest {
-  id          Int                 @id @default(autoincrement())
-  teacherId   Int                 @map("teacher_id")
-  name        String              @db.VarChar(100) // 학원 이름
-  phoneNumber String              @map("phone_number") @db.VarChar(20) // 학원 연락처
-  address     String              @db.Text // 학원 주소
-  description String              @db.Text // 학원 설명
+  id          Int                  @id @default(autoincrement())
+  teacherId   Int                  @map("teacher_id")
+  name        String               @db.VarChar(100)
+  phoneNumber String               @map("phone_number") @db.VarChar(20)
+  address     String
+  description String
   status      AcademyRequestStatus @default(PENDING)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-  
-  teacher     Teacher             @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  teacher     Teacher              @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
   @@index([teacherId, status])
   @@index([status, createdAt])
   @@map("academy_creation_requests")
 }
 
-// 발레 자세 난이도 enum
+model BalletPose {
+  id              Int              @id @default(autoincrement())
+  name            String           @unique @db.VarChar(100)
+  imageUrl        String?          @map("image_url") @db.VarChar(255)
+  description     String
+  difficulty      PoseDifficulty   @default(BEGINNER)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  sessionContents SessionContent[]
+
+  @@map("ballet_poses")
+}
+
+model SessionContent {
+  id        Int          @id @default(autoincrement())
+  sessionId Int          @map("session_id")
+  poseId    Int          @map("pose_id")
+  order     Int          @default(0)
+  notes     String?
+  createdAt DateTime     @default(now())
+  pose      BalletPose   @relation(fields: [poseId], references: [id])
+  session   ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, poseId, order])
+  @@map("session_contents")
+}
+
+enum Role {
+  TEACHER
+  STUDENT
+  PRINCIPAL
+}
+
+enum RejectionType {
+  ENROLLMENT_REJECTION
+  REFUND_REJECTION
+  SESSION_ENROLLMENT_REJECTION
+}
+
+enum AcademyRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum PoseDifficulty {
   BEGINNER
   INTERMEDIATE
   ADVANCED
-}
-
-// 발레 자세 모델
-model BalletPose {
-  id          Int           @id @default(autoincrement())
-  name        String        @unique @db.VarChar(100) // 자세명 (unique 추가)
-  imageUrl    String?       @map("image_url") @db.VarChar(255) // 자세 사진 URL
-  description String        @db.Text // 자세 설명
-  difficulty  PoseDifficulty @default(BEGINNER) // 난이도
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  
-  sessionContents SessionContent[] // 세션 내용과의 관계
-  
-  @@map("ballet_poses")
-}
-
-// 세션 내용 모델
-model SessionContent {
-  id          Int        @id @default(autoincrement())
-  sessionId   Int        @map("session_id")
-  poseId      Int        @map("pose_id")
-  order       Int        @default(0) // 순서
-  notes       String?    @db.Text // 추가 노트
-  createdAt   DateTime   @default(now())
-  
-  session     ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  pose        BalletPose   @relation(fields: [poseId], references: [id])
-  
-  @@unique([sessionId, poseId, order])
-  @@map("session_contents")
 }

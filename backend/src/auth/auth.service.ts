@@ -114,7 +114,7 @@ export class AuthService {
           role: 'STUDENT',
         },
       };
-    } else {
+    } else if (signupDto.role === 'TEACHER') {
       // 선생님 생성 (academyId는 null로 시작)
       const teacher = await this.prisma.teacher.create({
         data: {
@@ -142,6 +142,11 @@ export class AuthService {
           role: 'TEACHER',
         },
       };
+    } else {
+      // PRINCIPAL 역할은 회원가입에서 비활성화 (테스트용 더미 데이터로 생성)
+      throw new BadRequestException(
+        '원장은 회원가입을 통해 생성할 수 없습니다.',
+      );
     }
   }
 
