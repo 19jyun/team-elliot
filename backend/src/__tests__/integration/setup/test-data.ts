@@ -41,6 +41,27 @@ export const TestDataFactory = {
   }),
 
   // 클래스 데이터
+  classes: {
+    basic: (overrides = {}) => ({
+      className: '테스트 발레 클래스',
+      level: 'BEGINNER',
+      maxStudents: 10,
+      tuitionFee: 150000,
+      startDate: new Date('2025-02-01'), // 미래 날짜로 변경
+      endDate: new Date('2025-02-28'),
+      registrationStartDate: new Date('2025-01-15'),
+      registrationEndDate: new Date('2025-01-31'),
+      description: '기초 발레 수업입니다.',
+      dayOfWeek: 'MONDAY',
+      startTime: '18:00',
+      endTime: '19:30',
+      teacherId: undefined, // 테스트에서 동적으로 설정
+      academyId: undefined, // 테스트에서 동적으로 설정
+      ...overrides,
+    }),
+  },
+
+  // 클래스 데이터
   class: (overrides = {}) => ({
     name: '초급 발레 클래스',
     description: '초급자를 위한 발레 클래스입니다.',

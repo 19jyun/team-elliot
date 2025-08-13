@@ -131,7 +131,33 @@ export const createTestPrincipal = async () => {
     },
     token,
     userData: principalData,
+    academy,
   };
+};
+
+export const createTestTeacher = async (academyId: number) => {
+  const testApp = getTestApp();
+  const testData = getTestData();
+
+  // 강사 데이터 생성
+  const teacherData = testData.users.teacher();
+
+  // 비밀번호 해싱
+  const bcrypt = require('bcrypt');
+  const hashedPassword = await bcrypt.hash(teacherData.password, 10);
+
+  // 강사 직접 생성 (회원가입 API 우회)
+  const teacher = await testApp.prisma.teacher.create({
+    data: {
+      userId: teacherData.userId,
+      password: hashedPassword,
+      name: teacherData.name,
+      phoneNumber: teacherData.phoneNumber,
+      academyId: academyId,
+    },
+  });
+
+  return teacher;
 };
 
 // 학원 생성 헬퍼
