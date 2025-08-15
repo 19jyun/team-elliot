@@ -26,8 +26,17 @@ export class AuthService {
     });
 
     if (principal && (await bcrypt.compare(password, principal.password))) {
+      // User 테이블에서 해당 userId를 찾아서 User의 id를 사용
+      const user = await this.prisma.user.findUnique({
+        where: { userId: userId },
+      });
+
       const { password, ...result } = principal;
-      return { ...result, role: 'PRINCIPAL' };
+      return {
+        ...result,
+        role: 'PRINCIPAL',
+        id: user ? user.id : principal.id, // User 테이블에 있으면 User의 id, 없으면 Principal의 id
+      };
     }
 
     // teacher 체크
@@ -72,15 +81,18 @@ export class AuthService {
   }
 
   async signup(signupDto: SignupDto) {
-    // 아이디 중복 체크 (학생 + 선생님 테이블 모두 확인)
+    // 아이디 중복 체크 (학생 + 선생님 + 원장 테이블 모두 확인)
     const existingStudent = await this.prisma.student.findUnique({
       where: { userId: signupDto.userId },
     });
     const existingTeacher = await this.prisma.teacher.findUnique({
       where: { userId: signupDto.userId },
     });
+    const existingPrincipal = await this.prisma.principal.findUnique({
+      where: { userId: signupDto.userId },
+    });
 
-    if (existingStudent || existingTeacher) {
+    if (existingStudent || existingTeacher || existingPrincipal) {
       throw new ConflictException('이미 사용중인 아이디입니다.');
     }
 
@@ -100,7 +112,7 @@ export class AuthService {
 
       // JWT 토큰 생성
       const token = this.jwtService.sign({
-        id: student.id,
+        sub: student.id,
         userId: student.userId,
         role: 'STUDENT',
       });
@@ -128,7 +140,7 @@ export class AuthService {
 
       // JWT 토큰 생성
       const token = this.jwtService.sign({
-        id: teacher.id,
+        sub: teacher.id,
         userId: teacher.userId,
         role: 'TEACHER',
       });
@@ -142,11 +154,62 @@ export class AuthService {
           role: 'TEACHER',
         },
       };
+    } else if (signupDto.role === 'PRINCIPAL') {
+      // 트랜잭션으로 Principal 회원가입 처리
+      const result = await this.prisma.$transaction(async (prisma) => {
+        // Principal이 회원가입할 때 자동으로 학원 생성
+        const academy = await prisma.academy.create({
+          data: {
+            name: `${signupDto.name}의 발레 학원`,
+            phoneNumber: signupDto.phoneNumber,
+            address: '주소를 설정해주세요',
+            description: '발레 학원입니다.',
+            code: `ACADEMY_${Date.now()}`,
+          },
+        });
+
+        // Principal 생성
+        const principal = await prisma.principal.create({
+          data: {
+            userId: signupDto.userId,
+            password: hashedPassword,
+            name: signupDto.name,
+            phoneNumber: signupDto.phoneNumber,
+            academyId: academy.id,
+          },
+        });
+
+        // User 테이블에도 생성
+        const user = await prisma.user.create({
+          data: {
+            userId: signupDto.userId,
+            password: hashedPassword,
+            name: signupDto.name,
+            role: 'PRINCIPAL',
+          },
+        });
+
+        return { academy, principal, user };
+      });
+
+      // JWT 토큰 생성 (User 테이블의 id 사용)
+      const token = this.jwtService.sign({
+        sub: result.user.id,
+        userId: result.principal.userId,
+        role: 'PRINCIPAL',
+      });
+
+      return {
+        access_token: token,
+        user: {
+          id: result.user.id,
+          userId: result.principal.userId,
+          name: result.principal.name,
+          role: 'PRINCIPAL',
+        },
+      };
     } else {
-      // PRINCIPAL 역할은 회원가입에서 비활성화 (테스트용 더미 데이터로 생성)
-      throw new BadRequestException(
-        '원장은 회원가입을 통해 생성할 수 없습니다.',
-      );
+      throw new BadRequestException('지원하지 않는 역할입니다.');
     }
   }
 

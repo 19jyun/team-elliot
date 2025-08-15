@@ -29,8 +29,11 @@ export class SignupDto {
   })
   phoneNumber: string;
 
-  @ApiProperty({ example: 'STUDENT', enum: ['STUDENT', 'TEACHER'] })
+  @ApiProperty({
+    example: 'STUDENT',
+    enum: ['STUDENT', 'TEACHER', 'PRINCIPAL'],
+  })
   @IsString()
-  @IsIn(['STUDENT', 'TEACHER'])
-  role: 'STUDENT' | 'TEACHER';
+  @IsIn(['STUDENT', 'TEACHER', 'PRINCIPAL'])
+  role: 'STUDENT' | 'TEACHER' | 'PRINCIPAL';
 }

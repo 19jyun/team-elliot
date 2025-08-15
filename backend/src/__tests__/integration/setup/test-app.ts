@@ -44,68 +44,104 @@ export class TestApp {
   }
 
   async cleanup() {
-    // 테스트 데이터 정리 (외래키 의존성 순서대로 삭제)
-    await this.prisma.$transaction([
-      // 1. 가장 하위 레벨: 환불 요청 (SessionEnrollment, Student, User 참조)
-      this.prisma.refundRequest.deleteMany(),
+    try {
+      // 테스트 데이터 정리 (외래키 의존성 순서대로 삭제)
+      await this.prisma.$transaction([
+        // 1. 가장 하위 레벨: 환불 요청 (SessionEnrollment, Student, User 참조)
+        this.prisma.refundRequest.deleteMany(),
 
-      // 2. 거절 상세 정보 (User 참조)
-      this.prisma.rejectionDetail.deleteMany(),
+        // 2. 거절 상세 정보 (User 참조)
+        this.prisma.rejectionDetail.deleteMany(),
 
-      // 3. 결제 정보 (SessionEnrollment, Student, Enrollment 참조)
-      this.prisma.payment.deleteMany(),
+        // 3. 결제 정보 (SessionEnrollment, Student, Enrollment 참조)
+        this.prisma.payment.deleteMany(),
 
-      // 4. 세션 수강신청 (ClassSession, Student 참조)
-      this.prisma.sessionEnrollment.deleteMany(),
+        // 4. 세션 수강신청 (ClassSession, Student 참조)
+        this.prisma.sessionEnrollment.deleteMany(),
 
-      // 5. 세션 내용 (ClassSession, BalletPose 참조)
-      this.prisma.sessionContent.deleteMany(),
+        // 5. 세션 내용 (ClassSession, BalletPose 참조)
+        this.prisma.sessionContent.deleteMany(),
 
-      // 6. 출석 정보 (Enrollment, Class, Student 참조)
-      this.prisma.attendance.deleteMany(),
+        // 6. 출석 정보 (Enrollment, Class, Student 참조)
+        this.prisma.attendance.deleteMany(),
 
-      // 7. 수강신청 (Class, Student 참조)
-      this.prisma.enrollment.deleteMany(),
+        // 7. 수강신청 (Class, Student 참조)
+        this.prisma.enrollment.deleteMany(),
 
-      // 8. 공지사항 (User, Class 참조)
-      this.prisma.notice.deleteMany(),
+        // 8. 공지사항 (User, Class 참조)
+        this.prisma.notice.deleteMany(),
 
-      // 9. 클래스 세션 (Class 참조)
-      this.prisma.classSession.deleteMany(),
+        // 9. 클래스 세션 (Class 참조)
+        this.prisma.classSession.deleteMany(),
 
-      // 10. 클래스 (Teacher, Academy, ClassDetail 참조)
-      this.prisma.class.deleteMany(),
+        // 10. 클래스 (Teacher, Academy, ClassDetail 참조)
+        this.prisma.class.deleteMany(),
 
-      // 11. 클래스 상세 정보 (Teacher 참조)
-      this.prisma.classDetail.deleteMany(),
+        // 11. 클래스 상세 정보 (Teacher 참조)
+        this.prisma.classDetail.deleteMany(),
 
-      // 12. 학원 가입 신청 (Teacher, Academy 참조)
-      this.prisma.academyJoinRequest.deleteMany(),
+        // 12. 학원 가입 신청 (Teacher, Academy 참조)
+        this.prisma.academyJoinRequest.deleteMany(),
 
-      // 13. 학원 생성 신청 (Teacher 참조)
-      this.prisma.academyCreationRequest.deleteMany(),
+        // 13. 학원 생성 신청 (Teacher 참조)
+        this.prisma.academyCreationRequest.deleteMany(),
 
-      // 14. 학생-학원 관계 (Student, Academy 참조)
-      this.prisma.studentAcademy.deleteMany(),
+        // 14. 학생-학원 관계 (Student, Academy 참조)
+        this.prisma.studentAcademy.deleteMany(),
 
-      // 15. 학생 (User 참조)
-      this.prisma.student.deleteMany(),
+        // 15. 학생 (User 참조)
+        this.prisma.student.deleteMany(),
 
-      // 16. 강사 (Academy 참조)
-      this.prisma.teacher.deleteMany(),
+        // 16. 강사 (Academy 참조)
+        this.prisma.teacher.deleteMany(),
 
-      // 17. 원장 (Academy 참조)
-      this.prisma.principal.deleteMany(),
+        // 17. 원장 (Academy 참조)
+        this.prisma.principal.deleteMany(),
 
-      // 18. 탈퇴 이력 (독립적)
-      this.prisma.withdrawalHistory.deleteMany(),
+        // 18. 탈퇴 이력 (독립적)
+        this.prisma.withdrawalHistory.deleteMany(),
 
-      // 19. 학원 (독립적)
-      this.prisma.academy.deleteMany(),
+        // 19. 학원 (독립적)
+        this.prisma.academy.deleteMany(),
 
-      // 20. 사용자 (독립적, 마지막)
-      this.prisma.user.deleteMany(),
-    ]);
+        // 20. 사용자 (독립적, 마지막)
+        this.prisma.user.deleteMany(),
+      ]);
+    } catch (error) {
+      console.error(
+        'Cleanup transaction failed, trying individual deletes:',
+        error,
+      );
+
+      // 트랜잭션 실패 시 개별적으로 삭제 시도
+      try {
+        await this.prisma.refundRequest.deleteMany();
+        await this.prisma.rejectionDetail.deleteMany();
+        await this.prisma.payment.deleteMany();
+        await this.prisma.sessionEnrollment.deleteMany();
+        await this.prisma.sessionContent.deleteMany();
+        await this.prisma.attendance.deleteMany();
+        await this.prisma.enrollment.deleteMany();
+        await this.prisma.notice.deleteMany();
+        await this.prisma.classSession.deleteMany();
+        await this.prisma.class.deleteMany();
+        await this.prisma.classDetail.deleteMany();
+        await this.prisma.academyJoinRequest.deleteMany();
+        await this.prisma.academyCreationRequest.deleteMany();
+        await this.prisma.studentAcademy.deleteMany();
+        await this.prisma.student.deleteMany();
+        await this.prisma.teacher.deleteMany();
+        await this.prisma.principal.deleteMany();
+        await this.prisma.withdrawalHistory.deleteMany();
+        await this.prisma.academy.deleteMany();
+        await this.prisma.user.deleteMany();
+      } catch (individualError) {
+        console.error('Individual cleanup also failed:', individualError);
+        // 마지막 수단: 데이터베이스 연결 재설정
+        await this.prisma.$disconnect();
+        await this.prisma.$connect();
+      }
+    }
   }
 
   async close() {

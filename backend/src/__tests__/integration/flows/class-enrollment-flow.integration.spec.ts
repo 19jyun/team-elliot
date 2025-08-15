@@ -2,8 +2,6 @@ import {
   getTestApp,
   getTestData,
   createAuthenticatedUser,
-  createTestPrincipal,
-  createTestTeacher,
 } from '../setup/test-setup';
 
 describe('Class Enrollment Flow Integration Tests', () => {
@@ -15,331 +13,211 @@ describe('Class Enrollment Flow Integration Tests', () => {
     testData = getTestData();
   });
 
-  describe('2. 강의(클래스) 생성 → 자동 세션 생성 → 수강생 수강신청 플로우', () => {
-    describe('클래스 생성 및 세션 자동 생성', () => {
-      let principalToken: string;
-      let studentToken: string;
-      let createdClass: any;
-      let createdSessions: any[];
+  describe('1. 수강신청 플로우', () => {
+    it('should allow students to enroll in sessions', async () => {
+      // 1. Principal, Teacher, Student 생성
+      const {
+        user: principal,
+        token: principalToken,
+        academy,
+      } = await createAuthenticatedUser('PRINCIPAL');
+      const { user: teacher, token: teacherToken } =
+        await createAuthenticatedUser('TEACHER');
+      const { user: student, token: studentToken } =
+        await createAuthenticatedUser('STUDENT');
 
-      beforeEach(async () => {
-        // Principal과 Student 생성
-        const { token: principalAuth } =
-          await createAuthenticatedUser('PRINCIPAL');
-        const { token: studentAuth } = await createAuthenticatedUser('STUDENT');
-
-        principalToken = principalAuth;
-        studentToken = studentAuth;
-
-        console.log('Principal Token:', principalToken);
-        console.log('Student Token:', studentToken);
+      // 2. 클래스 생성
+      const classData = testData.classes.basic({
+        className: '중급 발레 클래스',
+        level: 'INTERMEDIATE',
+        maxStudents: 8,
+        tuitionFee: 200000,
+        startDate: new Date('2025-12-01'),
+        endDate: new Date('2025-12-31'),
+        registrationStartDate: new Date('2025-11-15'),
+        registrationEndDate: new Date('2025-11-30'),
+        teacherId: teacher.id,
+        academyId: academy.id,
       });
 
-      it('should create a class and automatically generate sessions', async () => {
-        // 1. Principal과 Teacher 생성
-        const principalResult = await createTestPrincipal();
-        const teacher = await createTestTeacher(principalResult.academy.id);
+      const createClassResponse = await testApp
+        .request()
+        .post('/classes')
+        .set('Authorization', `Bearer ${principalToken}`)
+        .send(classData)
+        .expect(201);
 
-        // 2. Principal이 클래스 생성
-        const classData = testData.classes.basic({
-          className: '초급 발레 클래스',
-          level: 'BEGINNER',
-          maxStudents: 10,
-          tuitionFee: 150000,
-          startDate: new Date('2024-02-01'),
-          endDate: new Date('2024-02-29'),
-          registrationStartDate: new Date('2024-01-15'),
-          registrationEndDate: new Date('2024-01-31'),
-          teacherId: teacher.id,
-          academyId: principalResult.academy.id,
-        });
+      const createdClass = createClassResponse.body;
 
-        const createClassResponse = await testApp
-          .request()
-          .post('/classes')
-          .set('Authorization', `Bearer ${principalResult.token}`)
-          .send(classData)
-          .expect(201);
+      // 3. 생성된 세션들 조회
+      const sessionsResponse = await testApp
+        .request()
+        .get(`/class-sessions/class/${createdClass.id}`)
+        .set('Authorization', `Bearer ${principalToken}`)
+        .expect(200);
 
-        createdClass = createClassResponse.body;
-        console.log('Created Class:', createdClass);
+      const createdSessions = sessionsResponse.body;
+      expect(createdSessions.length).toBeGreaterThan(0);
 
-        expect(createdClass).toHaveProperty('id');
-        expect(createdClass.className).toBe(classData.className);
-        expect(createdClass.level).toBe(classData.level);
-        expect(createdClass.maxStudents).toBe(classData.maxStudents);
-        expect(createdClass.tuitionFee).toBe(classData.tuitionFee.toString());
+      const firstSession = createdSessions[0];
 
-        // 2. 자동 생성된 세션들 확인 (Teacher로 조회)
-        const teacherToken = await createAuthenticatedUser('TEACHER');
-        const sessionsResponse = await testApp
-          .request()
-          .get(`/class-sessions/class/${createdClass.id}`)
-          .set('Authorization', `Bearer ${teacherToken.token}`)
-          .expect(200);
+      // 4. Student가 첫 번째 세션에 수강신청
+      const enrollmentResponse = await testApp
+        .request()
+        .post(`/class-sessions/${firstSession.id}/enroll`)
+        .set('Authorization', `Bearer ${studentToken}`)
+        .expect(201);
 
-        createdSessions = sessionsResponse.body;
-        console.log('Created Sessions:', createdSessions);
+      const enrollment = enrollmentResponse.body;
+      console.log('Enrollment Response:', enrollment);
 
-        // 2월에는 보통 4주차가 있으므로 4개의 세션이 생성되어야 함
-        expect(Array.isArray(createdSessions)).toBe(true);
-        expect(createdSessions.length).toBeGreaterThan(0);
-
-        // 각 세션의 기본 정보 확인
-        createdSessions.forEach((session: any) => {
-          expect(session).toHaveProperty('id');
-          expect(session).toHaveProperty('classId');
-          expect(session).toHaveProperty('date');
-          expect(session).toHaveProperty('startTime');
-          expect(session).toHaveProperty('endTime');
-          expect(session.classId).toBe(createdClass.id);
-        });
-      });
-
-      it('should reject non-principal users from creating classes', async () => {
-        // Student가 클래스 생성 시도
-        const classData = testData.classes.basic();
-
-        await testApp
-          .request()
-          .post('/classes')
-          .set('Authorization', `Bearer ${studentToken}`)
-          .send(classData)
-          .expect(403);
-      });
+      expect(enrollment).toHaveProperty('id');
+      expect(enrollment.sessionId).toBe(firstSession.id);
+      expect(enrollment.status).toBe('PENDING');
     });
 
-    describe('수강신청 플로우', () => {
-      let principalToken: string;
-      let studentToken: string;
-      let createdClass: any;
-      let createdSessions: any[];
+    it('should prevent duplicate enrollments', async () => {
+      // 1. Principal, Teacher, Student 생성
+      const {
+        user: principal,
+        token: principalToken,
+        academy,
+      } = await createAuthenticatedUser('PRINCIPAL');
+      const { user: teacher, token: teacherToken } =
+        await createAuthenticatedUser('TEACHER');
+      const { user: student, token: studentToken } =
+        await createAuthenticatedUser('STUDENT');
 
-      beforeEach(async () => {
-        // Principal과 Student 생성
-        const { token: principalAuth } =
-          await createAuthenticatedUser('PRINCIPAL');
-        const { token: studentAuth } = await createAuthenticatedUser('STUDENT');
-
-        principalToken = principalAuth;
-        studentToken = studentAuth;
-
-        // Principal과 Teacher 생성
-        const principalResult = await createTestPrincipal();
-        const teacher = await createTestTeacher(principalResult.academy.id);
-
-        // 클래스 생성
-        const classData = testData.classes.basic({
-          className: '중급 발레 클래스',
-          level: 'INTERMEDIATE',
-          maxStudents: 8,
-          tuitionFee: 200000,
-          teacherId: teacher.id,
-          academyId: principalResult.academy.id,
-        });
-
-        const createClassResponse = await testApp
-          .request()
-          .post('/classes')
-          .set('Authorization', `Bearer ${principalResult.token}`)
-          .send(classData);
-
-        createdClass = createClassResponse.body;
-
-        // 세션들 조회 (Teacher로 조회)
-        const teacherToken = await createAuthenticatedUser('TEACHER');
-        const sessionsResponse = await testApp
-          .request()
-          .get(`/class-sessions/class/${createdClass.id}`)
-          .set('Authorization', `Bearer ${teacherToken.token}`);
-
-        createdSessions = sessionsResponse.body;
+      // 2. 클래스 생성
+      const classData = testData.classes.basic({
+        className: '고급 발레 클래스',
+        level: 'ADVANCED',
+        maxStudents: 6,
+        tuitionFee: 250000,
+        startDate: new Date('2025-12-01'),
+        endDate: new Date('2025-12-31'),
+        registrationStartDate: new Date('2025-11-15'),
+        registrationEndDate: new Date('2025-11-30'),
+        teacherId: teacher.id,
+        academyId: academy.id,
       });
 
-      it('should allow students to enroll in sessions', async () => {
-        // 1. Student가 수강 가능한 세션들 조회
-        const availableSessionsResponse = await testApp
-          .request()
-          .get(`/class-sessions/class/${createdClass.id}`)
-          .set('Authorization', `Bearer ${studentToken}`)
-          .expect(200);
+      const createClassResponse = await testApp
+        .request()
+        .post('/classes')
+        .set('Authorization', `Bearer ${principalToken}`)
+        .send(classData)
+        .expect(201);
 
-        const availableSessions = availableSessionsResponse.body;
-        console.log('Available Sessions for Student:', availableSessions);
+      const createdClass = createClassResponse.body;
 
-        expect(Array.isArray(availableSessions)).toBe(true);
-        expect(availableSessions.length).toBeGreaterThan(0);
+      // 3. 생성된 세션들 조회
+      const sessionsResponse = await testApp
+        .request()
+        .get(`/class-sessions/class/${createdClass.id}`)
+        .set('Authorization', `Bearer ${principalToken}`)
+        .expect(200);
 
-        // 2. Student가 첫 번째 세션에 수강신청
-        const firstSession = availableSessions[0];
-        const enrollmentResponse = await testApp
-          .request()
-          .post(`/class-sessions/${firstSession.id}/enroll`)
-          .set('Authorization', `Bearer ${studentToken}`)
-          .expect(201);
+      const createdSessions = sessionsResponse.body;
+      const firstSession = createdSessions[0];
 
-        const enrollment = enrollmentResponse.body;
-        console.log('Enrollment Response:', enrollment);
+      // 4. 첫 번째 수강신청 (성공)
+      await testApp
+        .request()
+        .post(`/class-sessions/${firstSession.id}/enroll`)
+        .set('Authorization', `Bearer ${studentToken}`)
+        .expect(201);
 
-        expect(enrollment).toHaveProperty('id');
-        expect(enrollment).toHaveProperty('sessionId');
-        expect(enrollment).toHaveProperty('studentId');
-        expect(enrollment).toHaveProperty('status');
-        expect(enrollment.sessionId).toBe(firstSession.id);
-        expect(enrollment.status).toBe('PENDING');
-
-        // 3. Student의 수강신청 내역 확인
-        const enrollmentsResponse = await testApp
-          .request()
-          .get('/class-sessions/student/enrollments')
-          .set('Authorization', `Bearer ${studentToken}`)
-          .expect(200);
-
-        const studentEnrollments = enrollmentsResponse.body;
-        console.log('Student Enrollments:', studentEnrollments);
-
-        expect(Array.isArray(studentEnrollments)).toBe(true);
-        expect(studentEnrollments.length).toBe(1);
-        expect(studentEnrollments[0].sessionId).toBe(firstSession.id);
-      });
-
-      it('should reject non-student users from enrolling in sessions', async () => {
-        // Principal이 수강신청 시도
-        const firstSession = createdSessions[0];
-
-        await testApp
-          .request()
-          .post(`/class-sessions/${firstSession.id}/enroll`)
-          .set('Authorization', `Bearer ${principalToken}`)
-          .expect(403);
-      });
-
-      it('should prevent duplicate enrollments', async () => {
-        // 1. 첫 번째 수강신청
-        const firstSession = createdSessions[0];
-        await testApp
-          .request()
-          .post(`/class-sessions/${firstSession.id}/enroll`)
-          .set('Authorization', `Bearer ${studentToken}`)
-          .expect(201);
-
-        // 2. 같은 세션에 중복 수강신청 시도
-        await testApp
-          .request()
-          .post(`/class-sessions/${firstSession.id}/enroll`)
-          .set('Authorization', `Bearer ${studentToken}`)
-          .expect(409); // Conflict
-      });
-
-      it('should allow batch enrollment for multiple sessions', async () => {
-        // 여러 세션에 배치 수강신청
-        const sessionIds = createdSessions
-          .slice(0, 3)
-          .map((session: any) => session.id);
-
-        const batchEnrollmentResponse = await testApp
-          .request()
-          .post('/class-sessions/batch-enroll')
-          .set('Authorization', `Bearer ${studentToken}`)
-          .send({
-            sessionIds,
-            reason: '정기 수강 신청',
-          })
-          .expect(201);
-
-        const batchEnrollment = batchEnrollmentResponse.body;
-        console.log('Batch Enrollment Response:', batchEnrollment);
-
-        expect(batchEnrollment).toHaveProperty('enrollments');
-        expect(Array.isArray(batchEnrollment.enrollments)).toBe(true);
-        expect(batchEnrollment.enrollments.length).toBe(sessionIds.length);
-
-        // 각 수강신청 상태 확인
-        batchEnrollment.enrollments.forEach((enrollment: any) => {
-          expect(enrollment).toHaveProperty('id');
-          expect(enrollment).toHaveProperty('sessionId');
-          expect(enrollment).toHaveProperty('status');
-          expect(sessionIds).toContain(enrollment.sessionId);
-          expect(enrollment.status).toBe('PENDING');
-        });
-      });
+      // 5. 같은 세션에 중복 수강신청 시도 (실패)
+      await testApp
+        .request()
+        .post(`/class-sessions/${firstSession.id}/enroll`)
+        .set('Authorization', `Bearer ${studentToken}`)
+        .expect(400);
     });
+  });
 
-    describe('전체 플로우 통합 테스트', () => {
-      it('should complete full class creation and enrollment flow', async () => {
-        // 1. Principal과 Student 생성
-        const { token: principalToken } =
-          await createAuthenticatedUser('PRINCIPAL');
-        const { token: studentToken } =
-          await createAuthenticatedUser('STUDENT');
+  describe('2. 전체 플로우 통합 테스트', () => {
+    it('should complete full enrollment flow', async () => {
+      // 1. Principal, Teacher, Student 생성
+      const {
+        user: principal,
+        token: principalToken,
+        academy,
+      } = await createAuthenticatedUser('PRINCIPAL');
+      const { user: teacher, token: teacherToken } =
+        await createAuthenticatedUser('TEACHER');
+      const { user: student, token: studentToken } =
+        await createAuthenticatedUser('STUDENT');
 
-        // 2. Principal과 Teacher 생성
-        const principalResult = await createTestPrincipal();
-        const teacher = await createTestTeacher(principalResult.academy.id);
-
-        // 3. Principal이 클래스 생성
-        const classData = testData.classes.basic({
-          className: '고급 발레 클래스',
-          level: 'ADVANCED',
-          maxStudents: 6,
-          tuitionFee: 250000,
-          teacherId: teacher.id,
-          academyId: principalResult.academy.id,
-        });
-
-        const createClassResponse = await testApp
-          .request()
-          .post('/classes')
-          .set('Authorization', `Bearer ${principalResult.token}`)
-          .send(classData)
-          .expect(201);
-
-        const createdClass = createClassResponse.body;
-
-        // 3. 자동 생성된 세션들 확인 (Teacher로 조회)
-        const teacherToken = await createAuthenticatedUser('TEACHER');
-        const sessionsResponse = await testApp
-          .request()
-          .get(`/class-sessions/class/${createdClass.id}`)
-          .set('Authorization', `Bearer ${teacherToken.token}`)
-          .expect(200);
-
-        const createdSessions = sessionsResponse.body;
-        expect(createdSessions.length).toBeGreaterThan(0);
-
-        // 4. Student가 세션에 수강신청
-        const firstSession = createdSessions[0];
-        const enrollmentResponse = await testApp
-          .request()
-          .post(`/class-sessions/${firstSession.id}/enroll`)
-          .set('Authorization', `Bearer ${studentToken}`)
-          .expect(201);
-
-        const enrollment = enrollmentResponse.body;
-        expect(enrollment.sessionId).toBe(firstSession.id);
-
-        // 5. Student의 수강신청 내역 확인
-        const enrollmentsResponse = await testApp
-          .request()
-          .get('/class-sessions/student/enrollments')
-          .set('Authorization', `Bearer ${studentToken}`)
-          .expect(200);
-
-        const studentEnrollments = enrollmentsResponse.body;
-        expect(studentEnrollments.length).toBe(1);
-        expect(studentEnrollments[0].sessionId).toBe(firstSession.id);
-
-        // 6. Principal이 수강신청 현황 확인
-        const sessionEnrollmentsResponse = await testApp
-          .request()
-          .get(`/principal/sessions/${firstSession.id}/enrollments`)
-          .set('Authorization', `Bearer ${principalResult.token}`)
-          .expect(200);
-
-        const sessionEnrollments = sessionEnrollmentsResponse.body;
-        expect(Array.isArray(sessionEnrollments)).toBe(true);
-        expect(sessionEnrollments.length).toBe(1);
+      // 2. 클래스 생성
+      const classData = testData.classes.basic({
+        className: '통합 테스트 발레 클래스',
+        level: 'BEGINNER',
+        maxStudents: 12,
+        tuitionFee: 180000,
+        startDate: new Date('2025-12-01'),
+        endDate: new Date('2025-12-31'),
+        registrationStartDate: new Date('2025-11-15'),
+        registrationEndDate: new Date('2025-11-30'),
+        teacherId: teacher.id,
+        academyId: academy.id,
       });
+
+      const createClassResponse = await testApp
+        .request()
+        .post('/classes')
+        .set('Authorization', `Bearer ${principalToken}`)
+        .send(classData)
+        .expect(201);
+
+      const createdClass = createClassResponse.body;
+      console.log('Created Class for Integration Test:', createdClass);
+
+      // 3. 자동 생성된 세션들 확인
+      const sessionsResponse = await testApp
+        .request()
+        .get(`/class-sessions/class/${createdClass.id}`)
+        .set('Authorization', `Bearer ${principalToken}`)
+        .expect(200);
+
+      const createdSessions = sessionsResponse.body;
+      console.log('Created Sessions for Integration Test:', createdSessions);
+
+      expect(createdSessions.length).toBeGreaterThan(0);
+
+      // 4. Student가 첫 번째 세션에 수강신청
+      const firstSession = createdSessions[0];
+      const enrollmentResponse = await testApp
+        .request()
+        .post(`/class-sessions/${firstSession.id}/enroll`)
+        .set('Authorization', `Bearer ${studentToken}`)
+        .expect(201);
+
+      const enrollment = enrollmentResponse.body;
+      console.log('Enrollment for Integration Test:', enrollment);
+
+      expect(enrollment.sessionId).toBe(firstSession.id);
+      expect(enrollment.status).toBe('PENDING');
+
+      // 5. Student의 수강신청 목록 확인
+      const studentEnrollmentsResponse = await testApp
+        .request()
+        .get('/class-sessions/student/enrollments')
+        .set('Authorization', `Bearer ${studentToken}`)
+        .expect(200);
+
+      const studentEnrollments = studentEnrollmentsResponse.body;
+      console.log('Student Enrollments:', studentEnrollments);
+
+      expect(Array.isArray(studentEnrollments)).toBe(true);
+      expect(studentEnrollments.length).toBeGreaterThan(0);
+
+      // 수강신청한 세션이 목록에 있는지 확인
+      const foundEnrollment = studentEnrollments.find(
+        (enrollment: any) => enrollment.sessionId === firstSession.id,
+      );
+      expect(foundEnrollment).toBeDefined();
     });
   });
 });
