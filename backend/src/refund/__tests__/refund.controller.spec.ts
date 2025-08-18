@@ -14,6 +14,7 @@ describe('RefundController', () => {
     getStudentRefundRequests: jest.fn(),
     getAllRefundRequests: jest.fn(),
     getRefundRequest: jest.fn(),
+    findStudentByUserId: jest.fn(),
   };
 
   const mockUser = {
@@ -48,6 +49,9 @@ describe('RefundController', () => {
         ...refundRequestDto,
         status: 'PENDING',
       };
+      const mockStudent = { id: 1, userId: 'teststudent' };
+
+      mockService.findStudentByUserId.mockResolvedValue(mockStudent);
       mockService.createRefundRequest.mockResolvedValue(createdRefundRequest);
 
       const result = await controller.createRefundRequest(
@@ -56,9 +60,10 @@ describe('RefundController', () => {
       );
 
       expect(result).toEqual(createdRefundRequest);
+      expect(service.findStudentByUserId).toHaveBeenCalledWith(mockUser.userId);
       expect(service.createRefundRequest).toHaveBeenCalledWith(
         refundRequestDto,
-        mockUser.id,
+        mockStudent.id,
       );
     });
   });
@@ -67,6 +72,9 @@ describe('RefundController', () => {
     it('should cancel a refund request', async () => {
       const refundRequestId = 1;
       const result = { message: '환불 요청이 취소되었습니다.' };
+      const mockStudent = { id: 1, userId: 'teststudent' };
+
+      mockService.findStudentByUserId.mockResolvedValue(mockStudent);
       mockService.cancelRefundRequest.mockResolvedValue(result);
 
       const response = await controller.cancelRefundRequest(
@@ -75,9 +83,10 @@ describe('RefundController', () => {
       );
 
       expect(response).toEqual(result);
+      expect(service.findStudentByUserId).toHaveBeenCalledWith(mockUser.userId);
       expect(service.cancelRefundRequest).toHaveBeenCalledWith(
         refundRequestId,
-        mockUser.id,
+        mockStudent.id,
       );
     });
   });
@@ -102,13 +111,17 @@ describe('RefundController', () => {
           status: 'APPROVED',
         },
       ];
+      const mockStudent = { id: 1, userId: 'teststudent' };
+
+      mockService.findStudentByUserId.mockResolvedValue(mockStudent);
       mockService.getStudentRefundRequests.mockResolvedValue(refundRequests);
 
       const result = await controller.getStudentRefundRequests(mockUser);
 
       expect(result).toEqual(refundRequests);
+      expect(service.findStudentByUserId).toHaveBeenCalledWith(mockUser.userId);
       expect(service.getStudentRefundRequests).toHaveBeenCalledWith(
-        mockUser.id,
+        mockStudent.id,
       );
     });
   });

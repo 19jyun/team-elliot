@@ -14,10 +14,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    return {
-      id: payload.sub,
-      userId: payload.userId,
-      role: payload.role,
-    };
+    const { sub, userId, role } = payload;
+
+    // 디버깅 로그 (테스트 환경에서만)
+    if (process.env.NODE_ENV === 'test') {
+      console.log('=== JWT Strategy Debug ===');
+      console.log('Payload:', payload);
+      console.log('Sub:', sub);
+      console.log('UserId:', userId);
+      console.log('Role:', role);
+      console.log('Returning user object:', { id: sub, userId, role });
+    }
+
+    return { id: sub, userId, role };
   }
 }

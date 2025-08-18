@@ -97,3 +97,63 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+# Backend API
+
+## 테스트 환경 설정
+
+### 로컬 테스트 실행
+
+```bash
+# 테스트 데이터베이스 시작
+npm run test:db:start
+
+# 통합 테스트 실행
+npm run test:integration
+
+# 테스트 데이터베이스 정리
+npm run test:db:stop
+```
+
+### 환경변수 설정
+
+테스트 실행을 위해 다음 환경변수가 필요합니다:
+
+- `DATABASE_URL`: PostgreSQL 연결 문자열
+- `JWT_SECRET`: JWT 토큰 서명용 시크릿 키
+- `NODE_ENV`: 환경 설정 (test)
+
+### GitHub Actions
+
+GitHub Actions에서는 자동으로 테스트 환경이 설정되며, 다음 단계가 실행됩니다:
+
+1. PostgreSQL 서비스 컨테이너 시작
+2. 데이터베이스 마이그레이션 실행
+3. 테스트 스키마 생성
+4. 단위 테스트 실행
+5. 통합 테스트 실행
+6. E2E 테스트 실행
+
+## 개발 환경 설정
+
+### 필수 요구사항
+
+- Node.js 18+
+- PostgreSQL 15+
+- Docker (선택사항)
+
+### 설치 및 실행
+
+```bash
+# 의존성 설치
+npm install
+
+# 환경변수 설정
+cp .env.example .env
+
+# 데이터베이스 마이그레이션
+npx prisma migrate dev
+
+# 개발 서버 시작
+npm run start:dev
+```

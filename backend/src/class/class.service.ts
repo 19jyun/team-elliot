@@ -10,6 +10,21 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ClassService {
   constructor(private prisma: PrismaService) {}
 
+  /**
+   * userId로 Principal 조회
+   */
+  async findPrincipalByUserId(userId: string) {
+    const principal = await this.prisma.principal.findFirst({
+      where: { userId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+    }
+
+    return principal;
+  }
+
   async getAllClasses(filters: { dayOfWeek?: string; teacherId?: number }) {
     return this.prisma.class.findMany({
       where: {

@@ -58,10 +58,19 @@ export class SchemaManager {
   }
 
   getSchemaUrl(schemaName: string): string {
-    // 기존 DATABASE_URL을 그대로 사용 (스키마 변경 없이)
-    return (
+    // 스키마별 DATABASE_URL 생성
+    const baseUrl =
       process.env.DATABASE_URL ||
-      'postgresql://postgres:postgres@localhost:5432/ballet_class_test_db'
-    );
+      'postgresql://postgres:postgres@localhost:5432/ballet_class_test_db';
+
+    // URL에 이미 schema 파라미터가 있는지 확인
+    if (baseUrl.includes('schema=')) {
+      // 기존 schema 파라미터를 새로운 스키마로 교체
+      return baseUrl.replace(/schema=[^&]+/, `schema=${schemaName}`);
+    } else {
+      // schema 파라미터가 없으면 추가
+      const separator = baseUrl.includes('?') ? '&' : '?';
+      return `${baseUrl}${separator}schema=${schemaName}`;
+    }
   }
 }

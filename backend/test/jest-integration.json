@@ -8,8 +8,10 @@
   },
   "setupFilesAfterEnv": ["<rootDir>/src/__tests__/integration/setup/test-setup.ts"],
   "testTimeout": 30000,
-  "maxWorkers": 4,
-  "workerIdleMemoryLimit": "512MB",
+  "maxWorkers": 2,
+  "workerIdleMemoryLimit": "1GB",
+  "forceExit": true,
+  "detectOpenHandles": true,
   "collectCoverageFrom": [
     "src/**/*.(t|j)s",
     "!src/**/*.spec.ts",
@@ -20,7 +22,6 @@
   "modulePaths": ["<rootDir>/../src"],
   "globals": {
     "NODE_ENV": "test",
-    "JWT_SECRET": "test-jwt-secret-key-for-testing-only",
-    "DATABASE_URL": "postgresql://postgres:postgres@localhost:5433/ballet_class_test_db"
+    "JWT_SECRET": "test-jwt-secret-key-for-testing-only"
   }
 }

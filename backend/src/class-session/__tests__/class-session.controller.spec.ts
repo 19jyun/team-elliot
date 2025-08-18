@@ -32,6 +32,7 @@ describe('ClassSessionController', () => {
     changeEnrollment: jest.fn(),
     getStudentClassEnrollments: jest.fn(),
     batchModifyEnrollments: jest.fn(),
+    findStudentByUserId: jest.fn(),
   };
 
   const mockUser = {
@@ -271,14 +272,18 @@ describe('ClassSessionController', () => {
     it('should enroll in a session', async () => {
       const sessionId = 1;
       const result = { message: 'Enrolled successfully' };
+      const mockStudent = { id: 1, userId: 'testuser' };
+
+      mockService.findStudentByUserId.mockResolvedValue(mockStudent);
       mockService.enrollSession.mockResolvedValue(result);
 
       const response = await controller.enrollSession(sessionId, mockUser);
 
       expect(response).toEqual(result);
+      expect(service.findStudentByUserId).toHaveBeenCalledWith(mockUser.userId);
       expect(service.enrollSession).toHaveBeenCalledWith(
         sessionId,
-        mockUser.id,
+        mockStudent.id,
       );
     });
   });
@@ -287,14 +292,18 @@ describe('ClassSessionController', () => {
     it('should batch enroll in sessions', async () => {
       const data = { sessionIds: [1, 2, 3] };
       const result = { message: 'Batch enrollment completed' };
+      const mockStudent = { id: 1, userId: 'testuser' };
+
+      mockService.findStudentByUserId.mockResolvedValue(mockStudent);
       mockService.batchEnrollSessions.mockResolvedValue(result);
 
       const response = await controller.batchEnrollSessions(data, mockUser);
 
       expect(response).toEqual(result);
+      expect(service.findStudentByUserId).toHaveBeenCalledWith(mockUser.userId);
       expect(service.batchEnrollSessions).toHaveBeenCalledWith(
         [1, 2, 3],
-        mockUser.id,
+        mockStudent.id,
       );
     });
   });
@@ -303,6 +312,9 @@ describe('ClassSessionController', () => {
     it('should cancel enrollment', async () => {
       const enrollmentId = 1;
       const result = { message: 'Enrollment cancelled' };
+      const mockStudent = { id: 1, userId: 'testuser' };
+
+      mockService.findStudentByUserId.mockResolvedValue(mockStudent);
       mockService.cancelEnrollment.mockResolvedValue(result);
 
       const response = await controller.cancelEnrollment(
@@ -311,9 +323,10 @@ describe('ClassSessionController', () => {
       );
 
       expect(response).toEqual(result);
+      expect(service.findStudentByUserId).toHaveBeenCalledWith(mockUser.userId);
       expect(service.cancelEnrollment).toHaveBeenCalledWith(
         enrollmentId,
-        mockUser.id,
+        mockStudent.id,
       );
     });
   });
@@ -321,13 +334,17 @@ describe('ClassSessionController', () => {
   describe('getStudentEnrollments', () => {
     it('should get student enrollments', async () => {
       const enrollments = [{ id: 1, studentId: 1, sessionId: 1 }];
+      const mockStudent = { id: 1, userId: 'testuser' };
+
+      mockService.findStudentByUserId.mockResolvedValue(mockStudent);
       mockService.getStudentEnrollments.mockResolvedValue(enrollments);
 
       const result = await controller.getStudentEnrollments(mockUser);
 
       expect(result).toEqual(enrollments);
+      expect(service.findStudentByUserId).toHaveBeenCalledWith(mockUser.userId);
       expect(service.getStudentEnrollments).toHaveBeenCalledWith(
-        mockUser.id,
+        mockStudent.id,
         {},
       );
     });

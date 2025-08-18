@@ -74,8 +74,20 @@ describe('Auth Flow Integration Tests', () => {
         const response = await testApp
           .request()
           .post('/auth/signup')
-          .send(principalData)
-          .expect(201);
+          .send(principalData);
+
+        console.log(
+          'Principal signup response:',
+          response.status,
+          response.body,
+        );
+
+        if (response.status !== 201) {
+          console.error('Principal signup failed:', response.body);
+          throw new Error(
+            `Principal signup failed with status ${response.status}`,
+          );
+        }
 
         const result = response.body;
 
@@ -285,7 +297,7 @@ describe('Auth Flow Integration Tests', () => {
 
       // JWT 토큰 검증
       const jwt = await import('jsonwebtoken');
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
       expect(decoded).toHaveProperty('sub');
       expect(decoded).toHaveProperty('userId', studentData.userId);
@@ -306,7 +318,7 @@ describe('Auth Flow Integration Tests', () => {
 
       // JWT 토큰 검증
       const jwt = await import('jsonwebtoken');
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
       expect(decoded).toHaveProperty('sub');
       expect(decoded).toHaveProperty('userId', teacherData.userId);
@@ -327,7 +339,7 @@ describe('Auth Flow Integration Tests', () => {
 
       // JWT 토큰 검증
       const jwt = await import('jsonwebtoken');
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
       expect(decoded).toHaveProperty('sub');
       expect(decoded).toHaveProperty('userId', principalData.userId);

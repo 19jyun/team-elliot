@@ -15,10 +15,12 @@ describe('Class Enrollment Flow Integration Tests', () => {
 
   describe('1. 수강신청 플로우', () => {
     it('should allow students to enroll in sessions', async () => {
+      ``;
       // 1. Principal, Teacher, Student 생성
       const { token: principalToken, academy } =
         await createAuthenticatedUser('PRINCIPAL');
-      const { user: teacher } = await createAuthenticatedUser('TEACHER');
+      const { teacher: teacherEntity } =
+        await createAuthenticatedUser('TEACHER');
       const { token: studentToken } = await createAuthenticatedUser('STUDENT');
 
       // 2. 클래스 생성
@@ -31,7 +33,7 @@ describe('Class Enrollment Flow Integration Tests', () => {
         endDate: new Date('2025-12-31'),
         registrationStartDate: new Date('2025-11-15'),
         registrationEndDate: new Date('2025-11-30'),
-        teacherId: teacher.id,
+        teacherId: teacherEntity.id,
         academyId: academy.id,
       });
 
@@ -39,8 +41,16 @@ describe('Class Enrollment Flow Integration Tests', () => {
         .request()
         .post('/classes')
         .set('Authorization', `Bearer ${principalToken}`)
-        .send(classData)
-        .expect(201);
+        .send(classData);
+
+      console.log('Create Class Response Status:', createClassResponse.status);
+      console.log('Create Class Response Body:', createClassResponse.body);
+
+      if (createClassResponse.status !== 201) {
+        throw new Error(
+          `Class creation failed with status ${createClassResponse.status}: ${JSON.stringify(createClassResponse.body)}`,
+        );
+      }
 
       const createdClass = createClassResponse.body;
 
@@ -75,8 +85,11 @@ describe('Class Enrollment Flow Integration Tests', () => {
       // 1. Principal, Teacher, Student 생성
       const { token: principalToken, academy } =
         await createAuthenticatedUser('PRINCIPAL');
-      const { user: teacher } = await createAuthenticatedUser('TEACHER');
+      const { teacher: teacherEntity } =
+        await createAuthenticatedUser('TEACHER');
       const { token: studentToken } = await createAuthenticatedUser('STUDENT');
+
+      console.log('Teacher entity:', teacherEntity);
 
       // 2. 클래스 생성
       const classData = testData.classes.basic({
@@ -88,7 +101,7 @@ describe('Class Enrollment Flow Integration Tests', () => {
         endDate: new Date('2025-12-31'),
         registrationStartDate: new Date('2025-11-15'),
         registrationEndDate: new Date('2025-11-30'),
-        teacherId: teacher.id,
+        teacherId: teacherEntity.id,
         academyId: academy.id,
       });
 
@@ -132,7 +145,8 @@ describe('Class Enrollment Flow Integration Tests', () => {
       // 1. Principal, Teacher, Student 생성
       const { token: principalToken, academy } =
         await createAuthenticatedUser('PRINCIPAL');
-      const { user: teacher } = await createAuthenticatedUser('TEACHER');
+      const { teacher: teacherEntity } =
+        await createAuthenticatedUser('TEACHER');
       const { token: studentToken } = await createAuthenticatedUser('STUDENT');
 
       // 2. 클래스 생성
@@ -145,7 +159,7 @@ describe('Class Enrollment Flow Integration Tests', () => {
         endDate: new Date('2025-12-31'),
         registrationStartDate: new Date('2025-11-15'),
         registrationEndDate: new Date('2025-11-30'),
-        teacherId: teacher.id,
+        teacherId: teacherEntity.id,
         academyId: academy.id,
       });
 

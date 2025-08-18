@@ -18,7 +18,41 @@ describe('Class Creation Flow Integration Tests', () => {
       // 1. Principal과 Teacher 생성
       const { token: principalToken, academy } =
         await createAuthenticatedUser('PRINCIPAL');
-      const { user: teacher } = await createAuthenticatedUser('TEACHER');
+      const { teacher } = await createAuthenticatedUser('TEACHER');
+
+      // 라우트 확인을 위한 간단한 GET 요청
+      console.log('Testing basic route availability...');
+      try {
+        const testResponse = await testApp
+          .request()
+          .get('/classes')
+          .set('Authorization', `Bearer ${principalToken}`);
+        console.log('GET /classes response status:', testResponse.status);
+      } catch (error) {
+        console.error('GET /classes failed:', error.message);
+      }
+
+      // 실제 등록된 라우트 확인
+      console.log('=== 등록된 라우트 확인 ===');
+      const app = testApp.app;
+
+      // Express 라우터 확인
+      const expressApp = app.getHttpAdapter().getInstance();
+      if (expressApp._router && expressApp._router.stack) {
+        console.log(
+          'Express router stack length:',
+          expressApp._router.stack.length,
+        );
+        expressApp._router.stack.forEach((layer, index) => {
+          if (layer.route) {
+            const methods = Object.keys(layer.route.methods);
+            const path = layer.route.path;
+            console.log(
+              `Route ${index}: ${methods.join(',').toUpperCase()} ${path}`,
+            );
+          }
+        });
+      }
 
       // 2. Principal이 클래스 생성
       const classData = testData.classes.basic({
@@ -33,6 +67,9 @@ describe('Class Creation Flow Integration Tests', () => {
         teacherId: teacher.id,
         academyId: academy.id,
       });
+
+      console.log('Sending POST request to /classes with data:', classData);
+      console.log('Principal token:', principalToken);
 
       const createClassResponse = await testApp
         .request()

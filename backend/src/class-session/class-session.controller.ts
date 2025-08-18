@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
   ParseIntPipe,
+  NotFoundException,
 } from '@nestjs/common';
 import { ClassSessionService } from './class-session.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -194,7 +195,12 @@ export class ClassSessionController {
     @Param('sessionId', ParseIntPipe) sessionId: number,
     @CurrentUser() user: any,
   ) {
-    return this.classSessionService.enrollSession(sessionId, user.id);
+    // JWT sub (User.id)를 통해 Student의 ID를 가져오기
+    const student = await this.classSessionService.findStudentByUserId(
+      user.userId,
+    );
+
+    return this.classSessionService.enrollSession(sessionId, student.id);
   }
 
   @Post('batch-enroll')
@@ -204,9 +210,14 @@ export class ClassSessionController {
     @Body() data: { sessionIds: number[] },
     @CurrentUser() user: any,
   ) {
+    // JWT sub (User.id)를 통해 Student의 ID를 가져오기
+    const student = await this.classSessionService.findStudentByUserId(
+      user.userId,
+    );
+
     return this.classSessionService.batchEnrollSessions(
       data.sessionIds,
-      user.id,
+      student.id,
     );
   }
 
@@ -221,7 +232,12 @@ export class ClassSessionController {
     @Param('enrollmentId', ParseIntPipe) enrollmentId: number,
     @CurrentUser() user: any,
   ) {
-    return this.classSessionService.cancelEnrollment(enrollmentId, user.id);
+    // JWT sub (User.id)를 통해 Student의 ID를 가져오기
+    const student = await this.classSessionService.findStudentByUserId(
+      user.userId,
+    );
+
+    return this.classSessionService.cancelEnrollment(enrollmentId, student.id);
   }
 
   /**
@@ -238,6 +254,11 @@ export class ClassSessionController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
+    // JWT sub (User.id)를 통해 Student의 ID를 가져오기
+    const student = await this.classSessionService.findStudentByUserId(
+      user.userId,
+    );
+
     const filters = {
       ...(status && { status }),
       ...(classId && { classId: parseInt(classId) }),
@@ -248,7 +269,7 @@ export class ClassSessionController {
         }),
     };
 
-    return this.classSessionService.getStudentEnrollments(user.id, filters);
+    return this.classSessionService.getStudentEnrollments(student.id, filters);
   }
 
   /**
@@ -274,10 +295,24 @@ export class ClassSessionController {
     @Param('classId', ParseIntPipe) classId: number,
     @CurrentUser() user: any,
   ) {
-    return this.classSessionService.getClassSessions(
-      classId,
-      user.role === 'STUDENT' ? user.id : undefined,
-    );
+    let studentId: number | undefined;
+
+    if (user.role === 'STUDENT') {
+      // JWT sub (User.id)를 통해 Student의 ID를 가져오기
+      const student = await this.classSessionService[
+        'prisma'
+      ].student.findFirst({
+        where: { userId: user.userId },
+      });
+
+      if (!student) {
+        throw new NotFoundException('Student를 찾을 수 없습니다.');
+      }
+
+      studentId = student.id;
+    }
+
+    return this.classSessionService.getClassSessions(classId, studentId);
   }
 
   @Get('class/:classId/modification')

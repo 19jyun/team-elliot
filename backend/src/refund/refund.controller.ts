@@ -8,6 +8,7 @@ import {
   Query,
   UseGuards,
   ParseIntPipe,
+  NotFoundException,
 } from '@nestjs/common';
 import { RefundService } from './refund.service';
 import { RefundRequestDto } from './dto/refund-request.dto';
@@ -36,7 +37,10 @@ export class RefundController {
     @Body() dto: RefundRequestDto,
     @CurrentUser() user: any,
   ) {
-    return this.refundService.createRefundRequest(dto, user.id);
+    // JWT sub (User.id)를 통해 Student의 ID를 가져오기
+    const student = await this.refundService.findStudentByUserId(user.userId);
+
+    return this.refundService.createRefundRequest(dto, student.id);
   }
 
   /**
@@ -50,7 +54,10 @@ export class RefundController {
     @Param('refundRequestId', ParseIntPipe) refundRequestId: number,
     @CurrentUser() user: any,
   ) {
-    return this.refundService.cancelRefundRequest(refundRequestId, user.id);
+    // JWT sub (User.id)를 통해 Student의 ID를 가져오기
+    const student = await this.refundService.findStudentByUserId(user.userId);
+
+    return this.refundService.cancelRefundRequest(refundRequestId, student.id);
   }
 
   /**
@@ -61,7 +68,10 @@ export class RefundController {
   @ApiOperation({ summary: '학생별 환불 요청 목록 조회' })
   @ApiResponse({ status: 200, description: '환불 요청 목록을 반환합니다.' })
   async getStudentRefundRequests(@CurrentUser() user: any) {
-    return this.refundService.getStudentRefundRequests(user.id);
+    // JWT sub (User.id)를 통해 Student의 ID를 가져오기
+    const student = await this.refundService.findStudentByUserId(user.userId);
+
+    return this.refundService.getStudentRefundRequests(student.id);
   }
 
   /**

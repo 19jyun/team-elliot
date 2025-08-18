@@ -231,7 +231,7 @@ export class AuthService {
             phoneNumber: signupDto.phoneNumber,
             address: '주소를 설정해주세요',
             description: '발레 학원입니다.',
-            code: `ACADEMY_${Date.now()}`,
+            code: `ACADEMY_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${Math.random().toString(36).substr(2, 5)}_${Math.random().toString(36).substr(2, 3)}`,
           },
         });
 

@@ -27,6 +27,7 @@ describe('ClassController', () => {
     getClassesWithSessionsByMonth: jest.fn(),
     generateSessionsForExistingClass: jest.fn(),
     generateSessionsForPeriod: jest.fn(),
+    findPrincipalByUserId: jest.fn(),
   };
 
   const mockUser = {
@@ -102,9 +103,18 @@ describe('ClassController', () => {
         level: 'BEGINNER',
       };
       const created = { id: 1, ...dto };
+      const mockPrincipal = { id: 1, userId: 'testuser' };
+
+      mockService.findPrincipalByUserId.mockResolvedValue(mockPrincipal);
       mockService.createClass.mockResolvedValue(created);
-      await expect(controller.createClass(dto)).resolves.toBe(created);
-      expect(service.createClass).toHaveBeenCalledWith(dto);
+
+      await expect(controller.createClass(dto, mockUser)).resolves.toBe(
+        created,
+      );
+      expect(service.findPrincipalByUserId).toHaveBeenCalledWith(
+        mockUser.userId,
+      );
+      expect(service.createClass).toHaveBeenCalledWith(dto, mockUser.id);
     });
   });
 

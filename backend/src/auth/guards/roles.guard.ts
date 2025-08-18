@@ -17,6 +17,16 @@ export class RolesGuard implements CanActivate {
     }
 
     const { user } = context.switchToHttp().getRequest();
+
+    // 디버깅 로그 (테스트 환경에서만)
+    if (process.env.NODE_ENV === 'test') {
+      console.log('=== Roles Guard Debug ===');
+      console.log('Required roles:', requiredRoles);
+      console.log('User object:', user);
+      console.log('User role:', user?.role);
+      console.log('Includes check:', requiredRoles.includes(user?.role));
+    }
+
     return requiredRoles.includes(user?.role);
   }
 }

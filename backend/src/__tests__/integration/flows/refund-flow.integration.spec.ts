@@ -18,7 +18,8 @@ describe('Refund Flow Integration Tests', () => {
       // 1. Principal, Teacher, Student 생성
       const { token: principalToken, academy } =
         await createAuthenticatedUser('PRINCIPAL');
-      const { user: teacher } = await createAuthenticatedUser('TEACHER');
+      const { teacher: teacherEntity } =
+        await createAuthenticatedUser('TEACHER');
       const { token: studentToken } = await createAuthenticatedUser('STUDENT');
 
       // 2. 클래스 생성
@@ -31,7 +32,7 @@ describe('Refund Flow Integration Tests', () => {
         endDate: new Date('2025-12-31'),
         registrationStartDate: new Date('2025-11-15'),
         registrationEndDate: new Date('2025-11-30'),
-        teacherId: teacher.id,
+        teacherId: teacherEntity.id,
         academyId: academy.id,
       });
 
@@ -98,7 +99,8 @@ describe('Refund Flow Integration Tests', () => {
       // 1. Principal, Teacher, Student 생성
       const { token: principalToken, academy } =
         await createAuthenticatedUser('PRINCIPAL');
-      const { user: teacher } = await createAuthenticatedUser('TEACHER');
+      const { teacher: teacherEntity } =
+        await createAuthenticatedUser('TEACHER');
       const { token: studentToken } = await createAuthenticatedUser('STUDENT');
 
       // 2. 클래스 생성
@@ -111,7 +113,7 @@ describe('Refund Flow Integration Tests', () => {
         endDate: new Date('2025-12-31'),
         registrationStartDate: new Date('2025-11-15'),
         registrationEndDate: new Date('2025-11-30'),
-        teacherId: teacher.id,
+        teacherId: teacherEntity.id,
         academyId: academy.id,
       });
 
@@ -182,7 +184,8 @@ describe('Refund Flow Integration Tests', () => {
       // 1. Principal, Teacher, Student 생성
       const { token: principalToken, academy } =
         await createAuthenticatedUser('PRINCIPAL');
-      const { user: teacher } = await createAuthenticatedUser('TEACHER');
+      const { teacher: teacherEntity } =
+        await createAuthenticatedUser('TEACHER');
       const { token: studentToken } = await createAuthenticatedUser('STUDENT');
 
       // 2. 클래스 생성
@@ -195,7 +198,7 @@ describe('Refund Flow Integration Tests', () => {
         endDate: new Date('2025-12-31'),
         registrationStartDate: new Date('2025-11-15'),
         registrationEndDate: new Date('2025-11-30'),
-        teacherId: teacher.id,
+        teacherId: teacherEntity.id,
         academyId: academy.id,
       });
 

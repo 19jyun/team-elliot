@@ -27,6 +27,9 @@ export class TestApp {
     console.log('JWT_SECRET:', process.env.JWT_SECRET);
     console.log('WORKER_SCHEMA:', this.schema);
 
+    // 스키마별 DATABASE_URL 생성
+    const schemaUrl = this.schemaManager.getSchemaUrl(this.schema);
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({
@@ -34,7 +37,7 @@ export class TestApp {
           envFilePath: '.env.test',
           load: [
             () => ({
-              DATABASE_URL: process.env.DATABASE_URL,
+              DATABASE_URL: schemaUrl,
               JWT_SECRET: process.env.JWT_SECRET,
               NODE_ENV: process.env.NODE_ENV,
             }),
@@ -49,6 +52,15 @@ export class TestApp {
     this.prisma = moduleFixture.get<PrismaService>(PrismaService);
     if (!this.prisma) {
       throw new Error('PrismaService not found in module');
+    }
+
+    // 데이터베이스 연결 상태 확인
+    try {
+      await this.prisma.$connect();
+      console.log('✅ Database connection established');
+    } catch (error) {
+      console.error('❌ Database connection failed:', error);
+      throw error;
     }
 
     this.jwtService = moduleFixture.get<JwtService>(JwtService);
@@ -79,6 +91,9 @@ export class TestApp {
       console.log('Prisma service not initialized, skipping cleanup');
       return;
     }
+
+    // 스키마별 격리를 위한 추가 대기
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     try {
       // 테스트 데이터 정리 (외래키 의존성 순서대로 삭제)

@@ -19,6 +19,21 @@ export class RefundService {
   ) {}
 
   /**
+   * userId로 Student 조회
+   */
+  async findStudentByUserId(userId: string) {
+    const student = await this.prisma.student.findFirst({
+      where: { userId },
+    });
+
+    if (!student) {
+      throw new NotFoundException('Student를 찾을 수 없습니다.');
+    }
+
+    return student;
+  }
+
+  /**
    * 환불 요청 생성
    */
   async createRefundRequest(dto: RefundRequestDto, studentId: number) {
