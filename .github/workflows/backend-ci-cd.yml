@@ -16,8 +16,8 @@ jobs:
 
     # 테스트용 환경 변수 설정
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
-      JWT_SECRET: test-secret
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ballet_class_test_db
+      JWT_SECRET: test-jwt-secret-key-for-testing-only
       NODE_ENV: test
 
     services:
@@ -25,7 +25,7 @@ jobs:
         image: postgres:15
         env:
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test_db
+          POSTGRES_DB: ballet_class_test_db
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -52,9 +52,24 @@ jobs:
         working-directory: ./backend
         run: npx prisma generate
 
+      - name: Wait for database to be ready
+        run: |
+          echo "Waiting for PostgreSQL to be ready..."
+          while ! nc -z localhost 5432; do
+            sleep 1
+          done
+          echo "PostgreSQL is ready!"
+
       - name: Run database migrations
         working-directory: ./backend
         run: npx prisma migrate deploy
+
+      - name: Setup test database schema
+        working-directory: ./backend
+        run: |
+          echo "Setting up test database schema..."
+          npx prisma db push --force-reset
+          echo "Test database schema setup completed!"
 
       - name: Run linter
         working-directory: ./backend

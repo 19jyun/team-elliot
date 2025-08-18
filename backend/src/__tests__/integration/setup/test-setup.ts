@@ -24,8 +24,13 @@ export const getTestData = () => {
 beforeAll(async () => {
   // 테스트 환경변수 설정
   process.env.NODE_ENV = 'test';
-  process.env.DATABASE_URL =
-    'postgresql://postgres:postgres@localhost:5433/ballet_class_test_db';
+
+  // DATABASE_URL이 설정되지 않은 경우에만 기본값 설정
+  if (!process.env.DATABASE_URL) {
+    process.env.DATABASE_URL =
+      'postgresql://postgres:postgres@localhost:5432/ballet_class_test_db';
+  }
+
   process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing-only';
 
   // TestApp 초기화
