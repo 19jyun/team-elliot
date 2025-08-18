@@ -258,10 +258,7 @@ describe('Auth Flow Integration Tests', () => {
 
       // JWT 토큰 검증
       const jwt = await import('jsonwebtoken');
-      const decoded = jwt.default.verify(
-        token,
-        'test-jwt-secret-key-for-testing-only',
-      );
+      const decoded = jwt.verify(token, 'test-jwt-secret-key-for-testing-only');
 
       expect(decoded).toHaveProperty('sub');
       expect(decoded).toHaveProperty('userId', studentData.userId);
@@ -282,10 +279,7 @@ describe('Auth Flow Integration Tests', () => {
 
       // JWT 토큰 검증
       const jwt = await import('jsonwebtoken');
-      const decoded = jwt.default.verify(
-        token,
-        'test-jwt-secret-key-for-testing-only',
-      );
+      const decoded = jwt.verify(token, 'test-jwt-secret-key-for-testing-only');
 
       expect(decoded).toHaveProperty('sub');
       expect(decoded).toHaveProperty('userId', teacherData.userId);
@@ -306,10 +300,7 @@ describe('Auth Flow Integration Tests', () => {
 
       // JWT 토큰 검증
       const jwt = await import('jsonwebtoken');
-      const decoded = jwt.default.verify(
-        token,
-        'test-jwt-secret-key-for-testing-only',
-      );
+      const decoded = jwt.verify(token, 'test-jwt-secret-key-for-testing-only');
 
       expect(decoded).toHaveProperty('sub');
       expect(decoded).toHaveProperty('userId', principalData.userId);

@@ -529,7 +529,7 @@ export class ClassSessionService {
   /**
    * 세션 메타데이터 추가 헬퍼 메서드
    */
-  private addSessionMetadata(sessions: any[]) {
+  private addSessionMetadata(sessions: any[], _studentId?: number) {
     const now = new Date();
 
     return sessions.map((session) => {
