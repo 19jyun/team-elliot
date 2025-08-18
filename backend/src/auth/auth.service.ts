@@ -48,9 +48,18 @@ export class AuthService {
     });
 
     if (teacher && (await bcrypt.compare(password, teacher.password))) {
+      // User 테이블에서 해당 userId를 찾아서 User의 id를 사용
+      const user = await this.prisma.user.findUnique({
+        where: { userId: userId },
+      });
+
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...result } = teacher;
-      return { ...result, role: 'TEACHER' };
+      return {
+        ...result,
+        role: 'TEACHER',
+        id: user ? user.id : teacher.id, // User 테이블에 있으면 User의 id, 없으면 Teacher의 id
+      };
     }
 
     // student 체크
@@ -58,9 +67,18 @@ export class AuthService {
       where: { userId },
     });
     if (student && (await bcrypt.compare(password, student.password))) {
+      // User 테이블에서 해당 userId를 찾아서 User의 id를 사용
+      const user = await this.prisma.user.findUnique({
+        where: { userId: userId },
+      });
+
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...result } = student;
-      return { ...result, role: 'STUDENT' };
+      return {
+        ...result,
+        role: 'STUDENT',
+        id: user ? user.id : student.id, // User 테이블에 있으면 User의 id, 없으면 Student의 id
+      };
     }
 
     throw new UnauthorizedException(
@@ -84,7 +102,7 @@ export class AuthService {
   }
 
   async signup(signupDto: SignupDto) {
-    // 아이디 중복 체크 (학생 + 선생님 + 원장 테이블 모두 확인)
+    // 아이디 중복 체크 (학생 + 선생님 + 원장 + User 테이블 모두 확인)
     const existingStudent = await this.prisma.student.findUnique({
       where: { userId: signupDto.userId },
     });
@@ -94,8 +112,16 @@ export class AuthService {
     const existingPrincipal = await this.prisma.principal.findUnique({
       where: { userId: signupDto.userId },
     });
+    const existingUser = await this.prisma.user.findUnique({
+      where: { userId: signupDto.userId },
+    });
 
-    if (existingStudent || existingTeacher || existingPrincipal) {
+    if (
+      existingStudent ||
+      existingTeacher ||
+      existingPrincipal ||
+      existingUser
+    ) {
       throw new ConflictException('이미 사용중인 아이디입니다.');
     }
 
@@ -103,57 +129,95 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(signupDto.password, 10);
 
     if (signupDto.role === 'STUDENT') {
-      // 학생 생성
-      const student = await this.prisma.student.create({
-        data: {
-          userId: signupDto.userId,
-          password: hashedPassword,
-          name: signupDto.name,
-          phoneNumber: signupDto.phoneNumber,
-        },
+      // 트랜잭션으로 Student 회원가입 처리
+      const result = await this.prisma.$transaction(async (prisma) => {
+        // Student 생성
+        const student = await prisma.student.create({
+          data: {
+            userId: signupDto.userId,
+            password: hashedPassword,
+            name: signupDto.name,
+            phoneNumber: signupDto.phoneNumber,
+          },
+        });
+
+        // User 테이블에도 생성
+        const user = await prisma.user.create({
+          data: {
+            userId: signupDto.userId,
+            password: hashedPassword,
+            name: signupDto.name,
+            role: 'STUDENT',
+          },
+        });
+
+        return { student, user };
       });
 
-      // JWT 토큰 생성
+      if (!result || !result.user || !result.student) {
+        throw new Error('Student 회원가입 중 오류가 발생했습니다.');
+      }
+
+      // JWT 토큰 생성 (User 테이블의 id 사용)
       const token = this.jwtService.sign({
-        sub: student.id,
-        userId: student.userId,
+        sub: result.user.id,
+        userId: result.student.userId,
         role: 'STUDENT',
       });
 
       return {
         access_token: token,
         user: {
-          id: student.id,
-          userId: student.userId,
-          name: student.name,
+          id: result.user.id,
+          userId: result.student.userId,
+          name: result.student.name,
           role: 'STUDENT',
         },
       };
     } else if (signupDto.role === 'TEACHER') {
-      // 선생님 생성 (academyId는 null로 시작)
-      const teacher = await this.prisma.teacher.create({
-        data: {
-          userId: signupDto.userId,
-          password: hashedPassword,
-          name: signupDto.name,
-          phoneNumber: signupDto.phoneNumber,
-          academyId: null, // 학원 소속 없이 시작
-        },
+      // 트랜잭션으로 Teacher 회원가입 처리
+      const result = await this.prisma.$transaction(async (prisma) => {
+        // Teacher 생성 (academyId는 null로 시작)
+        const teacher = await prisma.teacher.create({
+          data: {
+            userId: signupDto.userId,
+            password: hashedPassword,
+            name: signupDto.name,
+            phoneNumber: signupDto.phoneNumber,
+            academyId: null, // 학원 소속 없이 시작
+          },
+        });
+
+        // User 테이블에도 생성
+        const user = await prisma.user.create({
+          data: {
+            userId: signupDto.userId,
+            password: hashedPassword,
+            name: signupDto.name,
+            role: 'TEACHER',
+          },
+        });
+
+        return { teacher, user };
       });
 
-      // JWT 토큰 생성
+      if (!result || !result.user || !result.teacher) {
+        throw new Error('Teacher 회원가입 중 오류가 발생했습니다.');
+      }
+
+      // JWT 토큰 생성 (User 테이블의 id 사용)
       const token = this.jwtService.sign({
-        sub: teacher.id,
-        userId: teacher.userId,
+        sub: result.user.id,
+        userId: result.teacher.userId,
         role: 'TEACHER',
       });
 
       return {
         access_token: token,
         user: {
-          id: teacher.id,
-          userId: teacher.userId,
-          name: teacher.name,
+          id: result.user.id,
+          userId: result.teacher.userId,
+          name: result.teacher.name,
           role: 'TEACHER',
         },
       };
@@ -194,6 +258,10 @@ export class AuthService {
 
         return { academy, principal, user };
       });
+
+      if (!result || !result.user || !result.principal || !result.academy) {
+        throw new Error('Principal 회원가입 중 오류가 발생했습니다.');
+      }
 
       // JWT 토큰 생성 (User 테이블의 id 사용)
       const token = this.jwtService.sign({

@@ -18,10 +18,8 @@ export class TestApp {
     this.schema = `test_worker_${process.env.JEST_WORKER_ID || '1'}`;
     this.schemaManager = new SchemaManager();
 
+    // 스키마 생성은 하되, DATABASE_URL은 그대로 유지
     await this.schemaManager.createWorkerSchema(this.schema);
-
-    const schemaUrl = this.schemaManager.getSchemaUrl(this.schema);
-    process.env.DATABASE_URL = schemaUrl;
 
     console.log('TestApp Environment Variables:');
     console.log('NODE_ENV:', process.env.NODE_ENV);
@@ -34,6 +32,13 @@ export class TestApp {
         ConfigModule.forRoot({
           isGlobal: true,
           envFilePath: '.env.test',
+          load: [
+            () => ({
+              DATABASE_URL: process.env.DATABASE_URL,
+              JWT_SECRET: process.env.JWT_SECRET,
+              NODE_ENV: process.env.NODE_ENV,
+            }),
+          ],
         }),
         AppModule,
       ],
@@ -55,6 +60,14 @@ export class TestApp {
         forbidNonWhitelisted: true,
       }),
     );
+
+    // 테스트 환경에서 에러 로깅 활성화
+    if (process.env.NODE_ENV === 'test') {
+      this.app.use((err, req, res, next) => {
+        console.error('Test Error:', err);
+        next(err);
+      });
+    }
 
     await this.runMigrations();
 

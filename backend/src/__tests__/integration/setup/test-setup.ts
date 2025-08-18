@@ -31,7 +31,10 @@ beforeAll(async () => {
       'postgresql://postgres:postgres@localhost:5432/ballet_class_test_db';
   }
 
-  process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing-only';
+  // JWT_SECRET이 설정되지 않은 경우에만 기본값 설정
+  if (!process.env.JWT_SECRET) {
+    process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing-only';
+  }
 
   // TestApp 초기화
   testApp = new TestApp();
@@ -124,21 +127,39 @@ export const createAuthenticatedUser = async (
     case 'PRINCIPAL':
       userData = testData.users.principal();
 
-      // Principal 회원가입
+      // Principal 회원가입 (API가 자동으로 Academy 생성)
       const principalResponse = await testApp
         .request()
         .post('/auth/signup')
-        .send(userData)
-        .expect(201);
+        .send(userData);
+
+      console.log(
+        'Principal signup response:',
+        principalResponse.status,
+        principalResponse.body,
+      );
+
+      if (principalResponse.status !== 201) {
+        console.error('Principal signup failed:', principalResponse.body);
+        throw new Error(
+          `Principal signup failed with status ${principalResponse.status}`,
+        );
+      }
 
       user = principalResponse.body.user;
       token = principalResponse.body.access_token;
 
-      // Principal과 Academy 엔티티 정보 가져오기
+      // Principal 회원가입 API가 이미 Academy를 생성했으므로, 생성된 Principal과 Academy 정보 가져오기
       const principal = await testApp.prisma.principal.findUnique({
         where: { userId: userData.userId },
         include: { academy: true },
       });
+
+      console.log('Created Principal with Academy:', principal);
+
+      if (!principal || !principal.academy) {
+        throw new Error('Principal 또는 Academy가 생성되지 않았습니다.');
+      }
 
       return {
         user,

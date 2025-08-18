@@ -375,8 +375,29 @@ describe('AuthService', () => {
     it('should signup a new student and return access_token and user info', async () => {
       mockPrismaService.student.findUnique.mockResolvedValue(null);
       mockPrismaService.teacher.findUnique.mockResolvedValue(null);
+      mockPrismaService.principal.findUnique.mockResolvedValue(null);
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed_pw');
-      mockPrismaService.student.create.mockResolvedValue(mockNewStudent);
+
+      // 트랜잭션 Mock 설정
+      const mockUser = {
+        id: 100,
+        userId: signupDto.userId,
+        name: signupDto.name,
+        role: 'STUDENT',
+      };
+      mockPrismaService.$transaction.mockImplementation(async (callback) => {
+        const mockPrisma = {
+          student: {
+            create: jest.fn().mockResolvedValue(mockNewStudent),
+          },
+          user: {
+            create: jest.fn().mockResolvedValue(mockUser),
+          },
+        };
+        return await callback(mockPrisma);
+      });
+
       mockJwtService.sign.mockReturnValue('mock-jwt-token');
 
       const result = await service.signup(signupDto);
@@ -387,24 +408,23 @@ describe('AuthService', () => {
       expect(mockPrismaService.teacher.findUnique).toHaveBeenCalledWith({
         where: { userId: signupDto.userId },
       });
-      expect(bcrypt.hash).toHaveBeenCalledWith(signupDto.password, 10);
-      expect(mockPrismaService.student.create).toHaveBeenCalledWith({
-        data: {
-          userId: signupDto.userId,
-          password: 'hashed_pw',
-          name: signupDto.name,
-          phoneNumber: signupDto.phoneNumber,
-        },
+      expect(mockPrismaService.principal.findUnique).toHaveBeenCalledWith({
+        where: { userId: signupDto.userId },
       });
+      expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
+        where: { userId: signupDto.userId },
+      });
+      expect(bcrypt.hash).toHaveBeenCalledWith(signupDto.password, 10);
+      expect(mockPrismaService.$transaction).toHaveBeenCalled();
       expect(mockJwtService.sign).toHaveBeenCalledWith({
-        sub: mockNewStudent.id,
+        sub: mockUser.id,
         userId: mockNewStudent.userId,
         role: 'STUDENT',
       });
       expect(result).toEqual({
         access_token: 'mock-jwt-token',
         user: {
-          id: mockNewStudent.id,
+          id: mockUser.id,
           userId: mockNewStudent.userId,
           name: mockNewStudent.name,
           role: 'STUDENT',
@@ -446,8 +466,12 @@ describe('AuthService', () => {
     it('should handle errors during student creation', async () => {
       mockPrismaService.student.findUnique.mockResolvedValue(null);
       mockPrismaService.teacher.findUnique.mockResolvedValue(null);
+      mockPrismaService.principal.findUnique.mockResolvedValue(null);
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed_pw');
-      mockPrismaService.student.create.mockRejectedValue(new Error('db error'));
+
+      // 트랜잭션 Mock에서 에러 발생
+      mockPrismaService.$transaction.mockRejectedValue(new Error('db error'));
 
       await expect(service.signup(signupDto)).rejects.toThrow('db error');
     });

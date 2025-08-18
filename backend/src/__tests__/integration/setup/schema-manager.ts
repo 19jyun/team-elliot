@@ -7,7 +7,9 @@ export class SchemaManager {
     this.basePrisma = new PrismaClient({
       datasources: {
         db: {
-          url: 'postgresql://postgres:postgres@localhost:5433/ballet_class_test_db',
+          url:
+            process.env.DATABASE_URL ||
+            'postgresql://postgres:postgres@localhost:5432/ballet_class_test_db',
         },
       },
     });
@@ -56,6 +58,10 @@ export class SchemaManager {
   }
 
   getSchemaUrl(schemaName: string): string {
-    return `postgresql://postgres:postgres@localhost:5433/ballet_class_test_db?schema=${schemaName}`;
+    // 기존 DATABASE_URL을 그대로 사용 (스키마 변경 없이)
+    return (
+      process.env.DATABASE_URL ||
+      'postgresql://postgres:postgres@localhost:5432/ballet_class_test_db'
+    );
   }
 }

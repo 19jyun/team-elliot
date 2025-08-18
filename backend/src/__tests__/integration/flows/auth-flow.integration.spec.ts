@@ -113,10 +113,37 @@ describe('Auth Flow Integration Tests', () => {
         const userData = testData.users.student();
 
         // 첫 번째 사용자 생성
-        await testApp.request().post('/auth/signup').send(userData).expect(201);
+        const firstResponse = await testApp
+          .request()
+          .post('/auth/signup')
+          .send(userData);
+        console.log(
+          'First signup response:',
+          firstResponse.status,
+          firstResponse.body,
+        );
+
+        if (firstResponse.status !== 201) {
+          console.error('First signup failed:', firstResponse.body);
+        }
 
         // 중복된 userid로 두 번째 사용자 생성 시도
-        await testApp.request().post('/auth/signup').send(userData).expect(409);
+        const secondResponse = await testApp
+          .request()
+          .post('/auth/signup')
+          .send(userData);
+        console.log(
+          'Second signup response:',
+          secondResponse.status,
+          secondResponse.body,
+        );
+
+        if (secondResponse.status !== 409) {
+          console.error(
+            'Second signup should have failed with 409:',
+            secondResponse.body,
+          );
+        }
       });
 
       it('should return 400 for invalid phone number', async () => {
@@ -258,7 +285,7 @@ describe('Auth Flow Integration Tests', () => {
 
       // JWT 토큰 검증
       const jwt = await import('jsonwebtoken');
-      const decoded = jwt.verify(token, 'test-jwt-secret-key-for-testing-only');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only');
 
       expect(decoded).toHaveProperty('sub');
       expect(decoded).toHaveProperty('userId', studentData.userId);
@@ -279,7 +306,7 @@ describe('Auth Flow Integration Tests', () => {
 
       // JWT 토큰 검증
       const jwt = await import('jsonwebtoken');
-      const decoded = jwt.verify(token, 'test-jwt-secret-key-for-testing-only');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only');
 
       expect(decoded).toHaveProperty('sub');
       expect(decoded).toHaveProperty('userId', teacherData.userId);
@@ -300,7 +327,7 @@ describe('Auth Flow Integration Tests', () => {
 
       // JWT 토큰 검증
       const jwt = await import('jsonwebtoken');
-      const decoded = jwt.verify(token, 'test-jwt-secret-key-for-testing-only');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only');
 
       expect(decoded).toHaveProperty('sub');
       expect(decoded).toHaveProperty('userId', principalData.userId);
