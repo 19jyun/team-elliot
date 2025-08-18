@@ -1,5 +1,15 @@
 name: Backend CI/CD
 
+# GitHub Secrets 설정 필요:
+# - JWT_SECRET: JWT 토큰 서명용 시크릿 키 (Render 대시보드에서도 설정 가능)
+#
+# Secrets 설정 방법:
+# 1. GitHub 저장소 Settings > Secrets and variables > Actions
+# 2. "New repository secret" 클릭
+# 3. JWT_SECRET 변수 추가
+#
+# 참고: DATABASE_URL은 Render 대시보드에서 자동으로 설정됩니다.
+
 on:
   push:
     branches: [main]
@@ -16,9 +26,17 @@ jobs:
 
     # 테스트용 환경 변수 설정
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ballet_class_test_db
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ballet_class_test_db?schema=public
       JWT_SECRET: test-jwt-secret-key-for-testing-only
       NODE_ENV: test
+      # Jest Worker ID를 위한 환경변수
+      JEST_WORKER_ID: ${{ github.run_id }}
+      # 통합 테스트를 위한 추가 환경변수
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ballet_class_test_db
 
     services:
       postgres:
@@ -55,8 +73,10 @@ jobs:
       - name: Wait for database to be ready
         run: |
           echo "Waiting for PostgreSQL to be ready..."
-          while ! nc -z localhost 5432; do
-            sleep 1
+          # netcat이 없을 수 있으므로 다른 방법 사용
+          while ! timeout 1 bash -c "</dev/tcp/localhost/5432" 2>/dev/null; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
           done
           echo "PostgreSQL is ready!"
 
@@ -71,18 +91,38 @@ jobs:
           npx prisma db push --force-reset
           echo "Test database schema setup completed!"
 
+      - name: Verify database connection
+        working-directory: ./backend
+        run: |
+          echo "Verifying database connection..."
+          npx prisma db execute --stdin <<< "SELECT version();"
+          echo "Database connection verified!"
+
+      - name: Create test schemas for parallel testing
+        working-directory: ./backend
+        run: |
+          echo "Creating test schemas for parallel testing..."
+          # Jest Worker별 스키마 생성 (최대 4개 worker)
+          for i in {1..4}; do
+            echo "Creating schema test_worker_$i"
+            npx prisma db execute --stdin <<< "CREATE SCHEMA IF NOT EXISTS test_worker_$i;"
+          done
+          echo "Test schemas created successfully!"
+
       - name: Run linter
         working-directory: ./backend
         run: npm run lint
         continue-on-error: true
 
-      - name: Run tests
+      - name: Run unit tests
         working-directory: ./backend
         run: npm run test
+        timeout-minutes: 10
 
-      - name: Run e2e tests
+      - name: Run integration tests
         working-directory: ./backend
-        run: npm run test:e2e
+        run: npm run test:integration
+        timeout-minutes: 15
 
   build:
     needs: test
@@ -171,7 +211,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     env:
-      DATABASE_URL: ${{ secrets.RENDER_INTERNAL_DATABASE_URL }}
+      NODE_ENV: production
 
     steps:
       - name: Download build artifacts
@@ -183,6 +223,6 @@ jobs:
       - name: Deploy to production
         run: |
           echo "Deploying to production environment..."
-          echo "Using Render internal database URL for production deployment"
+          echo "Environment variables will be managed by Render dashboard"
           # Add your production deployment commands here
           # Example: docker build, kubectl apply, etc.
