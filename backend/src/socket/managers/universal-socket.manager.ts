@@ -38,7 +38,6 @@ export class UniversalSocketManager {
         affectedUsers.map(async (user) => {
           return await this.targetResolver.resolveUserTarget(
             user.userId,
-            user.userRole,
           );
         }),
       );

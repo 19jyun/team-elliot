@@ -179,13 +179,19 @@ jobs:
         working-directory: ./backend
         run: npm audit --audit-level=high
 
-      - name: Check for vulnerabilities
+      - name: Generate security report
         working-directory: ./backend
         run: |
-          echo "Security audit completed with vulnerabilities found"
-          echo "Continuing with deployment (vulnerabilities will be addressed separately)"
-          # Temporarily allow vulnerabilities to pass
-          # TODO: Fix security vulnerabilities in future updates
+          echo "=== Security Audit Report ==="
+          npm audit --audit-level=high --json > security-report.json || true
+          echo "Security audit completed. Check security-report.json for details."
+
+      - name: Upload security report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report
+          path: backend/security-report.json
+          retention-days: 30
 
   deploy-staging:
     needs: [test, build, security]

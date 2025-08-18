@@ -45,7 +45,6 @@ export class EnrollmentSocketManager {
       if (enrollment.status === 'APPROVED' && oldStatus === 'PENDING') {
         await this.checkAndNotifyClassFull(
           enrollment.classId,
-          enrollment.class.academyId,
         );
       }
 
