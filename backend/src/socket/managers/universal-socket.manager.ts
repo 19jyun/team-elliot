@@ -36,9 +36,7 @@ export class UniversalSocketManager {
       // 각 사용자에게 개별적으로 이벤트 전송
       const targets = await Promise.all(
         affectedUsers.map(async (user) => {
-          return await this.targetResolver.resolveUserTarget(
-            user.userId,
-          );
+          return await this.targetResolver.resolveUserTarget(user.userId);
         }),
       );
 

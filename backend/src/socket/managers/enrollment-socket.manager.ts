@@ -43,9 +43,7 @@ export class EnrollmentSocketManager {
 
       // 수강신청 수락으로 인한 클래스 가득참 여부 확인
       if (enrollment.status === 'APPROVED' && oldStatus === 'PENDING') {
-        await this.checkAndNotifyClassFull(
-          enrollment.classId,
-        );
+        await this.checkAndNotifyClassFull(enrollment.classId);
       }
 
       this.logger.log(`✅ 수강신청 상태 변경 알림 완료`);
