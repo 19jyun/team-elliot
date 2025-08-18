@@ -774,8 +774,17 @@ export class RefundService {
 
   // Principal이 환불 요청 승인
   async approveRefundByPrincipal(refundId: number, principalId: number) {
-    const principal = await this.prisma.principal.findUnique({
+    // principalId는 User 테이블의 ID이므로, User를 먼저 찾고 Principal 정보를 가져옴
+    const userEntity = await this.prisma.user.findUnique({
       where: { id: principalId },
+    });
+
+    if (!userEntity) {
+      throw new NotFoundException('User not found');
+    }
+
+    const principal = await this.prisma.principal.findUnique({
+      where: { userId: userEntity.userId },
       include: { academy: true },
     });
 
@@ -806,12 +815,11 @@ export class RefundService {
     }
 
     // Principal 정보를 User 테이블에서 찾거나 생성 (processedBy 기록용)
-    let user = await this.prisma.user.findUnique({
-      where: { userId: principal.userId },
-    });
+    // 이미 위에서 찾은 userEntity를 사용
+    let processedByUser = userEntity;
 
-    if (!user) {
-      user = await this.prisma.user.create({
+    if (!processedByUser) {
+      processedByUser = await this.prisma.user.create({
         data: {
           userId: principal.userId,
           password: principal.password,
@@ -827,7 +835,7 @@ export class RefundService {
         where: { id: refundId },
         data: {
           status: 'APPROVED',
-          processedBy: user.id,
+          processedBy: processedByUser.id,
           processedAt: new Date(),
           actualRefundAmount: refundRequest.refundAmount,
         },

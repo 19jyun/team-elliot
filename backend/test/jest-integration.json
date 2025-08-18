@@ -8,6 +8,8 @@
   },
   "setupFilesAfterEnv": ["<rootDir>/src/__tests__/integration/setup/test-setup.ts"],
   "testTimeout": 30000,
+  "maxWorkers": 4,
+  "workerIdleMemoryLimit": "512MB",
   "collectCoverageFrom": [
     "src/**/*.(t|j)s",
     "!src/**/*.spec.ts",
