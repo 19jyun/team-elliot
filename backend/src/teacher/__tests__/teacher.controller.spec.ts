@@ -1,210 +1,289 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TeacherController } from '../teacher.controller';
 import { TeacherService } from '../teacher.service';
+import { CreateClassDto } from '../../types/class.types';
+import { JoinAcademyRequestDto } from '../../academy/dto/join-academy-request.dto';
 
 describe('TeacherController', () => {
   let controller: TeacherController;
-  let teacherService: TeacherService;
+  let service: TeacherService;
 
-  const mockTeacherService = {
+  const mockService = {
+    createClass: jest.fn(),
+    requestJoinAcademy: jest.fn(),
     getTeacherProfile: jest.fn(),
     updateProfile: jest.fn(),
+    updateProfilePhoto: jest.fn(),
+    getTeacherData: jest.fn(),
     getTeacherClasses: jest.fn(),
+    getTeacherClassesWithSessions: jest.fn(),
+    getMyAcademy: jest.fn(),
+    changeAcademy: jest.fn(),
+    leaveAcademy: jest.fn(),
+  };
+
+  const mockUser = {
+    id: 1,
+    role: 'TEACHER',
   };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [TeacherController],
-      providers: [
-        {
-          provide: TeacherService,
-          useValue: mockTeacherService,
-        },
-      ],
+      providers: [{ provide: TeacherService, useValue: mockService }],
     }).compile();
-
     controller = module.get<TeacherController>(TeacherController);
-    teacherService = module.get<TeacherService>(TeacherService);
-  });
-
-  afterEach(() => {
+    service = module.get<TeacherService>(TeacherService);
     jest.clearAllMocks();
   });
 
-  describe('getTeacherProfile', () => {
-    it('should return teacher profile successfully', async () => {
-      const teacherId = 1;
-      const mockTeacherProfile = {
-        id: teacherId,
-        name: '김선생님',
-        phoneNumber: '010-1234-5678',
-        introduction: '수학 전문가입니다.',
-        photoUrl: 'https://example.com/photo.jpg',
+  describe('createClass', () => {
+    it('should create a class successfully', async () => {
+      const createClassDto: CreateClassDto = {
+        className: 'Test Class',
+        description: 'Test Description',
+        maxStudents: 20,
+        tuitionFee: 100000,
+        teacherId: 1,
+        academyId: 1,
+        dayOfWeek: 'MONDAY',
+        level: 'BEGINNER',
+        startTime: '09:00',
+        endTime: '10:00',
+        startDate: '2024-01-01',
+        endDate: '2024-12-31',
       };
+      const createdClass = { id: 1, ...createClassDto };
+      mockService.createClass.mockResolvedValue(createdClass);
 
-      mockTeacherService.getTeacherProfile.mockResolvedValue(
-        mockTeacherProfile,
+      const result = await controller.createClass(mockUser, createClassDto);
+
+      expect(result).toEqual(createdClass);
+      expect(service.createClass).toHaveBeenCalledWith(
+        mockUser.id,
+        createClassDto,
+        mockUser.role,
       );
-
-      const result = await controller.getTeacherProfile(teacherId);
-
-      expect(teacherService.getTeacherProfile).toHaveBeenCalledWith(teacherId);
-      expect(result).toEqual(mockTeacherProfile);
-    });
-
-    it('should handle numeric teacher ID correctly', async () => {
-      const teacherId = 123;
-      const mockTeacherProfile = { id: teacherId, name: '테스트 선생님' };
-
-      mockTeacherService.getTeacherProfile.mockResolvedValue(
-        mockTeacherProfile,
-      );
-
-      await controller.getTeacherProfile(teacherId);
-
-      expect(teacherService.getTeacherProfile).toHaveBeenCalledWith(teacherId);
     });
   });
 
-  describe('updateProfile', () => {
-    it('should update teacher profile with text data only', async () => {
-      const teacherId = 1;
-      const updateData = { introduction: '새로운 소개입니다.' };
-      const mockUpdatedProfile = {
-        id: teacherId,
-        name: '김선생님',
-        introduction: '새로운 소개입니다.',
+  describe('requestJoinAcademy', () => {
+    it('should request to join academy successfully', async () => {
+      const joinAcademyRequestDto: JoinAcademyRequestDto = {
+        code: 'TEST001',
+        message: 'I want to join this academy',
       };
+      const result = { message: '가입 요청이 전송되었습니다.' };
+      mockService.requestJoinAcademy.mockResolvedValue(result);
 
-      mockTeacherService.updateProfile.mockResolvedValue(mockUpdatedProfile);
-
-      const result = await controller.updateProfile(teacherId, updateData);
-
-      expect(teacherService.updateProfile).toHaveBeenCalledWith(
-        teacherId,
-        updateData,
-        undefined,
+      const response = await controller.requestJoinAcademy(
+        mockUser,
+        joinAcademyRequestDto,
       );
-      expect(result).toEqual(mockUpdatedProfile);
-    });
 
-    it('should update teacher profile with photo', async () => {
-      const teacherId = 1;
-      const updateData = { introduction: '새로운 소개입니다.' };
+      expect(response).toEqual(result);
+      expect(service.requestJoinAcademy).toHaveBeenCalledWith(
+        mockUser.id,
+        joinAcademyRequestDto,
+      );
+    });
+  });
+
+  describe('getMyProfile', () => {
+    it('should get teacher profile successfully', async () => {
+      const teacherProfile = {
+        id: 1,
+        userId: 1,
+        name: 'Test Teacher',
+        phoneNumber: '010-1234-5678',
+        introduction: 'Test introduction',
+        photoUrl: 'test.jpg',
+        education: ['Test University'],
+        specialties: ['Ballet'],
+        certifications: ['Test Certification'],
+        yearsOfExperience: 5,
+        availableTimes: {},
+        academyId: 1,
+        academy: { id: 1, name: 'Test Academy' },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      mockService.getTeacherProfile.mockResolvedValue(teacherProfile);
+
+      const result = await controller.getMyProfile(mockUser);
+
+      expect(result).toEqual(teacherProfile);
+      expect(service.getTeacherProfile).toHaveBeenCalledWith(mockUser.id);
+    });
+  });
+
+  describe('updateMyProfile', () => {
+    it('should update teacher profile successfully', async () => {
+      const updateData = {
+        name: 'Updated Teacher',
+        introduction: 'Updated introduction',
+      };
+      const updatedProfile = {
+        id: 1,
+        ...updateData,
+        phoneNumber: '010-1234-5678',
+        photoUrl: 'test.jpg',
+        education: ['Test University'],
+        specialties: ['Ballet'],
+        certifications: ['Test Certification'],
+        yearsOfExperience: 5,
+        availableTimes: {},
+        academyId: 1,
+        academy: { id: 1, name: 'Test Academy' },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      mockService.updateProfile.mockResolvedValue(updatedProfile);
+
+      const result = await controller.updateMyProfile(mockUser, updateData);
+
+      expect(result).toEqual(updatedProfile);
+      expect(service.updateProfile).toHaveBeenCalledWith(
+        mockUser.id,
+        updateData,
+      );
+    });
+  });
+
+  describe('updateMyProfilePhoto', () => {
+    it('should update teacher profile photo successfully', async () => {
       const mockPhoto = {
-        filename: 'test-photo.jpg',
-        originalname: 'photo.jpg',
+        fieldname: 'photo',
+        originalname: 'test.jpg',
+        encoding: '7bit',
         mimetype: 'image/jpeg',
+        buffer: Buffer.from('test'),
         size: 1024,
       } as Express.Multer.File;
-      const mockUpdatedProfile = {
-        id: teacherId,
-        name: '김선생님',
-        introduction: '새로운 소개입니다.',
-        photoUrl: '/uploads/profile-photos/test-photo.jpg',
-      };
+      const result = { message: '프로필 사진이 업데이트되었습니다.' };
+      mockService.updateProfilePhoto.mockResolvedValue(result);
 
-      mockTeacherService.updateProfile.mockResolvedValue(mockUpdatedProfile);
-
-      const result = await controller.updateProfile(
-        teacherId,
-        updateData,
+      const response = await controller.updateMyProfilePhoto(
+        mockUser,
         mockPhoto,
       );
 
-      expect(teacherService.updateProfile).toHaveBeenCalledWith(
-        teacherId,
-        updateData,
+      expect(response).toEqual(result);
+      expect(service.updateProfilePhoto).toHaveBeenCalledWith(
+        mockUser.id,
         mockPhoto,
-      );
-      expect(result).toEqual(mockUpdatedProfile);
-    });
-
-    it('should handle numeric teacher ID correctly', async () => {
-      const teacherId = 456;
-      const updateData = { introduction: '테스트 소개' };
-      const mockUpdatedProfile = { id: teacherId, introduction: '테스트 소개' };
-
-      mockTeacherService.updateProfile.mockResolvedValue(mockUpdatedProfile);
-
-      await controller.updateProfile(teacherId, updateData);
-
-      expect(teacherService.updateProfile).toHaveBeenCalledWith(
-        teacherId,
-        updateData,
-        undefined,
       );
     });
   });
 
-  describe('getTeacherClasses', () => {
-    it('should return teacher classes successfully', async () => {
-      const teacherId = 1;
-      const mockClasses = [
+  describe('getTeacherData', () => {
+    it('should get teacher data successfully', async () => {
+      const teacherData = {
+        profile: {
+          id: 1,
+          name: 'Test Teacher',
+        },
+        classes: [],
+        sessions: [],
+      };
+      mockService.getTeacherData.mockResolvedValue(teacherData);
+
+      const result = await controller.getTeacherData(mockUser);
+
+      expect(result).toEqual(teacherData);
+      expect(service.getTeacherData).toHaveBeenCalledWith(mockUser.id);
+    });
+  });
+
+  describe('getMyClasses', () => {
+    it('should get teacher classes successfully', async () => {
+      const classes = [
         {
           id: 1,
-          name: '수학',
-          description: '기초 수학',
-          maxStudents: 20,
-          currentStudents: 15,
-          enrollments: [
-            {
-              id: 1,
-              student: {
-                id: 1,
-                name: '학생1',
-              },
-            },
-            {
-              id: 2,
-              student: {
-                id: 2,
-                name: '학생2',
-              },
-            },
-          ],
+          name: 'Test Class 1',
+          description: 'Test Description 1',
         },
         {
           id: 2,
-          name: '영어',
-          description: '기초 영어',
-          maxStudents: 15,
-          currentStudents: 10,
-          enrollments: [
-            {
-              id: 3,
-              student: {
-                id: 3,
-                name: '학생3',
-              },
-            },
+          name: 'Test Class 2',
+          description: 'Test Description 2',
+        },
+      ];
+      mockService.getTeacherClasses.mockResolvedValue(classes);
+
+      const result = await controller.getMyClasses(mockUser);
+
+      expect(result).toEqual(classes);
+      expect(service.getTeacherClasses).toHaveBeenCalledWith(mockUser.id);
+    });
+  });
+
+  describe('getMyClassesWithSessions', () => {
+    it('should get teacher classes with sessions successfully', async () => {
+      const classesWithSessions = [
+        {
+          id: 1,
+          name: 'Test Class 1',
+          sessions: [
+            { id: 1, date: new Date() },
+            { id: 2, date: new Date() },
           ],
         },
       ];
+      mockService.getTeacherClassesWithSessions.mockResolvedValue(
+        classesWithSessions,
+      );
 
-      mockTeacherService.getTeacherClasses.mockResolvedValue(mockClasses);
+      const result = await controller.getMyClassesWithSessions(mockUser);
 
-      const result = await controller.getTeacherClasses(teacherId);
-
-      expect(teacherService.getTeacherClasses).toHaveBeenCalledWith(teacherId);
-      expect(result).toEqual(mockClasses);
+      expect(result).toEqual(classesWithSessions);
+      expect(service.getTeacherClassesWithSessions).toHaveBeenCalledWith(
+        mockUser.id,
+      );
     });
+  });
 
-    it('should handle numeric teacher ID correctly', async () => {
-      const teacherId = 789;
-      const mockClasses = [
-        {
-          id: 1,
-          name: '테스트 수업',
-          enrollments: [],
-        },
-      ];
+  describe('getMyAcademy', () => {
+    it('should get teacher academy successfully', async () => {
+      const academy = {
+        id: 1,
+        name: 'Test Academy',
+        code: 'TEST001',
+      };
+      mockService.getMyAcademy.mockResolvedValue(academy);
 
-      mockTeacherService.getTeacherClasses.mockResolvedValue(mockClasses);
+      const result = await controller.getMyAcademy(mockUser);
 
-      await controller.getTeacherClasses(teacherId);
+      expect(result).toEqual(academy);
+      expect(service.getMyAcademy).toHaveBeenCalledWith(mockUser.id);
+    });
+  });
 
-      expect(teacherService.getTeacherClasses).toHaveBeenCalledWith(teacherId);
+  describe('changeAcademy', () => {
+    it('should change teacher academy successfully', async () => {
+      const body = { code: 'NEW001' };
+      const result = { message: '학원이 변경되었습니다.' };
+      mockService.changeAcademy.mockResolvedValue(result);
+
+      const response = await controller.changeAcademy(mockUser, body);
+
+      expect(response).toEqual(result);
+      expect(service.changeAcademy).toHaveBeenCalledWith(
+        mockUser.id,
+        body.code,
+      );
+    });
+  });
+
+  describe('leaveAcademy', () => {
+    it('should leave academy successfully', async () => {
+      const result = { message: '학원을 나갔습니다.' };
+      mockService.leaveAcademy.mockResolvedValue(result);
+
+      const response = await controller.leaveAcademy(mockUser);
+
+      expect(response).toEqual(result);
+      expect(service.leaveAcademy).toHaveBeenCalledWith(mockUser.id);
     });
   });
 });

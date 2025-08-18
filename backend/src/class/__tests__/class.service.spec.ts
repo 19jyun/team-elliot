@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ClassService } from '../class.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { CreateClassDto, DayOfWeek } from '../../types/class.types';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 
 describe('ClassService', () => {
@@ -23,6 +24,18 @@ describe('ClassService', () => {
       create: jest.fn(),
       delete: jest.fn(),
     },
+    classSession: {
+      findMany: jest.fn(),
+      createMany: jest.fn(),
+      deleteMany: jest.fn(),
+    },
+    sessionEnrollment: {
+      deleteMany: jest.fn(),
+    },
+    academy: {
+      findUnique: jest.fn(),
+    },
+    $transaction: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -37,144 +50,350 @@ describe('ClassService', () => {
     jest.clearAllMocks();
   });
 
-  it('should get all classes', async () => {
-    const classes = [{ id: 1, className: 'A' }];
-    prisma.class.findMany.mockResolvedValue(classes);
-    const result = await service.getAllClasses({});
-    expect(result).toBe(classes);
-    expect(prisma.class.findMany).toHaveBeenCalled();
-  });
-
-  it('should create a class (success)', async () => {
-    prisma.teacher.findUnique.mockResolvedValue({ id: 1 });
-    prisma.class.create.mockResolvedValue({ id: 1, className: 'A' });
-    const result = await service.createClass({
-      className: 'A',
-      tuitionFee: 10000,
-      teacherId: 1,
-      dayOfWeek: '월',
-      startTime: '14:00',
-      endTime: '15:00',
-      startDate: new Date('2024-01-01'),
-      endDate: new Date('2024-01-31'),
+  describe('getAllClasses', () => {
+    it('should get all classes', async () => {
+      const classes = [{ id: 1, className: 'A' }];
+      prisma.class.findMany.mockResolvedValue(classes);
+      const result = await service.getAllClasses({});
+      expect(result).toBe(classes);
+      expect(prisma.class.findMany).toHaveBeenCalled();
     });
-    expect(result).toEqual({ id: 1, className: 'A' });
+
+    it('should get classes with dayOfWeek filter', async () => {
+      const classes = [{ id: 1, className: 'Monday Class' }];
+      prisma.class.findMany.mockResolvedValue(classes);
+      const result = await service.getAllClasses({ dayOfWeek: 'MONDAY' });
+      expect(result).toBe(classes);
+      expect(prisma.class.findMany).toHaveBeenCalledWith({
+        where: { dayOfWeek: 'MONDAY' },
+        include: expect.any(Object),
+      });
+    });
+
+    it('should get classes with teacherId filter', async () => {
+      const classes = [{ id: 1, className: 'Teacher Class' }];
+      prisma.class.findMany.mockResolvedValue(classes);
+      const result = await service.getAllClasses({ teacherId: 1 });
+      expect(result).toBe(classes);
+      expect(prisma.class.findMany).toHaveBeenCalledWith({
+        where: { teacherId: 1 },
+        include: expect.any(Object),
+      });
+    });
   });
 
-  it('should throw if teacher not found on createClass', async () => {
-    prisma.teacher.findUnique.mockResolvedValue(null);
-    await expect(
-      service.createClass({
+  describe('createClass', () => {
+    it('should create a class (success)', async () => {
+      const createClassDto: CreateClassDto = {
         className: 'A',
+        description: 'Test class',
+        maxStudents: 10,
         tuitionFee: 10000,
         teacherId: 1,
-        dayOfWeek: '월',
+        academyId: 1,
+        dayOfWeek: 'MONDAY' as DayOfWeek,
         startTime: '14:00',
         endTime: '15:00',
-        startDate: new Date('2024-01-01'),
-        endDate: new Date('2024-01-31'),
-      }),
-    ).rejects.toThrow(NotFoundException);
-  });
+        startDate: '2024-01-01T00:00:00.000Z',
+        endDate: '2024-01-31T00:00:00.000Z',
+        level: 'BEGINNER',
+      };
 
-  it('should update a class (success)', async () => {
-    prisma.class.findUnique.mockResolvedValue({ id: 1 });
-    prisma.class.update.mockResolvedValue({ id: 1, className: 'B' });
-    const result = await service.updateClass(1, { className: 'B' });
-    expect(result).toEqual({ id: 1, className: 'B' });
-  });
+      prisma.teacher.findUnique.mockResolvedValue({ id: 1 });
+      prisma.academy.findUnique.mockResolvedValue({ id: 1 });
+      prisma.class.findMany.mockResolvedValue([]); // 기존 클래스 없음
+      prisma.class.create.mockResolvedValue({ id: 1, className: 'A' });
+      prisma.class.findUnique.mockResolvedValue({ id: 1, className: 'A' }); // generateClassSessions에서 사용
+      prisma.classSession.createMany.mockResolvedValue({ count: 4 });
 
-  it('should throw if class not found on updateClass', async () => {
-    prisma.class.findUnique.mockResolvedValue(null);
-    await expect(service.updateClass(1, { className: 'B' })).rejects.toThrow(
-      NotFoundException,
-    );
-  });
+      const result = await service.createClass(createClassDto);
 
-  it('should delete a class (success)', async () => {
-    prisma.class.findUnique.mockResolvedValue({ id: 1, enrollments: [] });
-    prisma.class.delete.mockResolvedValue({ id: 1 });
-    const result = await service.deleteClass(1);
-    expect(result).toEqual({ id: 1 });
-  });
-
-  it('should throw if class not found on deleteClass', async () => {
-    prisma.class.findUnique.mockResolvedValue(null);
-    await expect(service.deleteClass(1)).rejects.toThrow(NotFoundException);
-  });
-
-  it('should throw if class has enrollments on deleteClass', async () => {
-    prisma.class.findUnique.mockResolvedValue({ id: 1, enrollments: [{}] });
-    await expect(service.deleteClass(1)).rejects.toThrow(BadRequestException);
-  });
-
-  it('should enroll a student (success)', async () => {
-    prisma.class.findUnique.mockResolvedValue({ id: 1, enrollments: [] });
-    prisma.enrollment.findFirst.mockResolvedValue(null);
-    prisma.enrollment.create.mockResolvedValue({ id: 1 });
-    const result = await service.enrollStudent(1, 2);
-    expect(result).toEqual({ id: 1 });
-  });
-
-  it('should throw if class not found on enrollStudent', async () => {
-    prisma.class.findUnique.mockResolvedValue(null);
-    await expect(service.enrollStudent(1, 2)).rejects.toThrow(
-      NotFoundException,
-    );
-  });
-
-  it('should throw if class is full on enrollStudent', async () => {
-    prisma.class.findUnique.mockResolvedValue({
-      id: 1,
-      maxStudents: 1,
-      enrollments: [{}],
+      expect(result).toEqual({
+        id: 1,
+        className: 'A',
+        message: '5개의 세션이 자동으로 생성되었습니다.',
+        sessionCount: 5,
+      });
+      expect(prisma.teacher.findUnique).toHaveBeenCalledWith({
+        where: { id: createClassDto.teacherId },
+        include: {
+          academy: {
+            include: {
+              principal: true,
+            },
+          },
+        },
+      });
     });
-    await expect(service.enrollStudent(1, 2)).rejects.toThrow(
-      BadRequestException,
-    );
-  });
 
-  it('should throw if already enrolled', async () => {
-    prisma.class.findUnique.mockResolvedValue({ id: 1, enrollments: [] });
-    prisma.enrollment.findFirst.mockResolvedValue({ id: 1 });
-    await expect(service.enrollStudent(1, 2)).rejects.toThrow(
-      BadRequestException,
-    );
-  });
+    it('should throw NotFoundException when teacher not found', async () => {
+      const createClassDto: CreateClassDto = {
+        className: 'A',
+        description: 'Test class',
+        maxStudents: 10,
+        tuitionFee: 10000,
+        teacherId: 999,
+        academyId: 1,
+        dayOfWeek: 'MONDAY' as DayOfWeek,
+        startTime: '14:00',
+        endTime: '15:00',
+        startDate: '2024-01-01T00:00:00.000Z',
+        endDate: '2024-01-31T00:00:00.000Z',
+        level: 'BEGINNER',
+      };
 
-  it('should unenroll a student (success)', async () => {
-    prisma.enrollment.findFirst.mockResolvedValue({ id: 1 });
-    prisma.enrollment.delete.mockResolvedValue({ id: 1 });
-    const result = await service.unenrollStudent(1, 2);
-    expect(result).toEqual({ id: 1 });
-  });
+      prisma.teacher.findUnique.mockResolvedValue(null);
 
-  it('should throw if enrollment not found on unenrollStudent', async () => {
-    prisma.enrollment.findFirst.mockResolvedValue(null);
-    await expect(service.unenrollStudent(1, 2)).rejects.toThrow(
-      NotFoundException,
-    );
-  });
-
-  it('should get class details (success)', async () => {
-    prisma.class.findUnique.mockResolvedValue({
-      id: 1,
-      teacher: {},
-      classDetail: {},
+      await expect(service.createClass(createClassDto)).rejects.toThrow(
+        NotFoundException,
+      );
     });
-    const result = await service.getClassDetails(1);
-    expect(result).toEqual({ id: 1, teacher: {}, classDetail: {} });
+
+    it('should throw NotFoundException when teacher not found with academy', async () => {
+      const createClassDto: CreateClassDto = {
+        className: 'A',
+        description: 'Test class',
+        maxStudents: 10,
+        tuitionFee: 10000,
+        teacherId: 999,
+        academyId: 1,
+        dayOfWeek: 'MONDAY' as DayOfWeek,
+        startTime: '14:00',
+        endTime: '15:00',
+        startDate: '2024-01-01T00:00:00.000Z',
+        endDate: '2024-01-31T00:00:00.000Z',
+        level: 'BEGINNER',
+      };
+
+      prisma.teacher.findUnique.mockResolvedValue(null);
+
+      await expect(service.createClass(createClassDto)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
   });
 
-  it('should throw if class not found on getClassDetails', async () => {
-    prisma.class.findUnique.mockResolvedValue(null);
-    await expect(service.getClassDetails(1)).rejects.toThrow(NotFoundException);
+  describe('getClassDetails', () => {
+    it('should get class details', async () => {
+      const classId = 1;
+      const classDetails = {
+        id: classId,
+        className: 'Test Class',
+        description: 'Test Description',
+        teacher: { id: 1, name: 'Test Teacher' },
+        enrollments: [],
+      };
+
+      prisma.class.findUnique.mockResolvedValue(classDetails);
+
+      const result = await service.getClassDetails(classId);
+
+      expect(result).toEqual(classDetails);
+      expect(prisma.class.findUnique).toHaveBeenCalledWith({
+        where: { id: classId },
+        include: expect.any(Object),
+      });
+    });
+
+    it('should throw NotFoundException when class not found', async () => {
+      const classId = 999;
+
+      prisma.class.findUnique.mockResolvedValue(null);
+
+      await expect(service.getClassDetails(classId)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
   });
 
-  it('should get classes by month', async () => {
-    const classes = [{ id: 1 }];
-    prisma.class.findMany.mockResolvedValue(classes);
-    const result = await service.getClassesByMonth('07', 2024);
-    expect(result).toBe(classes);
+  describe('updateClass', () => {
+    it('should update a class', async () => {
+      const classId = 1;
+      const updateData = { className: 'Updated Class' };
+      const updatedClass = { id: classId, ...updateData };
+
+      prisma.class.findUnique.mockResolvedValue({ id: classId });
+      prisma.class.update.mockResolvedValue(updatedClass);
+
+      const result = await service.updateClass(classId, updateData);
+
+      expect(result).toEqual(updatedClass);
+      expect(prisma.class.findUnique).toHaveBeenCalledWith({
+        where: { id: classId },
+      });
+      expect(prisma.class.update).toHaveBeenCalledWith({
+        where: { id: classId },
+        data: updateData,
+      });
+    });
+
+    it('should throw NotFoundException when class not found', async () => {
+      const classId = 999;
+      const updateData = { className: 'Updated Class' };
+
+      prisma.class.findUnique.mockResolvedValue(null);
+
+      await expect(service.updateClass(classId, updateData)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('deleteClass', () => {
+    it('should delete a class', async () => {
+      const classId = 1;
+      const deletedClass = { id: classId, className: 'Deleted Class' };
+
+      prisma.class.findUnique.mockResolvedValue({
+        id: classId,
+        enrollments: [],
+        classSessions: [],
+      });
+      prisma.$transaction.mockImplementation(async (callback) => {
+        return await callback(mockPrisma);
+      });
+      prisma.sessionEnrollment.deleteMany.mockResolvedValue({ count: 0 });
+      prisma.classSession.deleteMany.mockResolvedValue({ count: 0 });
+      prisma.class.delete.mockResolvedValue(deletedClass);
+
+      const result = await service.deleteClass(classId);
+
+      expect(result).toEqual({
+        message:
+          '클래스 "Deleted Class"과 관련된 모든 데이터가 성공적으로 삭제되었습니다.',
+        deletedData: {
+          class: 1,
+          payments: 0,
+          sessionEnrollments: 0,
+          sessions: 0,
+        },
+      });
+      expect(prisma.class.findUnique).toHaveBeenCalledWith({
+        where: { id: classId },
+        include: expect.any(Object),
+      });
+      expect(prisma.class.delete).toHaveBeenCalledWith({
+        where: { id: classId },
+      });
+    });
+
+    it('should throw NotFoundException when class not found', async () => {
+      const classId = 999;
+
+      prisma.class.findUnique.mockResolvedValue(null);
+
+      await expect(service.deleteClass(classId)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('enrollStudent', () => {
+    it('should enroll student successfully', async () => {
+      const classId = 1;
+      const studentId = 1;
+
+      prisma.class.findUnique.mockResolvedValue({
+        id: classId,
+        maxStudents: 10,
+        enrollments: [],
+      });
+      prisma.enrollment.findFirst.mockResolvedValue(null);
+      prisma.enrollment.create.mockResolvedValue({ classId, studentId });
+
+      const result = await service.enrollStudent(classId, studentId);
+
+      expect(result).toEqual({ classId, studentId });
+      expect(prisma.class.findUnique).toHaveBeenCalledWith({
+        where: { id: classId },
+        include: expect.any(Object),
+      });
+      expect(prisma.enrollment.findFirst).toHaveBeenCalledWith({
+        where: { classId, studentId },
+      });
+      expect(prisma.enrollment.create).toHaveBeenCalledWith({
+        data: { classId, studentId },
+      });
+    });
+
+    it('should throw NotFoundException when class not found', async () => {
+      const classId = 999;
+      const studentId = 1;
+
+      prisma.class.findUnique.mockResolvedValue(null);
+
+      await expect(service.enrollStudent(classId, studentId)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should throw BadRequestException when student already enrolled', async () => {
+      const classId = 1;
+      const studentId = 1;
+
+      prisma.class.findUnique.mockResolvedValue({
+        id: classId,
+        maxStudents: 10,
+        enrollments: [],
+      });
+      prisma.enrollment.findFirst.mockResolvedValue({ classId, studentId });
+
+      await expect(service.enrollStudent(classId, studentId)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
+  describe('unenrollStudent', () => {
+    it('should unenroll student successfully', async () => {
+      const classId = 1;
+      const studentId = 1;
+
+      prisma.enrollment.findFirst.mockResolvedValue({
+        id: 1,
+        classId,
+        studentId,
+      });
+      prisma.enrollment.delete.mockResolvedValue({ id: 1, classId, studentId });
+
+      const result = await service.unenrollStudent(classId, studentId);
+
+      expect(result).toEqual({ id: 1, classId, studentId });
+      expect(prisma.enrollment.findFirst).toHaveBeenCalledWith({
+        where: { classId, studentId },
+      });
+      expect(prisma.enrollment.delete).toHaveBeenCalledWith({
+        where: { id: 1 },
+      });
+    });
+
+    it('should throw NotFoundException when enrollment not found', async () => {
+      const classId = 1;
+      const studentId = 1;
+
+      prisma.enrollment.findFirst.mockResolvedValue(null);
+
+      await expect(service.unenrollStudent(classId, studentId)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('getClassesByMonth', () => {
+    it('should get classes by month', async () => {
+      const month = '01';
+      const year = 2024;
+      const classes = [{ id: 1, className: 'January Class' }];
+
+      prisma.class.findMany.mockResolvedValue(classes);
+
+      const result = await service.getClassesByMonth(month, year);
+
+      expect(result).toEqual(classes);
+      expect(prisma.class.findMany).toHaveBeenCalledWith({
+        where: expect.any(Object),
+        include: expect.any(Object),
+      });
+    });
   });
 });

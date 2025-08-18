@@ -90,8 +90,6 @@ export class ClassSessionController {
     return this.classSessionService.deleteClassSession(sessionId, user.id);
   }
 
-  // ===== 선생님/관리자용 수강 신청 관리 API =====
-
   /**
    * 선생님의 수강 신청 목록 조회
    */
@@ -177,20 +175,6 @@ export class ClassSessionController {
   }
 
   /**
-   * 특정 세션의 수강생 목록 조회
-   */
-  @Get(':sessionId/enrollments')
-  @Roles(Role.TEACHER)
-  @ApiOperation({ summary: '특정 세션의 수강생 목록 조회' })
-  @ApiResponse({ status: 200, description: '세션별 수강생 목록 조회 성공' })
-  async getSessionEnrollments(
-    @Param('sessionId', ParseIntPipe) sessionId: number,
-    @CurrentUser() user: any,
-  ) {
-    return this.classSessionService.getSessionEnrollments(sessionId, user.id);
-  }
-
-  /**
    * 수업 완료 처리 (스케줄러용)
    */
   @Post('complete-sessions')
@@ -267,10 +251,24 @@ export class ClassSessionController {
     return this.classSessionService.getStudentEnrollments(user.id, filters);
   }
 
+  /**
+   * 특정 세션의 수강생 목록 조회
+   */
+  @Get(':sessionId/enrollments')
+  @Roles(Role.TEACHER)
+  @ApiOperation({ summary: '특정 세션의 수강생 목록 조회' })
+  @ApiResponse({ status: 200, description: '세션별 수강생 목록 조회 성공' })
+  async getSessionEnrollments(
+    @Param('sessionId', ParseIntPipe) sessionId: number,
+    @CurrentUser() user: any,
+  ) {
+    return this.classSessionService.getSessionEnrollments(sessionId, user.id);
+  }
+
   // ===== 조회 API =====
 
   @Get('class/:classId')
-  @Roles(Role.STUDENT, Role.TEACHER)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.PRINCIPAL)
   @ApiOperation({ summary: '클래스별 세션 목록 조회' })
   async getClassSessions(
     @Param('classId', ParseIntPipe) classId: number,

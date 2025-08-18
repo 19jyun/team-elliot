@@ -1,0 +1,28 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": "..",
+  "testEnvironment": "node",
+  "testRegex": ".*\\.spec\\.ts$",
+  "testPathIgnorePatterns": [
+    ".*\\.integration\\.spec\\.ts$",
+    ".*\\.e2e-spec\\.ts$",
+    "src/__tests__/integration/"
+  ],
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "testTimeout": 10000,
+  "collectCoverageFrom": [
+    "src/**/*.(t|j)s",
+    "!src/**/*.spec.ts",
+    "!src/**/*.integration.spec.ts",
+    "!src/**/*.e2e-spec.ts",
+    "!src/__tests__/integration/**/*"
+  ],
+  "coverageDirectory": "../coverage/unit",
+  "modulePaths": ["<rootDir>/../src"],
+  "globals": {
+    "NODE_ENV": "test",
+    "JWT_SECRET": "test-jwt-secret-key-for-testing-only"
+  }
+}
