@@ -73,6 +73,9 @@ describe('AuthService', () => {
       create: jest.fn(),
       delete: jest.fn(),
     },
+    user: {
+      findUnique: jest.fn(),
+    },
     withdrawalHistory: {
       create: jest.fn(),
     },
@@ -115,6 +118,7 @@ describe('AuthService', () => {
       const password = 'principal123';
 
       mockPrismaService.principal.findUnique.mockResolvedValue(mockPrincipal);
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       // Act
@@ -199,6 +203,7 @@ describe('AuthService', () => {
         const expectedToken = 'mock-jwt-token';
 
         mockPrismaService.principal.findUnique.mockResolvedValue(mockPrincipal);
+        mockPrismaService.user.findUnique.mockResolvedValue(null);
         (bcrypt.compare as jest.Mock).mockResolvedValue(true);
         mockJwtService.sign.mockReturnValue(expectedToken);
 
@@ -392,7 +397,7 @@ describe('AuthService', () => {
         },
       });
       expect(mockJwtService.sign).toHaveBeenCalledWith({
-        id: mockNewStudent.id,
+        sub: mockNewStudent.id,
         userId: mockNewStudent.userId,
         role: 'STUDENT',
       });
