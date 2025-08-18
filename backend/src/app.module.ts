@@ -16,6 +16,7 @@ import { BalletPoseModule } from './ballet-pose/ballet-pose.module';
 import { SessionContentModule } from './session-content/session-content.module';
 import { PrincipalModule } from './principal/principal.module';
 import { SocketModule } from './socket/socket.module';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { SocketModule } from './socket/socket.module';
     PrincipalModule,
     SocketModule,
   ],
+  controllers: [AppController],
   providers: [PrismaService],
 })
 export class AppModule {}

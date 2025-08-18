@@ -38,6 +38,10 @@ RUN npm ci --only=production && npm cache clean --force
 COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nestjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 
+# Create uploads directory and set permissions
+RUN mkdir -p /app/uploads/teacher-photos /app/uploads/principal-photos /app/uploads/ballet-poses
+RUN chown -R nestjs:nodejs /app/uploads
+
 # Switch to non-root user
 USER nestjs
 
