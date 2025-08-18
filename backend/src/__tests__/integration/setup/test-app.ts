@@ -233,14 +233,14 @@ export class TestApp {
   // 마이그레이션 실행
   private async runMigrations(): Promise<void> {
     try {
-      const { execSync } = require('child_process');
+      const childProcess = await import('child_process');
 
       // 환경 변수 설정
       const env = { ...process.env };
       env.DATABASE_URL = this.schemaManager.getSchemaUrl(this.schema);
 
       // Prisma migrate 실행
-      execSync('npx prisma migrate deploy', {
+      childProcess.execSync('npx prisma migrate deploy', {
         stdio: 'inherit',
         env,
         cwd: process.cwd(),

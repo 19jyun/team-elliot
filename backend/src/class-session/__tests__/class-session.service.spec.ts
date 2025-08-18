@@ -16,7 +16,7 @@ import { ChangeEnrollmentDto } from '../dto/change-enrollment.dto';
 describe('ClassSessionService', () => {
   let service: ClassSessionService;
   let prisma: any;
-  let socketGateway: any;
+  // let socketGateway: any;
 
   const mockPrisma = {
     classSession: {
@@ -67,7 +67,7 @@ describe('ClassSessionService', () => {
     }).compile();
     service = module.get<ClassSessionService>(ClassSessionService);
     prisma = module.get<PrismaService>(PrismaService);
-    socketGateway = module.get<SocketGateway>(SocketGateway);
+    // socketGateway = module.get<SocketGateway>(SocketGateway);
     jest.clearAllMocks();
   });
 
@@ -265,7 +265,7 @@ describe('ClassSessionService', () => {
     it('should enroll in a session successfully', async () => {
       const sessionId = 1;
       const studentId = 1;
-      const enrollment = { id: 1, sessionId, studentId };
+      // const enrollment = { id: 1, sessionId, studentId };
 
       // 현재 시간을 고정 (2025-01-15 12:00:00)
       jest.useFakeTimers();
@@ -364,7 +364,7 @@ describe('ClassSessionService', () => {
     it('should cancel enrollment successfully', async () => {
       const enrollmentId = 1;
       const studentId = 1;
-      const result = { message: '수강 신청이 취소되었습니다.' };
+      // const result = { message: '수강 신청이 취소되었습니다.' };
 
       const cancelledEnrollment = { id: enrollmentId, status: 'CANCELLED' };
       prisma.sessionEnrollment.findUnique.mockResolvedValue({
@@ -434,7 +434,7 @@ describe('ClassSessionService', () => {
         reason: 'Payment confirmed',
       };
       const teacherId = 1;
-      const result = { message: '수강 신청 상태가 업데이트되었습니다.' };
+      // const result = { message: '수강 신청 상태가 업데이트되었습니다.' };
 
       prisma.sessionEnrollment.findUnique.mockResolvedValue({
         id: enrollmentId,
@@ -493,7 +493,7 @@ describe('ClassSessionService', () => {
       const enrollmentId = 1;
       const attendanceStatus = 'ATTENDED';
       const teacherId = 1;
-      const result = { message: '출석이 기록되었습니다.' };
+      // const result = { message: '출석이 기록되었습니다.' };
 
       const today = new Date();
       prisma.sessionEnrollment.findUnique.mockResolvedValue({

@@ -1,7 +1,6 @@
 import {
   Injectable,
   NotFoundException,
-  ConflictException,
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
@@ -350,22 +349,22 @@ export class TeacherService {
     }
 
     // 6. 세션 필터링: 오늘 이후(KST)만 포함
-    const todayKST = new Date(
-      kstNow.getFullYear(),
-      kstNow.getMonth(),
-      kstNow.getDate(),
-    );
-    const futureSessions = teacher.classes.flatMap((class_) =>
-      class_.classSessions.filter((session) => {
-        const sessionDate = new Date(session.date);
-        const kstSessionDate = new Date(
-          sessionDate.getTime() + 9 * 60 * 60 * 1000,
-        );
-        return kstSessionDate >= todayKST;
-      }),
-    );
+    // const todayKST = new Date(
+    //   kstNow.getFullYear(),
+    //   kstNow.getMonth(),
+    //   kstNow.getDate(),
+    // );
+    // const futureSessions = teacher.classes.flatMap((class_) =>
+    //   class_.classSessions.filter((session) => {
+    //     const sessionDate = new Date(session.date);
+    //     const kstSessionDate = new Date(
+    //       sessionDate.getTime() + 9 * 60 * 60 * 1000,
+    //     );
+    //     return kstSessionDate >= todayKST;
+    //   }),
+    // );
 
-    let calendarRange = {
+    const calendarRange = {
       startDate,
       endDate,
     };

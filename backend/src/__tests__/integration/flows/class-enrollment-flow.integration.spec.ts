@@ -16,15 +16,10 @@ describe('Class Enrollment Flow Integration Tests', () => {
   describe('1. 수강신청 플로우', () => {
     it('should allow students to enroll in sessions', async () => {
       // 1. Principal, Teacher, Student 생성
-      const {
-        user: principal,
-        token: principalToken,
-        academy,
-      } = await createAuthenticatedUser('PRINCIPAL');
-      const { user: teacher, token: teacherToken } =
-        await createAuthenticatedUser('TEACHER');
-      const { user: student, token: studentToken } =
-        await createAuthenticatedUser('STUDENT');
+      const { token: principalToken, academy } =
+        await createAuthenticatedUser('PRINCIPAL');
+      const { user: teacher } = await createAuthenticatedUser('TEACHER');
+      const { token: studentToken } = await createAuthenticatedUser('STUDENT');
 
       // 2. 클래스 생성
       const classData = testData.classes.basic({
@@ -78,15 +73,10 @@ describe('Class Enrollment Flow Integration Tests', () => {
 
     it('should prevent duplicate enrollments', async () => {
       // 1. Principal, Teacher, Student 생성
-      const {
-        user: principal,
-        token: principalToken,
-        academy,
-      } = await createAuthenticatedUser('PRINCIPAL');
-      const { user: teacher, token: teacherToken } =
-        await createAuthenticatedUser('TEACHER');
-      const { user: student, token: studentToken } =
-        await createAuthenticatedUser('STUDENT');
+      const { token: principalToken, academy } =
+        await createAuthenticatedUser('PRINCIPAL');
+      const { user: teacher } = await createAuthenticatedUser('TEACHER');
+      const { token: studentToken } = await createAuthenticatedUser('STUDENT');
 
       // 2. 클래스 생성
       const classData = testData.classes.basic({
@@ -140,15 +130,10 @@ describe('Class Enrollment Flow Integration Tests', () => {
   describe('2. 전체 플로우 통합 테스트', () => {
     it('should complete full enrollment flow', async () => {
       // 1. Principal, Teacher, Student 생성
-      const {
-        user: principal,
-        token: principalToken,
-        academy,
-      } = await createAuthenticatedUser('PRINCIPAL');
-      const { user: teacher, token: teacherToken } =
-        await createAuthenticatedUser('TEACHER');
-      const { user: student, token: studentToken } =
-        await createAuthenticatedUser('STUDENT');
+      const { token: principalToken, academy } =
+        await createAuthenticatedUser('PRINCIPAL');
+      const { user: teacher } = await createAuthenticatedUser('TEACHER');
+      const { token: studentToken } = await createAuthenticatedUser('STUDENT');
 
       // 2. 클래스 생성
       const classData = testData.classes.basic({

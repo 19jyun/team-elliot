@@ -9,12 +9,12 @@ import { TeacherService } from '../../teacher/teacher.service';
 import { StudentService } from '../../student/student.service';
 import { UpdateAcademyDto } from '../dto/update-academy.dto';
 import { UpdateProfileDto } from '../dto/update-profile.dto';
-import { NotFoundException, ForbiddenException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 
 describe('PrincipalService', () => {
   let service: PrincipalService;
   let prisma: any;
-  let socketGateway: any;
+  // let socketGateway: any;
   let classService: any;
   let classSessionService: any;
   let refundService: any;
@@ -80,7 +80,7 @@ describe('PrincipalService', () => {
     }).compile();
     service = module.get<PrincipalService>(PrincipalService);
     prisma = module.get<PrismaService>(PrismaService);
-    socketGateway = module.get<SocketGateway>(SocketGateway);
+    // socketGateway = module.get<SocketGateway>(SocketGateway);
     classService = module.get<ClassService>(ClassService);
     classSessionService = module.get<ClassSessionService>(ClassSessionService);
     refundService = module.get<RefundService>(RefundService);

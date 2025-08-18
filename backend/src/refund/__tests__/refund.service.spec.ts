@@ -4,7 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ClassSessionService } from '../../class-session/class-session.service';
 import { SocketGateway } from '../../socket/socket.gateway';
 import { RefundRequestDto, RefundReason } from '../dto/refund-request.dto';
-import { RefundProcessDto } from '../dto/refund-process.dto';
+// import { RefundProcessDto } from '../dto/refund-process.dto';
 import {
   NotFoundException,
   BadRequestException,
@@ -14,7 +14,7 @@ import {
 describe('RefundService', () => {
   let service: RefundService;
   let prisma: any;
-  let classSessionService: any;
+  // let classSessionService: any;
   let socketGateway: any;
 
   const mockPrisma = {
@@ -60,7 +60,7 @@ describe('RefundService', () => {
     }).compile();
     service = module.get<RefundService>(RefundService);
     prisma = module.get<PrismaService>(PrismaService);
-    classSessionService = module.get<ClassSessionService>(ClassSessionService);
+    // classSessionService = module.get<ClassSessionService>(ClassSessionService);
     socketGateway = module.get<SocketGateway>(SocketGateway);
     jest.clearAllMocks();
   });

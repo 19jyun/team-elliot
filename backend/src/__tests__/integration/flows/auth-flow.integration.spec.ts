@@ -1,8 +1,4 @@
-import {
-  getTestApp,
-  getTestData,
-  createAuthenticatedUser,
-} from '../setup/test-setup';
+import { getTestApp, getTestData } from '../setup/test-setup';
 
 describe('Auth Flow Integration Tests', () => {
   let testApp: any;
@@ -261,8 +257,11 @@ describe('Auth Flow Integration Tests', () => {
       const token = signupResponse.body.access_token;
 
       // JWT 토큰 검증
-      const jwt = require('jsonwebtoken');
-      const decoded = jwt.verify(token, 'test-jwt-secret-key-for-testing-only');
+      const jwt = await import('jsonwebtoken');
+      const decoded = jwt.default.verify(
+        token,
+        'test-jwt-secret-key-for-testing-only',
+      );
 
       expect(decoded).toHaveProperty('sub');
       expect(decoded).toHaveProperty('userId', studentData.userId);
@@ -282,8 +281,11 @@ describe('Auth Flow Integration Tests', () => {
       const token = signupResponse.body.access_token;
 
       // JWT 토큰 검증
-      const jwt = require('jsonwebtoken');
-      const decoded = jwt.verify(token, 'test-jwt-secret-key-for-testing-only');
+      const jwt = await import('jsonwebtoken');
+      const decoded = jwt.default.verify(
+        token,
+        'test-jwt-secret-key-for-testing-only',
+      );
 
       expect(decoded).toHaveProperty('sub');
       expect(decoded).toHaveProperty('userId', teacherData.userId);
@@ -303,8 +305,11 @@ describe('Auth Flow Integration Tests', () => {
       const token = signupResponse.body.access_token;
 
       // JWT 토큰 검증
-      const jwt = require('jsonwebtoken');
-      const decoded = jwt.verify(token, 'test-jwt-secret-key-for-testing-only');
+      const jwt = await import('jsonwebtoken');
+      const decoded = jwt.default.verify(
+        token,
+        'test-jwt-secret-key-for-testing-only',
+      );
 
       expect(decoded).toHaveProperty('sub');
       expect(decoded).toHaveProperty('userId', principalData.userId);

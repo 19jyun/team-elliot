@@ -272,7 +272,7 @@ export class SocketTargetResolver {
   // 사용자 타겟 해결
   async resolveUserTarget(
     userId: number,
-    userRole: string,
+    // _userRole: string,
   ): Promise<string | null> {
     try {
       return `user:${userId}`;

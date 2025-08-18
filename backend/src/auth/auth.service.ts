@@ -31,6 +31,7 @@ export class AuthService {
         where: { userId: userId },
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...result } = principal;
       return {
         ...result,
@@ -47,6 +48,7 @@ export class AuthService {
     });
 
     if (teacher && (await bcrypt.compare(password, teacher.password))) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...result } = teacher;
       return { ...result, role: 'TEACHER' };
     }
@@ -56,6 +58,7 @@ export class AuthService {
       where: { userId },
     });
     if (student && (await bcrypt.compare(password, student.password))) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...result } = student;
       return { ...result, role: 'STUDENT' };
     }

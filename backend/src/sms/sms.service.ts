@@ -6,13 +6,20 @@ export class SmsService {
   private twilioClient: any;
 
   constructor(private configService: ConfigService) {
-    // Twilio 클라이언트 초기화
-    const accountSid = this.configService.get<string>('TWILIO_ACCOUNT_SID');
-    const authToken = this.configService.get<string>('TWILIO_AUTH_TOKEN');
+    // Twilio 클라이언트 초기화는 필요할 때 동적으로 로드
+  }
 
-    if (accountSid && authToken) {
-      this.twilioClient = require('twilio')(accountSid, authToken);
+  private async getTwilioClient() {
+    if (!this.twilioClient) {
+      const accountSid = this.configService.get<string>('TWILIO_ACCOUNT_SID');
+      const authToken = this.configService.get<string>('TWILIO_AUTH_TOKEN');
+
+      if (accountSid && authToken) {
+        const twilio = await import('twilio');
+        this.twilioClient = twilio.default(accountSid, authToken);
+      }
     }
+    return this.twilioClient;
   }
 
   async sendVerificationCode(phoneNumber: string): Promise<void> {
@@ -32,12 +39,13 @@ export class SmsService {
         'TWILIO_VERIFY_SERVICE_SID',
       );
 
-      if (!this.twilioClient || !verifyServiceSid) {
+      const twilioClient = await this.getTwilioClient();
+      if (!twilioClient || !verifyServiceSid) {
         throw new BadRequestException('SMS 서비스가 설정되지 않았습니다.');
       }
 
       // Twilio Verify 서비스를 사용하여 인증 코드 발송
-      await this.twilioClient.verify.v2
+      await twilioClient.verify.v2
         .services(verifyServiceSid)
         .verifications.create({
           to: internationalPhoneNumber,
@@ -63,12 +71,13 @@ export class SmsService {
         'TWILIO_VERIFY_SERVICE_SID',
       );
 
-      if (!this.twilioClient || !verifyServiceSid) {
+      const twilioClient = await this.getTwilioClient();
+      if (!twilioClient || !verifyServiceSid) {
         throw new BadRequestException('SMS 서비스가 설정되지 않았습니다.');
       }
 
       // Twilio Verify 서비스를 사용하여 인증 코드 검증
-      const verificationCheck = await this.twilioClient.verify.v2
+      const verificationCheck = await twilioClient.verify.v2
         .services(verifyServiceSid)
         .verificationChecks.create({
           to: internationalPhoneNumber,

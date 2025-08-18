@@ -7,8 +7,8 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { ClassSessionService } from '../class-session/class-session.service';
 import { SocketGateway } from '../socket/socket.gateway';
-import { RefundRequestDto, RefundReason } from './dto/refund-request.dto';
-import { RefundProcessDto, RefundStatus } from './dto/refund-process.dto';
+import { RefundRequestDto } from './dto/refund-request.dto';
+import { RefundProcessDto } from './dto/refund-process.dto';
 
 @Injectable()
 export class RefundService {

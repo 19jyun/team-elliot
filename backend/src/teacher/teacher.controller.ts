@@ -17,8 +17,8 @@ import { GetUser } from '../auth/decorators/get-user.decorator';
 import { teacherProfileConfig } from '../config/multer.config';
 import { Role } from '@prisma/client';
 import { CreateClassDto } from '../types/class.types';
-import { CreateAcademyDto } from '../academy/dto/create-academy.dto';
-import { UpdateAcademyDto } from '../academy/dto/update-academy.dto';
+// import { CreateAcademyDto } from '../academy/dto/create-academy.dto';
+// import { UpdateAcademyDto } from '../academy/dto/update-academy.dto';
 import { JoinAcademyRequestDto } from '../academy/dto/join-academy-request.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 

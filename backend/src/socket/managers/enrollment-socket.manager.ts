@@ -108,14 +108,14 @@ export class EnrollmentSocketManager {
       );
 
       // 세션 데이터 구성
-      const sessionData = {
-        sessionId,
-        classId,
-        academyId,
-        currentStudents,
-        maxStudents,
-        isFull: currentStudents >= maxStudents,
-      };
+      // const sessionData = {
+      //   sessionId,
+      //   classId,
+      //   academyId,
+      //   currentStudents,
+      //   maxStudents,
+      //   isFull: currentStudents >= maxStudents,
+      // };
 
       await this.universalSocketManager.notifyUpdateRequired(
         'session_availability_changed',
@@ -137,7 +137,7 @@ export class EnrollmentSocketManager {
   // 클래스 가득참 알림
   private async checkAndNotifyClassFull(
     classId: number,
-    academyId: number,
+    // _academyId: number,
   ): Promise<void> {
     // 클래스 가득참 시 추가 알림 로직
     this.logger.log(`📢 클래스 ${classId} 가득참 확인`);
@@ -146,7 +146,7 @@ export class EnrollmentSocketManager {
   // 클래스 자리 생김 알림
   private async checkAndNotifyClassAvailable(
     classId: number,
-    academyId: number,
+    // _academyId: number,
   ): Promise<void> {
     // 클래스 자리 생김 시 추가 알림 로직
     this.logger.log(`📢 클래스 ${classId} 자리 생김 확인`);

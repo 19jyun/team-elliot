@@ -16,13 +16,9 @@ describe('Class Creation Flow Integration Tests', () => {
   describe('1. Principal의 클래스 생성 및 세션 자동 생성', () => {
     it('should create a class and automatically generate sessions', async () => {
       // 1. Principal과 Teacher 생성
-      const {
-        user: principal,
-        token: principalToken,
-        academy,
-      } = await createAuthenticatedUser('PRINCIPAL');
-      const { user: teacher, token: teacherToken } =
-        await createAuthenticatedUser('TEACHER');
+      const { token: principalToken, academy } =
+        await createAuthenticatedUser('PRINCIPAL');
+      const { user: teacher } = await createAuthenticatedUser('TEACHER');
 
       // 2. Principal이 클래스 생성
       const classData = testData.classes.basic({

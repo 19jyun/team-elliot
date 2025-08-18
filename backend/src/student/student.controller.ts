@@ -7,7 +7,6 @@ import {
   Param,
   Body,
   UseGuards,
-  Query,
   ParseIntPipe,
 } from '@nestjs/common';
 import { StudentService } from './student.service';

@@ -13,7 +13,7 @@ export interface CreateClassDto {
   endDate: string; // UTC ISO 문자열
 }
 
-export interface UpdateClassDto extends Partial<CreateClassDto> {}
+export type UpdateClassDto = Partial<CreateClassDto>;
 
 export type DayOfWeek =
   | 'MONDAY'

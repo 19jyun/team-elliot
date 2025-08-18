@@ -62,21 +62,21 @@ export class ClassSocketManager {
   // 세션 내용 업데이트 알림
   async notifySessionContentUpdated(
     sessionId: number,
-    classId: number,
-    academyId: number,
-    contentId?: number,
-    poseId?: number,
+    // classId: number,
+    // academyId: number,
+    // contentId?: number,
+    // poseId?: number,
   ): Promise<void> {
     try {
       this.logger.log(`📢 세션 내용 업데이트 알림: ${sessionId}`);
 
-      const sessionData = {
-        sessionId,
-        classId,
-        academyId,
-        contentId,
-        poseId,
-      };
+      // const sessionData = {
+      //   sessionId,
+      //   classId,
+      //   academyId,
+      //   contentId,
+      //   poseId,
+      // };
 
       await this.universalSocketManager.notifyUpdateRequired(
         'session_content_updated',

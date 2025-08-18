@@ -154,8 +154,8 @@ export const createTestPrincipal = async () => {
   const testData = getTestData();
 
   const principalData = testData.users.principal();
-  const bcrypt = require('bcrypt');
-  const hashedPassword = await bcrypt.hash(principalData.password, 10);
+  const bcrypt = await import('bcrypt');
+  const hashedPassword = await bcrypt.default.hash(principalData.password, 10);
 
   // Academy 생성
   const academy = await testApp.prisma.academy.create({

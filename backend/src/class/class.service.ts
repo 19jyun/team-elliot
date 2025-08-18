@@ -5,7 +5,6 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Class } from '@prisma/client';
 
 @Injectable()
 export class ClassService {
@@ -364,7 +363,7 @@ export class ClassService {
     classId: number,
     teacherId: number,
     status: string,
-    reason?: string,
+    // _reason?: string,
   ) {
     // 강의 정보 조회
     const classInfo = await this.prisma.class.findUnique({
@@ -676,7 +675,7 @@ export class ClassService {
     };
   }
 
-  async getClassesByMonth(month: string, year: number) {
+  async getClassesByMonth() {
     // registrationMonth 관련 조건 제거, status만 남김
     return this.prisma.class.findMany({
       where: {

@@ -146,7 +146,7 @@ export class StudentService {
         enrollment_id: enrollment.id,
       }));
 
-    let calendarRange = {
+    const calendarRange = {
       startDate,
       endDate,
     };

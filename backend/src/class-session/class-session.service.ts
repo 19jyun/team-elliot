@@ -107,11 +107,11 @@ export class ClassSessionService {
       throw new ForbiddenException('해당 세션을 수정할 권한이 없습니다.');
     }
 
-    const oldData = {
-      date: session.date,
-      startTime: session.startTime,
-      endTime: session.endTime,
-    };
+    // const oldData = {
+    //   date: session.date,
+    //   startTime: session.startTime,
+    //   endTime: session.endTime,
+    // };
 
     // 세션 수정
     const updatedSession = await this.prisma.classSession.update({
@@ -529,7 +529,7 @@ export class ClassSessionService {
   /**
    * 세션 메타데이터 추가 헬퍼 메서드
    */
-  private addSessionMetadata(sessions: any[], studentId?: number) {
+  private addSessionMetadata(sessions: any[]) {
     const now = new Date();
 
     return sessions.map((session) => {
@@ -775,7 +775,7 @@ export class ClassSessionService {
     const newStatus = updateDto.status;
 
     // 상태 변경 로직
-    let updateData: any = { status: newStatus };
+    const updateData: any = { status: newStatus };
 
     if (newStatus === SessionEnrollmentStatus.CANCELLED) {
       updateData.cancelledAt = new Date();
@@ -808,7 +808,7 @@ export class ClassSessionService {
     );
 
     // 활동 로그 기록
-    const action = this.getActionForStatusChange(oldStatus, newStatus);
+    // const action = this.getActionForStatusChange(oldStatus, newStatus);
 
     return updatedEnrollment;
   }
@@ -820,7 +820,7 @@ export class ClassSessionService {
     batchDto: BatchUpdateEnrollmentStatusDto,
     teacherId: number,
   ) {
-    const { enrollmentIds, status, reason } = batchDto;
+    const { enrollmentIds, status } = batchDto;
 
     // 모든 수강 신청이 같은 선생님의 클래스인지 확인
     const enrollments = await this.prisma.sessionEnrollment.findMany({
@@ -1005,7 +1005,7 @@ export class ClassSessionService {
       throw new BadRequestException('출석 체크는 수업 당일에만 가능합니다.');
     }
 
-    const oldStatus = enrollment.status;
+    // const oldStatus = enrollment.status;
     const newStatus = attendanceStatus;
 
     // 출석 상태 업데이트
@@ -1521,7 +1521,7 @@ export class ClassSessionService {
     },
     studentId: number,
   ) {
-    const { cancellations, newEnrollments, reason } = data;
+    const { cancellations, newEnrollments } = data;
 
     // 취소할 수강 신청들의 원래 상태를 미리 조회
     const enrollmentsToCancel = await this.prisma.sessionEnrollment.findMany({
