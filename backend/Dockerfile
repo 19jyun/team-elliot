@@ -37,14 +37,15 @@ COPY package*.json ./
 # Install only production dependencies
 RUN npm ci --only=production && npm cache clean --force
 
-# Copy built application and scripts
+# Copy built application and necessary files
 COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nestjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nestjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nestjs:nodejs /app/scripts ./scripts
 
 # Create uploads and backups directories and set permissions
 RUN mkdir -p /app/uploads/teacher-photos /app/uploads/principal-photos /app/uploads/ballet-poses /app/backups
-RUN chown -R nestjs:nodejs /app/uploads /app/backups /app/scripts/deploy.sh
+RUN chown -R nestjs:nodejs /app/uploads /app/backups /app/scripts
 
 # Switch to non-root user
 USER nestjs
@@ -54,7 +55,7 @@ EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD node dist/src/health-check.js || exit 1
+    CMD node scripts/health-check.js || exit 1
 
-# Start the application with advanced deployment script
-CMD ./scripts/deploy.sh 
+# Start the application with migration
+CMD ["sh", "-c", "npx prisma migrate deploy --schema=./prisma/schema.prisma && node dist/src/main"] 
