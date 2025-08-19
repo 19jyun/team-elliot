@@ -24,8 +24,8 @@ FROM node:18-alpine AS production
 
 WORKDIR /app
 
-# Install OpenSSL for Prisma
-RUN apk add --no-cache openssl
+# Install OpenSSL and PostgreSQL client for Prisma and backup
+RUN apk add --no-cache openssl postgresql-client
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs
@@ -37,13 +37,14 @@ COPY package*.json ./
 # Install only production dependencies
 RUN npm ci --only=production && npm cache clean --force
 
-# Copy built application
+# Copy built application and scripts
 COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nestjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nestjs:nodejs /app/scripts ./scripts
 
-# Create uploads directory and set permissions
-RUN mkdir -p /app/uploads/teacher-photos /app/uploads/principal-photos /app/uploads/ballet-poses
-RUN chown -R nestjs:nodejs /app/uploads
+# Create uploads and backups directories and set permissions
+RUN mkdir -p /app/uploads/teacher-photos /app/uploads/principal-photos /app/uploads/ballet-poses /app/backups
+RUN chown -R nestjs:nodejs /app/uploads /app/backups
 
 # Switch to non-root user
 USER nestjs
@@ -55,5 +56,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD node dist/src/health-check.js || exit 1
 
-# Start the application with database migration
-CMD npx prisma migrate deploy && node dist/src/main 
+# Start the application with advanced deployment script
+CMD ./scripts/deploy.sh 
