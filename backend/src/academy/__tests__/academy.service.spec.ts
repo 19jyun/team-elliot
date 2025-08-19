@@ -267,10 +267,17 @@ describe('AcademyService', () => {
         code: 'TEST001',
       };
 
+      const mockStudent = {
+        id: 1,
+        userRefId: studentId,
+        name: '테스트 학생',
+      };
+
+      mockPrismaService.student.findUnique.mockResolvedValue(mockStudent);
       mockPrismaService.academy.findUnique.mockResolvedValue(mockAcademy);
       mockPrismaService.studentAcademy.findUnique.mockResolvedValue(null);
       mockPrismaService.studentAcademy.create.mockResolvedValue({
-        studentId,
+        studentId: mockStudent.id,
         academyId: mockAcademy.id,
       });
 
@@ -281,11 +288,14 @@ describe('AcademyService', () => {
       });
       expect(prismaService.studentAcademy.findUnique).toHaveBeenCalledWith({
         where: {
-          studentId_academyId: { studentId, academyId: mockAcademy.id },
+          studentId_academyId: {
+            studentId: mockStudent.id,
+            academyId: mockAcademy.id,
+          },
         },
       });
       expect(prismaService.studentAcademy.create).toHaveBeenCalledWith({
-        data: { studentId, academyId: mockAcademy.id },
+        data: { studentId: mockStudent.id, academyId: mockAcademy.id },
       });
       expect(result).toEqual({ message: '학원 가입이 완료되었습니다.' });
     });
@@ -315,9 +325,16 @@ describe('AcademyService', () => {
         code: 'TEST001',
       };
 
+      const mockStudent = {
+        id: 1,
+        userRefId: studentId,
+        name: '테스트 학생',
+      };
+
+      mockPrismaService.student.findUnique.mockResolvedValue(mockStudent);
       mockPrismaService.academy.findUnique.mockResolvedValue(mockAcademy);
       mockPrismaService.studentAcademy.findUnique.mockResolvedValue({
-        studentId,
+        studentId: mockStudent.id,
         academyId: mockAcademy.id,
       });
 
@@ -334,12 +351,19 @@ describe('AcademyService', () => {
         academyId: 1,
       };
 
+      const mockStudent = {
+        id: 1,
+        userRefId: studentId,
+        name: '테스트 학생',
+      };
+
+      mockPrismaService.student.findUnique.mockResolvedValue(mockStudent);
       mockPrismaService.studentAcademy.findUnique.mockResolvedValue({
-        studentId,
+        studentId: mockStudent.id,
         academyId: leaveAcademyDto.academyId,
       });
       mockPrismaService.studentAcademy.delete.mockResolvedValue({
-        studentId,
+        studentId: mockStudent.id,
         academyId: leaveAcademyDto.academyId,
       });
 
@@ -348,7 +372,7 @@ describe('AcademyService', () => {
       expect(prismaService.studentAcademy.findUnique).toHaveBeenCalledWith({
         where: {
           studentId_academyId: {
-            studentId,
+            studentId: mockStudent.id,
             academyId: leaveAcademyDto.academyId,
           },
         },
@@ -356,7 +380,7 @@ describe('AcademyService', () => {
       expect(prismaService.studentAcademy.delete).toHaveBeenCalledWith({
         where: {
           studentId_academyId: {
-            studentId,
+            studentId: mockStudent.id,
             academyId: leaveAcademyDto.academyId,
           },
         },
@@ -370,6 +394,13 @@ describe('AcademyService', () => {
         academyId: 1,
       };
 
+      const mockStudent = {
+        id: 1,
+        userRefId: studentId,
+        name: '테스트 학생',
+      };
+
+      mockPrismaService.student.findUnique.mockResolvedValue(mockStudent);
       mockPrismaService.studentAcademy.findUnique.mockResolvedValue(null);
 
       await expect(
@@ -403,7 +434,7 @@ describe('AcademyService', () => {
       const result = await service.getMyAcademies(studentId);
 
       expect(prismaService.student.findUnique).toHaveBeenCalledWith({
-        where: { id: studentId },
+        where: { userRefId: studentId },
         include: {
           academies: {
             include: { academy: true },

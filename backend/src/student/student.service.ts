@@ -20,9 +20,10 @@ export class StudentService {
     private academyService: AcademyService,
   ) {}
 
-  async getStudentClasses(studentId: number) {
+  async getStudentClasses(userId: number) {
+    // userRefId를 사용하여 student 정보 조회
     const student = await this.prisma.student.findUnique({
-      where: { id: studentId },
+      where: { userRefId: userId },
       include: {
         enrollments: {
           include: {
@@ -181,26 +182,71 @@ export class StudentService {
     return class_;
   }
 
-  async enrollClass(classId: number, studentId: number) {
-    return this.classService.enrollStudent(classId, studentId);
+  async enrollClass(classId: number, userId: number) {
+    // 먼저 student 정보를 userRefId로 조회
+    const student = await this.prisma.student.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!student) {
+      throw new NotFoundException('학생을 찾을 수 없습니다.');
+    }
+
+    return this.classService.enrollStudent(classId, student.id);
   }
 
-  async unenrollClass(classId: number, studentId: number) {
-    return this.classService.unenrollStudent(classId, studentId);
+  async unenrollClass(classId: number, userId: number) {
+    // 먼저 student 정보를 userRefId로 조회
+    const student = await this.prisma.student.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!student) {
+      throw new NotFoundException('학생을 찾을 수 없습니다.');
+    }
+
+    return this.classService.unenrollStudent(classId, student.id);
   }
 
   // 학원 관련 메서드들 - AcademyService 위임
-  async getMyAcademies(studentId: number) {
-    return this.academyService.getStudentAcademies(studentId);
+  async getMyAcademies(userId: number) {
+    // 먼저 student 정보를 userRefId로 조회
+    const student = await this.prisma.student.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!student) {
+      throw new NotFoundException('학생을 찾을 수 없습니다.');
+    }
+
+    return this.academyService.getStudentAcademies(student.id);
   }
 
-  async joinAcademy(studentId: number, joinAcademyDto: JoinAcademyDto) {
-    return this.academyService.joinAcademyByStudent(studentId, joinAcademyDto);
+  async joinAcademy(userId: number, joinAcademyDto: JoinAcademyDto) {
+    // 먼저 student 정보를 userRefId로 조회
+    const student = await this.prisma.student.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!student) {
+      throw new NotFoundException('학생을 찾을 수 없습니다.');
+    }
+
+    return this.academyService.joinAcademyByStudent(student.id, joinAcademyDto);
   }
 
-  async leaveAcademy(studentId: number, leaveAcademyDto: LeaveAcademyDto) {
+  async leaveAcademy(userId: number, leaveAcademyDto: LeaveAcademyDto) {
+    // 먼저 student 정보를 userRefId로 조회
+    const student = await this.prisma.student.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!student) {
+      throw new NotFoundException('학생을 찾을 수 없습니다.');
+    }
+
     return this.academyService.leaveAcademyByStudent(
-      studentId,
+      student.id,
       leaveAcademyDto,
     );
   }
@@ -216,9 +262,9 @@ export class StudentService {
     );
   }
 
-  async getMyProfile(studentId: number) {
+  async getMyProfile(userId: number) {
     const student = await this.prisma.student.findUnique({
-      where: { id: studentId },
+      where: { userRefId: userId },
       select: {
         id: true,
         userId: true,
@@ -251,9 +297,9 @@ export class StudentService {
     };
   }
 
-  async updateMyProfile(studentId: number, updateProfileDto: UpdateProfileDto) {
+  async updateMyProfile(userId: number, updateProfileDto: UpdateProfileDto) {
     const student = await this.prisma.student.findUnique({
-      where: { id: studentId },
+      where: { userRefId: userId },
     });
 
     if (!student) {
@@ -261,7 +307,7 @@ export class StudentService {
     }
 
     // 빈 문자열을 null로 변환하고 birthDate를 ISO 형식으로 변환
-    const updateData = {
+    const studentUpdateData = {
       name: updateProfileDto.name,
       phoneNumber: updateProfileDto.phoneNumber || null,
       emergencyContact: updateProfileDto.emergencyContact || null,
@@ -274,21 +320,43 @@ export class StudentService {
       updatedAt: new Date(),
     };
 
-    const updatedStudent = await this.prisma.student.update({
-      where: { id: studentId },
-      data: updateData,
-      select: {
-        id: true,
-        userId: true,
-        name: true,
-        phoneNumber: true,
-        emergencyContact: true,
-        birthDate: true,
-        notes: true,
-        level: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+    // User 테이블 업데이트 데이터 (이름이 변경된 경우에만)
+    const userUpdateData = updateProfileDto.name
+      ? {
+          name: updateProfileDto.name,
+          updatedAt: new Date(),
+        }
+      : null;
+
+    // 트랜잭션으로 Student와 User 테이블 동시 업데이트
+    const updatedStudent = await this.prisma.$transaction(async (tx) => {
+      // Student 테이블 업데이트
+      const student = await tx.student.update({
+        where: { userRefId: userId },
+        data: studentUpdateData,
+        select: {
+          id: true,
+          userId: true,
+          name: true,
+          phoneNumber: true,
+          emergencyContact: true,
+          birthDate: true,
+          notes: true,
+          level: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      // 이름이 변경된 경우 User 테이블도 업데이트
+      if (userUpdateData) {
+        await tx.user.update({
+          where: { id: userId },
+          data: userUpdateData,
+        });
+      }
+
+      return student;
     });
 
     return {
@@ -308,10 +376,19 @@ export class StudentService {
   /**
    * 학생의 신청/결제 내역 조회 (session_enrollments 기반)
    */
-  async getEnrollmentHistory(studentId: number) {
+  async getEnrollmentHistory(userId: number) {
+    // 먼저 student 정보를 userRefId로 조회
+    const student = await this.prisma.student.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!student) {
+      throw new NotFoundException('학생을 찾을 수 없습니다.');
+    }
+
     const enrollments = await this.prisma.sessionEnrollment.findMany({
       where: {
-        studentId: studentId,
+        studentId: student.id,
         status: {
           in: ['PENDING', 'CONFIRMED', 'REJECTED', 'REFUND_REQUESTED'],
         },
@@ -423,9 +500,10 @@ export class StudentService {
   /**
    * 학생의 환불/취소 내역 조회 (refund_requests 기반)
    */
-  async getCancellationHistory(studentId: number) {
+  async getCancellationHistory(userId: number) {
+    // 먼저 student 정보를 userRefId로 조회
     const student = await this.prisma.student.findUnique({
-      where: { id: studentId },
+      where: { userRefId: userId },
     });
 
     if (!student) {
@@ -435,7 +513,7 @@ export class StudentService {
     // 환불 요청 내역 조회 (단순화된 상태만)
     const refundRequests = await this.prisma.refundRequest.findMany({
       where: {
-        studentId: studentId,
+        studentId: student.id,
         status: {
           in: ['REFUND_REQUESTED', 'APPROVED', 'REJECTED'],
         },
@@ -511,7 +589,16 @@ export class StudentService {
   }
 
   // 세션별 입금 정보 조회 (결제 시 사용)
-  async getSessionPaymentInfo(studentId: number, sessionId: number) {
+  async getSessionPaymentInfo(userId: number, sessionId: number) {
+    // 먼저 student 정보를 userRefId로 조회
+    const student = await this.prisma.student.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!student) {
+      throw new NotFoundException('학생을 찾을 수 없습니다.');
+    }
+
     // 학생이 해당 세션에 수강 신청할 권한이 있는지 확인
     const session = await this.prisma.classSession.findUnique({
       where: { id: sessionId },
@@ -544,7 +631,7 @@ export class StudentService {
     const studentAcademy = await this.prisma.studentAcademy.findUnique({
       where: {
         studentId_academyId: {
-          studentId: studentId,
+          studentId: student.id,
           academyId: session.class.academy.id,
         },
       },
@@ -566,7 +653,7 @@ export class StudentService {
     const existingEnrollment = await this.prisma.sessionEnrollment.findUnique({
       where: {
         studentId_sessionId: {
-          studentId: studentId,
+          studentId: student.id,
           sessionId: sessionId,
         },
       },

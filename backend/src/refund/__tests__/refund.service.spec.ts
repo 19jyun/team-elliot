@@ -462,7 +462,7 @@ describe('RefundService', () => {
 
       expect(result).toEqual(refundRequests);
       expect(prisma.principal.findUnique).toHaveBeenCalledWith({
-        where: { id: principalId },
+        where: { userRefId: principalId },
         include: { academy: true },
       });
       expect(prisma.refundRequest.findMany).toHaveBeenCalled();
@@ -511,7 +511,7 @@ describe('RefundService', () => {
 
       expect(result).toEqual(expectedResult);
       expect(prisma.principal.findUnique).toHaveBeenCalledWith({
-        where: { id: principalId },
+        where: { userRefId: principalId },
         include: { academy: true },
       });
       expect(prisma.classSession.findMany).toHaveBeenCalled();

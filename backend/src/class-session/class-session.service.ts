@@ -78,8 +78,18 @@ export class ClassSessionService {
    * userId로 Student 조회
    */
   async findStudentByUserId(userId: string) {
-    const student = await this.prisma.student.findFirst({
+    // User 테이블에서 먼저 찾기
+    const user = await this.prisma.user.findUnique({
       where: { userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    // Student 정보 찾기
+    const student = await this.prisma.student.findUnique({
+      where: { userRefId: user.id },
     });
 
     if (!student) {
@@ -1171,7 +1181,16 @@ export class ClassSessionService {
   /**
    * 특정 세션의 수강생 목록 조회
    */
-  async getSessionEnrollments(sessionId: number, teacherId: number) {
+  async getSessionEnrollments(sessionId: number, userId: number) {
+    // 먼저 teacher 정보를 userRefId로 조회
+    const teacher = await this.prisma.teacher.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!teacher) {
+      throw new NotFoundException('선생님을 찾을 수 없습니다.');
+    }
+
     // 세션 정보 조회
     const session = await this.prisma.classSession.findUnique({
       where: { id: sessionId },
@@ -1189,7 +1208,7 @@ export class ClassSessionService {
     }
 
     // 권한 확인
-    if (session.class.teacherId !== teacherId) {
+    if (session.class.teacherId !== teacher.id) {
       throw new ForbiddenException(
         '해당 세션의 수강생 목록을 조회할 권한이 없습니다.',
       );

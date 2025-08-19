@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TeacherController } from '../teacher.controller';
 import { TeacherService } from '../teacher.service';
-import { CreateClassDto } from '../../types/class.types';
 import { JoinAcademyRequestDto } from '../../academy/dto/join-academy-request.dto';
 
 describe('TeacherController', () => {
@@ -9,8 +8,6 @@ describe('TeacherController', () => {
   let service: TeacherService;
 
   const mockService = {
-    createClass: jest.fn(),
-    requestJoinAcademy: jest.fn(),
     getTeacherProfile: jest.fn(),
     updateProfile: jest.fn(),
     updateProfilePhoto: jest.fn(),
@@ -19,6 +16,7 @@ describe('TeacherController', () => {
     getTeacherClassesWithSessions: jest.fn(),
     getMyAcademy: jest.fn(),
     changeAcademy: jest.fn(),
+    requestJoinAcademy: jest.fn(),
     leaveAcademy: jest.fn(),
   };
 
@@ -35,36 +33,6 @@ describe('TeacherController', () => {
     controller = module.get<TeacherController>(TeacherController);
     service = module.get<TeacherService>(TeacherService);
     jest.clearAllMocks();
-  });
-
-  describe('createClass', () => {
-    it('should create a class successfully', async () => {
-      const createClassDto: CreateClassDto = {
-        className: 'Test Class',
-        description: 'Test Description',
-        maxStudents: 20,
-        tuitionFee: 100000,
-        teacherId: 1,
-        academyId: 1,
-        dayOfWeek: 'MONDAY',
-        level: 'BEGINNER',
-        startTime: '09:00',
-        endTime: '10:00',
-        startDate: '2024-01-01',
-        endDate: '2024-12-31',
-      };
-      const createdClass = { id: 1, ...createClassDto };
-      mockService.createClass.mockResolvedValue(createdClass);
-
-      const result = await controller.createClass(mockUser, createClassDto);
-
-      expect(result).toEqual(createdClass);
-      expect(service.createClass).toHaveBeenCalledWith(
-        mockUser.id,
-        createClassDto,
-        mockUser.role,
-      );
-    });
   });
 
   describe('requestJoinAcademy', () => {

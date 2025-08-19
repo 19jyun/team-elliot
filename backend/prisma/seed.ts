@@ -106,7 +106,41 @@ async function main() {
     },
   });
 
-  // Principal 계정 생성
+  // User 테이블에 사용자들 먼저 생성
+  const principalUser = await prisma.user.upsert({
+    where: { userId: 'principal123' },
+    update: {},
+    create: {
+      userId: 'principal123',
+      password: hashedPassword,
+      name: '김원장',
+      role: 'PRINCIPAL',
+    },
+  });
+
+  const teacherUser = await prisma.user.upsert({
+    where: { userId: 'teacher123' },
+    update: {},
+    create: {
+      userId: 'teacher123',
+      password: hashedPassword,
+      name: '고예진',
+      role: 'TEACHER',
+    },
+  });
+
+  const studentUser = await prisma.user.upsert({
+    where: { userId: 'student123' },
+    update: {},
+    create: {
+      userId: 'student123',
+      password: hashedPassword,
+      name: '이학생',
+      role: 'STUDENT',
+    },
+  });
+
+  // Principal 계정 생성 (userRefId 사용)
   const principal = await prisma.principal.upsert({
     where: { userId: 'principal123' },
     update: {
@@ -125,6 +159,7 @@ async function main() {
         '문화예술교육사 자격증',
       ],
       yearsOfExperience: 15,
+      userRefId: principalUser.id,
       // 은행 정보 추가
       bankName: '신한은행',
       accountNumber: '110-123-456789',
@@ -151,6 +186,7 @@ async function main() {
         '문화예술교육사 자격증',
       ],
       yearsOfExperience: 15,
+      userRefId: principalUser.id,
       academyId: academy.id,
       // 은행 정보 추가
       bankName: '신한은행',
@@ -159,30 +195,17 @@ async function main() {
     },
   });
 
-  // User 테이블에 강사와 학생 생성
-  const teacherUser = await prisma.user.upsert({
-    where: { userId: 'teacher123' },
-    update: {},
-    create: {
-      userId: 'teacher123',
-      password: hashedPassword,
-      name: '고예진',
-      role: 'TEACHER',
+  // Principal을 User 테이블에도 추가 (관계 생성)
+  await prisma.user.update({
+    where: { id: principalUser.id },
+    data: {
+      principal: {
+        connect: { id: principal.id },
+      },
     },
   });
 
-  const studentUser = await prisma.user.upsert({
-    where: { userId: 'student123' },
-    update: {},
-    create: {
-      userId: 'student123',
-      password: hashedPassword,
-      name: '이학생',
-      role: 'STUDENT',
-    },
-  });
-
-  // Create test teacher
+  // Create test teacher (userRefId 사용)
   const teacher = await prisma.teacher.upsert({
     where: { userId: 'teacher123' },
     update: {
@@ -198,6 +221,7 @@ async function main() {
         '전) 압구정 인사이드발레 성인반 강사',
       ],
       academyId: academy.id,
+      userRefId: teacherUser.id,
     },
     create: {
       userId: 'teacher123',
@@ -215,10 +239,11 @@ async function main() {
         '전) 압구정 인사이드발레 성인반 강사',
       ],
       academyId: academy.id,
+      userRefId: teacherUser.id,
     },
   });
 
-  // Create test student - create를 upsert로 변경
+  // Create test student (userRefId 사용)
   const student = await prisma.student.upsert({
     where: { userId: 'student123' },
     update: {
@@ -229,6 +254,7 @@ async function main() {
       password: hashedPassword,
       name: '이학생',
       phoneNumber: '010-9876-5432',
+      userRefId: studentUser.id,
     },
   });
 

@@ -21,9 +21,9 @@ export class PrincipalService {
   ) {}
 
   // Principal의 학원 정보 조회
-  async getMyAcademy(principalId: number) {
+  async getMyAcademy(userId: number) {
     const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
+      where: { userRefId: userId },
       include: {
         academy: {
           include: {
@@ -57,62 +57,110 @@ export class PrincipalService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal not found');
+      throw new NotFoundException('Principal을 찾을 수 없습니다.');
     }
 
     return principal.academy;
   }
 
   // Principal의 학원 모든 세션 조회
-  async getAllSessions(principalId: number) {
-    return this.classSessionService.getPrincipalSessions(principalId);
+  async getAllSessions(userId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+    }
+
+    return this.classSessionService.getPrincipalSessions(principal.id);
   }
 
   // Principal의 학원 모든 클래스 조회
-  async getAllClasses(principalId: number) {
-    return this.classService.getPrincipalClasses(principalId);
+  async getAllClasses(userId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+    }
+
+    return this.classService.getPrincipalClasses(principal.id);
   }
 
   // Principal의 학원 모든 강사 조회
-  async getAllTeachers(principalId: number) {
-    return this.teacherService.getPrincipalTeachers(principalId);
+  async getAllTeachers(userId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+    }
+
+    return this.teacherService.getPrincipalTeachers(principal.id);
   }
 
   // Principal의 학원 모든 학생 조회
-  async getAllStudents(principalId: number) {
-    return this.studentService.getPrincipalStudents(principalId);
+  async getAllStudents(userId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+    }
+
+    return this.studentService.getPrincipalStudents(principal.id);
   }
 
   // Principal의 학원 모든 수강신청 조회 (Redux store용)
-  async getAllEnrollments(principalId: number) {
-    return this.classSessionService.getPrincipalEnrollments(principalId);
+  async getAllEnrollments(userId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+    }
+
+    return this.classSessionService.getPrincipalEnrollments(principal.id);
   }
 
   // Principal의 학원 모든 환불요청 조회 (Redux store용)
-  async getAllRefundRequests(principalId: number) {
-    return this.refundService.getPrincipalRefundRequests(principalId);
+  async getAllRefundRequests(userId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+    }
+
+    return this.refundService.getPrincipalRefundRequests(userId);
   }
 
   // Principal 정보 조회
-  async getPrincipalInfo(principalId: number) {
+  async getPrincipalInfo(userId: number) {
     const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
+      where: { userRefId: userId },
       include: {
         academy: true,
       },
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal not found');
+      throw new NotFoundException('Principal을 찾을 수 없습니다.');
     }
 
     return principal;
   }
 
   // Principal의 은행 정보 조회 (학생이 결제 시 사용)
-  async getPrincipalBankInfo(principalId: number) {
+  async getPrincipalBankInfo(userId: number) {
     const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
+      where: { userRefId: userId },
       select: {
         id: true,
         name: true,
@@ -123,7 +171,7 @@ export class PrincipalService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal not found');
+      throw new NotFoundException('Principal을 찾을 수 없습니다.');
     }
 
     return {
@@ -136,9 +184,9 @@ export class PrincipalService {
   }
 
   // Principal 전체 데이터 조회 (Redux 초기화용)
-  async getPrincipalData(principalId: number) {
+  async getPrincipalData(userId: number) {
     const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
+      where: { userRefId: userId },
       include: {
         academy: {
           include: {
@@ -312,16 +360,16 @@ export class PrincipalService {
 
   // Principal 프로필 정보 수정
   async updateProfile(
-    principalId: number,
+    userId: number,
     updateProfileDto: any,
     photo?: Express.Multer.File,
   ) {
     const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
+      where: { userRefId: userId },
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal not found');
+      throw new NotFoundException('Principal을 찾을 수 없습니다.');
     }
 
     // 업데이트할 데이터 준비
@@ -365,26 +413,50 @@ export class PrincipalService {
       updateData.photoUrl = `/uploads/principal-photos/${photo.filename}`;
     }
 
-    // Principal 정보 업데이트
-    const updatedPrincipal = await this.prisma.principal.update({
-      where: { id: principalId },
-      data: updateData,
-      include: {
-        academy: true,
-      },
+    // User 테이블 업데이트 데이터 (이름이 변경된 경우에만)
+    const userUpdateData = updateProfileDto.name
+      ? {
+          name: updateProfileDto.name,
+          updatedAt: new Date(),
+        }
+      : null;
+
+    // 트랜잭션으로 Principal과 User 테이블 동시 업데이트
+    const updatedPrincipal = await this.prisma.$transaction(async (tx) => {
+      // Principal 테이블 업데이트
+      const updatedPrincipalData = await tx.principal.update({
+        where: { id: principal.id },
+        data: {
+          ...updateData,
+          updatedAt: new Date(),
+        },
+        include: {
+          academy: true,
+        },
+      });
+
+      // 이름이 변경된 경우 User 테이블도 업데이트
+      if (userUpdateData) {
+        await tx.user.update({
+          where: { id: userId },
+          data: userUpdateData,
+        });
+      }
+
+      return updatedPrincipalData;
     });
 
     return updatedPrincipal;
   }
 
   // Principal 프로필 사진 업데이트
-  async updateProfilePhoto(principalId: number, photo: Express.Multer.File) {
+  async updateProfilePhoto(userId: number, photo: Express.Multer.File) {
     const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
+      where: { userRefId: userId },
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal not found');
+      throw new NotFoundException('Principal을 찾을 수 없습니다.');
     }
 
     // 사진 URL 생성
@@ -392,7 +464,7 @@ export class PrincipalService {
 
     // Principal 사진 업데이트
     const updatedPrincipal = await this.prisma.principal.update({
-      where: { id: principalId },
+      where: { id: principal.id },
       data: { photoUrl },
       include: {
         academy: true,
@@ -403,22 +475,31 @@ export class PrincipalService {
   }
 
   // Principal의 세션 수강생 조회
-  async getSessionEnrollments(sessionId: number, principalId: number) {
+  async getSessionEnrollments(sessionId: number, userId: number) {
+    // 먼저 principal 정보를 userRefId로 조회
+    const principal = await this.prisma.principal.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+    }
+
     return this.classSessionService.getPrincipalSessionEnrollments(
       sessionId,
-      principalId,
+      principal.id,
     );
   }
 
   // Principal의 학원 정보 수정
-  async updateAcademy(principalId: number, updateAcademyDto: UpdateAcademyDto) {
+  async updateAcademy(userId: number, updateAcademyDto: UpdateAcademyDto) {
     const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
+      where: { userRefId: userId },
       include: { academy: true },
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal not found');
+      throw new NotFoundException('Principal을 찾을 수 없습니다.');
     }
 
     // 학원 정보 업데이트
@@ -438,40 +519,78 @@ export class PrincipalService {
   // === 수강 신청/환불 신청 관리 메소드들 ===
 
   // Principal의 수강 신청 대기 세션 목록 조회
-  async getSessionsWithEnrollmentRequests(principalId: number) {
+  async getSessionsWithEnrollmentRequests(userId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+    }
+
     return this.classSessionService.getPrincipalSessionsWithEnrollmentRequests(
-      principalId,
+      principal.id,
     );
   }
 
   // Principal의 환불 요청 대기 세션 목록 조회
-  async getSessionsWithRefundRequests(principalId: number) {
-    return this.refundService.getPrincipalSessionsWithRefundRequests(
-      principalId,
-    );
+  async getSessionsWithRefundRequests(userId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+    }
+
+    return this.refundService.getPrincipalSessionsWithRefundRequests(userId);
   }
 
   // 특정 세션의 수강 신청 요청 목록 조회
-  async getSessionEnrollmentRequests(sessionId: number, principalId: number) {
+  async getSessionEnrollmentRequests(sessionId: number, userId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+    }
+
     return this.classSessionService.getPrincipalSessionEnrollmentRequests(
       sessionId,
-      principalId,
+      principal.id,
     );
   }
 
   // 특정 세션의 환불 요청 목록 조회
-  async getSessionRefundRequests(sessionId: number, principalId: number) {
+  async getSessionRefundRequests(sessionId: number, userId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+    }
+
     return this.refundService.getPrincipalSessionRefundRequests(
       sessionId,
-      principalId,
+      userId,
     );
   }
 
   // 수강 신청 승인
-  async approveEnrollment(enrollmentId: number, principalId: number) {
+  async approveEnrollment(enrollmentId: number, userId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+    }
+
     return this.classSessionService.approveEnrollmentByPrincipal(
       enrollmentId,
-      principalId,
+      principal.id,
     );
   }
 
@@ -479,50 +598,104 @@ export class PrincipalService {
   async rejectEnrollment(
     enrollmentId: number,
     rejectData: { reason: string; detailedReason?: string },
-    principalId: number,
+    userId: number,
   ) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+    }
+
     return this.classSessionService.rejectEnrollmentByPrincipal(
       enrollmentId,
       rejectData,
-      principalId,
+      principal.id,
     );
   }
 
   // 환불 요청 승인
-  async approveRefund(refundId: number, principalId: number) {
-    return this.refundService.approveRefundByPrincipal(refundId, principalId);
+  async approveRefund(refundId: number, userId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+    }
+
+    return this.refundService.approveRefundByPrincipal(refundId, userId);
   }
 
   // 환불 요청 거절
   async rejectRefund(
     refundId: number,
     rejectData: { reason: string; detailedReason?: string },
-    principalId: number,
+    userId: number,
   ) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+    }
+
     return this.refundService.rejectRefundByPrincipal(
       refundId,
       rejectData,
-      principalId,
+      userId,
     );
   }
 
   // === 선생님/수강생 관리 메소드들 ===
 
   // 선생님을 학원에서 제거
-  async removeTeacher(teacherId: number, principalId: number) {
-    return this.teacherService.removeTeacherByPrincipal(teacherId, principalId);
+  async removeTeacher(teacherId: number, userId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+    }
+
+    return this.teacherService.removeTeacherByPrincipal(
+      teacherId,
+      principal.id,
+    );
   }
 
   // 수강생을 학원에서 제거
-  async removeStudent(studentId: number, principalId: number) {
-    return this.studentService.removeStudentByPrincipal(studentId, principalId);
+  async removeStudent(studentId: number, userId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+    }
+
+    return this.studentService.removeStudentByPrincipal(
+      studentId,
+      principal.id,
+    );
   }
 
   // 수강생의 세션 수강 현황 조회
-  async getStudentSessionHistory(studentId: number, principalId: number) {
+  async getStudentSessionHistory(studentId: number, userId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+    }
+
     return this.studentService.getStudentSessionHistoryByPrincipal(
       studentId,
-      principalId,
+      principal.id,
     );
   }
 }

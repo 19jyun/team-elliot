@@ -21,12 +21,16 @@ import { Role } from '@prisma/client';
 import { UpdateAcademyDto } from './dto/update-academy.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { principalProfileConfig } from '../config/multer.config';
+import { ClassService } from '../class/class.service';
 
 @Controller('principal')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.PRINCIPAL)
 export class PrincipalController {
-  constructor(private readonly principalService: PrincipalService) {}
+  constructor(
+    private readonly principalService: PrincipalService,
+    private readonly classService: ClassService,
+  ) {}
 
   // Principal의 학원 정보 조회
   @Get('academy')
@@ -44,6 +48,14 @@ export class PrincipalController {
   @Get('classes')
   async getAllClasses(@GetUser() user: any) {
     return this.principalService.getAllClasses(user.id);
+  }
+
+  // Principal의 클래스 생성
+  @Post('classes')
+  async createClass(@GetUser() user: any, @Body() createClassDto: any) {
+    // Principal의 ID를 가져와서 클래스 생성
+    const principal = await this.principalService.getPrincipalInfo(user.id);
+    return this.classService.createClass(createClassDto, 'PRINCIPAL');
   }
 
   // Principal의 학원 모든 강사 조회
@@ -76,9 +88,8 @@ export class PrincipalController {
     return this.principalService.getPrincipalInfo(user.id);
   }
 
-  // Principal의 은행 정보 조회 (학생이 결제 시 사용)
+  // Principal의 은행 정보 조회
   @Get('bank-info')
-  @Roles(Role.STUDENT, Role.TEACHER, Role.PRINCIPAL)
   async getPrincipalBankInfo(@GetUser() user: any) {
     return this.principalService.getPrincipalBankInfo(user.id);
   }

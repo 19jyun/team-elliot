@@ -16,7 +16,6 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { teacherProfileConfig } from '../config/multer.config';
 import { Role } from '@prisma/client';
-import { CreateClassDto } from '../types/class.types';
 // import { CreateAcademyDto } from '../academy/dto/create-academy.dto';
 // import { UpdateAcademyDto } from '../academy/dto/update-academy.dto';
 import { JoinAcademyRequestDto } from '../academy/dto/join-academy-request.dto';
@@ -27,18 +26,6 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class TeacherController {
   constructor(private readonly teacherService: TeacherService) {}
-
-  @Post('me/classes')
-  @Roles(Role.PRINCIPAL)
-  @ApiOperation({ summary: 'Principal이 선생님을 지정하여 클래스 생성' })
-  @ApiResponse({ status: 201, description: '클래스 생성 성공' })
-  async createClass(
-    @GetUser() user: any,
-    @Body() createClassDto: CreateClassDto,
-  ) {
-    // Principal만 강의 개설 가능
-    return this.teacherService.createClass(user.id, createClassDto, user.role);
-  }
 
   @Post('me/request-join-academy')
   @Roles(Role.TEACHER)
