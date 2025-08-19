@@ -592,9 +592,9 @@ export class RefundService {
   }
 
   // Principal의 학원 모든 환불요청 조회
-  async getPrincipalRefundRequests(principalId: number) {
+  async getPrincipalRefundRequests(userId: number) {
     const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
+      where: { userRefId: userId },
       include: { academy: true },
     });
 
@@ -653,9 +653,9 @@ export class RefundService {
   }
 
   // Principal의 환불 요청 대기 세션 목록 조회
-  async getPrincipalSessionsWithRefundRequests(principalId: number) {
+  async getPrincipalSessionsWithRefundRequests(userId: number) {
     const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
+      where: { userRefId: userId },
       include: { academy: true },
     });
 
@@ -730,12 +730,9 @@ export class RefundService {
   }
 
   // Principal의 특정 세션 환불 요청 목록 조회
-  async getPrincipalSessionRefundRequests(
-    sessionId: number,
-    principalId: number,
-  ) {
+  async getPrincipalSessionRefundRequests(sessionId: number, userId: number) {
     const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
+      where: { userRefId: userId },
       include: { academy: true },
     });
 
@@ -798,18 +795,10 @@ export class RefundService {
   }
 
   // Principal이 환불 요청 승인
-  async approveRefundByPrincipal(refundId: number, principalId: number) {
-    // principalId는 User 테이블의 ID이므로, User를 먼저 찾고 Principal 정보를 가져옴
-    const userEntity = await this.prisma.user.findUnique({
-      where: { id: principalId },
-    });
-
-    if (!userEntity) {
-      throw new NotFoundException('User not found');
-    }
-
+  async approveRefundByPrincipal(refundId: number, userId: number) {
+    // userId는 User 테이블의 ID이므로, Principal 정보를 userRefId로 찾음
     const principal = await this.prisma.principal.findUnique({
-      where: { userId: userEntity.userId },
+      where: { userRefId: userId },
       include: { academy: true },
     });
 
@@ -840,8 +829,9 @@ export class RefundService {
     }
 
     // Principal 정보를 User 테이블에서 찾거나 생성 (processedBy 기록용)
-    // 이미 위에서 찾은 userEntity를 사용
-    let processedByUser = userEntity;
+    let processedByUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
 
     if (!processedByUser) {
       processedByUser = await this.prisma.user.create({
@@ -926,10 +916,10 @@ export class RefundService {
   async rejectRefundByPrincipal(
     refundId: number,
     rejectData: { reason: string; detailedReason?: string },
-    principalId: number,
+    userId: number,
   ) {
     const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
+      where: { userRefId: userId },
       include: { academy: true },
     });
 
