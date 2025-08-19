@@ -18,17 +18,22 @@ export class TeacherService {
     private academyService: AcademyService,
   ) {}
 
-  async createClass(
-    teacherId: number,
-    data: CreateClassDto,
-    userRole?: string,
-  ) {
+  async createClass(userId: number, data: CreateClassDto, userRole?: string) {
+    // 먼저 teacher 정보를 userRefId로 조회
+    const teacher = await this.prisma.teacher.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!teacher) {
+      throw new NotFoundException('선생님을 찾을 수 없습니다.');
+    }
+
     return this.classService.createClass(data, userRole);
   }
 
-  async getTeacherProfile(id: number) {
+  async getTeacherProfile(userId: number) {
     const teacher = await this.prisma.teacher.findUnique({
-      where: { id },
+      where: { userRefId: userId },
       select: {
         id: true,
         userId: true,
@@ -81,7 +86,7 @@ export class TeacherService {
   }
 
   async updateProfile(
-    id: number,
+    userId: number,
     updateData: {
       name?: string;
       phoneNumber?: string;
@@ -94,40 +99,62 @@ export class TeacherService {
     },
   ) {
     const teacher = await this.prisma.teacher.findUnique({
-      where: { id },
+      where: { userRefId: userId },
     });
 
     if (!teacher) {
       throw new NotFoundException('선생님을 찾을 수 없습니다.');
     }
 
-    const updatedTeacher = await this.prisma.teacher.update({
-      where: { id },
-      data: {
-        ...updateData,
-        updatedAt: new Date(),
-      },
-      select: {
-        id: true,
-        userId: true,
-        name: true,
-        phoneNumber: true,
-        introduction: true,
-        photoUrl: true,
-        education: true,
-        specialties: true,
-        certifications: true,
-        yearsOfExperience: true,
-        availableTimes: true,
-        createdAt: true,
-        updatedAt: true,
-        academy: {
-          select: {
-            id: true,
-            name: true,
+    // User 테이블 업데이트 데이터 (이름이 변경된 경우에만)
+    const userUpdateData = updateData.name
+      ? {
+          name: updateData.name,
+          updatedAt: new Date(),
+        }
+      : null;
+
+    // 트랜잭션으로 Teacher와 User 테이블 동시 업데이트
+    const updatedTeacher = await this.prisma.$transaction(async (tx) => {
+      // Teacher 테이블 업데이트
+      const teacher = await tx.teacher.update({
+        where: { userRefId: userId },
+        data: {
+          ...updateData,
+          updatedAt: new Date(),
+        },
+        select: {
+          id: true,
+          userId: true,
+          name: true,
+          phoneNumber: true,
+          introduction: true,
+          photoUrl: true,
+          education: true,
+          specialties: true,
+          certifications: true,
+          yearsOfExperience: true,
+          availableTimes: true,
+          createdAt: true,
+          updatedAt: true,
+          academy: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
         },
-      },
+      });
+
+      // 이름이 변경된 경우 User 테이블도 업데이트
+      if (userUpdateData) {
+        await tx.user.update({
+          where: { id: userId },
+          data: userUpdateData,
+        });
+      }
+
+      return teacher;
     });
 
     return {
@@ -154,9 +181,9 @@ export class TeacherService {
     };
   }
 
-  async updateProfilePhoto(id: number, photo: Express.Multer.File) {
+  async updateProfilePhoto(userId: number, photo: Express.Multer.File) {
     const teacher = await this.prisma.teacher.findUnique({
-      where: { id },
+      where: { userRefId: userId },
     });
 
     if (!teacher) {
@@ -166,7 +193,7 @@ export class TeacherService {
     const photoUrl = `/uploads/teacher-photos/${photo.filename}`;
 
     const updatedTeacher = await this.prisma.teacher.update({
-      where: { id },
+      where: { userRefId: userId },
       data: {
         photoUrl,
         updatedAt: new Date(),
@@ -218,9 +245,9 @@ export class TeacherService {
     };
   }
 
-  async getTeacherClasses(id: number) {
+  async getTeacherClasses(userId: number) {
     const teacher = await this.prisma.teacher.findUnique({
-      where: { id },
+      where: { userRefId: userId },
       include: {
         classes: {
           include: {
@@ -261,9 +288,9 @@ export class TeacherService {
     }));
   }
 
-  async getTeacherClassesWithSessions(id: number) {
+  async getTeacherClassesWithSessions(userId: number) {
     const teacher = await this.prisma.teacher.findUnique({
-      where: { id },
+      where: { userRefId: userId },
       include: {
         classes: {
           include: {
@@ -438,43 +465,76 @@ export class TeacherService {
   }
 
   // 선생님의 현재 학원 정보 조회
-  async getMyAcademy(teacherId: number) {
-    return this.academyService.getTeacherAcademy(teacherId);
+  async getMyAcademy(userId: number) {
+    // 먼저 teacher 정보를 userRefId로 조회
+    const teacher = await this.prisma.teacher.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!teacher) {
+      throw new NotFoundException('선생님을 찾을 수 없습니다.');
+    }
+
+    return this.academyService.getTeacherAcademy(teacher.id);
   }
 
   // 선생님의 학원 변경
-  async changeAcademy(teacherId: number, academyCode: string) {
-    return this.academyService.changeTeacherAcademy(teacherId, academyCode);
+  async changeAcademy(userId: number, academyCode: string) {
+    // 먼저 teacher 정보를 userRefId로 조회
+    const teacher = await this.prisma.teacher.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!teacher) {
+      throw new NotFoundException('선생님을 찾을 수 없습니다.');
+    }
+
+    return this.academyService.changeTeacherAcademy(teacher.id, academyCode);
   }
 
   // 선생님 학원 탈퇴
-  async leaveAcademy(teacherId: number) {
-    return this.academyService.leaveAcademyByTeacher(teacherId);
+  async leaveAcademy(userId: number) {
+    // 먼저 teacher 정보를 userRefId로 조회
+    const teacher = await this.prisma.teacher.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!teacher) {
+      throw new NotFoundException('선생님을 찾을 수 없습니다.');
+    }
+
+    return this.academyService.leaveAcademyByTeacher(teacher.id);
   }
 
   // 학원 가입 요청
   async requestJoinAcademy(
-    teacherId: number,
+    userId: number,
     joinAcademyRequestDto: JoinAcademyRequestDto,
   ) {
+    // 먼저 teacher 정보를 userRefId로 조회
+    const teacher = await this.prisma.teacher.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!teacher) {
+      throw new NotFoundException('선생님을 찾을 수 없습니다.');
+    }
+
     return this.academyService.requestJoinAcademyByTeacher(
-      teacherId,
+      teacher.id,
       joinAcademyRequestDto,
     );
   }
 
   // Teacher 대시보드 Redux 초기화용 데이터 조회
-  async getTeacherData(teacherId: number) {
-    const teacher = await this.prisma.teacher.findUnique({
-      where: { id: teacherId },
+  async getTeacherData(userId: number) {
+    const teacherData = await this.prisma.teacher.findUnique({
+      where: { userRefId: userId },
       include: {
         academy: {
           include: {
             principal: true,
             classes: {
-              where: {
-                teacherId: teacherId,
-              },
               include: {
                 teacher: true,
                 classSessions: {
@@ -500,19 +560,19 @@ export class TeacherService {
       },
     });
 
-    if (!teacher) {
+    if (!teacherData) {
       throw new NotFoundException('Teacher not found');
     }
 
-    if (!teacher.academy) {
+    if (!teacherData.academy) {
       throw new NotFoundException('Teacher is not associated with any academy');
     }
 
     // Principal 정보
-    const principal = teacher.academy.principal;
+    const principal = teacherData.academy.principal;
 
     // 모든 세션을 하나의 배열로 변환
-    const sessions = teacher.academy.classes.flatMap((cls) =>
+    const sessions = teacherData.academy.classes.flatMap((cls) =>
       cls.classSessions.map((session) => ({
         id: session.id,
         classId: session.classId,
@@ -571,23 +631,23 @@ export class TeacherService {
 
     return {
       userProfile: {
-        id: teacher.id,
-        userId: teacher.userId,
-        name: teacher.name,
-        phoneNumber: teacher.phoneNumber,
-        introduction: teacher.introduction,
-        photoUrl: teacher.photoUrl,
-        education: teacher.education,
-        specialties: teacher.specialties,
-        certifications: teacher.certifications,
-        yearsOfExperience: teacher.yearsOfExperience,
-        availableTimes: teacher.availableTimes,
+        id: teacherData.id,
+        userId: teacherData.userId,
+        name: teacherData.name,
+        phoneNumber: teacherData.phoneNumber,
+        introduction: teacherData.introduction,
+        photoUrl: teacherData.photoUrl,
+        education: teacherData.education,
+        specialties: teacherData.specialties,
+        certifications: teacherData.certifications,
+        yearsOfExperience: teacherData.yearsOfExperience,
+        availableTimes: teacherData.availableTimes,
         academy: {
-          id: teacher.academy.id,
-          name: teacher.academy.name,
+          id: teacherData.academy.id,
+          name: teacherData.academy.name,
         },
       },
-      academy: teacher.academy,
+      academy: teacherData.academy,
       principal: principal
         ? {
             id: principal.id,
@@ -596,7 +656,7 @@ export class TeacherService {
             email: principal.email,
           }
         : null,
-      classes: teacher.academy.classes.map((cls) => ({
+      classes: teacherData.academy.classes.map((cls) => ({
         id: cls.id,
         className: cls.className,
         classCode: cls.classCode,
@@ -621,8 +681,8 @@ export class TeacherService {
           photoUrl: cls.teacher.photoUrl,
         },
         academy: {
-          id: teacher.academy.id,
-          name: teacher.academy.name,
+          id: teacherData.academy.id,
+          name: teacherData.academy.name,
         },
         classSessions: cls.classSessions.map((session) => ({
           id: session.id,
