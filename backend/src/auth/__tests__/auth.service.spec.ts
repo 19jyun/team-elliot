@@ -75,6 +75,8 @@ describe('AuthService', () => {
     },
     user: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
+      delete: jest.fn(),
     },
     withdrawalHistory: {
       create: jest.fn(),
@@ -116,9 +118,25 @@ describe('AuthService', () => {
       // Arrange
       const userId = 'principal123';
       const password = 'principal123';
+      const mockUser = {
+        id: 1,
+        userId: 'principal123',
+        password: 'hashed_principal123_password',
+        name: 'Principal User',
+        role: 'PRINCIPAL',
+      };
+      const mockPrincipalData = {
+        id: 1,
+        userRefId: 1,
+        userId: 'principal123',
+        name: 'Principal User',
+        phoneNumber: '010-1234-5678',
+      };
 
-      mockPrismaService.principal.findUnique.mockResolvedValue(mockPrincipal);
-      mockPrismaService.user.findUnique.mockResolvedValue(null);
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      mockPrismaService.principal.findUnique.mockResolvedValue(
+        mockPrincipalData,
+      );
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       // Act
@@ -126,9 +144,11 @@ describe('AuthService', () => {
 
       // Assert
       expect(result).toEqual({
-        id: mockPrincipal.id,
-        userId: mockPrincipal.userId,
-        name: mockPrincipal.name,
+        id: mockUser.id,
+        userId: mockPrincipalData.userId,
+        name: mockPrincipalData.name,
+        phoneNumber: mockPrincipalData.phoneNumber,
+        userRefId: mockPrincipalData.userRefId,
         role: 'PRINCIPAL',
       });
     });
@@ -137,9 +157,23 @@ describe('AuthService', () => {
       // Arrange
       const userId = 'teacher123';
       const password = 'admin123';
+      const mockUser = {
+        id: 2,
+        userId: 'teacher123',
+        password: 'hashed_teacher123_password',
+        name: 'Teacher User',
+        role: 'TEACHER',
+      };
+      const mockTeacherData = {
+        id: 2,
+        userRefId: 2,
+        userId: 'teacher123',
+        name: 'Teacher User',
+        phoneNumber: '010-1234-5678',
+      };
 
-      mockPrismaService.principal.findUnique.mockResolvedValue(null);
-      mockPrismaService.teacher.findUnique.mockResolvedValue(mockTeacher);
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      mockPrismaService.teacher.findUnique.mockResolvedValue(mockTeacherData);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       // Act
@@ -147,9 +181,11 @@ describe('AuthService', () => {
 
       // Assert
       expect(result).toEqual({
-        id: mockTeacher.id,
-        userId: mockTeacher.userId,
-        name: mockTeacher.name,
+        id: mockUser.id,
+        userId: mockTeacherData.userId,
+        name: mockTeacherData.name,
+        phoneNumber: mockTeacherData.phoneNumber,
+        userRefId: mockTeacherData.userRefId,
         role: 'TEACHER',
       });
     });
@@ -158,10 +194,23 @@ describe('AuthService', () => {
       // Arrange
       const userId = 'student123';
       const password = 'admin123';
+      const mockUser = {
+        id: 3,
+        userId: 'student123',
+        password: 'hashed_student123_password',
+        name: 'Student User',
+        role: 'STUDENT',
+      };
+      const mockStudentData = {
+        id: 3,
+        userRefId: 3,
+        userId: 'student123',
+        name: 'Student User',
+        phoneNumber: '010-1234-5678',
+      };
 
-      mockPrismaService.principal.findUnique.mockResolvedValue(null);
-      mockPrismaService.teacher.findUnique.mockResolvedValue(null);
-      mockPrismaService.student.findUnique.mockResolvedValue(mockStudent);
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      mockPrismaService.student.findUnique.mockResolvedValue(mockStudentData);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       // Act
@@ -169,9 +218,11 @@ describe('AuthService', () => {
 
       // Assert
       expect(result).toEqual({
-        id: mockStudent.id,
-        userId: mockStudent.userId,
-        name: mockStudent.name,
+        id: mockUser.id,
+        userId: mockStudentData.userId,
+        name: mockStudentData.name,
+        phoneNumber: mockStudentData.phoneNumber,
+        userRefId: mockStudentData.userRefId,
         role: 'STUDENT',
       });
     });
@@ -181,9 +232,7 @@ describe('AuthService', () => {
       const userId = 'invalid';
       const password = 'wrong';
 
-      mockPrismaService.principal.findUnique.mockResolvedValue(null);
-      mockPrismaService.teacher.findUnique.mockResolvedValue(null);
-      mockPrismaService.student.findUnique.mockResolvedValue(null);
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
 
       // Act & Assert
       await expect(service.validateUser(userId, password)).rejects.toThrow(
@@ -201,32 +250,51 @@ describe('AuthService', () => {
         const userId = 'principal123';
         const password = 'principal123';
         const expectedToken = 'mock-jwt-token';
+        const mockUser = {
+          id: 1,
+          userId: 'principal123',
+          password: 'hashed_principal123_password',
+          name: 'Principal User',
+          role: 'PRINCIPAL',
+        };
+        const mockPrincipalData = {
+          id: 1,
+          userRefId: 1,
+          userId: 'principal123',
+          name: 'Principal User',
+          phoneNumber: '010-1234-5678',
+        };
 
-        mockPrismaService.principal.findUnique.mockResolvedValue(mockPrincipal);
-        mockPrismaService.user.findUnique.mockResolvedValue(null);
+        mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+        mockPrismaService.principal.findUnique.mockResolvedValue(
+          mockPrincipalData,
+        );
         (bcrypt.compare as jest.Mock).mockResolvedValue(true);
         mockJwtService.sign.mockReturnValue(expectedToken);
 
         const result = await service.login(userId, password);
 
-        expect(mockPrismaService.principal.findUnique).toHaveBeenCalledWith({
+        expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
           where: { userId: userId },
+        });
+        expect(mockPrismaService.principal.findUnique).toHaveBeenCalledWith({
+          where: { userRefId: mockUser.id },
         });
         expect(bcrypt.compare).toHaveBeenCalledWith(
           password,
-          mockPrincipal.password,
+          mockUser.password,
         );
         expect(mockJwtService.sign).toHaveBeenCalledWith({
-          userId: mockPrincipal.userId,
-          sub: mockPrincipal.id,
+          userId: mockPrincipalData.userId,
+          sub: mockUser.id,
           role: 'PRINCIPAL',
         });
         expect(result).toEqual({
           access_token: expectedToken,
           user: {
-            id: mockPrincipal.id,
-            userId: mockPrincipal.userId,
-            name: mockPrincipal.name,
+            id: mockUser.id,
+            userId: mockPrincipalData.userId,
+            name: mockPrincipalData.name,
             role: 'PRINCIPAL',
           },
         });
@@ -236,32 +304,49 @@ describe('AuthService', () => {
         const userId = 'teacher123';
         const password = 'admin123';
         const expectedToken = 'mock-jwt-token';
+        const mockUser = {
+          id: 2,
+          userId: 'teacher123',
+          password: 'hashed_teacher123_password',
+          name: 'Teacher User',
+          role: 'TEACHER',
+        };
+        const mockTeacherData = {
+          id: 2,
+          userRefId: 2,
+          userId: 'teacher123',
+          name: 'Teacher User',
+          phoneNumber: '010-1234-5678',
+        };
 
-        mockPrismaService.principal.findUnique.mockResolvedValue(null);
-        mockPrismaService.teacher.findUnique.mockResolvedValue(mockTeacher);
+        mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+        mockPrismaService.teacher.findUnique.mockResolvedValue(mockTeacherData);
         (bcrypt.compare as jest.Mock).mockResolvedValue(true);
         mockJwtService.sign.mockReturnValue(expectedToken);
 
         const result = await service.login(userId, password);
 
-        expect(mockPrismaService.teacher.findUnique).toHaveBeenCalledWith({
+        expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
           where: { userId: userId },
+        });
+        expect(mockPrismaService.teacher.findUnique).toHaveBeenCalledWith({
+          where: { userRefId: mockUser.id },
         });
         expect(bcrypt.compare).toHaveBeenCalledWith(
           password,
-          mockTeacher.password,
+          mockUser.password,
         );
         expect(mockJwtService.sign).toHaveBeenCalledWith({
-          userId: mockTeacher.userId,
-          sub: mockTeacher.id,
+          userId: mockTeacherData.userId,
+          sub: mockUser.id,
           role: 'TEACHER',
         });
         expect(result).toEqual({
           access_token: expectedToken,
           user: {
-            id: mockTeacher.id,
-            userId: mockTeacher.userId,
-            name: mockTeacher.name,
+            id: mockUser.id,
+            userId: mockTeacherData.userId,
+            name: mockTeacherData.name,
             role: 'TEACHER',
           },
         });
@@ -271,33 +356,49 @@ describe('AuthService', () => {
         const userId = 'student123';
         const password = 'admin123';
         const expectedToken = 'mock-jwt-token';
+        const mockUser = {
+          id: 3,
+          userId: 'student123',
+          password: 'hashed_student123_password',
+          name: 'Student User',
+          role: 'STUDENT',
+        };
+        const mockStudentData = {
+          id: 3,
+          userRefId: 3,
+          userId: 'student123',
+          name: 'Student User',
+          phoneNumber: '010-1234-5678',
+        };
 
-        mockPrismaService.principal.findUnique.mockResolvedValue(null);
-        mockPrismaService.teacher.findUnique.mockResolvedValue(null);
-        mockPrismaService.student.findUnique.mockResolvedValue(mockStudent);
+        mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+        mockPrismaService.student.findUnique.mockResolvedValue(mockStudentData);
         (bcrypt.compare as jest.Mock).mockResolvedValue(true);
         mockJwtService.sign.mockReturnValue(expectedToken);
 
         const result = await service.login(userId, password);
 
-        expect(mockPrismaService.student.findUnique).toHaveBeenCalledWith({
+        expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
           where: { userId },
+        });
+        expect(mockPrismaService.student.findUnique).toHaveBeenCalledWith({
+          where: { userRefId: mockUser.id },
         });
         expect(bcrypt.compare).toHaveBeenCalledWith(
           password,
-          mockStudent.password,
+          mockUser.password,
         );
         expect(mockJwtService.sign).toHaveBeenCalledWith({
-          userId: mockStudent.userId,
-          sub: mockStudent.id,
+          userId: mockStudentData.userId,
+          sub: mockUser.id,
           role: 'STUDENT',
         });
         expect(result).toEqual({
           access_token: expectedToken,
           user: {
-            id: mockStudent.id,
-            userId: mockStudent.userId,
-            name: mockStudent.name,
+            id: mockUser.id,
+            userId: mockStudentData.userId,
+            name: mockStudentData.name,
             role: 'STUDENT',
           },
         });
@@ -309,9 +410,7 @@ describe('AuthService', () => {
         const userId = 'nonexistent_user';
         const password = 'password123';
 
-        mockPrismaService.principal.findUnique.mockResolvedValue(null);
-        mockPrismaService.teacher.findUnique.mockResolvedValue(null);
-        mockPrismaService.student.findUnique.mockResolvedValue(null);
+        mockPrismaService.user.findUnique.mockResolvedValue(null);
 
         await expect(service.login(userId, password)).rejects.toThrow(
           UnauthorizedException,
@@ -324,8 +423,15 @@ describe('AuthService', () => {
       it('should throw UnauthorizedException for principal with wrong password', async () => {
         const userId = 'principal123';
         const password = 'wrong_password';
+        const mockUser = {
+          id: 1,
+          userId: 'principal123',
+          password: 'hashed_principal123_password',
+          name: 'Principal User',
+          role: 'PRINCIPAL',
+        };
 
-        mockPrismaService.principal.findUnique.mockResolvedValue(mockPrincipal);
+        mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
         (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
         await expect(service.login(userId, password)).rejects.toThrow(
@@ -339,9 +445,15 @@ describe('AuthService', () => {
       it('should throw UnauthorizedException for teacher with wrong password', async () => {
         const userId = 'teacher123';
         const password = 'wrong_password';
+        const mockUser = {
+          id: 2,
+          userId: 'teacher123',
+          password: 'hashed_teacher123_password',
+          name: 'Teacher User',
+          role: 'TEACHER',
+        };
 
-        mockPrismaService.principal.findUnique.mockResolvedValue(null);
-        mockPrismaService.teacher.findUnique.mockResolvedValue(mockTeacher);
+        mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
         (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
         await expect(service.login(userId, password)).rejects.toThrow(
@@ -355,10 +467,15 @@ describe('AuthService', () => {
       it('should throw UnauthorizedException for student with wrong password', async () => {
         const userId = 'student123';
         const password = 'wrong_password';
+        const mockUser = {
+          id: 3,
+          userId: 'student123',
+          password: 'hashed_student123_password',
+          name: 'Student User',
+          role: 'STUDENT',
+        };
 
-        mockPrismaService.principal.findUnique.mockResolvedValue(null);
-        mockPrismaService.teacher.findUnique.mockResolvedValue(null);
-        mockPrismaService.student.findUnique.mockResolvedValue(mockStudent);
+        mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
         (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
         await expect(service.login(userId, password)).rejects.toThrow(
@@ -373,9 +490,6 @@ describe('AuthService', () => {
 
   describe('signup', () => {
     it('should signup a new student and return access_token and user info', async () => {
-      mockPrismaService.student.findUnique.mockResolvedValue(null);
-      mockPrismaService.teacher.findUnique.mockResolvedValue(null);
-      mockPrismaService.principal.findUnique.mockResolvedValue(null);
       mockPrismaService.user.findUnique.mockResolvedValue(null);
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed_pw');
 
@@ -402,15 +516,6 @@ describe('AuthService', () => {
 
       const result = await service.signup(signupDto);
 
-      expect(mockPrismaService.student.findUnique).toHaveBeenCalledWith({
-        where: { userId: signupDto.userId },
-      });
-      expect(mockPrismaService.teacher.findUnique).toHaveBeenCalledWith({
-        where: { userId: signupDto.userId },
-      });
-      expect(mockPrismaService.principal.findUnique).toHaveBeenCalledWith({
-        where: { userId: signupDto.userId },
-      });
       expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
         where: { userId: signupDto.userId },
       });
@@ -432,20 +537,14 @@ describe('AuthService', () => {
       });
     });
 
-    it('should throw ConflictException if userId already exists in student table', async () => {
-      mockPrismaService.student.findUnique.mockResolvedValue(mockStudent);
-
-      await expect(service.signup(signupDto)).rejects.toThrow(
-        ConflictException,
-      );
-      await expect(service.signup(signupDto)).rejects.toThrow(
-        '이미 사용중인 아이디입니다.',
-      );
-    });
-
-    it('should throw ConflictException if userId already exists in teacher table', async () => {
-      mockPrismaService.student.findUnique.mockResolvedValue(null);
-      mockPrismaService.teacher.findUnique.mockResolvedValue(mockTeacher);
+    it('should throw ConflictException if userId already exists', async () => {
+      const existingUser = {
+        id: 1,
+        userId: 'newstudent',
+        name: 'Existing User',
+        role: 'STUDENT',
+      };
+      mockPrismaService.user.findUnique.mockResolvedValue(existingUser);
 
       await expect(service.signup(signupDto)).rejects.toThrow(
         ConflictException,
@@ -456,17 +555,13 @@ describe('AuthService', () => {
     });
 
     it('should handle errors during password hashing', async () => {
-      mockPrismaService.student.findUnique.mockResolvedValue(null);
-      mockPrismaService.teacher.findUnique.mockResolvedValue(null);
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
       (bcrypt.hash as jest.Mock).mockRejectedValue(new Error('hash error'));
 
       await expect(service.signup(signupDto)).rejects.toThrow('hash error');
     });
 
     it('should handle errors during student creation', async () => {
-      mockPrismaService.student.findUnique.mockResolvedValue(null);
-      mockPrismaService.teacher.findUnique.mockResolvedValue(null);
-      mockPrismaService.principal.findUnique.mockResolvedValue(null);
       mockPrismaService.user.findUnique.mockResolvedValue(null);
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed_pw');
 
@@ -481,20 +576,36 @@ describe('AuthService', () => {
     it('should delete student account successfully', async () => {
       const userId = 3;
       const reason = '개인적인 이유';
+      const mockUser = {
+        id: userId,
+        userId: 'student123',
+        name: 'Student User',
+        role: 'STUDENT',
+      };
+      const mockStudentData = {
+        id: 3,
+        userRefId: userId,
+        userId: 'student123',
+        name: 'Student User',
+      };
 
-      mockPrismaService.student.findUnique.mockResolvedValue(mockStudent);
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      mockPrismaService.student.findUnique.mockResolvedValue(mockStudentData);
       mockPrismaService.withdrawalHistory.create.mockResolvedValue({});
       mockPrismaService.$transaction.mockResolvedValue([]);
 
       await service.withdrawal(userId, reason);
 
-      expect(mockPrismaService.student.findUnique).toHaveBeenCalledWith({
+      expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
         where: { id: userId },
+      });
+      expect(mockPrismaService.student.findUnique).toHaveBeenCalledWith({
+        where: { userRefId: userId },
       });
       expect(mockPrismaService.withdrawalHistory.create).toHaveBeenCalledWith({
         data: {
-          userId: mockStudent.userId,
-          userName: mockStudent.name,
+          userId: mockUser.userId,
+          userName: mockUser.name,
           userRole: 'STUDENT',
           reason: reason,
           reasonCategory: 'OTHER',
@@ -502,9 +613,12 @@ describe('AuthService', () => {
       });
       expect(mockPrismaService.$transaction).toHaveBeenCalledWith([
         mockPrismaService.enrollment.deleteMany({
-          where: { studentId: userId },
+          where: { studentId: mockStudentData.id },
         }),
         mockPrismaService.student.delete({
+          where: { id: mockStudentData.id },
+        }),
+        mockPrismaService.user.delete({
           where: { id: userId },
         }),
       ]);
@@ -514,7 +628,7 @@ describe('AuthService', () => {
       const userId = 999;
       const reason = '개인적인 이유';
 
-      mockPrismaService.student.findUnique.mockResolvedValue(null);
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
 
       await expect(service.withdrawal(userId, reason)).rejects.toThrow(
         NotFoundException,
@@ -529,24 +643,30 @@ describe('AuthService', () => {
     it('should return available: true when userId is not used', async () => {
       const userId = 'newuser';
 
-      mockPrismaService.student.findFirst.mockResolvedValue(null);
+      mockPrismaService.user.findFirst.mockResolvedValue(null);
 
       const result = await service.checkUserId(userId);
 
-      expect(mockPrismaService.student.findFirst).toHaveBeenCalledWith({
+      expect(mockPrismaService.user.findFirst).toHaveBeenCalledWith({
         where: { userId },
       });
       expect(result).toEqual({ available: true });
     });
 
-    it('should return available: false when userId exists in student table', async () => {
+    it('should return available: false when userId exists in user table', async () => {
       const userId = 'existinguser';
+      const existingUser = {
+        id: 1,
+        userId: 'existinguser',
+        name: 'Existing User',
+        role: 'STUDENT',
+      };
 
-      mockPrismaService.student.findFirst.mockResolvedValue(mockStudent);
+      mockPrismaService.user.findFirst.mockResolvedValue(existingUser);
 
       const result = await service.checkUserId(userId);
 
-      expect(mockPrismaService.student.findFirst).toHaveBeenCalledWith({
+      expect(mockPrismaService.user.findFirst).toHaveBeenCalledWith({
         where: { userId },
       });
       expect(result).toEqual({ available: false });

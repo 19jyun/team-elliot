@@ -1,12 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrincipalController } from '../principal.controller';
 import { PrincipalService } from '../principal.service';
+import { ClassService } from '../../class/class.service';
 import { UpdateAcademyDto } from '../dto/update-academy.dto';
 import { UpdateProfileDto } from '../dto/update-profile.dto';
 
 describe('PrincipalController', () => {
   let controller: PrincipalController;
   let service: PrincipalService;
+  let classService: ClassService;
 
   const mockService = {
     getMyAcademy: jest.fn(),
@@ -36,8 +38,13 @@ describe('PrincipalController', () => {
     getStudentSessionHistory: jest.fn(),
   };
 
+  const mockClassService = {
+    createClass: jest.fn(),
+  };
+
   const mockUser = {
     id: 1,
+    userRefId: 1,
     userId: 'testprincipal',
     role: 'PRINCIPAL',
   };
@@ -45,10 +52,14 @@ describe('PrincipalController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PrincipalController],
-      providers: [{ provide: PrincipalService, useValue: mockService }],
+      providers: [
+        { provide: PrincipalService, useValue: mockService },
+        { provide: ClassService, useValue: mockClassService },
+      ],
     }).compile();
     controller = module.get<PrincipalController>(PrincipalController);
     service = module.get<PrincipalService>(PrincipalService);
+    classService = module.get<ClassService>(ClassService);
     jest.clearAllMocks();
   });
 
@@ -60,7 +71,7 @@ describe('PrincipalController', () => {
       const result = await controller.getMyAcademy(mockUser);
 
       expect(result).toEqual(academy);
-      expect(service.getMyAcademy).toHaveBeenCalledWith(mockUser.id);
+      expect(service.getMyAcademy).toHaveBeenCalledWith(mockUser.userRefId);
     });
   });
 
@@ -72,7 +83,7 @@ describe('PrincipalController', () => {
       const result = await controller.getAllSessions(mockUser);
 
       expect(result).toEqual(sessions);
-      expect(service.getAllSessions).toHaveBeenCalledWith(mockUser.id);
+      expect(service.getAllSessions).toHaveBeenCalledWith(mockUser.userRefId);
     });
   });
 
@@ -84,7 +95,28 @@ describe('PrincipalController', () => {
       const result = await controller.getAllClasses(mockUser);
 
       expect(result).toEqual(classes);
-      expect(service.getAllClasses).toHaveBeenCalledWith(mockUser.id);
+      expect(service.getAllClasses).toHaveBeenCalledWith(mockUser.userRefId);
+    });
+  });
+
+  describe('createClass', () => {
+    it('should create class', async () => {
+      const createClassDto = { className: 'Test Class', teacherId: 1 };
+      const createdClass = { id: 1, ...createClassDto };
+      mockService.getPrincipalInfo.mockResolvedValue({
+        id: 1,
+        name: 'Test Principal',
+      });
+      mockClassService.createClass.mockResolvedValue(createdClass);
+
+      const result = await controller.createClass(mockUser, createClassDto);
+
+      expect(result).toEqual(createdClass);
+      expect(service.getPrincipalInfo).toHaveBeenCalledWith(mockUser.userRefId);
+      expect(classService.createClass).toHaveBeenCalledWith(
+        createClassDto,
+        'PRINCIPAL',
+      );
     });
   });
 
@@ -96,7 +128,7 @@ describe('PrincipalController', () => {
       const result = await controller.getAllTeachers(mockUser);
 
       expect(result).toEqual(teachers);
-      expect(service.getAllTeachers).toHaveBeenCalledWith(mockUser.id);
+      expect(service.getAllTeachers).toHaveBeenCalledWith(mockUser.userRefId);
     });
   });
 
@@ -108,7 +140,7 @@ describe('PrincipalController', () => {
       const result = await controller.getAllStudents(mockUser);
 
       expect(result).toEqual(students);
-      expect(service.getAllStudents).toHaveBeenCalledWith(mockUser.id);
+      expect(service.getAllStudents).toHaveBeenCalledWith(mockUser.userRefId);
     });
   });
 
@@ -120,7 +152,9 @@ describe('PrincipalController', () => {
       const result = await controller.getAllEnrollments(mockUser);
 
       expect(result).toEqual(enrollments);
-      expect(service.getAllEnrollments).toHaveBeenCalledWith(mockUser.id);
+      expect(service.getAllEnrollments).toHaveBeenCalledWith(
+        mockUser.userRefId,
+      );
     });
   });
 
@@ -132,7 +166,9 @@ describe('PrincipalController', () => {
       const result = await controller.getAllRefundRequests(mockUser);
 
       expect(result).toEqual(refundRequests);
-      expect(service.getAllRefundRequests).toHaveBeenCalledWith(mockUser.id);
+      expect(service.getAllRefundRequests).toHaveBeenCalledWith(
+        mockUser.userRefId,
+      );
     });
   });
 
@@ -144,7 +180,7 @@ describe('PrincipalController', () => {
       const result = await controller.getPrincipalInfo(mockUser);
 
       expect(result).toEqual(principalInfo);
-      expect(service.getPrincipalInfo).toHaveBeenCalledWith(mockUser.id);
+      expect(service.getPrincipalInfo).toHaveBeenCalledWith(mockUser.userRefId);
     });
   });
 
@@ -156,7 +192,9 @@ describe('PrincipalController', () => {
       const result = await controller.getPrincipalBankInfo(mockUser);
 
       expect(result).toEqual(bankInfo);
-      expect(service.getPrincipalBankInfo).toHaveBeenCalledWith(mockUser.id);
+      expect(service.getPrincipalBankInfo).toHaveBeenCalledWith(
+        mockUser.userRefId,
+      );
     });
   });
 
@@ -173,7 +211,7 @@ describe('PrincipalController', () => {
       const result = await controller.getPrincipalData(mockUser);
 
       expect(result).toEqual(principalData);
-      expect(service.getPrincipalData).toHaveBeenCalledWith(mockUser.id);
+      expect(service.getPrincipalData).toHaveBeenCalledWith(mockUser.userRefId);
     });
   });
 
@@ -191,7 +229,7 @@ describe('PrincipalController', () => {
 
       expect(result).toEqual(updatedProfile);
       expect(service.updateProfile).toHaveBeenCalledWith(
-        mockUser.id,
+        mockUser.userRefId,
         updateProfileDto,
       );
     });
@@ -214,7 +252,7 @@ describe('PrincipalController', () => {
 
       expect(response).toEqual(result);
       expect(service.updateProfilePhoto).toHaveBeenCalledWith(
-        mockUser.id,
+        mockUser.userRefId,
         mockFile,
       );
     });
@@ -234,7 +272,7 @@ describe('PrincipalController', () => {
       expect(result).toEqual(enrollments);
       expect(service.getSessionEnrollments).toHaveBeenCalledWith(
         sessionId,
-        mockUser.id,
+        mockUser.userRefId,
       );
     });
   });
@@ -253,7 +291,7 @@ describe('PrincipalController', () => {
 
       expect(result).toEqual(updatedAcademy);
       expect(service.updateAcademy).toHaveBeenCalledWith(
-        mockUser.id,
+        mockUser.userRefId,
         updateAcademyDto,
       );
     });
@@ -269,7 +307,7 @@ describe('PrincipalController', () => {
 
       expect(result).toEqual(sessions);
       expect(service.getSessionsWithEnrollmentRequests).toHaveBeenCalledWith(
-        mockUser.id,
+        mockUser.userRefId,
       );
     });
   });
@@ -283,7 +321,7 @@ describe('PrincipalController', () => {
 
       expect(result).toEqual(sessions);
       expect(service.getSessionsWithRefundRequests).toHaveBeenCalledWith(
-        mockUser.id,
+        mockUser.userRefId,
       );
     });
   });
@@ -302,7 +340,7 @@ describe('PrincipalController', () => {
       expect(result).toEqual(requests);
       expect(service.getSessionEnrollmentRequests).toHaveBeenCalledWith(
         sessionId,
-        mockUser.id,
+        mockUser.userRefId,
       );
     });
   });
@@ -321,7 +359,7 @@ describe('PrincipalController', () => {
       expect(result).toEqual(requests);
       expect(service.getSessionRefundRequests).toHaveBeenCalledWith(
         sessionId,
-        mockUser.id,
+        mockUser.userRefId,
       );
     });
   });
@@ -340,7 +378,7 @@ describe('PrincipalController', () => {
       expect(response).toEqual(result);
       expect(service.approveEnrollment).toHaveBeenCalledWith(
         enrollmentId,
-        mockUser.id,
+        mockUser.userRefId,
       );
     });
   });
@@ -365,7 +403,7 @@ describe('PrincipalController', () => {
       expect(service.rejectEnrollment).toHaveBeenCalledWith(
         enrollmentId,
         rejectData,
-        mockUser.id,
+        mockUser.userRefId,
       );
     });
   });
@@ -379,7 +417,10 @@ describe('PrincipalController', () => {
       const response = await controller.approveRefund(refundId, mockUser);
 
       expect(response).toEqual(result);
-      expect(service.approveRefund).toHaveBeenCalledWith(refundId, mockUser.id);
+      expect(service.approveRefund).toHaveBeenCalledWith(
+        refundId,
+        mockUser.userRefId,
+      );
     });
   });
 
@@ -403,7 +444,7 @@ describe('PrincipalController', () => {
       expect(service.rejectRefund).toHaveBeenCalledWith(
         refundId,
         rejectData,
-        mockUser.id,
+        mockUser.userRefId,
       );
     });
   });
@@ -419,7 +460,7 @@ describe('PrincipalController', () => {
       expect(response).toEqual(result);
       expect(service.removeTeacher).toHaveBeenCalledWith(
         teacherId,
-        mockUser.id,
+        mockUser.userRefId,
       );
     });
   });
@@ -435,7 +476,7 @@ describe('PrincipalController', () => {
       expect(response).toEqual(result);
       expect(service.removeStudent).toHaveBeenCalledWith(
         studentId,
-        mockUser.id,
+        mockUser.userRefId,
       );
     });
   });
@@ -454,7 +495,7 @@ describe('PrincipalController', () => {
       expect(result).toEqual(history);
       expect(service.getStudentSessionHistory).toHaveBeenCalledWith(
         studentId,
-        mockUser.id,
+        mockUser.userRefId,
       );
     });
   });

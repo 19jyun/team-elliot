@@ -35,6 +35,7 @@ describe('PrincipalService', () => {
     refundRequest: {
       findMany: jest.fn(),
     },
+    $transaction: jest.fn(),
   };
 
   const mockSocketGateway = {
@@ -91,7 +92,7 @@ describe('PrincipalService', () => {
 
   describe('getMyAcademy', () => {
     it('should get principal academy successfully', async () => {
-      const principalId = 1;
+      const userRefId = 1;
       const academy = {
         id: 1,
         name: 'Test Academy',
@@ -99,25 +100,25 @@ describe('PrincipalService', () => {
         classes: [],
         students: [],
       };
-      const principal = { id: principalId, academy };
+      const principal = { id: 1, userRefId, academy };
 
       prisma.principal.findUnique.mockResolvedValue(principal);
 
-      const result = await service.getMyAcademy(principalId);
+      const result = await service.getMyAcademy(userRefId);
 
       expect(result).toEqual(academy);
       expect(prisma.principal.findUnique).toHaveBeenCalledWith({
-        where: { id: principalId },
+        where: { userRefId },
         include: expect.any(Object),
       });
     });
 
     it('should throw NotFoundException when principal not found', async () => {
-      const principalId = 999;
+      const userRefId = 999;
 
       prisma.principal.findUnique.mockResolvedValue(null);
 
-      await expect(service.getMyAcademy(principalId)).rejects.toThrow(
+      await expect(service.getMyAcademy(userRefId)).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -125,109 +126,200 @@ describe('PrincipalService', () => {
 
   describe('getAllSessions', () => {
     it('should get all sessions', async () => {
+      const userRefId = 1;
       const principalId = 1;
       const sessions = [{ id: 1, classId: 1, date: new Date() }];
 
+      prisma.principal.findUnique.mockResolvedValue({ id: principalId });
       classSessionService.getPrincipalSessions.mockResolvedValue(sessions);
 
-      const result = await service.getAllSessions(principalId);
+      const result = await service.getAllSessions(userRefId);
 
       expect(result).toEqual(sessions);
+      expect(prisma.principal.findUnique).toHaveBeenCalledWith({
+        where: { userRefId },
+      });
       expect(classSessionService.getPrincipalSessions).toHaveBeenCalledWith(
         principalId,
+      );
+    });
+
+    it('should throw NotFoundException when principal not found', async () => {
+      const userRefId = 999;
+
+      prisma.principal.findUnique.mockResolvedValue(null);
+
+      await expect(service.getAllSessions(userRefId)).rejects.toThrow(
+        NotFoundException,
       );
     });
   });
 
   describe('getAllClasses', () => {
     it('should get all classes', async () => {
+      const userRefId = 1;
       const principalId = 1;
       const classes = [{ id: 1, className: 'Test Class' }];
 
+      prisma.principal.findUnique.mockResolvedValue({ id: principalId });
       classService.getPrincipalClasses.mockResolvedValue(classes);
 
-      const result = await service.getAllClasses(principalId);
+      const result = await service.getAllClasses(userRefId);
 
       expect(result).toEqual(classes);
+      expect(prisma.principal.findUnique).toHaveBeenCalledWith({
+        where: { userRefId },
+      });
       expect(classService.getPrincipalClasses).toHaveBeenCalledWith(
         principalId,
+      );
+    });
+
+    it('should throw NotFoundException when principal not found', async () => {
+      const userRefId = 999;
+
+      prisma.principal.findUnique.mockResolvedValue(null);
+
+      await expect(service.getAllClasses(userRefId)).rejects.toThrow(
+        NotFoundException,
       );
     });
   });
 
   describe('getAllTeachers', () => {
     it('should get all teachers', async () => {
+      const userRefId = 1;
       const principalId = 1;
       const teachers = [{ id: 1, name: 'Test Teacher' }];
 
+      prisma.principal.findUnique.mockResolvedValue({ id: principalId });
       teacherService.getPrincipalTeachers.mockResolvedValue(teachers);
 
-      const result = await service.getAllTeachers(principalId);
+      const result = await service.getAllTeachers(userRefId);
 
       expect(result).toEqual(teachers);
+      expect(prisma.principal.findUnique).toHaveBeenCalledWith({
+        where: { userRefId },
+      });
       expect(teacherService.getPrincipalTeachers).toHaveBeenCalledWith(
         principalId,
+      );
+    });
+
+    it('should throw NotFoundException when principal not found', async () => {
+      const userRefId = 999;
+
+      prisma.principal.findUnique.mockResolvedValue(null);
+
+      await expect(service.getAllTeachers(userRefId)).rejects.toThrow(
+        NotFoundException,
       );
     });
   });
 
   describe('getAllStudents', () => {
     it('should get all students', async () => {
+      const userRefId = 1;
       const principalId = 1;
       const students = [{ id: 1, name: 'Test Student' }];
 
+      prisma.principal.findUnique.mockResolvedValue({ id: principalId });
       studentService.getPrincipalStudents.mockResolvedValue(students);
 
-      const result = await service.getAllStudents(principalId);
+      const result = await service.getAllStudents(userRefId);
 
       expect(result).toEqual(students);
+      expect(prisma.principal.findUnique).toHaveBeenCalledWith({
+        where: { userRefId },
+      });
       expect(studentService.getPrincipalStudents).toHaveBeenCalledWith(
         principalId,
+      );
+    });
+
+    it('should throw NotFoundException when principal not found', async () => {
+      const userRefId = 999;
+
+      prisma.principal.findUnique.mockResolvedValue(null);
+
+      await expect(service.getAllStudents(userRefId)).rejects.toThrow(
+        NotFoundException,
       );
     });
   });
 
   describe('getAllEnrollments', () => {
     it('should get all enrollments', async () => {
+      const userRefId = 1;
       const principalId = 1;
       const enrollments = [{ id: 1, studentId: 1, sessionId: 1 }];
 
+      prisma.principal.findUnique.mockResolvedValue({ id: principalId });
       classSessionService.getPrincipalEnrollments.mockResolvedValue(
         enrollments,
       );
 
-      const result = await service.getAllEnrollments(principalId);
+      const result = await service.getAllEnrollments(userRefId);
 
       expect(result).toEqual(enrollments);
+      expect(prisma.principal.findUnique).toHaveBeenCalledWith({
+        where: { userRefId },
+      });
       expect(classSessionService.getPrincipalEnrollments).toHaveBeenCalledWith(
         principalId,
+      );
+    });
+
+    it('should throw NotFoundException when principal not found', async () => {
+      const userRefId = 999;
+
+      prisma.principal.findUnique.mockResolvedValue(null);
+
+      await expect(service.getAllEnrollments(userRefId)).rejects.toThrow(
+        NotFoundException,
       );
     });
   });
 
   describe('getAllRefundRequests', () => {
     it('should get all refund requests', async () => {
+      const userRefId = 1;
       const principalId = 1;
       const refundRequests = [{ id: 1, studentId: 1, amount: 50000 }];
 
+      prisma.principal.findUnique.mockResolvedValue({ id: principalId });
       refundService.getPrincipalRefundRequests.mockResolvedValue(
         refundRequests,
       );
 
-      const result = await service.getAllRefundRequests(principalId);
+      const result = await service.getAllRefundRequests(userRefId);
 
       expect(result).toEqual(refundRequests);
+      expect(prisma.principal.findUnique).toHaveBeenCalledWith({
+        where: { userRefId },
+      });
       expect(refundService.getPrincipalRefundRequests).toHaveBeenCalledWith(
         principalId,
+      );
+    });
+
+    it('should throw NotFoundException when principal not found', async () => {
+      const userRefId = 999;
+
+      prisma.principal.findUnique.mockResolvedValue(null);
+
+      await expect(service.getAllRefundRequests(userRefId)).rejects.toThrow(
+        NotFoundException,
       );
     });
   });
 
   describe('getPrincipalInfo', () => {
     it('should get principal info successfully', async () => {
-      const principalId = 1;
+      const userRefId = 1;
       const principalInfo = {
-        id: principalId,
+        id: 1,
+        userRefId,
         name: 'Test Principal',
         email: 'test@example.com',
         phoneNumber: '010-1234-5678',
@@ -235,21 +327,21 @@ describe('PrincipalService', () => {
 
       prisma.principal.findUnique.mockResolvedValue(principalInfo);
 
-      const result = await service.getPrincipalInfo(principalId);
+      const result = await service.getPrincipalInfo(userRefId);
 
       expect(result).toEqual(principalInfo);
       expect(prisma.principal.findUnique).toHaveBeenCalledWith({
-        where: { id: principalId },
+        where: { userRefId },
         include: { academy: true },
       });
     });
 
     it('should throw NotFoundException when principal not found', async () => {
-      const principalId = 999;
+      const userRefId = 999;
 
       prisma.principal.findUnique.mockResolvedValue(null);
 
-      await expect(service.getPrincipalInfo(principalId)).rejects.toThrow(
+      await expect(service.getPrincipalInfo(userRefId)).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -257,7 +349,7 @@ describe('PrincipalService', () => {
 
   describe('getPrincipalBankInfo', () => {
     it('should get principal bank info successfully', async () => {
-      const principalId = 1;
+      const userRefId = 1;
       const bankInfo = {
         principalId: 1,
         principalName: 'Test Principal',
@@ -274,21 +366,21 @@ describe('PrincipalService', () => {
         accountHolder: 'Test Principal',
       });
 
-      const result = await service.getPrincipalBankInfo(principalId);
+      const result = await service.getPrincipalBankInfo(userRefId);
 
       expect(result).toEqual(bankInfo);
       expect(prisma.principal.findUnique).toHaveBeenCalledWith({
-        where: { id: principalId },
+        where: { userRefId },
         select: expect.any(Object),
       });
     });
 
     it('should throw NotFoundException when principal not found', async () => {
-      const principalId = 999;
+      const userRefId = 999;
 
       prisma.principal.findUnique.mockResolvedValue(null);
 
-      await expect(service.getPrincipalBankInfo(principalId)).rejects.toThrow(
+      await expect(service.getPrincipalBankInfo(userRefId)).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -296,31 +388,49 @@ describe('PrincipalService', () => {
 
   describe('updateProfile', () => {
     it('should update principal profile successfully', async () => {
-      const principalId = 1;
+      const userRefId = 1;
       const updateProfileDto: UpdateProfileDto = {
         name: 'Updated Principal',
         phoneNumber: '010-1234-5678',
         introduction: 'Updated introduction',
       };
-      const updatedProfile = { id: principalId, ...updateProfileDto };
+      const updatedProfile = {
+        id: 1,
+        userRefId,
+        userId: 1,
+        name: 'Updated Principal',
+        phoneNumber: '010-1234-5678',
+        introduction: 'Updated introduction',
+        academy: { id: 1, name: 'Test Academy' },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
-      prisma.principal.findUnique.mockResolvedValue({ id: principalId });
-      prisma.principal.update.mockResolvedValue(updatedProfile);
+      prisma.principal.findUnique.mockResolvedValue({ id: 1, userRefId });
+      prisma.$transaction.mockImplementation(async (callback) => {
+        const mockTx = {
+          principal: {
+            update: jest.fn().mockResolvedValue(updatedProfile),
+          },
+          user: {
+            update: jest
+              .fn()
+              .mockResolvedValue({ id: userRefId, name: 'Updated Principal' }),
+          },
+        };
+        return await callback(mockTx);
+      });
 
-      const result = await service.updateProfile(principalId, updateProfileDto);
+      const result = await service.updateProfile(userRefId, updateProfileDto);
 
       expect(result).toEqual(updatedProfile);
-      expect(prisma.principal.update).toHaveBeenCalledWith({
-        where: { id: principalId },
-        data: updateProfileDto,
-        include: { academy: true },
-      });
+      expect(prisma.$transaction).toHaveBeenCalled();
     });
   });
 
   describe('updateAcademy', () => {
     it('should update academy successfully', async () => {
-      const principalId = 1;
+      const userRefId = 1;
       const updateAcademyDto: UpdateAcademyDto = {
         name: 'Updated Academy',
         phoneNumber: '02-1234-5678',
@@ -329,16 +439,17 @@ describe('PrincipalService', () => {
       const updatedAcademy = { id: 1, ...updateAcademyDto };
 
       prisma.principal.findUnique.mockResolvedValue({
-        id: principalId,
+        id: 1,
+        userRefId,
         academyId: 1,
       });
       prisma.academy.update.mockResolvedValue(updatedAcademy);
 
-      const result = await service.updateAcademy(principalId, updateAcademyDto);
+      const result = await service.updateAcademy(userRefId, updateAcademyDto);
 
       expect(result).toEqual(updatedAcademy);
       expect(prisma.principal.findUnique).toHaveBeenCalledWith({
-        where: { id: principalId },
+        where: { userRefId },
         include: { academy: true },
       });
       expect(prisma.academy.update).toHaveBeenCalledWith({
@@ -348,7 +459,7 @@ describe('PrincipalService', () => {
     });
 
     it('should throw NotFoundException when principal not found', async () => {
-      const principalId = 999;
+      const userRefId = 999;
       const updateAcademyDto: UpdateAcademyDto = {
         name: 'Updated Academy',
       };
@@ -356,7 +467,7 @@ describe('PrincipalService', () => {
       prisma.principal.findUnique.mockResolvedValue(null);
 
       await expect(
-        service.updateAcademy(principalId, updateAcademyDto),
+        service.updateAcademy(userRefId, updateAcademyDto),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -364,65 +475,101 @@ describe('PrincipalService', () => {
   describe('getSessionEnrollments', () => {
     it('should get session enrollments successfully', async () => {
       const sessionId = 1;
+      const userRefId = 1;
       const principalId = 1;
       const enrollments = [{ id: 1, studentId: 1, sessionId: 1 }];
 
-      prisma.sessionEnrollment.findMany.mockResolvedValue(enrollments);
-
+      prisma.principal.findUnique.mockResolvedValue({ id: principalId });
       classSessionService.getPrincipalSessionEnrollments.mockResolvedValue(
         enrollments,
       );
 
-      const result = await service.getSessionEnrollments(
-        sessionId,
-        principalId,
-      );
+      const result = await service.getSessionEnrollments(sessionId, userRefId);
 
       expect(result).toEqual(enrollments);
+      expect(prisma.principal.findUnique).toHaveBeenCalledWith({
+        where: { userRefId },
+      });
       expect(
         classSessionService.getPrincipalSessionEnrollments,
       ).toHaveBeenCalledWith(sessionId, principalId);
+    });
+
+    it('should throw NotFoundException when principal not found', async () => {
+      const sessionId = 1;
+      const userRefId = 999;
+
+      prisma.principal.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.getSessionEnrollments(sessionId, userRefId),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('getSessionsWithEnrollmentRequests', () => {
     it('should get sessions with enrollment requests', async () => {
+      const userRefId = 1;
       const principalId = 1;
       const sessions = [{ id: 1, enrollmentRequests: [] }];
 
-      prisma.sessionEnrollment.findMany.mockResolvedValue(sessions);
-
+      prisma.principal.findUnique.mockResolvedValue({ id: principalId });
       classSessionService.getPrincipalSessionsWithEnrollmentRequests.mockResolvedValue(
         sessions,
       );
 
-      const result =
-        await service.getSessionsWithEnrollmentRequests(principalId);
+      const result = await service.getSessionsWithEnrollmentRequests(userRefId);
 
       expect(result).toEqual(sessions);
+      expect(prisma.principal.findUnique).toHaveBeenCalledWith({
+        where: { userRefId },
+      });
       expect(
         classSessionService.getPrincipalSessionsWithEnrollmentRequests,
       ).toHaveBeenCalledWith(principalId);
+    });
+
+    it('should throw NotFoundException when principal not found', async () => {
+      const userRefId = 999;
+
+      prisma.principal.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.getSessionsWithEnrollmentRequests(userRefId),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('getSessionsWithRefundRequests', () => {
     it('should get sessions with refund requests', async () => {
+      const userRefId = 1;
       const principalId = 1;
       const sessions = [{ id: 1, refundRequests: [] }];
 
-      prisma.refundRequest.findMany.mockResolvedValue(sessions);
-
+      prisma.principal.findUnique.mockResolvedValue({ id: principalId });
       refundService.getPrincipalSessionsWithRefundRequests.mockResolvedValue(
         sessions,
       );
 
-      const result = await service.getSessionsWithRefundRequests(principalId);
+      const result = await service.getSessionsWithRefundRequests(userRefId);
 
       expect(result).toEqual(sessions);
+      expect(prisma.principal.findUnique).toHaveBeenCalledWith({
+        where: { userRefId },
+      });
       expect(
         refundService.getPrincipalSessionsWithRefundRequests,
       ).toHaveBeenCalledWith(principalId);
+    });
+
+    it('should throw NotFoundException when principal not found', async () => {
+      const userRefId = 999;
+
+      prisma.principal.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.getSessionsWithRefundRequests(userRefId),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

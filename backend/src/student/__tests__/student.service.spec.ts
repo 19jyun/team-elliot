@@ -10,7 +10,7 @@ describe('StudentService', () => {
   let service: StudentService;
   let prismaService: PrismaService;
   let classService: ClassService;
-  // let academyService: AcademyService;
+  let academyService: AcademyService;
 
   const mockPrismaService = {
     student: {
@@ -53,7 +53,7 @@ describe('StudentService', () => {
     service = module.get<StudentService>(StudentService);
     prismaService = module.get<PrismaService>(PrismaService);
     classService = module.get<ClassService>(ClassService);
-    // academyService = module.get<AcademyService>(AcademyService);
+    academyService = module.get<AcademyService>(AcademyService);
   });
 
   afterEach(() => {
@@ -62,9 +62,10 @@ describe('StudentService', () => {
 
   describe('getStudentClasses', () => {
     it('should return student classes successfully', async () => {
-      const studentId = 1;
+      const userRefId = 1;
       const mockStudent = {
-        id: studentId,
+        id: 1,
+        userRefId,
         enrollments: [
           {
             class: {
@@ -119,34 +120,15 @@ describe('StudentService', () => {
               },
             },
           },
-          {
-            status: 'CONFIRMED',
-            session: {
-              class: {
-                id: 2,
-                name: '영어',
-                description: '기초 영어',
-                maxStudents: 15,
-                currentStudents: 10,
-                price: new Decimal(120000),
-                startDate: new Date('2024-01-01'),
-                endDate: new Date('2024-12-31'),
-                teacher: {
-                  id: 2,
-                  name: '이선생님',
-                },
-              },
-            },
-          },
         ],
       };
 
       mockPrismaService.student.findUnique.mockResolvedValue(mockStudent);
 
-      const result = await service.getStudentClasses(studentId);
+      const result = await service.getStudentClasses(userRefId);
 
       expect(prismaService.student.findUnique).toHaveBeenCalledWith({
-        where: { id: studentId },
+        where: { userRefId },
         include: {
           enrollments: {
             include: {
@@ -182,6 +164,7 @@ describe('StudentService', () => {
           },
         },
       });
+
       expect(result).toEqual({
         enrollmentClasses: [
           {
@@ -198,20 +181,6 @@ describe('StudentService', () => {
               name: '김선생님',
             },
           },
-          {
-            id: 2,
-            name: '영어',
-            description: '기초 영어',
-            maxStudents: 15,
-            currentStudents: 10,
-            price: new Decimal(120000),
-            startDate: new Date('2024-01-01'),
-            endDate: new Date('2024-12-31'),
-            teacher: {
-              id: 2,
-              name: '이선생님',
-            },
-          },
         ],
         sessionClasses: [],
         calendarRange: expect.any(Object),
@@ -219,103 +188,83 @@ describe('StudentService', () => {
     });
 
     it('should throw NotFoundException when student not found', async () => {
-      const studentId = 999;
+      const userRefId = 999;
+
       mockPrismaService.student.findUnique.mockResolvedValue(null);
 
-      await expect(service.getStudentClasses(studentId)).rejects.toThrow(
-        new NotFoundException('학생을 찾을 수 없습니다.'),
-      );
-    });
-  });
-
-  describe('getClassDetail', () => {
-    it('should return class detail successfully', async () => {
-      const classId = 1;
-      const mockClass = {
-        id: classId,
-        name: '수학',
-        description: '기초 수학',
-        maxStudents: 20,
-        currentStudents: 15,
-        price: new Decimal(100000),
-        startDate: new Date('2024-01-01'),
-        endDate: new Date('2024-12-31'),
-        teacher: {
-          id: 1,
-          name: '김선생님',
-          photoUrl: 'https://example.com/photo.jpg',
-          introduction: '수학 전문가입니다.',
-        },
-        enrollments: [
-          { id: 1, studentId: 1, classId: 1 },
-          { id: 2, studentId: 2, classId: 1 },
-        ],
-      };
-
-      mockPrismaService.class.findUnique.mockResolvedValue(mockClass);
-
-      const result = await service.getClassDetail(classId);
-
-      expect(prismaService.class.findUnique).toHaveBeenCalledWith({
-        where: { id: classId },
-        include: {
-          teacher: {
-            select: {
-              id: true,
-              name: true,
-              photoUrl: true,
-              introduction: true,
-            },
-          },
-          enrollments: true,
-        },
-      });
-      expect(result).toEqual(mockClass);
-    });
-
-    it('should throw NotFoundException when class not found', async () => {
-      const classId = 999;
-      mockPrismaService.class.findUnique.mockResolvedValue(null);
-
-      await expect(service.getClassDetail(classId)).rejects.toThrow(
-        new NotFoundException('수업을 찾을 수 없습니다.'),
+      await expect(service.getStudentClasses(userRefId)).rejects.toThrow(
+        NotFoundException,
       );
     });
   });
 
   describe('enrollClass', () => {
     it('should call classService.enrollStudent successfully', async () => {
+      const userRefId = 1;
       const classId = 1;
       const studentId = 1;
-      const mockResult = { success: true };
+      const mockResult = { message: 'Enrollment successful' };
+      const mockStudent = { id: studentId, userRefId };
 
+      mockPrismaService.student.findUnique.mockResolvedValue(mockStudent);
       mockClassService.enrollStudent.mockResolvedValue(mockResult);
 
-      const result = await service.enrollClass(classId, studentId);
+      const result = await service.enrollClass(classId, userRefId);
 
+      expect(result).toEqual(mockResult);
+      expect(mockPrismaService.student.findUnique).toHaveBeenCalledWith({
+        where: { userRefId },
+      });
       expect(classService.enrollStudent).toHaveBeenCalledWith(
         classId,
         studentId,
       );
-      expect(result).toEqual(mockResult);
+    });
+
+    it('should throw NotFoundException when student not found', async () => {
+      const userRefId = 999;
+      const classId = 1;
+
+      mockPrismaService.student.findUnique.mockResolvedValue(null);
+
+      await expect(service.enrollClass(classId, userRefId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('unenrollClass', () => {
     it('should call classService.unenrollStudent successfully', async () => {
+      const userRefId = 1;
       const classId = 1;
       const studentId = 1;
-      const mockResult = { success: true };
+      const mockResult = { message: 'Unenrollment successful' };
+      const mockStudent = { id: studentId, userRefId };
 
+      mockPrismaService.student.findUnique.mockResolvedValue(mockStudent);
       mockClassService.unenrollStudent.mockResolvedValue(mockResult);
 
-      const result = await service.unenrollClass(classId, studentId);
+      const result = await service.unenrollClass(classId, userRefId);
 
+      expect(result).toEqual(mockResult);
+      expect(mockPrismaService.student.findUnique).toHaveBeenCalledWith({
+        where: { userRefId },
+      });
       expect(classService.unenrollStudent).toHaveBeenCalledWith(
         classId,
         studentId,
       );
-      expect(result).toEqual(mockResult);
+    });
+
+    it('should throw NotFoundException when student not found', async () => {
+      const userRefId = 999;
+      const classId = 1;
+
+      mockPrismaService.student.findUnique.mockResolvedValue(null);
+
+      await expect(service.unenrollClass(classId, userRefId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

@@ -7,7 +7,6 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { ClassService } from '../class/class.service';
 import { AcademyService } from '../academy/academy.service';
-import { CreateClassDto } from '../types/class.types';
 import { JoinAcademyRequestDto } from '../academy/dto/join-academy-request.dto';
 
 @Injectable()
@@ -17,19 +16,6 @@ export class TeacherService {
     private classService: ClassService,
     private academyService: AcademyService,
   ) {}
-
-  async createClass(userId: number, data: CreateClassDto, userRole?: string) {
-    // 먼저 teacher 정보를 userRefId로 조회
-    const teacher = await this.prisma.teacher.findUnique({
-      where: { userRefId: userId },
-    });
-
-    if (!teacher) {
-      throw new NotFoundException('선생님을 찾을 수 없습니다.');
-    }
-
-    return this.classService.createClass(data, userRole);
-  }
 
   async getTeacherProfile(userId: number) {
     const teacher = await this.prisma.teacher.findUnique({
