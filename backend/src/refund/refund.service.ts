@@ -22,8 +22,18 @@ export class RefundService {
    * userId로 Student 조회
    */
   async findStudentByUserId(userId: string) {
-    const student = await this.prisma.student.findFirst({
+    // User 테이블에서 먼저 찾기
+    const user = await this.prisma.user.findUnique({
       where: { userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    // Student 정보 찾기
+    const student = await this.prisma.student.findUnique({
+      where: { userRefId: user.id },
     });
 
     if (!student) {

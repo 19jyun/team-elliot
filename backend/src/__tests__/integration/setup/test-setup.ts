@@ -92,7 +92,7 @@ export const createAuthenticatedUser = async (
 
       // Student 엔티티 정보 가져오기
       const student = await testApp.prisma.student.findUnique({
-        where: { userId: userData.userId },
+        where: { userRefId: user.id },
       });
 
       return {
@@ -119,7 +119,7 @@ export const createAuthenticatedUser = async (
       let teacher = null;
       for (let i = 0; i < 5; i++) {
         teacher = await testApp.prisma.teacher.findUnique({
-          where: { userId: userData.userId },
+          where: { userRefId: user.id },
         });
 
         if (teacher) {
@@ -197,6 +197,7 @@ export const createAuthenticatedUser = async (
             password: userData.password,
             name: userData.name,
             phoneNumber: userData.phoneNumber,
+            userRefId: userRecord.id,
             academyId: academy.id,
           },
         });
@@ -226,7 +227,7 @@ export const createAuthenticatedUser = async (
 
       // Principal 회원가입 API가 이미 Academy를 생성했으므로, 생성된 Principal과 Academy 정보 가져오기
       const principal = await testApp.prisma.principal.findUnique({
-        where: { userId: userData.userId },
+        where: { userRefId: user.id },
         include: { academy: true },
       });
 
@@ -272,6 +273,7 @@ export const createAuthenticatedUser = async (
             password: userData.password,
             name: userData.name,
             phoneNumber: userData.phoneNumber,
+            userRefId: userRecord.id,
             academyId: academy.id,
           },
           create: {
@@ -279,6 +281,7 @@ export const createAuthenticatedUser = async (
             password: userData.password,
             name: userData.name,
             phoneNumber: userData.phoneNumber,
+            userRefId: userRecord.id,
             academyId: academy.id,
           },
         });
@@ -353,6 +356,7 @@ export const createTestPrincipal = async () => {
       password: hashedPassword,
       name: principalData.name,
       phoneNumber: principalData.phoneNumber,
+      userRefId: user.id,
       academyId: academy.id,
     },
   });

@@ -103,9 +103,9 @@ export class SocketConnectionManager {
     }
   }
 
-  private async getStudentInfo(studentId: number) {
+  private async getStudentInfo(userId: number) {
     const student = await this.prisma.student.findUnique({
-      where: { id: studentId },
+      where: { userRefId: userId },
       include: {
         academies: {
           include: { academy: true },
@@ -124,9 +124,9 @@ export class SocketConnectionManager {
     };
   }
 
-  private async getTeacherInfo(teacherId: number) {
+  private async getTeacherInfo(userId: number) {
     const teacher = await this.prisma.teacher.findUnique({
-      where: { id: teacherId },
+      where: { userRefId: userId },
       include: {
         academy: true,
         classes: true,
@@ -141,9 +141,9 @@ export class SocketConnectionManager {
     };
   }
 
-  private async getPrincipalInfo(principalId: number) {
+  private async getPrincipalInfo(userId: number) {
     const principal = await this.prisma.principal.findUnique({
-      where: { id: principalId },
+      where: { userRefId: userId },
       include: { academy: true },
     });
 

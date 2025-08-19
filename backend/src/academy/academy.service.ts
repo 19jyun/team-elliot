@@ -59,38 +59,63 @@ export class AcademyService {
   }
 
   // 학원 가입 (학생)
-  async joinAcademy(studentId: number, dto: JoinAcademyDto) {
+  async joinAcademy(userId: number, dto: JoinAcademyDto) {
+    // 먼저 student 정보를 userRefId로 조회
+    const student = await this.prisma.student.findUnique({
+      where: { userRefId: userId },
+    });
+    if (!student) throw new NotFoundException('학생을 찾을 수 없습니다.');
+
     const academy = await this.prisma.academy.findUnique({
       where: { code: dto.code },
     });
     if (!academy)
       throw new NotFoundException('해당 코드의 학원을 찾을 수 없습니다.');
     const exists = await this.prisma.studentAcademy.findUnique({
-      where: { studentId_academyId: { studentId, academyId: academy.id } },
+      where: {
+        studentId_academyId: { studentId: student.id, academyId: academy.id },
+      },
     });
     if (exists) throw new ConflictException('이미 가입된 학원입니다.');
     await this.prisma.studentAcademy.create({
-      data: { studentId, academyId: academy.id },
+      data: { studentId: student.id, academyId: academy.id },
     });
     return { message: '학원 가입이 완료되었습니다.' };
   }
 
   // 학원 탈퇴 (학생)
-  async leaveAcademy(studentId: number, dto: LeaveAcademyDto) {
+  async leaveAcademy(userId: number, dto: LeaveAcademyDto) {
+    // 먼저 student 정보를 userRefId로 조회
+    const student = await this.prisma.student.findUnique({
+      where: { userRefId: userId },
+    });
+    if (!student) throw new NotFoundException('학생을 찾을 수 없습니다.');
+
     const exists = await this.prisma.studentAcademy.findUnique({
-      where: { studentId_academyId: { studentId, academyId: dto.academyId } },
+      where: {
+        studentId_academyId: {
+          studentId: student.id,
+          academyId: dto.academyId,
+        },
+      },
     });
     if (!exists) throw new BadRequestException('가입되지 않은 학원입니다.');
     await this.prisma.studentAcademy.delete({
-      where: { studentId_academyId: { studentId, academyId: dto.academyId } },
+      where: {
+        studentId_academyId: {
+          studentId: student.id,
+          academyId: dto.academyId,
+        },
+      },
     });
     return { message: '학원 탈퇴가 완료되었습니다.' };
   }
 
   // 내가 가입한 학원 목록 (학생)
-  async getMyAcademies(studentId: number) {
+  async getMyAcademies(userId: number) {
+    // 먼저 student 정보를 userRefId로 조회
     const student = await this.prisma.student.findUnique({
-      where: { id: studentId },
+      where: { userRefId: userId },
       include: {
         academies: {
           include: { academy: true },

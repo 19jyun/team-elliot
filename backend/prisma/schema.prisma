@@ -38,6 +38,7 @@ model Principal {
   education         String[]
   certifications    String[]
   yearsOfExperience Int?     @map("years_of_experience")
+  userRefId         Int      @unique @map("user_ref_id")
   academyId         Int      @unique @map("academy_id")
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -45,6 +46,8 @@ model Principal {
   accountNumber     String?  @map("account_number") @db.VarChar(20)
   bankName          String?  @map("bank_name") @db.VarChar(50)
   academy           Academy  @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  
+  user              User     @relation(fields: [userRefId], references: [id])
 
   @@map("principals")
 }
@@ -72,6 +75,10 @@ model User {
   notices          Notice[]
   processedRefunds RefundRequest[]   @relation("RefundProcessor")
   rejectionDetails RejectionDetail[]
+  
+  student          Student?
+  teacher          Teacher?
+  principal        Principal?
 
   @@map("users")
 }
@@ -86,6 +93,7 @@ model Student {
   birthDate          DateTime?           @map("birth_date")
   notes              String?
   level              String?             @db.VarChar(50)
+  userRefId          Int                 @unique @map("user_ref_id")
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   attendances        Attendance[]
@@ -94,6 +102,8 @@ model Student {
   refundRequests     RefundRequest[]
   sessionEnrollments SessionEnrollment[]
   academies          StudentAcademy[]
+  
+  user               User                @relation(fields: [userRefId], references: [id])
 
   @@map("students")
 }
@@ -111,6 +121,7 @@ model Teacher {
   certifications    String[]
   yearsOfExperience Int?                     @map("years_of_experience")
   availableTimes    Json?                    @map("available_times")
+  userRefId         Int                      @unique @map("user_ref_id")
   createdAt         DateTime                 @default(now())
   updatedAt         DateTime                 @updatedAt
   academyId         Int?                     @map("academy_id")
@@ -119,6 +130,8 @@ model Teacher {
   classDetails      ClassDetail[]
   classes           Class[]
   academy           Academy?                 @relation(fields: [academyId], references: [id])
+  
+  user               User                    @relation(fields: [userRefId], references: [id])
 
   @@map("teachers")
 }

@@ -55,5 +55,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD node dist/src/health-check.js || exit 1
 
-# Start the application
-CMD ["node", "dist/src/main"] 
+# Start the application with database migration
+CMD npx prisma migrate deploy && node dist/src/main 

@@ -228,17 +228,17 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       switch (role) {
         case 'PRINCIPAL':
           return await this.prisma.principal.findUnique({
-            where: { id: userId },
+            where: { userRefId: userId },
             select: { id: true, academyId: true },
           });
         case 'TEACHER':
           return await this.prisma.teacher.findUnique({
-            where: { id: userId },
+            where: { userRefId: userId },
             select: { id: true, academyId: true },
           });
         case 'STUDENT':
           return await this.prisma.student.findUnique({
-            where: { id: userId },
+            where: { userRefId: userId },
             select: { id: true },
           });
         default:

@@ -14,8 +14,18 @@ export class ClassService {
    * userId로 Principal 조회
    */
   async findPrincipalByUserId(userId: string) {
-    const principal = await this.prisma.principal.findFirst({
+    // User 테이블에서 먼저 찾기
+    const user = await this.prisma.user.findUnique({
       where: { userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    // Principal 정보 찾기
+    const principal = await this.prisma.principal.findUnique({
+      where: { userRefId: user.id },
     });
 
     if (!principal) {
