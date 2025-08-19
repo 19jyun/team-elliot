@@ -44,7 +44,7 @@ COPY --from=builder --chown=nestjs:nodejs /app/scripts ./scripts
 
 # Create uploads and backups directories and set permissions
 RUN mkdir -p /app/uploads/teacher-photos /app/uploads/principal-photos /app/uploads/ballet-poses /app/backups
-RUN chown -R nestjs:nodejs /app/uploads /app/backups
+RUN chown -R nestjs:nodejs /app/uploads /app/backups /app/scripts/deploy.sh
 
 # Switch to non-root user
 USER nestjs
