@@ -242,66 +242,19 @@ export function SignupPersonalPage() {
       }))
       return
     }
-
-    // 인증번호 발송 로직 (실제 API 호출)
-    try {
-      const response = await fetch('/api/auth/send-verification', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          phoneNumber: cleanPhoneNumber,
-        }),
-      });
-
-      if (response.ok) {
-        setIsTimerRunning(true);
-        setTimeLeft(180);
-        setVerificationSent(true);
-        toast.success('인증번호가 발송되었습니다.');
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.message || '인증번호 발송에 실패했습니다.');
-      }
-    } catch (error) {
-      console.error('인증번호 발송 실패:', error);
-      toast.error('인증번호 발송에 실패했습니다.');
-    }
+    // 인증 로직은 미구현 상태이므로 바로 인증 완료 처리
+    toast.success('인증 로직은 미구현 상태입니다. 다음단계로 진행하세요.');
+    setIsPhoneVerified(true);
+    setIsTimerRunning(false);
+    setVerificationSent(true);
   }
 
   const handleVerifyCode = async () => {
-    if (verificationCode.length !== 6) {
-      toast.error('인증번호 6자리를 입력해주세요.');
-      return;
-    }
-
-    try {
-      const cleanPhoneNumber = formData.phoneNumber.replace(/-/g, '');
-      const response = await fetch('/api/auth/verify-code', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          phoneNumber: cleanPhoneNumber,
-          code: verificationCode,
-        }),
-      });
-
-      if (response.ok) {
-        setIsPhoneVerified(true);
-        setIsTimerRunning(false);
-        setVerificationCode('');
-        toast.success('전화번호 인증이 완료되었습니다.');
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.message || '인증에 실패했습니다.');
-      }
-    } catch (error) {
-      console.error('인증 실패:', error);
-      toast.error('인증에 실패했습니다.');
-    }
+    // 인증 로직은 미구현 상태이므로 바로 인증 완료 처리
+    toast.success('인증 로직은 미구현 상태입니다. 다음단계로 진행하세요.');
+    setIsPhoneVerified(true);
+    setIsTimerRunning(false);
+    setVerificationCode('');
   }
 
   const handleClearVerificationCode = () => {

@@ -156,29 +156,11 @@ export function TeacherPersonalInfoManagement() {
   };
 
   const handleVerifyPhone = async () => {
-    // 인증 버튼 클릭 시 인증번호 발송
-    if (!isTimerRunning) {
-      try {
-        // TODO: 인증번호 발송 API 호출
-        setIsTimerRunning(true);
-        setTimeLeft(180);
-        toast.success('인증번호가 발송되었습니다.');
-      } catch (error: any) {
-        toast.error('인증번호 발송에 실패했습니다.');
-      }
-      return;
-    }
-    
-    // 확인 버튼 클릭 시 인증번호 확인
-    try {
-      // TODO: 인증번호 확인 API 호출
-      setIsPhoneVerified(true);
-      setIsTimerRunning(false);
-      setVerificationCode('');
-      toast.success('전화번호 인증이 완료되었습니다.');
-    } catch (error: any) {
-      toast.error('인증에 실패했습니다.');
-    }
+    // 인증 로직은 미구현 상태이므로 바로 인증 완료 처리
+    toast.success('인증 로직은 미구현 상태입니다. 다음단계로 진행하세요.');
+    setIsPhoneVerified(true);
+    setIsTimerRunning(false);
+    setVerificationCode('');
   };
 
   const handleCancelVerification = () => {

@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { StatusStep } from './StatusStep';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
+import { getImageUrl } from '@/utils/imageUtils';
 
 interface Teacher {
   id: number;
@@ -166,7 +167,7 @@ export function CreateClassStepTeacher() {
                       <div className="w-12 h-12 rounded-full bg-stone-200 flex items-center justify-center">
                         {teacher.photoUrl ? (
                           <img
-                            src={teacher.photoUrl}
+                            src={getImageUrl(teacher.photoUrl) || ''}
                             alt={teacher.name}
                             className="w-12 h-12 rounded-full object-cover"
                           />
