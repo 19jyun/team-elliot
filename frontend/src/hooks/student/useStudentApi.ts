@@ -7,7 +7,12 @@ import {
   getSessionPaymentInfo,
   getCancellationHistory,
 } from "@/api/student";
-import { getAcademies, joinAcademy, leaveAcademy } from "@/api/student";
+import {
+  getAcademies,
+  getMyAcademies,
+  joinAcademy,
+  leaveAcademy,
+} from "@/api/student";
 import {
   getStudentAvailableSessionsForEnrollment,
   batchEnrollSessions,
@@ -68,15 +73,10 @@ export function useStudentApi() {
   // 학원 목록 로드 함수
   const loadAcademies = useCallback(async () => {
     try {
-      const data = await getAcademies();
+      const data = await getMyAcademies(); // Changed from getAcademies()
       setAcademies(data);
     } catch (err) {
-      console.error("학원 목록 로드 실패:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "학원 목록을 불러오는데 실패했습니다."
-      );
+      console.error("Failed to load academies:", err);
     }
   }, []);
 

@@ -39,19 +39,16 @@ export const initializeSocket = async (): Promise<Socket> => {
     }
 
     // Socket.IO 클라이언트 생성
-    socket = io(
-      process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001",
-      {
-        auth: {
-          token,
-        },
-        transports: ["websocket", "polling"],
-        autoConnect: true,
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-      }
-    );
+    socket = io(process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001", {
+      auth: {
+        token,
+      },
+      transports: ["websocket", "polling"],
+      autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
 
     // 연결 이벤트 리스너 (한 번만 로그 출력)
     let hasLoggedConnection = false;
