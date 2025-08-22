@@ -49,7 +49,12 @@ const handler = NextAuth({
           );
 
           const data = await response.json();
-          if (!response.ok) throw new Error(data.message);
+          if (!response.ok) {
+            // 백엔드의 새로운 에러 응답 구조 처리
+            const errorMessage =
+              data.error?.message || data.message || "로그인에 실패했습니다.";
+            throw new Error(errorMessage);
+          }
 
           return {
             id: data.user.id,

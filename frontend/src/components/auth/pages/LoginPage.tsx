@@ -11,6 +11,7 @@ import { Box, Button, Typography } from '@mui/material'
 import { Visibility, VisibilityOff } from '@mui/icons-material'
 import Image from 'next/image'
 import { useAuth } from '@/contexts/AuthContext'
+import { useApiError } from '@/hooks/useApiError'
 
 const buttonVariants = cva(
   'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
@@ -171,15 +172,12 @@ export function LoginPage() {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [errors, setErrors] = useState({
-    userId: '',
-    password: '',
-  })
+  const { fieldErrors, clearErrors, handleApiError } = useApiError()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    setErrors({ userId: '', password: '' })
+    clearErrors()
 
     try {
       const result = await signIn('credentials', {
@@ -189,44 +187,23 @@ export function LoginPage() {
       })
 
       if (result?.error) {
-        const errorMessage = result.error
-
-        if (errorMessage.includes('아이디와 비밀번호가 일치하지 않아요')) {
-          // 둘 다 에러 상태로 변경
-          setErrors({
-            userId: '아이디와 비밀번호가 일치하지 않아요',
-            password: ' ',
-          })
-        } else if (errorMessage.includes('Invalid password')) {
-          // 비밀번호만 에러 상태로 변경하고, 에러 메시지도 password에 설정
-          setErrors({
-            userId: '', // email 필드는 정상 상태 유지
-            password: '비밀번호가 일치하지 않습니다.',
-          })
-        } else if (errorMessage.includes('User not found')) {
-          // 아이디만 에러 상태로 변경
-          setErrors({
-            userId: '존재하지 않는 계정입니다.',
-            password: '',
-          })
-        } else {
-          // 기타 에러는 아이디 필드에만 표시
-          setErrors({
-            userId: errorMessage,
-            password: '',
-          })
-        }
+        // NextAuth 에러 처리
+        handleApiError({
+          type: 'AUTHENTICATION',
+          code: 'INVALID_CREDENTIALS',
+          message: '아이디 또는 비밀번호가 올바르지 않습니다.',
+          field: 'credentials',
+          recoverable: true
+        })
         return
       }
 
       if (result?.ok) {
+        toast.success('로그인되었습니다.')
         router.push('/dashboard')
       }
     } catch (error) {
-      setErrors({
-        userId: '로그인 중 오류가 발생했습니다.',
-        password: '',
-      })
+      handleApiError(error)
     } finally {
       setIsLoading(false)
     }
@@ -276,8 +253,8 @@ export function LoginPage() {
                 setFormData({ ...formData, userId: e.target.value })
               }
               required
-              error={!!errors.userId}
-              errorMessage={errors.userId || errors.password}
+              error={!!fieldErrors.userId}
+              errorMessage={fieldErrors.userId || fieldErrors.password}
             />
             <InputField
               label="비밀번호"
@@ -291,7 +268,7 @@ export function LoginPage() {
               icon="password-toggle"
               onIconClick={() => setShowPassword(!showPassword)}
               showPassword={showPassword}
-              error={!!errors.password}
+              error={!!fieldErrors.password}
             />
           </div>
           <button
