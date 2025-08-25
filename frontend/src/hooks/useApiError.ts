@@ -192,6 +192,11 @@ export function useApiError(): UseApiErrorReturn {
               toast.error("이미 처리된 수강 신청입니다.");
               break;
 
+            // Principal 관련 에러들
+            case "PRINCIPAL_NOT_FOUND":
+              toast.error("Principal을 찾을 수 없습니다.");
+              break;
+
             // 이미지 관련 에러들
             case "INVALID_IMAGE_FORMAT":
               toast.error(
