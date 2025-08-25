@@ -1,19 +1,44 @@
 import axiosInstance from "@/lib/axios";
+import { ErrorHandler } from "@/lib/errorHandler";
+import { AppError } from "@/types/api";
+
+// 에러 처리를 위한 래퍼 함수
+const handleApiError = (error: any): never => {
+  if (error.response?.data) {
+    // 백엔드에서 구조화된 에러 응답이 온 경우
+    const appError = ErrorHandler.handle(error.response.data);
+    if (appError) {
+      throw appError;
+    }
+  }
+
+  // 네트워크 에러나 기타 에러
+  const networkError = ErrorHandler.handleNetworkError(error);
+  throw networkError;
+};
 
 // === Principal Dashboard Redux 데이터 초기화용 API ===
 
 // PrincipalData 전체 초기화 (Redux용)
 export const getPrincipalData = async () => {
-  const response = await axiosInstance.get("/principal/me/data");
-  return response.data;
+  try {
+    const response = await axiosInstance.get("/principal/me/data");
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
 };
 
 // Principal 전용 API 함수들
 
 // 1. Principal의 학원 정보 조회
 export const getPrincipalAcademy = async () => {
-  const response = await axiosInstance.get("/principal/academy");
-  return response.data;
+  try {
+    const response = await axiosInstance.get("/principal/academy");
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
 };
 
 // 2. Principal의 학원에 속한 모든 세션 조회 (캘린더용)

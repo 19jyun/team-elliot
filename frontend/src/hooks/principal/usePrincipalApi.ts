@@ -36,10 +36,12 @@ import type {
 } from "@/types/api/principal";
 import type { BalletPose, PoseDifficulty } from "@/types/api/ballet-pose";
 import axios from "@/lib/axios";
+import { useApiError } from "@/hooks/useApiError";
 
 // Principal API 데이터 훅
 export function usePrincipalApi() {
   const { data: session, status } = useSession();
+  const { handleApiError } = useApiError();
   const [profile, setProfile] = useState<PrincipalProfile | null>(null);
   const [academy, setAcademy] = useState<PrincipalAcademy | null>(null);
   const [classes, setClasses] = useState<PrincipalClass[]>([]);
@@ -59,12 +61,16 @@ export function usePrincipalApi() {
 
     try {
       setError(null);
+      setIsLoading(true);
       const data = await getPrincipalProfile();
       setProfile(data);
     } catch (err: any) {
-      setError(err.response?.data?.message || "프로필 로드 실패");
+      handleApiError(err);
+      setError(err.message || "프로필 로드 실패");
+    } finally {
+      setIsLoading(false);
     }
-  }, [isPrincipal]);
+  }, [isPrincipal, handleApiError]);
 
   // 학원 정보 로드
   const loadAcademy = useCallback(async () => {

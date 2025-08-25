@@ -136,6 +136,25 @@ export class ErrorHandler {
       case "CLASS_FULL":
       case "ENROLLMENT_EXISTS":
       case "REFUND_REQUEST_EXISTS":
+      case "ALREADY_ENROLLED":
+      case "SESSION_FULL":
+      case "SESSION_ALREADY_STARTED":
+      case "SESSION_ALREADY_PASSED":
+      case "ACADEMY_CODE_ALREADY_EXISTS":
+      case "ACADEMY_CODE_NOT_FOUND":
+      case "STUDENT_ALREADY_JOINED":
+      case "STUDENT_NOT_JOINED":
+      case "TEACHER_NOT_FOUND":
+      case "STUDENT_NOT_FOUND":
+      case "PRINCIPAL_NOT_FOUND":
+      case "CLASS_NOT_FOUND":
+      case "SESSION_NOT_FOUND":
+      case "BALLET_POSE_NOT_FOUND":
+      case "SESSION_CONTENT_NOT_FOUND":
+      case "REFUND_REQUEST_ALREADY_EXISTS":
+      case "REFUND_REQUEST_NOT_FOUND":
+      case "REJECTION_DETAIL_ALREADY_EXISTS":
+      case "REJECTION_DETAIL_NOT_FOUND":
         return {
           type: ErrorType.BUSINESS,
           code,
@@ -215,4 +234,3 @@ export class ErrorHandler {
     return messageMap[error.code] || error.message;
   }
 }
-

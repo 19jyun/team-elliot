@@ -12,10 +12,12 @@ import type {
   Academy,
   Principal,
 } from "@/types/api/teacher";
+import { useApiError } from "@/hooks/useApiError";
 
 // Teacher API 데이터 훅
 export function useTeacherApi() {
   const { data: session, status } = useSession();
+  const { handleApiError } = useApiError();
   const [profile, setProfile] = useState<TeacherProfileResponse | null>(null);
   const [academy, setAcademy] = useState<Academy | null>(null);
   const [classes, setClasses] = useState<any[]>([]);

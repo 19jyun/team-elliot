@@ -26,9 +26,11 @@ import type {
 } from "@/types/api/refund";
 import type { ClassDetailsResponse } from "@/types/api/class";
 import axios from "@/lib/axios";
+import { useApiError } from "@/hooks/useApiError";
 
 // Student 대시보드에서 사용할 API 훅
 export function useStudentApi() {
+  const { handleApiError } = useApiError();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionClasses, setSessionClasses] = useState<any[]>([]);
