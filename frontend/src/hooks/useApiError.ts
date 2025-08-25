@@ -225,6 +225,14 @@ export function useApiError(): UseApiErrorReturn {
               toast.error("거절 대상 엔티티를 찾을 수 없습니다.");
               break;
 
+            // Session Content 관련 에러들
+            case "SESSION_CONTENT_NOT_FOUND":
+              toast.error("세션 내용을 찾을 수 없습니다.");
+              break;
+            case "INVALID_CONTENT_IDS":
+              toast.error("유효하지 않은 세션 내용 ID가 포함되어 있습니다.");
+              break;
+
             // 이미지 관련 에러들
             case "INVALID_IMAGE_FORMAT":
               toast.error(

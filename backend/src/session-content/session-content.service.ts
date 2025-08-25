@@ -31,7 +31,11 @@ export class SessionContentService {
     });
 
     if (!content) {
-      throw new NotFoundException('세션 내용을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'SESSION_CONTENT_NOT_FOUND',
+        message: '세션 내용을 찾을 수 없습니다.',
+        details: { contentId: id },
+      });
     }
 
     return content;
@@ -47,7 +51,11 @@ export class SessionContentService {
     });
 
     if (!session) {
-      throw new NotFoundException('세션을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'SESSION_NOT_FOUND',
+        message: '세션을 찾을 수 없습니다.',
+        details: { sessionId },
+      });
     }
 
     // 발레 자세가 존재하는지 확인
@@ -56,7 +64,11 @@ export class SessionContentService {
     });
 
     if (!pose) {
-      throw new NotFoundException('발레 자세를 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'BALLET_POSE_NOT_FOUND',
+        message: '발레 자세를 찾을 수 없습니다.',
+        details: { poseId: createSessionContentDto.poseId },
+      });
     }
 
     // 순서가 지정되지 않은 경우, 현재 최대 순서 + 1로 설정
@@ -109,7 +121,11 @@ export class SessionContentService {
     });
 
     if (!session) {
-      throw new NotFoundException('세션을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'SESSION_NOT_FOUND',
+        message: '세션을 찾을 수 없습니다.',
+        details: { sessionId },
+      });
     }
 
     // 현재 세션의 모든 내용을 조회
@@ -127,9 +143,15 @@ export class SessionContentService {
     );
 
     if (!isValidRequest) {
-      throw new BadRequestException(
-        '유효하지 않은 세션 내용 ID가 포함되어 있습니다.',
-      );
+      throw new BadRequestException({
+        code: 'INVALID_CONTENT_IDS',
+        message: '유효하지 않은 세션 내용 ID가 포함되어 있습니다.',
+        details: {
+          sessionId,
+          requestedIds: contentIds,
+          validIds: currentContentIds,
+        },
+      });
     }
 
     // 순서 업데이트
