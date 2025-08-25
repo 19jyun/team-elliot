@@ -197,6 +197,20 @@ export function useApiError(): UseApiErrorReturn {
               toast.error("Principal을 찾을 수 없습니다.");
               break;
 
+            // Refund 관련 에러들
+            case "REFUND_REQUEST_NOT_FOUND":
+              toast.error("환불 요청을 찾을 수 없습니다.");
+              break;
+            case "REFUND_REQUEST_ALREADY_EXISTS":
+              toast.error("이미 환불 요청이 진행 중입니다.");
+              break;
+            case "REFUND_REQUEST_NOT_PENDING":
+              toast.error("대기 중인 환불 요청만 처리할 수 있습니다.");
+              break;
+            case "SESSION_ENROLLMENT_NOT_FOUND":
+              toast.error("세션 수강 신청을 찾을 수 없습니다.");
+              break;
+
             // 이미지 관련 에러들
             case "INVALID_IMAGE_FORMAT":
               toast.error(
