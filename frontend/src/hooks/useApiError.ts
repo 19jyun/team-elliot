@@ -233,6 +233,53 @@ export function useApiError(): UseApiErrorReturn {
               toast.error("유효하지 않은 세션 내용 ID가 포함되어 있습니다.");
               break;
 
+            // Socket 관련 에러들
+            case "INVALID_USER_ID":
+              toast.error("유효하지 않은 사용자 ID입니다.");
+              break;
+            case "INVALID_ACADEMY_ID":
+              toast.error("유효하지 않은 학원 ID입니다.");
+              break;
+            case "INVALID_CLASS_ID":
+              toast.error("유효하지 않은 클래스 ID입니다.");
+              break;
+            case "INVALID_ROLE":
+              toast.error("유효하지 않은 역할입니다.");
+              break;
+            case "INVALID_EVENT_NAME":
+              toast.error("유효하지 않은 이벤트 이름입니다.");
+              break;
+            case "INVALID_EVENTS_ARRAY":
+              toast.error("유효하지 않은 이벤트 배열입니다.");
+              break;
+            case "INVALID_TARGET":
+              toast.error("유효하지 않은 타겟입니다.");
+              break;
+            case "INVALID_TARGET_FORMAT":
+              toast.error("유효하지 않은 타겟 형식입니다.");
+              break;
+            case "UNKNOWN_TARGET_TYPE":
+              toast.error("알 수 없는 타겟 타입입니다.");
+              break;
+            case "TOKEN_MISSING":
+              toast.error("인증 토큰이 없습니다.");
+              break;
+            case "INVALID_TOKEN_FORMAT":
+              toast.error("유효하지 않은 토큰 형식입니다.");
+              break;
+            case "INVALID_TOKEN":
+              toast.error("유효하지 않은 토큰입니다.");
+              break;
+            case "INCOMPLETE_TOKEN":
+              toast.error("토큰에 필수 정보가 누락되었습니다.");
+              break;
+            case "USER_NOT_FOUND":
+              toast.error("사용자 정보를 찾을 수 없습니다.");
+              break;
+            case "UNKNOWN_ROLE":
+              toast.error("알 수 없는 역할입니다.");
+              break;
+
             // 이미지 관련 에러들
             case "INVALID_IMAGE_FORMAT":
               toast.error(
