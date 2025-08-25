@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export enum SessionEnrollmentStatus {
@@ -20,7 +20,10 @@ export class UpdateEnrollmentStatusDto {
     enum: SessionEnrollmentStatus,
     example: SessionEnrollmentStatus.CONFIRMED,
   })
-  @IsEnum(SessionEnrollmentStatus)
+  @IsEnum(SessionEnrollmentStatus, {
+    message:
+      '유효하지 않은 수강 신청 상태입니다. (PENDING, CONFIRMED, REJECTED, CANCELLED, REFUND_REQUESTED, REFUND_CANCELLED, REFUND_REJECTED_CONFIRMED, TEACHER_CANCELLED, ABSENT, ATTENDED 중 하나여야 합니다.)',
+  })
   status: SessionEnrollmentStatus;
 
   @ApiProperty({
@@ -29,7 +32,8 @@ export class UpdateEnrollmentStatusDto {
     required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: '사유는 문자열이어야 합니다.' })
+  @MaxLength(500, { message: '사유는 500자 이하여야 합니다.' })
   reason?: string;
 }
 
@@ -45,7 +49,10 @@ export class BatchUpdateEnrollmentStatusDto {
     enum: SessionEnrollmentStatus,
     example: SessionEnrollmentStatus.CONFIRMED,
   })
-  @IsEnum(SessionEnrollmentStatus)
+  @IsEnum(SessionEnrollmentStatus, {
+    message:
+      '유효하지 않은 수강 신청 상태입니다. (PENDING, CONFIRMED, REJECTED, CANCELLED, REFUND_REQUESTED, REFUND_CANCELLED, REFUND_REJECTED_CONFIRMED, TEACHER_CANCELLED, ABSENT, ATTENDED 중 하나여야 합니다.)',
+  })
   status: SessionEnrollmentStatus;
 
   @ApiProperty({
@@ -54,6 +61,7 @@ export class BatchUpdateEnrollmentStatusDto {
     required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: '사유는 문자열이어야 합니다.' })
+  @MaxLength(500, { message: '사유는 500자 이하여야 합니다.' })
   reason?: string;
 }

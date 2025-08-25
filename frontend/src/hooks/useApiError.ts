@@ -160,6 +160,38 @@ export function useApiError(): UseApiErrorReturn {
               toast.error("유효하지 않은 레벨입니다.");
               break;
 
+            // Class Session 관련 에러들
+            case "SESSION_NOT_FOUND":
+              toast.error("존재하지 않는 세션입니다.");
+              break;
+            case "SESSION_FULL":
+              toast.error("세션 정원이 초과되었습니다.");
+              break;
+            case "SESSION_HAS_ENROLLMENTS":
+              toast.error("수강생이 있는 세션은 삭제할 수 없습니다.");
+              break;
+            case "SESSION_ALREADY_STARTED":
+              toast.error("이미 시작된 수업은 신청할 수 없습니다.");
+              break;
+            case "ENROLLMENT_NOT_FOUND":
+              toast.error("수강 신청 내역을 찾을 수 없습니다.");
+              break;
+            case "ALREADY_ENROLLED":
+              toast.error("이미 수강 신청한 세션입니다.");
+              break;
+            case "ATTENDANCE_CHECK_INVALID_DATE":
+              toast.error("출석 체크는 수업 당일에만 가능합니다.");
+              break;
+            case "ENROLLMENT_ALREADY_CANCELLED":
+              toast.error("이미 취소된 수강 신청입니다.");
+              break;
+            case "ENROLLMENT_CANNOT_CANCEL":
+              toast.error("수업이 이미 시작되어 취소할 수 없습니다.");
+              break;
+            case "ENROLLMENT_ALREADY_PROCESSED":
+              toast.error("이미 처리된 수강 신청입니다.");
+              break;
+
             // 이미지 관련 에러들
             case "INVALID_IMAGE_FORMAT":
               toast.error(

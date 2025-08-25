@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SocketGateway } from '../socket/socket.gateway';
@@ -40,14 +41,24 @@ export class ClassSessionService {
     });
 
     if (!classInfo) {
-      throw new NotFoundException('클래스를 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'CLASS_NOT_FOUND',
+        message: '클래스를 찾을 수 없습니다.',
+        details: { classId: data.classId },
+      });
     }
 
     // 권한 확인
     if (classInfo.teacherId !== teacherId) {
-      throw new ForbiddenException(
-        '해당 클래스의 세션을 생성할 권한이 없습니다.',
-      );
+      throw new ForbiddenException({
+        code: 'INSUFFICIENT_PERMISSIONS',
+        message: '해당 클래스의 세션을 생성할 권한이 없습니다.',
+        details: {
+          teacherId,
+          classTeacherId: classInfo.teacherId,
+          classId: data.classId,
+        },
+      });
     }
 
     // 세션 생성 (클래스의 maxStudents를 세션의 maxStudents로 복사)
@@ -84,7 +95,11 @@ export class ClassSessionService {
     });
 
     if (!user) {
-      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'USER_NOT_FOUND',
+        message: '사용자를 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     // Student 정보 찾기
@@ -93,7 +108,11 @@ export class ClassSessionService {
     });
 
     if (!student) {
-      throw new NotFoundException('Student를 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'STUDENT_NOT_FOUND',
+        message: 'Student를 찾을 수 없습니다.',
+        details: { userRefId: user.id },
+      });
     }
 
     return student;
@@ -124,19 +143,25 @@ export class ClassSessionService {
     });
 
     if (!session) {
-      throw new NotFoundException('세션을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'SESSION_NOT_FOUND',
+        message: '세션을 찾을 수 없습니다.',
+        details: { sessionId },
+      });
     }
 
     // 권한 확인
     if (session.class.teacherId !== teacherId) {
-      throw new ForbiddenException('해당 세션을 수정할 권한이 없습니다.');
+      throw new ForbiddenException({
+        code: 'INSUFFICIENT_PERMISSIONS',
+        message: '해당 세션을 수정할 권한이 없습니다.',
+        details: {
+          teacherId,
+          sessionTeacherId: session.class.teacherId,
+          sessionId,
+        },
+      });
     }
-
-    // const oldData = {
-    //   date: session.date,
-    //   startTime: session.startTime,
-    //   endTime: session.endTime,
-    // };
 
     // 세션 수정
     const updatedSession = await this.prisma.classSession.update({
@@ -148,10 +173,13 @@ export class ClassSessionService {
             teacher: true,
           },
         },
+        enrollments: {
+          include: {
+            student: true,
+          },
+        },
       },
     });
-
-    // 세션 수정 로그
 
     return updatedSession;
   }
@@ -171,26 +199,43 @@ export class ClassSessionService {
         },
         enrollments: {
           include: {
-            student: true,
+            payment: true,
           },
         },
       },
     });
 
     if (!session) {
-      throw new NotFoundException('세션을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'SESSION_NOT_FOUND',
+        message: '세션을 찾을 수 없습니다.',
+        details: { sessionId },
+      });
     }
 
     // 권한 확인
     if (session.class.teacherId !== teacherId) {
-      throw new ForbiddenException('해당 세션을 삭제할 권한이 없습니다.');
+      throw new ForbiddenException({
+        code: 'INSUFFICIENT_PERMISSIONS',
+        message: '해당 세션을 삭제할 권한이 없습니다.',
+        details: {
+          teacherId,
+          sessionTeacherId: session.class.teacherId,
+          sessionId,
+        },
+      });
     }
 
-    // 수강 신청이 있는 경우 삭제 불가
+    // 수강생이 있는 경우 삭제 불가
     if (session.enrollments.length > 0) {
-      throw new BadRequestException(
-        '수강 신청이 있는 세션은 삭제할 수 없습니다.',
-      );
+      throw new BadRequestException({
+        code: 'SESSION_HAS_ENROLLMENTS',
+        message: '수강생이 있는 세션은 삭제할 수 없습니다.',
+        details: {
+          enrollmentCount: session.enrollments.length,
+          sessionId,
+        },
+      });
     }
 
     // 세션 삭제
@@ -198,9 +243,7 @@ export class ClassSessionService {
       where: { id: sessionId },
     });
 
-    // 세션 삭제 로그
-
-    return { message: '세션이 삭제되었습니다.' };
+    return { message: '세션이 성공적으로 삭제되었습니다.' };
   }
 
   async getClassSessions(classId: number, studentId?: number) {
@@ -611,7 +654,11 @@ export class ClassSessionService {
     });
 
     if (!session) {
-      throw new NotFoundException('세션을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'SESSION_NOT_FOUND',
+        message: '세션을 찾을 수 없습니다.',
+        details: { sessionId: id },
+      });
     }
 
     return session;
@@ -627,7 +674,11 @@ export class ClassSessionService {
     });
 
     if (!session) {
-      throw new NotFoundException('세션을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'SESSION_NOT_FOUND',
+        message: '세션을 찾을 수 없습니다.',
+        details: { sessionId },
+      });
     }
 
     // 기존 수강 신청 확인 (모든 상태)
@@ -650,7 +701,15 @@ export class ClassSessionService {
           'REFUND_REQUESTED',
         ].includes(existingEnrollment.status)
       ) {
-        throw new BadRequestException('이미 수강 신청한 세션입니다.');
+        throw new ConflictException({
+          code: 'ALREADY_ENROLLED',
+          message: '이미 수강 신청한 세션입니다.',
+          details: {
+            studentId,
+            sessionId,
+            existingStatus: existingEnrollment.status,
+          },
+        });
       }
 
       // 비활성 상태(CANCELLED, REJECTED 등)인 경우 기존 수강신청을 PENDING으로 업데이트
@@ -685,7 +744,15 @@ export class ClassSessionService {
     }
 
     if (session.currentStudents >= session.class.maxStudents) {
-      throw new BadRequestException('수강 인원이 초과되었습니다.');
+      throw new BadRequestException({
+        code: 'SESSION_FULL',
+        message: '수강 인원이 초과되었습니다.',
+        details: {
+          currentStudents: session.currentStudents,
+          maxStudents: session.class.maxStudents,
+          sessionId,
+        },
+      });
     }
 
     const now = new Date();
@@ -699,7 +766,15 @@ export class ClassSessionService {
     sessionStartTime.setHours(hours, minutes, 0, 0);
 
     if (now >= sessionStartTime) {
-      throw new BadRequestException('이미 시작된 수업은 신청할 수 없습니다.');
+      throw new BadRequestException({
+        code: 'SESSION_ALREADY_STARTED',
+        message: '이미 시작된 수업은 신청할 수 없습니다.',
+        details: {
+          sessionStartTime: sessionStartTime.toISOString(),
+          currentTime: now.toISOString(),
+          sessionId,
+        },
+      });
     }
 
     // SessionEnrollment 생성
@@ -1027,7 +1102,15 @@ export class ClassSessionService {
     const isSameDay = today.toDateString() === sessionDate.toDateString();
 
     if (!isSameDay) {
-      throw new BadRequestException('출석 체크는 수업 당일에만 가능합니다.');
+      throw new BadRequestException({
+        code: 'ATTENDANCE_CHECK_INVALID_DATE',
+        message: '출석 체크는 수업 당일에만 가능합니다.',
+        details: {
+          enrollmentId: enrollment.id,
+          sessionDate: sessionDate.toISOString(),
+          currentDate: today.toISOString(),
+        },
+      });
     }
 
     // const oldStatus = enrollment.status;
@@ -1088,14 +1171,29 @@ export class ClassSessionService {
 
     // 이미 취소된 경우
     if (enrollment.status === SessionEnrollmentStatus.CANCELLED) {
-      throw new BadRequestException('이미 취소된 수강 신청입니다.');
+      throw new BadRequestException({
+        code: 'ENROLLMENT_ALREADY_CANCELLED',
+        message: '이미 취소된 수강 신청입니다.',
+        details: {
+          enrollmentId: enrollment.id,
+          status: enrollment.status,
+        },
+      });
     }
 
     // 수업이 이미 시작된 경우 취소 불가
     const now = new Date();
     const sessionStartTime = new Date(enrollment.session.startTime);
     if (now >= sessionStartTime) {
-      throw new BadRequestException('수업이 이미 시작되어 취소할 수 없습니다.');
+      throw new BadRequestException({
+        code: 'ENROLLMENT_CANNOT_CANCEL',
+        message: '수업이 이미 시작되어 취소할 수 없습니다.',
+        details: {
+          enrollmentId: enrollment.id,
+          sessionStartTime: sessionStartTime.toISOString(),
+          currentTime: now.toISOString(),
+        },
+      });
     }
 
     const oldStatus = enrollment.status;

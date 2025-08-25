@@ -1,4 +1,10 @@
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsNumber,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class ChangeEnrollmentDto {
@@ -6,7 +12,8 @@ export class ChangeEnrollmentDto {
     description: '변경할 새로운 세션 ID',
     example: 2,
   })
-  @IsNumber()
+  @IsNumber({}, { message: '세션 ID는 숫자여야 합니다.' })
+  @Min(1, { message: '세션 ID는 1 이상이어야 합니다.' })
   newSessionId: number;
 
   @ApiProperty({
@@ -15,6 +22,7 @@ export class ChangeEnrollmentDto {
     required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: '변경 사유는 문자열이어야 합니다.' })
+  @MaxLength(500, { message: '변경 사유는 500자 이하여야 합니다.' })
   reason?: string;
 }
