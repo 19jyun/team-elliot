@@ -280,6 +280,32 @@ export function useApiError(): UseApiErrorReturn {
               toast.error("알 수 없는 역할입니다.");
               break;
 
+            // Student 관련 에러들
+            case "STUDENT_NOT_FOUND":
+              toast.error("학생을 찾을 수 없습니다.");
+              break;
+            case "CLASS_NOT_FOUND":
+              toast.error("수업을 찾을 수 없습니다.");
+              break;
+            case "SESSION_NOT_FOUND":
+              toast.error("세션을 찾을 수 없습니다.");
+              break;
+            case "NOT_ACADEMY_MEMBER":
+              toast.error("해당 학원에 가입되어 있지 않습니다.");
+              break;
+            case "SESSION_ALREADY_PASSED":
+              toast.error("이미 지난 세션입니다.");
+              break;
+            case "ALREADY_ENROLLED":
+              toast.error("이미 수강 신청한 세션입니다.");
+              break;
+            case "PRINCIPAL_NOT_FOUND":
+              toast.error("Principal을 찾을 수 없습니다.");
+              break;
+            case "NOT_AUTHORIZED":
+              toast.error("해당 수강생에 접근할 권한이 없습니다.");
+              break;
+
             // 이미지 관련 에러들
             case "INVALID_IMAGE_FORMAT":
               toast.error(

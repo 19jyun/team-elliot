@@ -61,7 +61,11 @@ export class StudentService {
     });
 
     if (!student) {
-      throw new NotFoundException('학생을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'STUDENT_NOT_FOUND',
+        message: '학생을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     // 활성 상태의 수강 신청만 필터링 (수강 중인 클래스)
@@ -176,7 +180,11 @@ export class StudentService {
     });
 
     if (!class_) {
-      throw new NotFoundException('수업을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'CLASS_NOT_FOUND',
+        message: '수업을 찾을 수 없습니다.',
+        details: { classId },
+      });
     }
 
     return class_;
@@ -189,7 +197,11 @@ export class StudentService {
     });
 
     if (!student) {
-      throw new NotFoundException('학생을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'STUDENT_NOT_FOUND',
+        message: '학생을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return this.classService.enrollStudent(classId, student.id);
@@ -202,7 +214,11 @@ export class StudentService {
     });
 
     if (!student) {
-      throw new NotFoundException('학생을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'STUDENT_NOT_FOUND',
+        message: '학생을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return this.classService.unenrollStudent(classId, student.id);
@@ -624,7 +640,11 @@ export class StudentService {
     });
 
     if (!session) {
-      throw new NotFoundException('세션을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'SESSION_NOT_FOUND',
+        message: '세션을 찾을 수 없습니다.',
+        details: { sessionId },
+      });
     }
 
     // 학생이 해당 학원에 가입되어 있는지 확인
@@ -638,7 +658,14 @@ export class StudentService {
     });
 
     if (!studentAcademy) {
-      throw new ForbiddenException('해당 학원에 가입되어 있지 않습니다.');
+      throw new ForbiddenException({
+        code: 'NOT_ACADEMY_MEMBER',
+        message: '해당 학원에 가입되어 있지 않습니다.',
+        details: {
+          studentId: student.id,
+          academyId: session.class.academy.id,
+        },
+      });
     }
 
     // 세션이 수강 가능한 상태인지 확인
@@ -646,7 +673,15 @@ export class StudentService {
     const sessionDate = new Date(session.date);
 
     if (sessionDate < now) {
-      throw new BadRequestException('이미 지난 세션입니다.');
+      throw new BadRequestException({
+        code: 'SESSION_ALREADY_PASSED',
+        message: '이미 지난 세션입니다.',
+        details: {
+          sessionId,
+          sessionDate: sessionDate.toISOString(),
+          currentDate: now.toISOString(),
+        },
+      });
     }
 
     // 이미 수강 신청한 세션인지 확인
@@ -660,7 +695,15 @@ export class StudentService {
     });
 
     if (existingEnrollment) {
-      throw new ConflictException('이미 수강 신청한 세션입니다.');
+      throw new ConflictException({
+        code: 'ALREADY_ENROLLED',
+        message: '이미 수강 신청한 세션입니다.',
+        details: {
+          studentId: student.id,
+          sessionId,
+          enrollmentId: existingEnrollment.id,
+        },
+      });
     }
 
     // 입금 정보 반환
