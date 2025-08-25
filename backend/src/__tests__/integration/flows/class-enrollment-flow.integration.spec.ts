@@ -136,7 +136,7 @@ describe('Class Enrollment Flow Integration Tests', () => {
         .request()
         .post(`/class-sessions/${firstSession.id}/enroll`)
         .set('Authorization', `Bearer ${studentToken}`)
-        .expect(400);
+        .expect(409);
     });
   });
 

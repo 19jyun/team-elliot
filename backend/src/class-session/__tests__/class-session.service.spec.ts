@@ -6,6 +6,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  ConflictException,
 } from '@nestjs/common';
 import {
   UpdateEnrollmentStatusDto,
@@ -192,6 +193,11 @@ describe('ClassSessionService', () => {
               teacher: true,
             },
           },
+          enrollments: {
+            include: {
+              student: true,
+            },
+          },
         },
       });
     });
@@ -213,7 +219,7 @@ describe('ClassSessionService', () => {
     it('should delete a class session successfully', async () => {
       const sessionId = 1;
       const teacherId = 1;
-      const result = { message: '세션이 삭제되었습니다.' };
+      const result = { message: '세션이 성공적으로 삭제되었습니다.' };
 
       prisma.classSession.findUnique.mockResolvedValue({
         id: sessionId,
@@ -235,7 +241,7 @@ describe('ClassSessionService', () => {
           },
           enrollments: {
             include: {
-              student: true,
+              payment: true,
             },
           },
         },
@@ -355,7 +361,7 @@ describe('ClassSessionService', () => {
       }); // 이미 등록됨
 
       await expect(service.enrollSession(sessionId, studentId)).rejects.toThrow(
-        BadRequestException,
+        ConflictException,
       );
     });
   });

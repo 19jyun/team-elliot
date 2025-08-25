@@ -9,6 +9,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  ConflictException,
 } from '@nestjs/common';
 
 describe('RefundService', () => {
@@ -194,7 +195,7 @@ describe('RefundService', () => {
 
       await expect(
         service.createRefundRequest(refundRequestDto, studentId),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(ConflictException);
     });
 
     it('should throw BadRequestException when class has already started', async () => {

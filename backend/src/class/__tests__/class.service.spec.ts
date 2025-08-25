@@ -2,7 +2,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ClassService } from '../class.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateClassDto, DayOfWeek } from '../../types/class.types';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 
 describe('ClassService', () => {
   let service: ClassService;
@@ -327,7 +331,7 @@ describe('ClassService', () => {
       );
     });
 
-    it('should throw BadRequestException when student already enrolled', async () => {
+    it('should throw ConflictException when student already enrolled', async () => {
       const classId = 1;
       const studentId = 1;
 
@@ -339,7 +343,7 @@ describe('ClassService', () => {
       prisma.enrollment.findFirst.mockResolvedValue({ classId, studentId });
 
       await expect(service.enrollStudent(classId, studentId)).rejects.toThrow(
-        BadRequestException,
+        ConflictException,
       );
     });
   });
