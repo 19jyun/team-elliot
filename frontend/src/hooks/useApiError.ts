@@ -120,6 +120,30 @@ export function useApiError(): UseApiErrorReturn {
               toast.error("학원 관리 권한이 없습니다.");
               break;
 
+            // Ballet Pose 관련 에러들
+            case "BALLET_POSE_NOT_FOUND":
+              toast.error("존재하지 않는 발레 자세입니다.");
+              break;
+            case "BALLET_POSE_NAME_ALREADY_EXISTS":
+              setFieldErrors({ name: "이미 존재하는 발레 자세명입니다." });
+              break;
+            case "BALLET_POSE_IN_USE":
+              toast.error("세션에서 사용 중인 발레 자세는 삭제할 수 없습니다.");
+              break;
+            case "INVALID_DIFFICULTY":
+              toast.error("유효하지 않은 난이도입니다.");
+              break;
+
+            // 이미지 관련 에러들
+            case "INVALID_IMAGE_FORMAT":
+              toast.error(
+                "지원하지 않는 이미지 형식입니다. (JPG, PNG, WEBP만 가능)"
+              );
+              break;
+            case "IMAGE_TOO_LARGE":
+              toast.error("이미지 크기가 너무 큽니다. (5MB 이하만 가능)");
+              break;
+
             // 기타 에러들
             case "JOIN_REQUEST_ALREADY_EXISTS":
               toast.error("이미 가입 요청이 진행 중입니다.");
