@@ -306,6 +306,20 @@ export function useApiError(): UseApiErrorReturn {
               toast.error("해당 수강생에 접근할 권한이 없습니다.");
               break;
 
+            // Teacher 관련 에러들
+            case "TEACHER_NOT_FOUND":
+              toast.error("선생님을 찾을 수 없습니다.");
+              break;
+            case "ACADEMY_NOT_FOUND":
+              toast.error("학원을 찾을 수 없습니다.");
+              break;
+            case "FORBIDDEN_ACCESS":
+              toast.error("해당 강사에 접근할 권한이 없습니다.");
+              break;
+            case "BAD_REQUEST":
+              toast.error("잘못된 요청입니다.");
+              break;
+
             // 이미지 관련 에러들
             case "INVALID_IMAGE_FORMAT":
               toast.error(

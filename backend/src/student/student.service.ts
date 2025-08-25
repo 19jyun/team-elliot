@@ -232,7 +232,11 @@ export class StudentService {
     });
 
     if (!student) {
-      throw new NotFoundException('학생을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'STUDENT_NOT_FOUND',
+        message: '학생을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return this.academyService.getStudentAcademies(student.id);
@@ -245,7 +249,11 @@ export class StudentService {
     });
 
     if (!student) {
-      throw new NotFoundException('학생을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'STUDENT_NOT_FOUND',
+        message: '학생을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return this.academyService.joinAcademyByStudent(student.id, joinAcademyDto);
@@ -258,7 +266,11 @@ export class StudentService {
     });
 
     if (!student) {
-      throw new NotFoundException('학생을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'STUDENT_NOT_FOUND',
+        message: '학생을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return this.academyService.leaveAcademyByStudent(
@@ -296,7 +308,11 @@ export class StudentService {
     });
 
     if (!student) {
-      throw new NotFoundException('학생을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'STUDENT_NOT_FOUND',
+        message: '학생을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return {
@@ -319,7 +335,11 @@ export class StudentService {
     });
 
     if (!student) {
-      throw new NotFoundException('학생을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'STUDENT_NOT_FOUND',
+        message: '학생을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     // 빈 문자열을 null로 변환하고 birthDate를 ISO 형식으로 변환
@@ -399,7 +419,11 @@ export class StudentService {
     });
 
     if (!student) {
-      throw new NotFoundException('학생을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'STUDENT_NOT_FOUND',
+        message: '학생을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     const enrollments = await this.prisma.sessionEnrollment.findMany({
@@ -523,7 +547,11 @@ export class StudentService {
     });
 
     if (!student) {
-      throw new NotFoundException('학생을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'STUDENT_NOT_FOUND',
+        message: '학생을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     // 환불 요청 내역 조회 (단순화된 상태만)
@@ -612,7 +640,11 @@ export class StudentService {
     });
 
     if (!student) {
-      throw new NotFoundException('학생을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'STUDENT_NOT_FOUND',
+        message: '학생을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     // 학생이 해당 세션에 수강 신청할 권한이 있는지 확인
@@ -753,7 +785,11 @@ export class StudentService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal not found');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { principalId },
+      });
     }
 
     // 학생 정보를 평면화하여 반환
@@ -792,7 +828,11 @@ export class StudentService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal not found');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { principalId },
+      });
     }
 
     // 해당 수강생이 Principal의 학원에 속하는지 확인
@@ -804,7 +844,11 @@ export class StudentService {
     });
 
     if (!studentAcademy) {
-      throw new ForbiddenException('해당 수강생에 접근할 권한이 없습니다.');
+      throw new ForbiddenException({
+        code: 'NOT_AUTHORIZED',
+        message: '해당 수강생에 접근할 권한이 없습니다.',
+        details: { studentId, principalId },
+      });
     }
 
     // 수강생을 학원에서 제거
@@ -826,7 +870,11 @@ export class StudentService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal not found');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { principalId },
+      });
     }
 
     // 해당 수강생이 Principal의 학원에 속하는지 확인
@@ -838,7 +886,11 @@ export class StudentService {
     });
 
     if (!studentAcademy) {
-      throw new ForbiddenException('해당 수강생에 접근할 권한이 없습니다.');
+      throw new ForbiddenException({
+        code: 'NOT_AUTHORIZED',
+        message: '해당 수강생에 접근할 권한이 없습니다.',
+        details: { studentId, principalId },
+      });
     }
 
     // 수강생의 모든 세션 수강 현황 조회
