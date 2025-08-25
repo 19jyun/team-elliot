@@ -62,8 +62,11 @@ export function usePrincipalApi() {
     try {
       setError(null);
       setIsLoading(true);
-      const data = await getPrincipalProfile();
-      setProfile(data);
+      const response = await getPrincipalProfile();
+      const data = response.data;
+      if (data) {
+        setProfile(data);
+      }
     } catch (err: any) {
       handleApiError(err);
       setError(err.message || "프로필 로드 실패");
@@ -78,8 +81,11 @@ export function usePrincipalApi() {
 
     try {
       setError(null);
-      const data = await getPrincipalAcademy();
-      setAcademy(data);
+      const response = await getPrincipalAcademy();
+      const data = response.data;
+      if (data) {
+        setAcademy(data);
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || "학원 정보 로드 실패");
     }
@@ -91,8 +97,11 @@ export function usePrincipalApi() {
 
     try {
       setError(null);
-      const data = await getPrincipalAllClasses();
-      setClasses(data);
+      const response = await getPrincipalAllClasses();
+      const data = response.data;
+      if (data) {
+        setClasses(data);
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || "클래스 목록 로드 실패");
     }
@@ -104,8 +113,11 @@ export function usePrincipalApi() {
 
     try {
       setError(null);
-      const data = await getPrincipalAllTeachers();
-      setTeachers(data);
+      const response = await getPrincipalAllTeachers();
+      const data = response.data;
+      if (data) {
+        setTeachers(data);
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || "선생님 목록 로드 실패");
     }
@@ -117,8 +129,11 @@ export function usePrincipalApi() {
 
     try {
       setError(null);
-      const data = await getPrincipalAllStudents();
-      setStudents(data);
+      const response = await getPrincipalAllStudents();
+      const data = response.data;
+      if (data) {
+        setStudents(data);
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || "학생 목록 로드 실패");
     }
@@ -130,8 +145,11 @@ export function usePrincipalApi() {
 
     try {
       setError(null);
-      const data = await getPrincipalAllSessions();
-      setSessions(data);
+      const response = await getPrincipalAllSessions();
+      const data = response.data;
+      if (data) {
+        setSessions(data);
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || "세션 목록 로드 실패");
     }
@@ -144,8 +162,9 @@ export function usePrincipalApi() {
 
       try {
         setError(null);
-        const data = await getPrincipalSessionEnrollments(sessionId);
-        return data;
+        const response = await getPrincipalSessionEnrollments(sessionId);
+        const data = response.data;
+        return data || null;
       } catch (err: any) {
         setError(err.response?.data?.message || "수강생 목록 로드 실패");
         return null;

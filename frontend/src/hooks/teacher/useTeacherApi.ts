@@ -35,8 +35,9 @@ export function useTeacherApi() {
 
     try {
       setError(null);
-      const data = await getTeacherProfile();
-      setProfile(data);
+      const response = await getTeacherProfile();
+      // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
+      setProfile(response.data || null);
     } catch (err: any) {
       setError(err.response?.data?.message || "프로필 로드 실패");
     }
@@ -48,8 +49,9 @@ export function useTeacherApi() {
 
     try {
       setError(null);
-      const data = await getMyAcademy();
-      setAcademy(data);
+      const response = await getMyAcademy();
+      // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
+      setAcademy(response.data);
     } catch (err: any) {
       setError(err.response?.data?.message || "학원 정보 로드 실패");
     }
@@ -61,9 +63,13 @@ export function useTeacherApi() {
 
     try {
       setError(null);
-      const data = await getTeacherClassesWithSessions();
-      setClasses(data.classes || []);
-      setSessions(data.sessions || []);
+      const response = await getTeacherClassesWithSessions();
+      // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
+      const data = response.data;
+      if (data) {
+        setClasses(data.classes || []);
+        setSessions(data.sessions || []);
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || "클래스 및 세션 목록 로드 실패");
     }

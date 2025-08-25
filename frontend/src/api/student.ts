@@ -1,5 +1,6 @@
 import { get, post, del, put } from "./apiClient";
 import type { Academy as StoreAcademy } from "@/types/store/common";
+import type { ApiResponse } from "@/types/api";
 import {
   MyClassesResponse,
   ClassDetailResponse,
@@ -11,49 +12,64 @@ import {
   CancellationHistoryResponse,
 } from "../types/api/student";
 
-export const getMyClasses = (): Promise<MyClassesResponse> =>
+export const getMyClasses = (): Promise<ApiResponse<MyClassesResponse>> =>
   get("/student/classes");
-export const getClassDetail = (id: number): Promise<ClassDetailResponse> =>
-  get(`/student/classes/${id}`);
-export const enrollClass = (id: number): Promise<EnrollClassResponse> =>
+export const getClassDetail = (
+  id: number
+): Promise<ApiResponse<ClassDetailResponse>> => get(`/student/classes/${id}`);
+export const enrollClass = (
+  id: number
+): Promise<ApiResponse<EnrollClassResponse>> =>
   post(`/student/classes/${id}/enroll`);
-export const unenrollClass = (id: number): Promise<UnenrollClassResponse> =>
+export const unenrollClass = (
+  id: number
+): Promise<ApiResponse<UnenrollClassResponse>> =>
   del(`/student/classes/${id}/enroll`);
 
 // 개인 정보 조회
-export const getMyProfile = (): Promise<StudentProfile> => {
-  return get<StudentProfile>("/student/profile");
+export const getMyProfile = (): Promise<ApiResponse<StudentProfile>> => {
+  return get<ApiResponse<StudentProfile>>("/student/profile");
 };
 
 // 개인 정보 수정
 export const updateMyProfile = (
   updateData: UpdateProfileRequest
-): Promise<StudentProfile> => {
-  return put<StudentProfile>("/student/profile", updateData);
+): Promise<ApiResponse<StudentProfile>> => {
+  return put<ApiResponse<StudentProfile>>("/student/profile", updateData);
 };
 
 // 수강 내역 조회
-export const getEnrollmentHistory = (): Promise<EnrollmentHistoryResponse> => {
-  return get<EnrollmentHistoryResponse>("/student/enrollment-history");
+export const getEnrollmentHistory = (): Promise<
+  ApiResponse<EnrollmentHistoryResponse>
+> => {
+  return get<ApiResponse<EnrollmentHistoryResponse>>(
+    "/student/enrollment-history"
+  );
 };
 
 // 환불/취소 내역 조회
-export const getCancellationHistory =
-  (): Promise<CancellationHistoryResponse> =>
-    get("/student/cancellation-history");
+export const getCancellationHistory = (): Promise<
+  ApiResponse<CancellationHistoryResponse>
+> =>
+  get<ApiResponse<CancellationHistoryResponse>>(
+    "/student/cancellation-history"
+  );
 
-export const getSessionPaymentInfo = (sessionId: number): Promise<any> =>
-  get(`/student/sessions/${sessionId}/payment-info`);
+export const getSessionPaymentInfo = (
+  sessionId: number
+): Promise<ApiResponse<any>> =>
+  get<ApiResponse<any>>(`/student/sessions/${sessionId}/payment-info`);
 
 // === 학생 전용: 학원 관련 (책임 분리) ===
-export const getAcademies = () => get<StoreAcademy[]>("/academy");
+export const getAcademies = () => get<ApiResponse<StoreAcademy[]>>("/academy");
 export const joinAcademy = (data: { code: string }) =>
-  post("/academy/join", data);
+  post<ApiResponse<any>>("/academy/join", data);
 export const leaveAcademy = (data: { academyId: number }) =>
-  post("/academy/leave", data);
+  post<ApiResponse<any>>("/academy/leave", data);
 
 // 내가 가입한 학원 목록 (학생 전용)
-export const getMyAcademies = () => get<StoreAcademy[]>("/academy/my/list");
+export const getMyAcademies = () =>
+  get<ApiResponse<StoreAcademy[]>>("/academy/my/list");
 
 // === 학생 전용: 수강신청/변경 관련 (기존 class-sessions.ts 기능 이관) ===
 export const getStudentAvailableSessionsForEnrollment = (academyId: number) =>

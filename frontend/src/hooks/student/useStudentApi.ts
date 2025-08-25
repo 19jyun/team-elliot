@@ -51,17 +51,21 @@ export function useStudentApi() {
     setError(null);
 
     try {
-      const data = await getMyClasses();
-      setSessionClasses(data.sessionClasses || []);
+      const response = await getMyClasses();
+      // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
+      const data = response.data;
+      if (data) {
+        setSessionClasses(data.sessionClasses || []);
 
-      // calendarRange가 문자열로 오는 경우 Date 객체로 변환
-      if (data.calendarRange) {
-        setCalendarRange({
-          startDate: new Date(data.calendarRange.startDate),
-          endDate: new Date(data.calendarRange.endDate),
-        });
-      } else {
-        setCalendarRange(null);
+        // calendarRange가 문자열로 오는 경우 Date 객체로 변환
+        if (data.calendarRange) {
+          setCalendarRange({
+            startDate: new Date(data.calendarRange.startDate),
+            endDate: new Date(data.calendarRange.endDate),
+          });
+        } else {
+          setCalendarRange(null);
+        }
       }
     } catch (err) {
       setError(
@@ -75,10 +79,12 @@ export function useStudentApi() {
   // 학원 목록 로드 함수
   const loadAcademies = useCallback(async () => {
     try {
-      const data = await getMyAcademies(); // Changed from getAcademies()
-      setAcademies(data);
+      const response = await getMyAcademies();
+      // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
+      setAcademies(response.data || []);
     } catch (err) {
       console.error("Failed to load academies:", err);
+      setAcademies([]);
     }
   }, []);
 
@@ -158,7 +164,9 @@ export function useStudentApi() {
   // 수강 신청 내역 로드 함수
   const loadEnrollmentHistory = useCallback(async () => {
     try {
-      const data = await getEnrollmentHistory();
+      const response = await getEnrollmentHistory();
+      // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
+      const data = response.data;
       setEnrollmentHistory(data || []);
       return data || [];
     } catch (err) {
@@ -175,7 +183,9 @@ export function useStudentApi() {
   // 환불/취소 내역 로드 함수
   const loadCancellationHistory = useCallback(async () => {
     try {
-      const data = await getCancellationHistory();
+      const response = await getCancellationHistory();
+      // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
+      const data = response.data;
       setCancellationHistory(data || []);
       return data || [];
     } catch (err) {
@@ -248,7 +258,9 @@ export function useStudentApi() {
   // 사용자 프로필 로드 함수
   const loadUserProfile = useCallback(async () => {
     try {
-      const data = await getMyProfile();
+      const response = await getMyProfile();
+      // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
+      const data = response.data;
       setUserProfile(data || null);
     } catch (err) {
       console.error("사용자 프로필 로드 실패:", err);
