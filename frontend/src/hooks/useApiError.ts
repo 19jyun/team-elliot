@@ -211,6 +211,20 @@ export function useApiError(): UseApiErrorReturn {
               toast.error("세션 수강 신청을 찾을 수 없습니다.");
               break;
 
+            // Rejection Detail 관련 에러들
+            case "REJECTION_DETAIL_NOT_FOUND":
+              toast.error("거절 상세 정보를 찾을 수 없습니다.");
+              break;
+            case "REJECTION_DETAIL_ALREADY_EXISTS":
+              toast.error("이미 거절 상세 정보가 존재합니다.");
+              break;
+            case "REJECTOR_NOT_FOUND":
+              toast.error("거절 처리자를 찾을 수 없습니다.");
+              break;
+            case "ENTITY_NOT_FOUND":
+              toast.error("거절 대상 엔티티를 찾을 수 없습니다.");
+              break;
+
             // 이미지 관련 에러들
             case "INVALID_IMAGE_FORMAT":
               toast.error(
