@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -20,7 +21,11 @@ export class ClassService {
     });
 
     if (!user) {
-      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'USER_NOT_FOUND',
+        message: '사용자를 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     // Principal 정보 찾기
@@ -29,7 +34,11 @@ export class ClassService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userRefId: user.id },
+      });
     }
 
     return principal;
@@ -102,7 +111,11 @@ export class ClassService {
     });
 
     if (!teacher) {
-      throw new NotFoundException('선생님을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'TEACHER_NOT_FOUND',
+        message: '선생님을 찾을 수 없습니다.',
+        details: { teacherId: data.teacherId },
+      });
     }
 
     // Principal인 경우 항상 OPEN, Teacher인 경우 권한에 따라 결정
@@ -126,17 +139,27 @@ export class ClassService {
       'SUNDAY',
     ];
     if (!validDays.includes(data.dayOfWeek)) {
-      throw new BadRequestException(
-        '유효하지 않은 요일입니다. MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY 중 하나를 입력해주세요.',
-      );
+      throw new BadRequestException({
+        code: 'INVALID_DAY_OF_WEEK',
+        message: '유효하지 않은 요일입니다.',
+        details: {
+          providedDay: data.dayOfWeek,
+          validDays,
+        },
+      });
     }
 
     // 레벨 유효성 검증
     const validLevels = ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'];
     if (!validLevels.includes(data.level)) {
-      throw new BadRequestException(
-        '유효하지 않은 레벨입니다. BEGINNER, INTERMEDIATE, ADVANCED 중 하나를 입력해주세요.',
-      );
+      throw new BadRequestException({
+        code: 'INVALID_LEVEL',
+        message: '유효하지 않은 레벨입니다.',
+        details: {
+          providedLevel: data.level,
+          validLevels,
+        },
+      });
     }
 
     console.log('DTO에서 변환된 startDate:', data.startDate);
@@ -144,7 +167,14 @@ export class ClassService {
 
     // 시작일이 종료일보다 늦은지 확인
     if (data.startDate >= data.endDate) {
-      throw new BadRequestException('시작일은 종료일보다 이전이어야 합니다.');
+      throw new BadRequestException({
+        code: 'INVALID_CLASS_DATES',
+        message: '시작일은 종료일보다 이전이어야 합니다.',
+        details: {
+          startDate: data.startDate,
+          endDate: data.endDate,
+        },
+      });
     }
 
     // 고유한 클래스 코드 생성
@@ -403,14 +433,26 @@ export class ClassService {
     });
 
     if (!classInfo) {
-      throw new NotFoundException('강의를 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'CLASS_NOT_FOUND',
+        message: '강의를 찾을 수 없습니다.',
+        details: { classId },
+      });
     }
 
     // 권한 확인 (PRINCIPAL만 상태 변경 가능)
     const isPrincipal = classInfo.academy.principal?.id === teacherId;
 
     if (!isPrincipal) {
-      throw new ForbiddenException('강의 상태 변경 권한이 없습니다.');
+      throw new ForbiddenException({
+        code: 'INSUFFICIENT_PERMISSIONS',
+        message: '강의 상태 변경 권한이 없습니다.',
+        details: {
+          teacherId,
+          requiredRole: 'PRINCIPAL',
+          classId,
+        },
+      });
     }
 
     // 상태 변경
@@ -485,11 +527,22 @@ export class ClassService {
     });
 
     if (!existingClass) {
-      throw new NotFoundException('수업을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'CLASS_NOT_FOUND',
+        message: '수업을 찾을 수 없습니다.',
+        details: { classId: id },
+      });
     }
 
     if (existingClass.enrollments.length > 0) {
-      throw new BadRequestException('수강생이 있는 수업은 삭제할 수 없습니다.');
+      throw new BadRequestException({
+        code: 'CLASS_HAS_STUDENTS',
+        message: '수강생이 있는 수업은 삭제할 수 없습니다.',
+        details: {
+          enrollmentCount: existingClass.enrollments.length,
+          classId: id,
+        },
+      });
     }
 
     // 트랜잭션으로 클래스와 관련된 모든 데이터를 안전하게 삭제
@@ -552,14 +605,26 @@ export class ClassService {
     });
 
     if (!existingClass) {
-      throw new NotFoundException('수업을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'CLASS_NOT_FOUND',
+        message: '수업을 찾을 수 없습니다.',
+        details: { classId },
+      });
     }
 
     if (
       existingClass.maxStudents &&
       existingClass.enrollments.length >= existingClass.maxStudents
     ) {
-      throw new BadRequestException('수업 정원이 초과되었습니다.');
+      throw new BadRequestException({
+        code: 'CLASS_FULL',
+        message: '수업 정원이 초과되었습니다.',
+        details: {
+          currentEnrollments: existingClass.enrollments.length,
+          maxStudents: existingClass.maxStudents,
+          classId,
+        },
+      });
     }
 
     const existingEnrollment = await this.prisma.enrollment.findFirst({
@@ -570,7 +635,15 @@ export class ClassService {
     });
 
     if (existingEnrollment) {
-      throw new BadRequestException('이미 수강 신청된 수업입니다.');
+      throw new ConflictException({
+        code: 'ALREADY_ENROLLED',
+        message: '이미 수강 신청된 수업입니다.',
+        details: {
+          studentId,
+          classId,
+          enrollmentId: existingEnrollment.id,
+        },
+      });
     }
 
     return this.prisma.enrollment.create({
@@ -590,7 +663,14 @@ export class ClassService {
     });
 
     if (!enrollment) {
-      throw new NotFoundException('수강 신청 내역을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'ENROLLMENT_NOT_FOUND',
+        message: '수강 신청 내역을 찾을 수 없습니다.',
+        details: {
+          studentId,
+          classId,
+        },
+      });
     }
 
     return this.prisma.enrollment.delete({
@@ -615,7 +695,11 @@ export class ClassService {
     });
 
     if (!classWithDetails) {
-      throw new NotFoundException(`Class with ID ${id} not found`);
+      throw new NotFoundException({
+        code: 'CLASS_NOT_FOUND',
+        message: '클래스를 찾을 수 없습니다.',
+        details: { classId: id },
+      });
     }
 
     return classWithDetails;

@@ -134,6 +134,32 @@ export function useApiError(): UseApiErrorReturn {
               toast.error("유효하지 않은 난이도입니다.");
               break;
 
+            // Class 관련 에러들
+            case "CLASS_NOT_FOUND":
+              toast.error("존재하지 않는 클래스입니다.");
+              break;
+            case "CLASS_FULL":
+              toast.error("클래스 정원이 초과되었습니다.");
+              break;
+            case "CLASS_HAS_STUDENTS":
+              toast.error("수강생이 있는 클래스는 삭제할 수 없습니다.");
+              break;
+            case "ALREADY_ENROLLED":
+              toast.error("이미 수강 신청한 클래스입니다.");
+              break;
+            case "ENROLLMENT_NOT_FOUND":
+              toast.error("수강 신청 내역을 찾을 수 없습니다.");
+              break;
+            case "INVALID_CLASS_DATES":
+              toast.error("시작일은 종료일보다 이전이어야 합니다.");
+              break;
+            case "INVALID_DAY_OF_WEEK":
+              toast.error("유효하지 않은 요일입니다.");
+              break;
+            case "INVALID_LEVEL":
+              toast.error("유효하지 않은 레벨입니다.");
+              break;
+
             // 이미지 관련 에러들
             case "INVALID_IMAGE_FORMAT":
               toast.error(
