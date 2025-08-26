@@ -160,8 +160,8 @@ export function usePrincipalData() {
 
   return {
     // 실시간 데이터
-    enrollments: principalData?.enrollments || [],
-    refundRequests: principalData?.refundRequests || [],
+    enrollments: principalData?.enrollments,
+    refundRequests: principalData?.refundRequests,
     isLoading,
     error,
 

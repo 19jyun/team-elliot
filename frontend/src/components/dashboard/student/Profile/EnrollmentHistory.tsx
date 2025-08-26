@@ -112,7 +112,7 @@ export function EnrollmentHistory() {
     return log.id;
   };
 
-  const filteredLogs = (enrollmentHistory || []).filter(log => {
+  const filteredLogs = enrollmentHistory.filter(log => {
     if (selectedFilter === 'ALL') return true;
     const status = getEnrollmentStatus(log);
     return status === selectedFilter;

@@ -37,10 +37,12 @@ export function usePrincipalInitialization() {
         dispatch(setError(null));
 
         // 실시간 업데이트가 필요한 데이터만 로드
-        const [enrollments, refundRequests] = await Promise.all([
-          getPrincipalAllEnrollments(),
-          getPrincipalAllRefundRequests(),
-        ]);
+        const [enrollmentsResponse, refundRequestsResponse] = await Promise.all(
+          [getPrincipalAllEnrollments(), getPrincipalAllRefundRequests()]
+        );
+
+        const enrollments = enrollmentsResponse.data;
+        const refundRequests = refundRequestsResponse.data;
 
         // 디버깅: 환불 요청 데이터 확인
         console.log("환불 요청 API 응답:", refundRequests);

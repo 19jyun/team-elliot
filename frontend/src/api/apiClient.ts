@@ -54,18 +54,11 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// 응답 인터셉터 - 에러 처리 및 응답 표준화
+// 응답 인터셉터 - 에러 처리만 담당 (백엔드에서 이미 표준화된 응답 제공)
 apiClient.interceptors.response.use(
   (response) => {
-    // 성공 응답을 표준화된 형태로 변환
-    return {
-      ...response,
-      data: {
-        success: true,
-        data: response.data,
-        timestamp: new Date().toISOString(),
-      },
-    };
+    // 백엔드에서 이미 {success, data, timestamp, path} 형태로 응답하므로 그대로 반환
+    return response;
   },
   (error) => {
     // 에러 응답 처리

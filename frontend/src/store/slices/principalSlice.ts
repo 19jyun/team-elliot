@@ -3,7 +3,10 @@ import type { PrincipalState, PrincipalData } from "@/types/store/principal";
 import type { SocketEventData } from "@/types/socket";
 
 const initialState: PrincipalState = {
-  data: null,
+  data: {
+    enrollments: [],
+    refundRequests: [],
+  },
   isLoading: false,
   error: null,
 };
@@ -90,7 +93,10 @@ export const principalSlice = createSlice({
     },
 
     clearPrincipalData: (state) => {
-      state.data = null;
+      state.data = {
+        enrollments: [],
+        refundRequests: [],
+      };
       state.isLoading = false;
       state.error = null;
     },

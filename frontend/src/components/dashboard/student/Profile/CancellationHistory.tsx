@@ -126,7 +126,7 @@ export function CancellationHistory() {
     return log?.reason || '';
   };
 
-  const filteredLogs = (cancellationHistory || []).filter(log => {
+  const filteredLogs = cancellationHistory.filter(log => {
     if (selectedFilter === 'ALL') return true;
     const status = getCancellationStatus(log);
     return status === selectedFilter;

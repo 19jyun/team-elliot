@@ -3,7 +3,9 @@ import type { TeacherState, TeacherData } from "@/types/store/teacher";
 import type { SocketEventData } from "@/types/socket";
 
 const initialState: TeacherState = {
-  data: null,
+  data: {
+    enrollments: [],
+  },
   isLoading: false,
   error: null,
 };
@@ -58,7 +60,9 @@ export const teacherSlice = createSlice({
     },
 
     clearTeacherData: (state) => {
-      state.data = null;
+      state.data = {
+        enrollments: [],
+      };
       state.isLoading = false;
       state.error = null;
     },

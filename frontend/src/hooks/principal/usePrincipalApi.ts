@@ -35,7 +35,7 @@ import type {
   UpdatePrincipalProfileRequest,
 } from "@/types/api/principal";
 import type { BalletPose, PoseDifficulty } from "@/types/api/ballet-pose";
-import axios from "@/lib/axios";
+import { getBalletPoses, getBalletPose } from "@/api/ballet-pose";
 import { useApiError } from "@/hooks/useApiError";
 
 // Principal API 데이터 훅
@@ -264,14 +264,14 @@ export function usePrincipalApi() {
   const fetchBalletPoses = async (
     difficulty?: PoseDifficulty
   ): Promise<BalletPose[]> => {
-    const res = await axios.get("/ballet-poses", {
-      params: difficulty ? { difficulty } : undefined,
-    });
-    return res.data;
+    const response = await getBalletPoses(difficulty);
+    // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
+    return response.data || [];
   };
   const fetchBalletPose = async (id: number): Promise<BalletPose> => {
-    const res = await axios.get(`/ballet-poses/${id}`);
-    return res.data;
+    const response = await getBalletPose(id);
+    // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
+    return response.data!;
   };
 
   // 헬퍼 함수들

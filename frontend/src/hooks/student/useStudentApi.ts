@@ -25,7 +25,7 @@ import type {
   CreateRefundRequestResponse,
 } from "@/types/api/refund";
 import type { ClassDetailsResponse } from "@/types/api/class";
-import axios from "@/lib/axios";
+import { getClassDetails as getClassDetailsApi } from "@/api/class";
 import { useApiError } from "@/hooks/useApiError";
 
 // Student 대시보드에서 사용할 API 훅
@@ -52,7 +52,6 @@ export function useStudentApi() {
 
     try {
       const response = await getMyClasses();
-      // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
       const data = response.data;
       if (data) {
         setSessionClasses(data.sessionClasses || []);
@@ -80,7 +79,6 @@ export function useStudentApi() {
   const loadAcademies = useCallback(async () => {
     try {
       const response = await getMyAcademies();
-      // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
       setAcademies(response.data || []);
     } catch (err) {
       console.error("Failed to load academies:", err);
@@ -165,7 +163,6 @@ export function useStudentApi() {
   const loadEnrollmentHistory = useCallback(async () => {
     try {
       const response = await getEnrollmentHistory();
-      // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
       const data = response.data;
       setEnrollmentHistory(data || []);
       return data || [];
@@ -184,7 +181,6 @@ export function useStudentApi() {
   const loadCancellationHistory = useCallback(async () => {
     try {
       const response = await getCancellationHistory();
-      // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
       const data = response.data;
       setCancellationHistory(data || []);
       return data || [];
@@ -259,7 +255,6 @@ export function useStudentApi() {
   const loadUserProfile = useCallback(async () => {
     try {
       const response = await getMyProfile();
-      // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
       const data = response.data;
       setUserProfile(data || null);
     } catch (err) {
@@ -362,10 +357,8 @@ export function useStudentApi() {
 
   // 클래스 상세 조회 (학생 화면용)
   const getClassDetails = useCallback(async (classId: number) => {
-    const res = await axios.get<ClassDetailsResponse>(
-      `/classes/${classId}/details`
-    );
-    return res.data;
+    const response = await getClassDetailsApi(classId);
+    return response.data;
   }, []);
 
   // 컴포넌트 마운트 시 데이터 로드

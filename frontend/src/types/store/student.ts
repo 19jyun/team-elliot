@@ -1,50 +1,13 @@
 // Student 전용 Redux 타입들
 import type { Academy } from "./common";
 
-// Student 전용 데이터 타입
+// Student 전용 데이터 타입 (Redux에서 관리하는 데이터만)
 export interface StudentData {
-  // 1. 학생 프로필 정보
-  userProfile: StudentProfile;
-
-  // 2. 가입한 학원 정보
-  academies: Academy[];
-
-  // 3. 수강중인 클래스 정보
-  enrollmentClasses: StudentClass[];
-
-  // 4. 수강중인 세션 정보 (캘린더용)
-  sessionClasses: StudentClass[];
-
-  // 5. 수강 가능한 클래스 정보 (수강신청용)
-  availableClasses: AvailableClass[];
-
-  // 6. 수강 가능한 세션 정보 (수강신청용)
-  availableSessions: AvailableSession[];
-
-  // 7. 수강 신청/결제 내역
+  // 수강 신청/결제 내역
   enrollmentHistory: EnrollmentHistory[];
 
-  // 8. 환불/취소 내역
+  // 환불/취소 내역
   cancellationHistory: CancellationHistory[];
-
-  // 9. 캘린더 범위 정보
-  calendarRange?: {
-    startDate: string;
-    endDate: string;
-  };
-
-  // 10. 수강신청 진행 상태
-  enrollmentProgress?: {
-    selectedAcademyId?: number;
-    selectedClassId?: number;
-    selectedSessionIds?: number[];
-    currentStep:
-      | "academy-selection"
-      | "class-selection"
-      | "date-selection"
-      | "payment"
-      | "complete";
-  };
 }
 
 // Student 관련 하위 타입들
