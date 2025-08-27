@@ -56,11 +56,27 @@ const handler = NextAuth({
             throw new Error(errorMessage);
           }
 
+          // 백엔드 응답 구조에 맞게 파싱
+          const userData = data.data?.user || data.user;
+          const accessToken = data.data?.access_token || data.access_token;
+
+          // userData가 존재하는지 확인
+          if (!userData) {
+            console.error("Auth error: No user data in response", data);
+            return null;
+          }
+
+          // 필수 필드들이 존재하는지 확인
+          if (!userData.id || !userData.name || !userData.role) {
+            console.error("Auth error: Missing required user fields", userData);
+            return null;
+          }
+
           return {
-            id: data.user.id,
-            name: data.user.name,
-            role: data.user.role,
-            accessToken: data.access_token,
+            id: userData.id.toString(),
+            name: userData.name,
+            role: userData.role,
+            accessToken: accessToken,
           };
         } catch (error) {
           console.error("Auth error:", error);
