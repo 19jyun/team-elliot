@@ -201,7 +201,7 @@ export function useStudentApi() {
   const loadModificationSessions = useCallback(async (classId: number) => {
     try {
       const response = await getClassSessionsForModification(classId);
-      return response;
+      return response.data;
     } catch (err) {
       console.error("수강 변경용 세션 데이터 로드 실패:", err);
       setError(

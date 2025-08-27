@@ -33,6 +33,7 @@ export function EnrollmentModificationPaymentStep({
     changeType: string;
     netChangeCount: number;
     newSessionsCount: number;
+    cancelledSessionsCount: number;
   } | null>(null);
   
   const statusSteps = [
@@ -69,7 +70,8 @@ export function EnrollmentModificationPaymentStep({
           changeAmount: parseInt(changeAmount),
           changeType,
           netChangeCount: parseInt(netChangeCount),
-          newSessionsCount: newSessionsCount ? parseInt(newSessionsCount) : 0
+          newSessionsCount: newSessionsCount ? parseInt(newSessionsCount) : 0,
+          cancelledSessionsCount: 0 // 기본값 설정
         });
       }
     }
@@ -126,6 +128,22 @@ export function EnrollmentModificationPaymentStep({
           totalAmount: Math.abs(modificationInfo.changeAmount),
           sessions: sessions,
         });
+      } else if (modificationInfo.changeType === 'no_change' && modificationInfo.changeAmount === 0) {
+        // netChange = 0이지만 세션 변경이 있는 경우: 0원 결제 표시
+        setPrincipalPayment({
+          principalId: 0,
+          principalName: '원장님',
+          bankName: '신한은행', // 기본값
+          accountNumber: '110-123-456789',
+          accountHolder: '김원장',
+          classFees: [{
+            name: '세션 변경',
+            count: modificationInfo.newSessionsCount + modificationInfo.cancelledSessionsCount,
+            price: 0,
+          }],
+          totalAmount: 0,
+          sessions: sessions,
+        });
       }
     }
   }, [contextSessions, modificationInfo]);
@@ -153,6 +171,9 @@ export function EnrollmentModificationPaymentStep({
       const existingEnrollments = JSON.parse(existingEnrollmentsData);
       const selectedSessions = JSON.parse(selectedSessionsData);
 
+      console.log('🔍 디버깅 - existingEnrollments:', existingEnrollments);
+      console.log('🔍 디버깅 - selectedSessions:', selectedSessions);
+
       // 기존에 신청된 세션들 (활성 상태)
       const originalEnrolledSessions = existingEnrollments.filter(
         (enrollment: any) =>
@@ -171,6 +192,10 @@ export function EnrollmentModificationPaymentStep({
       const selectedDates = selectedSessions.map(
         (session: any) => new Date(session.date).toISOString().split("T")[0]
       );
+
+      console.log('🔍 디버깅 - originalEnrolledSessions:', originalEnrolledSessions);
+      console.log('🔍 디버깅 - originalDates:', originalDates);
+      console.log('🔍 디버깅 - selectedDates:', selectedDates);
 
       // 취소할 세션들의 enrollment ID
       const cancellations = originalEnrolledSessions

@@ -42,10 +42,31 @@ export function EnrollmentModificationDateStep({
         setModificationSessions(response.sessions);
         setCalendarRange(response.calendarRange);
         
-        // 기존 수강 신청 세션들을 미리 선택
         const preSelectedSessionIds = new Set<number>();
-        response.sessions.forEach((session) => {
-          if (session.canBeCancelled) {
+        
+        if (existingEnrollments && existingEnrollments.length > 0) {
+          const activeEnrollmentDates = existingEnrollments
+            .filter((enrollment: any) => {
+              return enrollment.enrollment &&
+                (enrollment.enrollment.status === "CONFIRMED" ||
+                  enrollment.enrollment.status === "PENDING" ||
+                  enrollment.enrollment.status === "REFUND_REJECTED_CONFIRMED");
+            })
+            .map((enrollment: any) => {
+              return new Date(enrollment.date).toISOString().split("T")[0];
+            });
+          
+          response.sessions.forEach((session: ClassSessionForModification) => {
+            const sessionDate = new Date(session.date).toISOString().split("T")[0];
+            
+            if (activeEnrollmentDates.includes(sessionDate)) {
+              preSelectedSessionIds.add(session.id);
+            }
+          });
+        }
+        
+        response.sessions.forEach((session: ClassSessionForModification) => {
+          if (session.canBeCancelled && !preSelectedSessionIds.has(session.id)) {
             preSelectedSessionIds.add(session.id);
           }
         });
@@ -58,13 +79,11 @@ export function EnrollmentModificationDateStep({
     };
 
     loadSessions();
-  }, [classId, loadModificationSessions]);
+  }, [classId, loadModificationSessions, existingEnrollments]); // 🔑 existingEnrollments 의존성 추가
 
-  // 수강 변경 모드로 특정 클래스만 선택된 것으로 처리
   React.useEffect(() => {
     const selectedClassCards = [{
       id: classId,
-      // Calendar 컴포넌트에서 실제 클래스 정보를 로드할 때 사용
     }];
     localStorage.setItem('selectedClassCards', JSON.stringify(selectedClassCards));
   }, [classId]);
@@ -135,31 +154,21 @@ export function EnrollmentModificationDateStep({
       (enrollment: any) => new Date(enrollment.date).toISOString().split("T")[0]
     );
 
-    // 새로 선택된 세션 수
-    const newSessionsCount = selectedDates.length;
-
-    // 취소될 세션 수 (기존에 신청되었지만 현재 선택되지 않은 세션들)
-    const cancelledSessionsCount = originalDates.filter(
-      (date) => !selectedDates.includes(date)
+    // 새로 추가될 세션 수 (기존에 없던 세션들)
+    const newlyAddedSessionsCount = selectedDates.filter(
+      date => !originalDates.includes(date)
     ).length;
 
-    // 순 변경 세션 수 = 새로 선택된 세션 - 기존 신청 세션
-    const netChange = newSessionsCount - originalEnrolledSessions.length;
+    // 새로 취소될 세션 수 (기존에 있던 세션들)
+    const newlyCancelledSessionsCount = originalDates.filter(
+      date => !selectedDates.includes(date)
+    ).length;
+
+    // 순 변경 세션 수 = 새로 추가 - 새로 취소
+    const netChange = newlyAddedSessionsCount - newlyCancelledSessionsCount;
     
-    // 실제 변경 사항이 있는지 확인 (기존 세션과 현재 선택된 세션이 다름)
-    const hasChanges = originalDates.length !== selectedDates.length || 
-                      originalDates.some(date => !selectedDates.includes(date)) ||
-                      selectedDates.some(date => !originalDates.includes(date));
-    
-    console.log('수강 변경 계산 결과:', {
-      originalEnrolledSessions: originalEnrolledSessions.length,
-      originalDates,
-      selectedDates,
-      newSessionsCount,
-      cancelledSessionsCount,
-      netChange,
-      hasChanges
-    });
+    // 실제 변경 사항이 있는지 확인
+    const hasChanges = newlyAddedSessionsCount > 0 || newlyCancelledSessionsCount > 0;
     
     return { netChangeCount: netChange, hasChanges };
   }, [existingEnrollments, selectedDates]);
@@ -215,13 +224,13 @@ export function EnrollmentModificationDateStep({
         (enrollment: any) => new Date(enrollment.date).toISOString().split("T")[0]
       );
 
-      // 새로 선택된 세션 수 (기존에 신청되지 않은 세션들)
-      const newSessionsCount = selectedDates.filter(date => !originalDates.includes(date)).length;
+      // 새로 추가된 세션 수 (기존에 신청되지 않은 세션들)
+      const newlyAddedSessionsCount = selectedDates.filter(date => !originalDates.includes(date)).length;
       
       localStorage.setItem('modificationChangeAmount', changeAmount.toString());
       localStorage.setItem('modificationChangeType', changeType);
       localStorage.setItem('modificationNetChangeCount', netChangeCount.toString());
-      localStorage.setItem('modificationNewSessionsCount', newSessionsCount.toString());
+      localStorage.setItem('modificationNewSessionsCount', newlyAddedSessionsCount.toString());
       
       // 기존 수강 신청 정보도 저장 (Payment Step에서 비교용)
       if (existingEnrollments) {

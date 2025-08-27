@@ -1651,9 +1651,23 @@ export class ClassSessionService {
       newEnrollments: number[];
       reason?: string;
     },
-    studentId: number,
+    userId: number, // studentId 대신 userId로 변경
   ) {
     const { cancellations, newEnrollments } = data;
+
+    const student = await this.prisma.student.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!student) {
+      throw new NotFoundException({
+        code: 'STUDENT_NOT_FOUND',
+        message: '학생을 찾을 수 없습니다.',
+        details: { userId },
+      });
+    }
+
+    const studentId = student.id;
 
     // 취소할 수강 신청들의 원래 상태를 미리 조회
     const enrollmentsToCancel = await this.prisma.sessionEnrollment.findMany({

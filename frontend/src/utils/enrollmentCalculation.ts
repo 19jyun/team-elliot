@@ -53,18 +53,18 @@ export function calculateEnrollmentChange(
     (session) => new Date(session.date).toISOString().split("T")[0] // YYYY-MM-DD 형식
   );
 
-  // 새로 선택된 세션 수
-  const newSessionsCount = selectedDates.length;
+  // 새로 추가될 세션 수 (기존에 없던 세션들)
+  const newlyAddedSessionsCount = selectedDates.filter(
+    (date) => !originalDates.includes(date)
+  ).length;
 
-  // 취소될 세션 수 (기존에 신청되었지만 현재 선택되지 않은 세션들)
-  const cancelledSessionsCount = originalDates.filter(
+  // 새로 취소될 세션 수 (기존에 있던 세션들)
+  const newlyCancelledSessionsCount = originalDates.filter(
     (date) => !selectedDates.includes(date)
   ).length;
 
-  // 순 변경 세션 수
-  const netChange =
-    newSessionsCount -
-    (originalEnrolledSessions.length - cancelledSessionsCount);
+  // 순 변경 세션 수 = 새로 추가 - 새로 취소
+  const netChange = newlyAddedSessionsCount - newlyCancelledSessionsCount;
 
   // 총 금액 계산
   const totalAmount = netChange * sessionPrice;
@@ -82,8 +82,8 @@ export function calculateEnrollmentChange(
   return {
     type,
     amount: Math.abs(totalAmount), // 절댓값으로 반환
-    newSessionsCount,
-    cancelledSessionsCount,
+    newSessionsCount: newlyAddedSessionsCount, // 새로 추가된 세션 수
+    cancelledSessionsCount: newlyCancelledSessionsCount, // 새로 취소된 세션 수
     sessionPrice,
   };
 }
@@ -104,6 +104,10 @@ export function getEnrollmentChangeSummary(change: EnrollmentChange): string {
         change.cancelledSessionsCount
       }개 세션 취소)`;
     case "no_change":
+      // netChange = 0이지만 실제 변경이 있을 수 있음
+      if (change.newSessionsCount > 0 || change.cancelledSessionsCount > 0) {
+        return `세션 변경: ${change.newSessionsCount}개 추가, ${change.cancelledSessionsCount}개 취소 (추가 결제 없음)`;
+      }
       return "변경 사항 없음";
     default:
       return "계산 중...";

@@ -13,7 +13,7 @@ export const useSessionContents = (sessionId: number) => {
     queryKey: ["session-contents", sessionId],
     queryFn: async () => {
       const res = await axios.get(`/class-sessions/${sessionId}/contents`);
-      return res.data;
+      return res.data.data;
     },
     enabled: !!sessionId,
     staleTime: 2 * 60 * 1000, // 2분
