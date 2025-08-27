@@ -91,10 +91,12 @@ export function useStudentApi() {
     try {
       if (!academyId) return;
 
-      const data = await getStudentAvailableSessionsForEnrollment(academyId);
+      const response = await getStudentAvailableSessionsForEnrollment(
+        academyId
+      );
 
-      // API 응답에서 세션 데이터 추출
-      const sessions = data.sessions || [];
+      // API 응답에서 세션 데이터 추출 (response.data.sessions)
+      const sessions = response.data?.sessions || [];
 
       // 세션에서 클래스 정보를 추출하여 중복 제거
       const classMap = new Map<number, any>();

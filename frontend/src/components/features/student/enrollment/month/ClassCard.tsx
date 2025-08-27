@@ -1,5 +1,17 @@
 import * as React from 'react'
-import { ClassCardProps } from './types'
+
+export interface ClassCardProps {
+  level: string
+  className: string
+  teacher: string
+  startTime: string
+  endTime: string
+  dayIndex: number
+  startHour: number
+  bgColor: string
+  containerWidth: string
+  style?: React.CSSProperties
+}
 
 export interface ExtendedClassCardProps extends ClassCardProps {
   selected?: boolean

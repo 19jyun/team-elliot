@@ -19,17 +19,15 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsString({ message: '전화번호는 문자열이어야 합니다.' })
-  @MaxLength(20, { message: '전화번호는 20자 이하여야 합니다.' })
-  @Matches(/^[0-9-+\s()]+$/, {
-    message: '전화번호는 숫자, 하이픈, 플러스, 괄호, 공백만 사용 가능합니다.',
+  @Matches(/^01[0-9]-[0-9]{4}-[0-9]{4}$/, {
+    message: '전화번호는 01X-XXXX-XXXX 형식이어야 합니다.',
   })
   phoneNumber?: string;
 
   @IsOptional()
   @IsString({ message: '비상연락처는 문자열이어야 합니다.' })
-  @MaxLength(20, { message: '비상연락처는 20자 이하여야 합니다.' })
-  @Matches(/^[0-9-+\s()]+$/, {
-    message: '비상연락처는 숫자, 하이픈, 플러스, 괄호, 공백만 사용 가능합니다.',
+  @Matches(/^01[0-9]-[0-9]{4}-[0-9]{4}$/, {
+    message: '비상연락처는 01X-XXXX-XXXX 형식이어야 합니다.',
   })
   emergencyContact?: string;
 
