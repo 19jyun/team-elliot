@@ -15,6 +15,7 @@ import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { ExpandableText } from '@/components/common';
 import { AcademyCard } from '@/components/common/AcademyCard';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
+import { useApiError } from '@/hooks/useApiError';
 
 interface LeaveAcademyModalProps {
   isOpen: boolean;
@@ -110,12 +111,17 @@ function LeaveAcademyModal({ isOpen, onClose, onConfirm, academyName }: LeaveAca
 export function AcademyManagement() {
   const { pushFocus, popFocus } = useDashboardNavigation();
   const { academies, isLoading, error, loadAcademies, joinAcademyApi, leaveAcademyApi } = useStudentApi();
+  
+  // 기존 useApiError 훅 사용 (이미 완성도가 높음)
+  const { handleApiError, fieldErrors, clearErrors } = useApiError();
+
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [joinAcademyCode, setJoinAcademyCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
   const [leaveAcademyId, setLeaveAcademyId] = useState<number | null>(null);
   const [leaveAcademyName, setLeaveAcademyName] = useState<string>('');
   const [isLeaving, setIsLeaving] = useState(false);
+  const [isShaking, setIsShaking] = useState(false);
 
   useEffect(() => {
     pushFocus('subpage');
@@ -127,23 +133,49 @@ export function AcademyManagement() {
     loadAcademies();
   }, [loadAcademies]);
 
-  // 에러 처리
-  if (error) {
+  // 학원 코드 입력 시 에러 초기화 (새로 타이핑할 때만)
+  const [previousCode, setPreviousCode] = useState('');
+  
+  useEffect(() => {
+    // 이전 코드와 현재 코드가 다르고, 현재 코드가 더 길 때만 에러 제거
+    if (fieldErrors.code && joinAcademyCode.length > previousCode.length) {
+      clearErrors();
+    }
+    setPreviousCode(joinAcademyCode);
+  }, [joinAcademyCode, fieldErrors.code, clearErrors, previousCode]);
+
+  // 에러 발생 시 흔들리는 애니메이션 트리거
+  useEffect(() => {
+    if (fieldErrors.code) {
+      setIsShaking(true);
+      const timer = setTimeout(() => {
+        setIsShaking(false);
+      }, 1000); // 1초 후 애니메이션 종료
+      
+      return () => clearTimeout(timer);
+    }
+  }, [fieldErrors.code]);
+
+  // 에러 상태 - 컴포넌트가 깨지지 않도록 안전하게 처리
+  if (error && academies.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">학원 정보를 불러오는데 실패했습니다.</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
+        <Button
+          onClick={() => {
+            clearErrors();
+            loadAcademies();
+          }}
+          className="mt-4"
         >
           다시 시도
-        </button>
+        </Button>
       </div>
     );
   }
 
   // 로딩 상태 처리
-  if (isLoading) {
+  if (isLoading && academies.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-full">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
@@ -159,14 +191,17 @@ export function AcademyManagement() {
 
     try {
       setIsJoining(true);
+      
       await joinAcademyApi({ code: joinAcademyCode.trim() });
+      
       toast.success('학원 가입이 완료되었습니다.');
       setJoinAcademyCode('');
-    } catch (error: any) {
-      console.error('학원 가입 실패:', error);
-      const message = error.response?.data?.message || '학원 가입에 실패했습니다.';
-      toast.error(message);
-    } finally {
+      
+         } catch (error) {
+       // 컴포넌트에서 시각적 피드백을 제공하므로 toast 비활성화
+       handleApiError(error, { disableToast: true });
+
+     } finally {
       setIsJoining(false);
     }
   };
@@ -181,14 +216,19 @@ export function AcademyManagement() {
 
     try {
       setIsLeaving(true);
+      
       await leaveAcademyApi({ academyId: leaveAcademyId });
+      
+      // 성공 시 처리
       toast.success('학원 탈퇴가 완료되었습니다.');
       setLeaveAcademyId(null);
       setLeaveAcademyName('');
-    } catch (error: any) {
+      
+    } catch (error) {
+      // 에러 처리
       console.error('학원 탈퇴 실패:', error);
-      const message = error.response?.data?.message || '학원 탈퇴에 실패했습니다.';
-      toast.error(message);
+      handleApiError(error);
+      
     } finally {
       setIsLeaving(false);
     }
@@ -232,22 +272,35 @@ export function AcademyManagement() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-3">
-              <Input
-                placeholder="학원 코드를 입력하세요"
-                value={joinAcademyCode}
-                onChange={(e) => setJoinAcademyCode(e.target.value)}
-                className="flex-1"
-                onKeyPress={(e) => e.key === 'Enter' && handleJoinAcademy()}
-              />
-              <Button 
-                onClick={handleJoinAcademy} 
-                disabled={isJoining || !joinAcademyCode.trim()}
-                className="min-w-[80px] transition-all duration-300 ease-in-out"
-                size="sm"
-              >
-                {isJoining ? '가입 중...' : '가입'}
-              </Button>
+            <div className="space-y-3">
+              <div className="flex gap-3">
+                <div className="flex-1 space-y-1">
+                                     <Input
+                     placeholder="학원 코드를 입력하세요"
+                     value={joinAcademyCode}
+                     onChange={(e) => setJoinAcademyCode(e.target.value)}
+                     className={`transition-all duration-200 ${
+                       fieldErrors.code ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                     } ${
+                       isShaking ? 'animate-shake' : ''
+                     }`}
+                     onKeyPress={(e) => e.key === 'Enter' && handleJoinAcademy()}
+                   />
+                                     {fieldErrors.code && (
+                     <p className="text-sm text-red-500 animate-in fade-in duration-200">
+                       {fieldErrors.code}
+                     </p>
+                   )}
+                </div>
+                <Button 
+                  onClick={handleJoinAcademy} 
+                  disabled={isJoining || !joinAcademyCode.trim()}
+                  className="min-w-[80px] transition-all duration-300 ease-in-out"
+                  size="sm"
+                >
+                  {isJoining ? '가입 중...' : '가입'}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
