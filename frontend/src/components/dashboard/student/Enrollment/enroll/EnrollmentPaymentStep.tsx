@@ -59,20 +59,20 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
       const classFees: any[] = [];
       let totalAmount = 0;
       
-      // 각 세션별로 결제 정보를 가져옴
-      for (const session of sessions) {
-        try {
-          const paymentInfo = await loadSessionPaymentInfo(session.id);
-          
-          if (paymentInfo && paymentInfo.principal) {
-            // 원장 정보는 첫 번째 세션에서 가져옴 (모든 세션이 같은 원장)
-            if (!principalInfo) {
-              principalInfo = paymentInfo.principal;
-            }
-            
-            // 실제 클래스의 tuitionFee를 사용하여 수강료 계산
-            const className = session.class?.className || '클래스';
-            const sessionFee = Number(paymentInfo.tuitionFee) || 0;
+             // 각 세션별로 결제 정보를 가져옴
+       for (const session of sessions) {
+         try {
+           const paymentInfo = await loadSessionPaymentInfo(session.id);
+           
+              if (paymentInfo && paymentInfo.data && paymentInfo.data.principal) {
+              // 원장 정보는 첫 번째 세션에서 가져옴 (모든 세션이 같은 원장)
+              if (!principalInfo) {
+                principalInfo = paymentInfo.data.principal;
+              }
+              
+              // 실제 클래스의 tuitionFee를 사용하여 수강료 계산
+              const className = session.class?.className || '클래스';
+              const sessionFee = Number(paymentInfo.data.tuitionFee) || 0;
             
             // 클래스 수강료 정보 추가
             const existingFee = classFees.find(fee => fee.name === className);
@@ -141,18 +141,24 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
   };
 
   useEffect(() => {
+    console.log('🔍 EnrollmentPaymentStep - contextSessions:', contextSessions);
+    
     // Context에서 세션 정보를 우선 사용하고, 없으면 localStorage에서 가져옴
     let sessions: SelectedSession[] = [];
     
     if (contextSessions && contextSessions.length > 0) {
       sessions = contextSessions;
+      console.log('🔍 Context에서 세션 데이터 사용:', sessions);
     } else if (typeof window !== 'undefined') {
       const sessionsData = localStorage.getItem('selectedSessions');
       
       if (sessionsData) {
         sessions = JSON.parse(sessionsData);
+        console.log('🔍 localStorage에서 세션 데이터 사용:', sessions);
       }
     }
+    
+    console.log('🔍 최종 사용할 세션 데이터:', sessions);
     
     if (sessions.length > 0) {
       // 이미 수강 신청한 세션이 있는지 확인
@@ -170,6 +176,8 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
       setSelectedSessions(sessions);
       // 실제 결제 정보 로드
       loadPaymentInfoForSessions(sessions);
+    } else {
+      console.warn('🔍 세션 데이터가 없습니다!');
     }
   }, [contextSessions, loadSessionPaymentInfo, setEnrollmentStep]);
 
