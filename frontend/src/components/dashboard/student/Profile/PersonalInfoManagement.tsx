@@ -18,7 +18,7 @@ export function PersonalInfoManagement() {
   const { handleApiError, fieldErrors, clearErrors } = useApiError();
   const [isEditing, setIsEditing] = useState(false);
   const [editedInfo, setEditedInfo] = useState<UpdateProfileRequest>({});
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   
@@ -79,7 +79,10 @@ export function PersonalInfoManagement() {
       const originalPhone = userProfile.phoneNumber || '';
       const currentPhone = editedInfo.phoneNumber || '';
       
-      if (currentPhone !== originalPhone && currentPhone.length === 11) {
+      // 전화번호 형식 체크 (01X-XXXX-XXXX 형식이면 13자)
+      const isPhoneComplete = /^01[0-9]-[0-9]{4}-[0-9]{4}$/.test(currentPhone);
+      
+      if (currentPhone !== originalPhone && isPhoneComplete) {
         setIsPhoneVerificationRequired(true);
         setIsPhoneVerified(false);
         setTimeLeft(180);
@@ -90,7 +93,7 @@ export function PersonalInfoManagement() {
         setIsTimerRunning(false);
         setTimeLeft(180);
         setVerificationCode('');
-      } else if (currentPhone.length !== 11) {
+      } else if (!isPhoneComplete) {
         setIsPhoneVerificationRequired(false);
         setIsPhoneVerified(false);
         setIsTimerRunning(false);
@@ -195,7 +198,7 @@ export function PersonalInfoManagement() {
     }
 
     try {
-      setIsUpdating(true);
+      setIsSaving(true);
       clearErrors(); // 요청 시작 시 에러 초기화
       setValidationErrors({}); // validation 에러도 초기화
       
@@ -211,7 +214,7 @@ export function PersonalInfoManagement() {
       handleApiError(error, { disableToast: false, disableConsole: true });
       // 컴포넌트 상태는 유지 (사용자가 다시 시도할 수 있도록)
     } finally {
-      setIsUpdating(false);
+      setIsSaving(false);
     }
   };
 
@@ -365,10 +368,10 @@ export function PersonalInfoManagement() {
                     onClick={handleSave}
                     size="sm"
                     className="flex items-center gap-2"
-                    disabled={isUpdating || (isPhoneVerificationRequired && !isPhoneVerified)}
+                    disabled={isSaving || (isPhoneVerificationRequired && !isPhoneVerified)}
                   >
                     <Save className="h-4 w-4" />
-                    {isUpdating ? '저장 중...' : '저장'}
+                    {isSaving ? '저장 중...' : '저장'}
                   </Button>
                 </div>
               )}
@@ -412,7 +415,7 @@ export function PersonalInfoManagement() {
               {isEditing ? (
                 <div className="space-y-2">
                   <div className="flex gap-2">
-                                         <PhoneInput
+                      <PhoneInput
                        value={editedInfo.phoneNumber || ''}
                        onChange={(value) => handleInputChange('phoneNumber', value)}
                        placeholder="전화번호를 입력하세요"

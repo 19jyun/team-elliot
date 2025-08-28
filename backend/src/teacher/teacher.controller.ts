@@ -19,6 +19,7 @@ import { Role } from '@prisma/client';
 // import { CreateAcademyDto } from '../academy/dto/create-academy.dto';
 // import { UpdateAcademyDto } from '../academy/dto/update-academy.dto';
 import { JoinAcademyRequestDto } from '../academy/dto/join-academy-request.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @ApiTags('Teacher')
@@ -49,8 +50,11 @@ export class TeacherController {
 
   @Put('me/profile')
   @Roles(Role.TEACHER)
-  async updateMyProfile(@GetUser() user: any, @Body() updateData: any) {
-    return this.teacherService.updateProfile(user.id, updateData);
+  async updateMyProfile(
+    @GetUser() user: any,
+    @Body() updateProfileDto: UpdateProfileDto,
+  ) {
+    return this.teacherService.updateProfile(user.id, updateProfileDto);
   }
 
   @Put('me/profile/photo')

@@ -206,7 +206,12 @@ export function usePrincipalApi() {
 
   // 업데이트/액션 래퍼들 (컴포넌트에서 API 직접 호출 금지 목적)
   const updateProfile = async (data: UpdatePrincipalProfileRequest) => {
-    return updatePrincipalProfile(data);
+    const response = await updatePrincipalProfile(data);
+
+    // 프로필 업데이트 후 데이터 다시 로드
+    await loadProfile();
+
+    return response;
   };
   const updateProfilePhoto = async (photo: File) => {
     return updatePrincipalProfilePhoto(photo);

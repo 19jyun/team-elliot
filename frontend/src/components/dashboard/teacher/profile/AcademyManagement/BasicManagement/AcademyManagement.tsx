@@ -118,7 +118,7 @@ export default function AcademyManagement({ onBack }: AcademyManagementProps) {
   return (
     <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px] py-2 relative">
       {/* 학원 생성 섹션 */}
-      <div className="px-5 py-2">
+      {/* <div className="px-5 py-2">
         <AnimatedCard
           isExpanded={isExpanded}
           onToggle={handleToggleExpand}
@@ -134,7 +134,7 @@ export default function AcademyManagement({ onBack }: AcademyManagementProps) {
             editingAcademy={editingAcademy}
           />
         </AnimatedCard>
-      </div>
+      </div> */}
 
       {/* 새 학원 가입 섹션 */}
       <div className="px-5 py-2">

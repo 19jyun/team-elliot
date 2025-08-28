@@ -276,6 +276,7 @@ export function useStudentApi() {
         const sanitized: Record<string, any> = {};
         Object.entries(profileData || {}).forEach(([key, value]) => {
           if (value === "" || value === undefined || value === null) return;
+
           if (key === "birthDate" && typeof value === "string") {
             // 'YYYY-MM-DD' 입력을 ISO 8601 문자열로 변환
             const date = new Date(value);

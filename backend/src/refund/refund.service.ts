@@ -653,9 +653,9 @@ export class RefundService {
   }
 
   // Principal의 학원 모든 환불요청 조회
-  async getPrincipalRefundRequests(userId: number) {
+  async getPrincipalRefundRequests(principalId: number) {
     const principal = await this.prisma.principal.findUnique({
-      where: { userRefId: userId },
+      where: { id: principalId },
       include: { academy: true },
     });
 

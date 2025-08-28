@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateAcademyDto } from './dto/update-academy.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { SocketGateway } from '../socket/socket.gateway';
 import { ClassService } from '../class/class.service';
 import { ClassSessionService } from '../class-session/class-session.service';
@@ -402,7 +403,7 @@ export class PrincipalService {
   // Principal 프로필 정보 수정
   async updateProfile(
     userId: number,
-    updateProfileDto: any,
+    updateProfileDto: UpdateProfileDto,
     photo?: Express.Multer.File,
   ) {
     const principal = await this.prisma.principal.findUnique({

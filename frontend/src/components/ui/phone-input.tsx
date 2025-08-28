@@ -38,10 +38,7 @@ export function PhoneInput({
     }
   };
 
-  // 숫자만 추출하여 반환 (API 전송용)
-  const getNumericValue = (formatted: string) => {
-    return formatted.replace(/[^\d]/g, '');
-  };
+
 
   useEffect(() => {
     // 외부에서 전달된 value를 형식에 맞게 변환
@@ -58,9 +55,8 @@ export function PhoneInput({
     
     setDisplayValue(formatted);
     
-    // 숫자만 추출하여 부모 컴포넌트에 전달
-    const numericValue = getNumericValue(formatted);
-    onChange(numericValue);
+    // 포맷팅된 값을 그대로 부모 컴포넌트에 전달
+    onChange(formatted);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -84,8 +80,7 @@ export function PhoneInput({
             e.currentTarget.setSelectionRange(newCursorPosition, newCursorPosition);
           }, 0);
           
-          const numericValue = getNumericValue(formatted);
-          onChange(numericValue);
+          onChange(formatted);
         }
       }
     }

@@ -2,6 +2,7 @@ import {
   IsString,
   IsOptional,
   IsArray,
+  IsNumber,
   MaxLength,
   MinLength,
   Matches,
@@ -39,6 +40,18 @@ export class UpdateProfileDto {
   education?: string[];
 
   @IsOptional()
+  @IsArray({ message: '전문분야는 배열이어야 합니다.' })
+  @IsString({
+    each: true,
+    message: '전문분야 항목은 모두 문자열이어야 합니다.',
+  })
+  @MaxLength(100, {
+    each: true,
+    message: '각 전문분야 항목은 100자 이하여야 합니다.',
+  })
+  specialties?: string[];
+
+  @IsOptional()
   @IsArray({ message: '자격증은 배열이어야 합니다.' })
   @IsString({ each: true, message: '자격증 항목은 모두 문자열이어야 합니다.' })
   @MaxLength(200, {
@@ -47,28 +60,10 @@ export class UpdateProfileDto {
   })
   certifications?: string[];
 
-  // 은행 정보 필드
   @IsOptional()
-  @IsString({ message: '은행명은 문자열이어야 합니다.' })
-  @MaxLength(50, { message: '은행명은 50자 이하여야 합니다.' })
-  @Matches(/^[가-힣a-zA-Z\s]+$/, {
-    message: '은행명은 한글, 영문, 공백만 사용 가능합니다.',
-  })
-  bankName?: string;
+  @IsNumber({}, { message: '경력년수는 숫자여야 합니다.' })
+  yearsOfExperience?: number;
 
   @IsOptional()
-  @IsString({ message: '계좌번호는 문자열이어야 합니다.' })
-  @MaxLength(20, { message: '계좌번호는 20자 이하여야 합니다.' })
-  @Matches(/^[0-9-]+$/, {
-    message: '계좌번호는 숫자와 하이픈만 사용 가능합니다.',
-  })
-  accountNumber?: string;
-
-  @IsOptional()
-  @IsString({ message: '예금주는 문자열이어야 합니다.' })
-  @MaxLength(50, { message: '예금주는 50자 이하여야 합니다.' })
-  @Matches(/^[가-힣a-zA-Z\s]+$/, {
-    message: '예금주는 한글, 영문, 공백만 사용 가능합니다.',
-  })
-  accountHolder?: string;
+  availableTimes?: any;
 }

@@ -20,8 +20,8 @@ export function usePrincipalCalendarApi() {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await getPrincipalAllSessions();
-      setSessions(data);
+      const response = await getPrincipalAllSessions();
+      setSessions(response.data);
     } catch (err: any) {
       setError(err.response?.data?.message || "세션 로드 실패");
     } finally {

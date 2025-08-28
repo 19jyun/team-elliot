@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ClassService } from '../class/class.service';
 import { AcademyService } from '../academy/academy.service';
 import { JoinAcademyRequestDto } from '../academy/dto/join-academy-request.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class TeacherService {
@@ -75,19 +76,7 @@ export class TeacherService {
     };
   }
 
-  async updateProfile(
-    userId: number,
-    updateData: {
-      name?: string;
-      phoneNumber?: string;
-      introduction?: string;
-      education?: string[];
-      specialties?: string[];
-      certifications?: string[];
-      yearsOfExperience?: number;
-      availableTimes?: any;
-    },
-  ) {
+  async updateProfile(userId: number, updateProfileDto: UpdateProfileDto) {
     const teacher = await this.prisma.teacher.findUnique({
       where: { userRefId: userId },
     });
@@ -101,9 +90,9 @@ export class TeacherService {
     }
 
     // User 테이블 업데이트 데이터 (이름이 변경된 경우에만)
-    const userUpdateData = updateData.name
+    const userUpdateData = updateProfileDto.name
       ? {
-          name: updateData.name,
+          name: updateProfileDto.name,
           updatedAt: new Date(),
         }
       : null;
@@ -114,7 +103,7 @@ export class TeacherService {
       const teacher = await tx.teacher.update({
         where: { userRefId: userId },
         data: {
-          ...updateData,
+          ...updateProfileDto,
           updatedAt: new Date(),
         },
         select: {

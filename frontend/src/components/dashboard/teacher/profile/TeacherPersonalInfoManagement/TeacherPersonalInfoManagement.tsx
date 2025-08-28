@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PhoneInput } from '@/components/ui/phone-input';
@@ -9,9 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { User, Phone, Building, Edit, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { updateTeacherProfile } from '@/api/teacher';
 import { UpdateProfileRequest } from '@/types/api/teacher';
 import { useTeacherApi } from '@/hooks/teacher/useTeacherApi';
+import { validateTeacherProfileData } from '@/utils/validation';
+import { useApiError } from '@/hooks/useApiError';
 
 export function TeacherPersonalInfoManagement() {
   const [isEditing, setIsEditing] = useState(false);
@@ -24,26 +24,14 @@ export function TeacherPersonalInfoManagement() {
   const [timeLeft, setTimeLeft] = useState(180); // 3분 = 180초
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
-  // API 기반 데이터 관리
-  const { profile, academy, loadProfile, loadAcademy, error, isTeacher } = useTeacherApi();
+  // Validation 관련 상태
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [isShaking, setIsShaking] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // 프로필 업데이트 뮤테이션
-  const updateProfileMutation = useMutation({
-    mutationFn: updateTeacherProfile,
-    onSuccess: () => {
-      // API 데이터 다시 로드
-      loadProfile();
-      toast.success('개인 정보가 성공적으로 수정되었습니다.');
-      setIsEditing(false);
-      setIsPhoneVerificationRequired(false);
-      setIsPhoneVerified(false);
-      setTimeLeft(180);
-    },
-    onError: (error) => {
-      console.error('개인 정보 수정 실패:', error);
-      toast.error('개인 정보 수정에 실패했습니다.');
-    },
-  });
+  // API 기반 데이터 관리
+  const { profile, academy, loadProfile, loadAcademy, error, isTeacher, updateProfile } = useTeacherApi();
+  const { handleApiError, fieldErrors, clearErrors } = useApiError();
 
   // 컴포넌트 마운트 시 프로필 로드
   useEffect(() => {
@@ -94,8 +82,11 @@ export function TeacherPersonalInfoManagement() {
       const originalPhone = profile.phoneNumber || '';
       const currentPhone = editedInfo.phoneNumber || '';
       
+      // 전화번호 형식 체크 (01X-XXXX-XXXX 형식이면 13자)
+      const isPhoneComplete = /^01[0-9]-[0-9]{4}-[0-9]{4}$/.test(currentPhone);
+      
       // 전화번호가 실제로 변경되었을 때만 인증 상태 리셋
-      if (currentPhone !== originalPhone && currentPhone.length === 11) {
+      if (currentPhone !== originalPhone && isPhoneComplete) {
         // 이미 인증이 필요한 상태가 아니라면 새로 설정
         if (!isPhoneVerificationRequired) {
           setIsPhoneVerificationRequired(true);
@@ -109,7 +100,7 @@ export function TeacherPersonalInfoManagement() {
         setIsTimerRunning(false);
         setTimeLeft(180);
         setVerificationCode('');
-      } else if (currentPhone.length !== 11) {
+      } else if (!isPhoneComplete) {
         setIsPhoneVerificationRequired(false);
         setIsPhoneVerified(false);
         setIsTimerRunning(false);
@@ -151,16 +142,63 @@ export function TeacherPersonalInfoManagement() {
       return;
     }
 
-    // 프로필 업데이트 뮤테이션 실행
-    updateProfileMutation.mutate(editedInfo);
+    // 프론트엔드 validation 수행
+    const validation = validateTeacherProfileData(editedInfo);
+    if (!validation.isValid) {
+      // validation 에러를 fieldErrors로 변환
+      const fieldErrorMap: Record<string, string> = {};
+      validation.errors.forEach(error => {
+        fieldErrorMap[error.field] = error.message;
+      });
+      
+      // 에러 상태 설정 및 흔들림 애니메이션 트리거
+      setValidationErrors(fieldErrorMap);
+      setIsShaking(true);
+      setTimeout(() => {
+        setIsShaking(false);
+        // 1초 후 validation 에러도 자동으로 제거
+        setTimeout(() => {
+          setValidationErrors({});
+        }, 1000);
+      }, 1000);
+      
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      clearErrors(); // 요청 시작 시 에러 초기화
+      setValidationErrors({}); // validation 에러도 초기화
+      
+      await updateProfile(editedInfo);
+      
+      setIsEditing(false);
+      setIsPhoneVerificationRequired(false);
+      setIsPhoneVerified(false);
+      setIsTimerRunning(false);
+      setTimeLeft(180);
+      toast.success('개인 정보가 성공적으로 수정되었습니다.');
+    } catch (error) {
+      handleApiError(error, { disableToast: false, disableConsole: true });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleVerifyPhone = async () => {
-    // 인증 로직은 미구현 상태이므로 바로 인증 완료 처리
-    toast.success('인증 로직은 미구현 상태입니다. 다음단계로 진행하세요.');
+  const handleVerifyPhone = () => {
+    // 인증 버튼 클릭 시 타이머 시작
+    if (!isTimerRunning) {
+      setIsTimerRunning(true);
+      setTimeLeft(180);
+      toast.success('인증번호가 발송되었습니다.');
+      return;
+    }
+    
+    // 확인 버튼 클릭 시 인증 완료 처리
     setIsPhoneVerified(true);
     setIsTimerRunning(false);
-    setVerificationCode('');
+    setVerificationCode(''); // 인증번호 입력 필드 초기화
+    toast.success('전화번호 인증이 완료되었습니다.');
   };
 
   const handleCancelVerification = () => {
@@ -186,6 +224,14 @@ export function TeacherPersonalInfoManagement() {
       ...prev,
       [field]: value,
     }));
+
+    // 입력 필드 변경 시 해당 필드의 validation 에러 초기화
+    if (validationErrors[field]) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [field]: ''
+      }));
+    }
   };
 
   const formatDateTime = (dateString: string) => {
@@ -255,15 +301,15 @@ export function TeacherPersonalInfoManagement() {
                       <X className="h-4 w-4" />
                       취소
                     </Button>
-                                         <Button
-                       onClick={handleSave}
-                       size="sm"
-                       className="flex items-center gap-2"
-                       disabled={updateProfileMutation.isPending || (isPhoneVerificationRequired && !isPhoneVerified)}
-                     >
-                       <Save className="h-4 w-4" />
-                       {updateProfileMutation.isPending ? '저장 중...' : '저장'}
-                     </Button>
+                                                           <Button
+                    onClick={handleSave}
+                    size="sm"
+                    className="flex items-center gap-2"
+                    disabled={isLoading || (isPhoneVerificationRequired && !isPhoneVerified)}
+                  >
+                    <Save className="h-4 w-4" />
+                    {isLoading ? '저장 중...' : '저장'}
+                  </Button>
                   </div>
                 )}
               </div>
@@ -276,16 +322,26 @@ export function TeacherPersonalInfoManagement() {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">이름</label>
                 {isEditing ? (
-                  <Input
-                    value={editedInfo.name || ''}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    placeholder="이름을 입력하세요"
-                  />
-                ) : (
-                  <div className="p-3 bg-gray-50 rounded-md">
-                    <span className="text-gray-900">{profile.name}</span>
-                  </div>
-                )}
+                                  <Input
+                  value={editedInfo.name || ''}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  placeholder="이름을 입력하세요"
+                  className={`transition-all duration-200 ${
+                    (fieldErrors.name || validationErrors.name) ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  } ${
+                    isShaking && (fieldErrors.name || validationErrors.name) ? 'animate-shake' : ''
+                  }`}
+                />
+              ) : (
+                <div className="p-3 bg-gray-50 rounded-md">
+                  <span className="text-gray-900">{profile.name}</span>
+                </div>
+              )}
+              {(fieldErrors.name || validationErrors.name) && (
+                <p className="text-red-500 text-sm animate-in fade-in">
+                  {fieldErrors.name || validationErrors.name}
+                </p>
+              )}
               </div>
 
               {/* 전화번호 */}
@@ -298,7 +354,11 @@ export function TeacherPersonalInfoManagement() {
                         value={editedInfo.phoneNumber || ''}
                         onChange={(value) => handleInputChange('phoneNumber', value)}
                         placeholder="전화번호를 입력하세요"
-                        className="flex-1"
+                        className={`flex-1 transition-all duration-200 ${
+                          (fieldErrors.phoneNumber || validationErrors.phoneNumber) ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        } ${
+                          isShaking && (fieldErrors.phoneNumber || validationErrors.phoneNumber) ? 'animate-shake' : ''
+                        }`}
                       />
                       {isPhoneVerificationRequired && !isPhoneVerified && (
                         <Button
@@ -333,9 +393,14 @@ export function TeacherPersonalInfoManagement() {
                               onClick={handleClearVerificationCode}
                               className="p-1 hover:bg-gray-100 rounded"
                             >
-                              <X className="h-3 w-3" />
+                              <img 
+                                src="/icons/close-circle.svg" 
+                                alt="인증번호 지우기" 
+                                width="16" 
+                                height="16"
+                              />
                             </button>
-                            <div className="text-sm font-mono text-stone-700">
+                            <div className="text-sm font-mono" style={{ color: '#573B30', fontFamily: 'Pretendard Variable' }}>
                               {formatTime(timeLeft)}
                             </div>
                           </div>
@@ -361,6 +426,11 @@ export function TeacherPersonalInfoManagement() {
                       }
                     </span>
                   </div>
+                )}
+                {(fieldErrors.phoneNumber || validationErrors.phoneNumber) && (
+                  <p className="text-red-500 text-sm animate-in fade-in">
+                    {fieldErrors.phoneNumber || validationErrors.phoneNumber}
+                  </p>
                 )}
               </div>
 

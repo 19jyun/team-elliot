@@ -174,3 +174,450 @@ export const validateProfileData = (data: {
     errors: allErrors,
   };
 };
+
+// Teacher용 validation 함수들
+export const validateTeacherName = (name: string): ValidationResult => {
+  const errors: ValidationError[] = [];
+
+  if (!name) return { isValid: true, errors: [] };
+
+  if (name.length < 2) {
+    errors.push({ field: "name", message: "이름은 2자 이상이어야 합니다." });
+  }
+
+  if (name.length > 50) {
+    errors.push({ field: "name", message: "이름은 50자 이하여야 합니다." });
+  }
+
+  if (!/^[가-힣a-zA-Z\s]+$/.test(name)) {
+    errors.push({
+      field: "name",
+      message: "이름은 한글, 영문, 공백만 사용 가능합니다.",
+    });
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
+export const validateTeacherPhoneNumber = (
+  phoneNumber: string
+): ValidationResult => {
+  const errors: ValidationError[] = [];
+
+  if (!phoneNumber) return { isValid: true, errors: [] };
+
+  if (!/^01[0-9]-[0-9]{4}-[0-9]{4}$/.test(phoneNumber)) {
+    errors.push({
+      field: "phoneNumber",
+      message: "전화번호는 01X-XXXX-XXXX 형식이어야 합니다.",
+    });
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
+export const validateTeacherIntroduction = (
+  introduction: string
+): ValidationResult => {
+  const errors: ValidationError[] = [];
+
+  if (!introduction) return { isValid: true, errors: [] };
+
+  if (introduction.length > 1000) {
+    errors.push({
+      field: "introduction",
+      message: "소개는 1000자 이하여야 합니다.",
+    });
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
+export const validateTeacherEducation = (
+  education: string[]
+): ValidationResult => {
+  const errors: ValidationError[] = [];
+
+  if (!education || education.length === 0)
+    return { isValid: true, errors: [] };
+
+  education.forEach((item, index) => {
+    if (item.length > 200) {
+      errors.push({
+        field: "education",
+        message: `학력 ${index + 1}은 200자 이하여야 합니다.`,
+      });
+    }
+  });
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
+export const validateTeacherSpecialties = (
+  specialties: string[]
+): ValidationResult => {
+  const errors: ValidationError[] = [];
+
+  if (!specialties || specialties.length === 0)
+    return { isValid: true, errors: [] };
+
+  specialties.forEach((item, index) => {
+    if (item.length > 100) {
+      errors.push({
+        field: "specialties",
+        message: `전문분야 ${index + 1}은 100자 이하여야 합니다.`,
+      });
+    }
+  });
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
+export const validateTeacherCertifications = (
+  certifications: string[]
+): ValidationResult => {
+  const errors: ValidationError[] = [];
+
+  if (!certifications || certifications.length === 0)
+    return { isValid: true, errors: [] };
+
+  certifications.forEach((item, index) => {
+    if (item.length > 200) {
+      errors.push({
+        field: "certifications",
+        message: `자격증 ${index + 1}은 200자 이하여야 합니다.`,
+      });
+    }
+  });
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
+export const validateTeacherYearsOfExperience = (
+  years: number | undefined
+): ValidationResult => {
+  const errors: ValidationError[] = [];
+
+  if (years === undefined || years === null)
+    return { isValid: true, errors: [] };
+
+  if (typeof years !== "number" || isNaN(years)) {
+    errors.push({
+      field: "yearsOfExperience",
+      message: "경력년수는 숫자여야 합니다.",
+    });
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
+// Teacher 전체 프로필 데이터 validation
+export const validateTeacherProfileData = (data: {
+  name?: string;
+  phoneNumber?: string;
+  introduction?: string;
+  education?: string[];
+  specialties?: string[];
+  certifications?: string[];
+  yearsOfExperience?: number;
+  availableTimes?: any;
+}): ValidationResult => {
+  const allErrors: ValidationError[] = [];
+
+  // 각 필드별 validation 실행
+  const nameValidation = validateTeacherName(data.name || "");
+  const phoneValidation = validateTeacherPhoneNumber(data.phoneNumber || "");
+  const introductionValidation = validateTeacherIntroduction(
+    data.introduction || ""
+  );
+  const educationValidation = validateTeacherEducation(data.education || []);
+  const specialtiesValidation = validateTeacherSpecialties(
+    data.specialties || []
+  );
+  const certificationsValidation = validateTeacherCertifications(
+    data.certifications || []
+  );
+  const yearsValidation = validateTeacherYearsOfExperience(
+    data.yearsOfExperience
+  );
+
+  // 모든 에러 수집
+  allErrors.push(
+    ...nameValidation.errors,
+    ...phoneValidation.errors,
+    ...introductionValidation.errors,
+    ...educationValidation.errors,
+    ...specialtiesValidation.errors,
+    ...certificationsValidation.errors,
+    ...yearsValidation.errors
+  );
+
+  return {
+    isValid: allErrors.length === 0,
+    errors: allErrors,
+  };
+};
+
+// Principal용 validation 함수들
+export const validatePrincipalName = (name: string): ValidationResult => {
+  const errors: ValidationError[] = [];
+
+  if (!name) return { isValid: true, errors: [] };
+
+  if (name.length < 2) {
+    errors.push({ field: "name", message: "이름은 2자 이상이어야 합니다." });
+  }
+
+  if (name.length > 50) {
+    errors.push({ field: "name", message: "이름은 50자 이하여야 합니다." });
+  }
+
+  if (!/^[가-힣a-zA-Z\s]+$/.test(name)) {
+    errors.push({
+      field: "name",
+      message: "이름은 한글, 영문, 공백만 사용 가능합니다.",
+    });
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
+export const validatePrincipalPhoneNumber = (
+  phoneNumber: string
+): ValidationResult => {
+  const errors: ValidationError[] = [];
+
+  if (!phoneNumber) return { isValid: true, errors: [] };
+
+  if (!/^01[0-9]-[0-9]{4}-[0-9]{4}$/.test(phoneNumber)) {
+    errors.push({
+      field: "phoneNumber",
+      message: "전화번호는 01X-XXXX-XXXX 형식이어야 합니다.",
+    });
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
+export const validatePrincipalIntroduction = (
+  introduction: string
+): ValidationResult => {
+  const errors: ValidationError[] = [];
+
+  if (!introduction) return { isValid: true, errors: [] };
+
+  if (introduction.length > 1000) {
+    errors.push({
+      field: "introduction",
+      message: "소개는 1000자 이하여야 합니다.",
+    });
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
+export const validatePrincipalEducation = (
+  education: string[]
+): ValidationResult => {
+  const errors: ValidationError[] = [];
+
+  if (!education || education.length === 0)
+    return { isValid: true, errors: [] };
+
+  education.forEach((item, index) => {
+    if (item.length > 200) {
+      errors.push({
+        field: "education",
+        message: `학력 ${index + 1}은 200자 이하여야 합니다.`,
+      });
+    }
+  });
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
+export const validatePrincipalCertifications = (
+  certifications: string[]
+): ValidationResult => {
+  const errors: ValidationError[] = [];
+
+  if (!certifications || certifications.length === 0)
+    return { isValid: true, errors: [] };
+
+  certifications.forEach((item, index) => {
+    if (item.length > 200) {
+      errors.push({
+        field: "certifications",
+        message: `자격증 ${index + 1}은 200자 이하여야 합니다.`,
+      });
+    }
+  });
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
+export const validatePrincipalBankName = (
+  bankName: string
+): ValidationResult => {
+  const errors: ValidationError[] = [];
+
+  if (!bankName) return { isValid: true, errors: [] };
+
+  if (bankName.length > 50) {
+    errors.push({
+      field: "bankName",
+      message: "은행명은 50자 이하여야 합니다.",
+    });
+  }
+
+  if (!/^[가-힣a-zA-Z\s]+$/.test(bankName)) {
+    errors.push({
+      field: "bankName",
+      message: "은행명은 한글, 영문, 공백만 사용 가능합니다.",
+    });
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
+export const validatePrincipalAccountNumber = (
+  accountNumber: string
+): ValidationResult => {
+  const errors: ValidationError[] = [];
+
+  if (!accountNumber) return { isValid: true, errors: [] };
+
+  if (accountNumber.length > 20) {
+    errors.push({
+      field: "accountNumber",
+      message: "계좌번호는 20자 이하여야 합니다.",
+    });
+  }
+
+  if (!/^[0-9-]+$/.test(accountNumber)) {
+    errors.push({
+      field: "accountNumber",
+      message: "계좌번호는 숫자와 하이픈만 사용 가능합니다.",
+    });
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
+export const validatePrincipalAccountHolder = (
+  accountHolder: string
+): ValidationResult => {
+  const errors: ValidationError[] = [];
+
+  if (!accountHolder) return { isValid: true, errors: [] };
+
+  if (accountHolder.length > 50) {
+    errors.push({
+      field: "accountHolder",
+      message: "예금주는 50자 이하여야 합니다.",
+    });
+  }
+
+  if (!/^[가-힣a-zA-Z\s]+$/.test(accountHolder)) {
+    errors.push({
+      field: "accountHolder",
+      message: "예금주는 한글, 영문, 공백만 사용 가능합니다.",
+    });
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
+// Principal 전체 프로필 데이터 validation
+export const validatePrincipalProfileData = (data: {
+  name?: string;
+  phoneNumber?: string;
+  introduction?: string;
+  education?: string[];
+  certifications?: string[];
+  bankName?: string;
+  accountNumber?: string;
+  accountHolder?: string;
+}): ValidationResult => {
+  const allErrors: ValidationError[] = [];
+
+  // 각 필드별 validation 실행
+  const nameValidation = validatePrincipalName(data.name || "");
+  const phoneValidation = validatePrincipalPhoneNumber(data.phoneNumber || "");
+  const introductionValidation = validatePrincipalIntroduction(
+    data.introduction || ""
+  );
+  const educationValidation = validatePrincipalEducation(data.education || []);
+  const certificationsValidation = validatePrincipalCertifications(
+    data.certifications || []
+  );
+  const bankNameValidation = validatePrincipalBankName(data.bankName || "");
+  const accountNumberValidation = validatePrincipalAccountNumber(
+    data.accountNumber || ""
+  );
+  const accountHolderValidation = validatePrincipalAccountHolder(
+    data.accountHolder || ""
+  );
+
+  // 모든 에러 수집
+  allErrors.push(
+    ...nameValidation.errors,
+    ...phoneValidation.errors,
+    ...introductionValidation.errors,
+    ...educationValidation.errors,
+    ...certificationsValidation.errors,
+    ...bankNameValidation.errors,
+    ...accountNumberValidation.errors,
+    ...accountHolderValidation.errors
+  );
+
+  return {
+    isValid: allErrors.length === 0,
+    errors: allErrors,
+  };
+};
