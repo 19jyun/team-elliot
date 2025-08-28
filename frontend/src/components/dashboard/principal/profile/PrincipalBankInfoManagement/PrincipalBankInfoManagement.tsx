@@ -9,14 +9,21 @@ import { Building, CreditCard, Edit, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { UpdatePrincipalProfileRequest } from '@/types/api/principal';
+import { validatePrincipalBankName, validatePrincipalAccountNumber, validatePrincipalAccountHolder } from '@/utils/validation';
+import { useApiError } from '@/hooks/useApiError';
 
 export function PrincipalBankInfoManagement() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedInfo, setEditedInfo] = useState<UpdatePrincipalProfileRequest>({});
   const [isLoading, setIsLoading] = useState(false);
   
+  // Validation 관련 상태
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [isShaking, setIsShaking] = useState(false);
+  
   // API 기반 데이터 관리
-  const { profile, loadProfile, error, isPrincipal } = usePrincipalApi();
+  const { profile, loadProfile, error, isPrincipal, updateProfile } = usePrincipalApi();
+  const { handleApiError, fieldErrors, clearErrors } = useApiError();
 
   // 컴포넌트 마운트 시 프로필 로드
   useEffect(() => {
@@ -56,35 +63,58 @@ export function PrincipalBankInfoManagement() {
     });
   };
 
-  const { updateProfile } = usePrincipalApi();
   const handleSave = async () => {
-    if (!editedInfo.bankName?.trim()) {
-      toast.error('은행명을 입력해주세요.');
-      return;
+    // 프론트엔드 validation 수행
+    const bankNameValidation = validatePrincipalBankName(editedInfo.bankName || '');
+    const accountNumberValidation = validatePrincipalAccountNumber(editedInfo.accountNumber || '');
+    const accountHolderValidation = validatePrincipalAccountHolder(editedInfo.accountHolder || '');
+    
+    // 모든 validation 에러 수집
+    const allErrors: Record<string, string> = {};
+    
+    if (!bankNameValidation.isValid) {
+      bankNameValidation.errors.forEach(error => {
+        allErrors[error.field] = error.message;
+      });
     }
-
-    if (!editedInfo.accountNumber?.trim()) {
-      toast.error('계좌번호를 입력해주세요.');
-      return;
+    
+    if (!accountNumberValidation.isValid) {
+      accountNumberValidation.errors.forEach(error => {
+        allErrors[error.field] = error.message;
+      });
     }
-
-    if (!editedInfo.accountHolder?.trim()) {
-      toast.error('계좌주를 입력해주세요.');
+    
+    if (!accountHolderValidation.isValid) {
+      accountHolderValidation.errors.forEach(error => {
+        allErrors[error.field] = error.message;
+      });
+    }
+    
+    // validation 에러가 있으면 처리
+    if (Object.keys(allErrors).length > 0) {
+      setValidationErrors(allErrors);
+      setIsShaking(true);
+      setTimeout(() => {
+        setIsShaking(false);
+        // 1초 후 validation 에러도 자동으로 제거
+        setTimeout(() => {
+          setValidationErrors({});
+        }, 1000);
+      }, 1000);
       return;
     }
 
     try {
       setIsLoading(true);
-      await updateProfile(editedInfo);
+      clearErrors(); // 요청 시작 시 에러 초기화
+      setValidationErrors({}); // validation 에러도 초기화
       
-      // API 데이터 다시 로드
-      loadProfile();
+      await updateProfile(editedInfo);
       
       setIsEditing(false);
       toast.success('은행 정보가 성공적으로 업데이트되었습니다.');
     } catch (error) {
-      console.error('은행 정보 업데이트 실패:', error);
-      toast.error('은행 정보 업데이트에 실패했습니다.');
+      handleApiError(error, { disableToast: false, disableConsole: true });
     } finally {
       setIsLoading(false);
     }
@@ -95,6 +125,14 @@ export function PrincipalBankInfoManagement() {
       ...prev,
       [field]: value,
     }));
+
+    // 입력 필드 변경 시 해당 필드의 validation 에러 초기화
+    if (validationErrors[field]) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [field]: ''
+      }));
+    }
   };
 
   if (error) {
@@ -181,9 +219,19 @@ export function PrincipalBankInfoManagement() {
                     onChange={(e) => handleInputChange('bankName', e.target.value)}
                     placeholder="은행명을 입력하세요 (예: 신한은행)"
                     disabled={isLoading}
+                    className={`transition-all duration-200 ${
+                      (fieldErrors.bankName || validationErrors.bankName) ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                    } ${
+                      isShaking && (fieldErrors.bankName || validationErrors.bankName) ? 'animate-shake' : ''
+                    }`}
                   />
                 ) : (
                   <p className="text-gray-700 py-2">{profile?.bankName || '미입력'}</p>
+                )}
+                {(fieldErrors.bankName || validationErrors.bankName) && (
+                  <p className="text-red-500 text-sm animate-in fade-in">
+                    {fieldErrors.bankName || validationErrors.bankName}
+                  </p>
                 )}
               </div>
 
@@ -201,9 +249,19 @@ export function PrincipalBankInfoManagement() {
                     onChange={(e) => handleInputChange('accountNumber', e.target.value)}
                     placeholder="계좌번호를 입력하세요 (예: 110-123-456789)"
                     disabled={isLoading}
+                    className={`transition-all duration-200 ${
+                      (fieldErrors.accountNumber || validationErrors.accountNumber) ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                    } ${
+                      isShaking && (fieldErrors.accountNumber || validationErrors.accountNumber) ? 'animate-shake' : ''
+                    }`}
                   />
                 ) : (
                   <p className="text-gray-700 py-2 font-mono">{profile?.accountNumber || '미입력'}</p>
+                )}
+                {(fieldErrors.accountNumber || validationErrors.accountNumber) && (
+                  <p className="text-red-500 text-sm animate-in fade-in">
+                    {fieldErrors.accountNumber || validationErrors.accountNumber}
+                  </p>
                 )}
               </div>
 
@@ -221,9 +279,19 @@ export function PrincipalBankInfoManagement() {
                     onChange={(e) => handleInputChange('accountHolder', e.target.value)}
                     placeholder="계좌주를 입력하세요"
                     disabled={isLoading}
+                    className={`transition-all duration-200 ${
+                      (fieldErrors.accountHolder || validationErrors.accountHolder) ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                    } ${
+                      isShaking && (fieldErrors.accountHolder || validationErrors.accountHolder) ? 'animate-shake' : ''
+                    }`}
                   />
                 ) : (
                   <p className="text-gray-700 py-2">{profile?.accountHolder || '미입력'}</p>
+                )}
+                {(fieldErrors.accountHolder || validationErrors.accountHolder) && (
+                  <p className="text-red-500 text-sm animate-in fade-in">
+                    {fieldErrors.accountHolder || validationErrors.accountHolder}
+                  </p>
                 )}
               </div>
 

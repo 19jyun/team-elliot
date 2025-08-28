@@ -49,7 +49,6 @@ export const createPrincipalClass = (data: {
   maxStudents: number;
   tuitionFee: number;
   teacherId: number;
-  academyId: number;
   dayOfWeek: string;
   level: string;
   startDate: string;

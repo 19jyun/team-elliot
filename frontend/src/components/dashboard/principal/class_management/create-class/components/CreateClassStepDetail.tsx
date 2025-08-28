@@ -53,7 +53,6 @@ export function CreateClassStepDetail() {
       maxStudents: updatedClassFormData.maxStudents,
       tuitionFee: updatedClassFormData.price,
       teacherId: selectedTeacherId, // 선택된 선생님의 ID
-      academyId: updatedClassFormData.academyId!, // 이미 학원 가입 여부를 확인했으므로 non-null assertion 사용
       dayOfWeek: updatedClassFormData.schedule.days[0],
       level: updatedClassFormData.level,
       startDate: updatedClassFormData.schedule.startDate,
