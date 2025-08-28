@@ -2201,10 +2201,22 @@ export class ClassSessionService {
     // 활동 로그 기록
 
     // Socket 이벤트 발생 - 수강신청 승인 알림
-    this.socketGateway.notifyEnrollmentAccepted(
-      updatedEnrollment.id,
-      updatedEnrollment.studentId,
-    );
+    try {
+      // Student의 userRefId 조회
+      const student = await this.prisma.student.findUnique({
+        where: { id: updatedEnrollment.studentId },
+        select: { userRefId: true },
+      });
+
+      if (student) {
+        this.socketGateway.notifyEnrollmentAccepted(
+          updatedEnrollment.id,
+          student.userRefId,
+        );
+      }
+    } catch (e) {
+      console.warn('Socket notifyEnrollmentAccepted failed:', e);
+    }
 
     return updatedEnrollment;
   }
@@ -2284,7 +2296,22 @@ export class ClassSessionService {
     // 활동 로그 기록
 
     // Socket 이벤트 발생 - 수강신청 거절 알림
-    this.socketGateway.notifyEnrollmentRejected(result.id, result.studentId);
+    try {
+      // Student의 userRefId 조회
+      const student = await this.prisma.student.findUnique({
+        where: { id: result.studentId },
+        select: { userRefId: true },
+      });
+
+      if (student) {
+        this.socketGateway.notifyEnrollmentRejected(
+          result.id,
+          student.userRefId,
+        );
+      }
+    } catch (e) {
+      console.warn('Socket notifyEnrollmentRejected failed:', e);
+    }
 
     return result;
   }
@@ -2680,10 +2707,18 @@ export class ClassSessionService {
 
     // 소켓 알림: 수강신청 승인
     try {
-      this.socketGateway.notifyEnrollmentAccepted(
-        updatedEnrollment.id,
-        updatedEnrollment.studentId,
-      );
+      // Student의 userRefId 조회
+      const student = await this.prisma.student.findUnique({
+        where: { id: updatedEnrollment.studentId },
+        select: { userRefId: true },
+      });
+
+      if (student) {
+        this.socketGateway.notifyEnrollmentAccepted(
+          updatedEnrollment.id,
+          student.userRefId,
+        );
+      }
     } catch (e) {
       // 소켓 알림 실패는 비핵심 경로이므로 로깅만 수행
       console.warn('Socket notifyEnrollmentAccepted failed:', e);
@@ -2779,7 +2814,18 @@ export class ClassSessionService {
 
     // 소켓 알림: 수강신청 거절
     try {
-      this.socketGateway.notifyEnrollmentRejected(result.id, result.studentId);
+      // Student의 userRefId 조회
+      const student = await this.prisma.student.findUnique({
+        where: { id: result.studentId },
+        select: { userRefId: true },
+      });
+
+      if (student) {
+        this.socketGateway.notifyEnrollmentRejected(
+          result.id,
+          student.userRefId,
+        );
+      }
     } catch (e) {
       console.warn('Socket notifyEnrollmentRejected failed:', e);
     }

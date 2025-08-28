@@ -41,8 +41,8 @@ export function usePrincipalInitialization() {
           [getPrincipalAllEnrollments(), getPrincipalAllRefundRequests()]
         );
 
-        const enrollments = enrollmentsResponse.data;
-        const refundRequests = refundRequestsResponse.data;
+        const enrollments = enrollmentsResponse.data || [];
+        const refundRequests = refundRequestsResponse.data || [];
 
         // 디버깅: 환불 요청 데이터 확인
         console.log("환불 요청 API 응답:", refundRequests);

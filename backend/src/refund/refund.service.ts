@@ -344,10 +344,22 @@ export class RefundService {
 
     // Socket 이벤트 발생 - 환불 요청 승인 알림
     if (dto.status === 'APPROVED' || dto.status === 'PARTIAL_APPROVED') {
-      this.socketGateway.notifyRefundAccepted(
-        processedRefundRequest.id,
-        processedRefundRequest.studentId,
-      );
+      try {
+        // Student의 userRefId 조회
+        const student = await this.prisma.student.findUnique({
+          where: { id: processedRefundRequest.studentId },
+          select: { userRefId: true },
+        });
+
+        if (student) {
+          this.socketGateway.notifyRefundAccepted(
+            processedRefundRequest.id,
+            student.userRefId,
+          );
+        }
+      } catch (e) {
+        console.warn('Socket notifyRefundAccepted failed:', e);
+      }
     }
 
     return processedRefundRequest;
@@ -647,7 +659,19 @@ export class RefundService {
     );
 
     // Socket 이벤트 발생 - 환불 요청 거절 알림
-    this.socketGateway.notifyRefundRejected(result.id, result.studentId);
+    try {
+      // Student의 userRefId 조회
+      const student = await this.prisma.student.findUnique({
+        where: { id: result.studentId },
+        select: { userRefId: true },
+      });
+
+      if (student) {
+        this.socketGateway.notifyRefundRejected(result.id, student.userRefId);
+      }
+    } catch (e) {
+      console.warn('Socket notifyRefundRejected failed:', e);
+    }
 
     return result;
   }
@@ -962,10 +986,18 @@ export class RefundService {
 
     // 소켓 알림: 환불 요청 승인
     try {
-      this.socketGateway.notifyRefundAccepted(
-        result.updatedRefundRequest.id,
-        result.updatedRefundRequest.sessionEnrollment.studentId,
-      );
+      // Student의 userRefId 조회
+      const student = await this.prisma.student.findUnique({
+        where: { id: result.updatedRefundRequest.sessionEnrollment.studentId },
+        select: { userRefId: true },
+      });
+
+      if (student) {
+        this.socketGateway.notifyRefundAccepted(
+          result.updatedRefundRequest.id,
+          student.userRefId,
+        );
+      }
     } catch (e) {
       console.warn('Socket notifyRefundAccepted failed:', e);
     }
@@ -1084,10 +1116,18 @@ export class RefundService {
 
     // 소켓 알림: 환불 요청 거절
     try {
-      this.socketGateway.notifyRefundRejected(
-        result.updatedRefundRequest.id,
-        result.updatedRefundRequest.sessionEnrollment.studentId,
-      );
+      // Student의 userRefId 조회
+      const student = await this.prisma.student.findUnique({
+        where: { id: result.updatedRefundRequest.sessionEnrollment.studentId },
+        select: { userRefId: true },
+      });
+
+      if (student) {
+        this.socketGateway.notifyRefundRejected(
+          result.updatedRefundRequest.id,
+          student.userRefId,
+        );
+      }
     } catch (e) {
       console.warn('Socket notifyRefundRejected failed:', e);
     }

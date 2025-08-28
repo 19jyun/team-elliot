@@ -22,9 +22,7 @@ import {
 import {
   setStudentData,
   updateStudentEnrollmentFromSocket,
-  updateStudentCancellationFromSocket,
-  updateAvailableSessionFromSocket,
-  updateAvailableClassFromSocket
+  updateStudentCancellationFromSocket
 } from '@/store/slices/studentSlice'
 
 // API 함수들
@@ -48,8 +46,10 @@ export function UniversalSocketListener() {
       switch (currentUserRole) {
         case 'PRINCIPAL':
           // Principal의 경우 전체 수강신청 목록을 새로 가져와서 업데이트
-          const enrollments = await getPrincipalAllEnrollments()
-          const refundRequests = await getPrincipalAllRefundRequests()
+          const enrollmentsResponse = await getPrincipalAllEnrollments()
+          const enrollments = enrollmentsResponse.data || []
+          const refundRequestsResponse = await getPrincipalAllRefundRequests()
+          const refundRequests = refundRequestsResponse.data || []
           
           dispatch(setPrincipalData({
             enrollments,
@@ -81,8 +81,10 @@ export function UniversalSocketListener() {
       switch (currentUserRole) {
         case 'PRINCIPAL':
           // Principal의 경우 전체 환불요청 목록을 새로 가져와서 업데이트
-          const enrollments = await getPrincipalAllEnrollments()
-          const refundRequests = await getPrincipalAllRefundRequests()
+          const enrollmentsResponse = await getPrincipalAllEnrollments()
+          const enrollments = enrollmentsResponse.data || []
+          const refundRequestsResponse = await getPrincipalAllRefundRequests()
+          const refundRequests = refundRequestsResponse.data || []
           
           dispatch(setPrincipalData({
             enrollments,
@@ -100,19 +102,6 @@ export function UniversalSocketListener() {
     }
   })
 
-  // 세션 가용성 변경 이벤트 (학생만)
-  useSocketEvent('session_availability_changed', (data) => {
-    if (currentUserRole === 'STUDENT') {
-      dispatch(updateAvailableSessionFromSocket(data))
-    }
-  })
-
-  // 클래스 가용성 변경 이벤트 (학생만)
-  useSocketEvent('class_availability_changed', (data) => {
-    if (currentUserRole === 'STUDENT') {
-      dispatch(updateAvailableClassFromSocket(data))
-    }
-  })
 
   // 새로운 수강신청 요청 (원장/선생님만)
   useSocketEvent('new_enrollment_request', async (data) => {
@@ -121,8 +110,10 @@ export function UniversalSocketListener() {
     if (currentUserRole === 'PRINCIPAL') {
       try {
         // Principal의 경우 전체 수강신청 목록을 새로 가져와서 업데이트
-        const enrollments = await getPrincipalAllEnrollments()
-        const refundRequests = await getPrincipalAllRefundRequests()
+        const enrollmentsResponse = await getPrincipalAllEnrollments()
+        const enrollments = enrollmentsResponse.data || []
+        const refundRequestsResponse = await getPrincipalAllRefundRequests()
+        const refundRequests = refundRequestsResponse.data || []
         
         dispatch(setPrincipalData({
           enrollments,
@@ -147,8 +138,10 @@ export function UniversalSocketListener() {
     if (currentUserRole === 'PRINCIPAL') {
       try {
         // Principal의 경우 전체 환불요청 목록을 새로 가져와서 업데이트
-        const enrollments = await getPrincipalAllEnrollments()
-        const refundRequests = await getPrincipalAllRefundRequests()
+        const enrollmentsResponse = await getPrincipalAllEnrollments()
+        const enrollments = enrollmentsResponse.data || []
+        const refundRequestsResponse = await getPrincipalAllRefundRequests()
+        const refundRequests = refundRequestsResponse.data || []
         
         dispatch(setPrincipalData({
           enrollments,

@@ -15,14 +15,16 @@ export function PrincipalSocketListener() {
     
     try {
       // 수강신청 목록 API 호출하여 Redux 업데이트
-      const enrollments = await getPrincipalAllEnrollments()
+      const enrollmentsResponse = await getPrincipalAllEnrollments()
+      const enrollments = enrollmentsResponse.data || []
       
       // 기존 환불요청 데이터 유지하면서 수강신청만 업데이트
-      const currentData = await getPrincipalAllRefundRequests()
+      const refundRequestsResponse = await getPrincipalAllRefundRequests()
+      const refundRequests = refundRequestsResponse.data || []
       
       dispatch(setPrincipalData({
         enrollments,
-        refundRequests: currentData,
+        refundRequests,
       }))
       
       toast.info('새로운 수강 신청이 도착했습니다.', {
@@ -41,13 +43,15 @@ export function PrincipalSocketListener() {
     
     try {
       // 환불요청 목록 API 호출하여 Redux 업데이트
-      const refundRequests = await getPrincipalAllRefundRequests()
+      const refundRequestsResponse = await getPrincipalAllRefundRequests()
+      const refundRequests = refundRequestsResponse.data || []
       
       // 기존 수강신청 데이터 유지하면서 환불요청만 업데이트
-      const currentData = await getPrincipalAllEnrollments()
+      const enrollmentsResponse = await getPrincipalAllEnrollments()
+      const enrollments = enrollmentsResponse.data || []
       
       dispatch(setPrincipalData({
-        enrollments: currentData,
+        enrollments,
         refundRequests,
       }))
       

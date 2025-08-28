@@ -141,44 +141,44 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   // 수강신청 승인 알림
-  notifyEnrollmentAccepted(enrollmentId: number, studentId: number) {
+  notifyEnrollmentAccepted(enrollmentId: number, studentUserRefId: number) {
     console.log(`📢 수강신청 승인 알림: ${enrollmentId}`);
 
     // 해당 학생에게 알림
-    this.server.to(`user:${studentId}`).emit('enrollment_accepted', {
+    this.server.to(`user:${studentUserRefId}`).emit('enrollment_accepted', {
       enrollmentId,
       timestamp: new Date().toISOString(),
     });
   }
 
   // 수강신청 거절 알림
-  notifyEnrollmentRejected(enrollmentId: number, studentId: number) {
+  notifyEnrollmentRejected(enrollmentId: number, studentUserRefId: number) {
     console.log(`📢 수강신청 거절 알림: ${enrollmentId}`);
 
     // 해당 학생에게 알림
-    this.server.to(`user:${studentId}`).emit('enrollment_rejected', {
+    this.server.to(`user:${studentUserRefId}`).emit('enrollment_rejected', {
       enrollmentId,
       timestamp: new Date().toISOString(),
     });
   }
 
   // 환불 요청 승인 알림
-  notifyRefundAccepted(refundId: number, studentId: number) {
+  notifyRefundAccepted(refundId: number, studentUserRefId: number) {
     console.log(`📢 환불 요청 승인 알림: ${refundId}`);
 
     // 해당 학생에게 알림
-    this.server.to(`user:${studentId}`).emit('refund_accepted', {
+    this.server.to(`user:${studentUserRefId}`).emit('refund_accepted', {
       refundId,
       timestamp: new Date().toISOString(),
     });
   }
 
   // 환불 요청 거절 알림
-  notifyRefundRejected(refundId: number, studentId: number) {
+  notifyRefundRejected(refundId: number, studentUserRefId: number) {
     console.log(`📢 환불 요청 거절 알림: ${refundId}`);
 
     // 해당 학생에게 알림
-    this.server.to(`user:${studentId}`).emit('refund_rejected', {
+    this.server.to(`user:${studentUserRefId}`).emit('refund_rejected', {
       refundId,
       timestamp: new Date().toISOString(),
     });

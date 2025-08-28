@@ -270,12 +270,10 @@ export function usePrincipalApi() {
     difficulty?: PoseDifficulty
   ): Promise<BalletPose[]> => {
     const response = await getBalletPoses(difficulty);
-    // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
     return response.data || [];
   };
   const fetchBalletPose = async (id: number): Promise<BalletPose> => {
     const response = await getBalletPose(id);
-    // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
     return response.data!;
   };
 
@@ -309,8 +307,8 @@ export function usePrincipalApi() {
 
     try {
       setError(null);
-      const data = await approvePrincipalEnrollment(enrollmentId);
-      return data;
+      const response = await approvePrincipalEnrollment(enrollmentId);
+      return response.data;
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || "수강신청 승인 실패";
       setError(errorMessage);
@@ -328,11 +326,11 @@ export function usePrincipalApi() {
 
     try {
       setError(null);
-      const data = await rejectPrincipalEnrollment(enrollmentId, {
+      const response = await rejectPrincipalEnrollment(enrollmentId, {
         reason,
         detailedReason,
       });
-      return data;
+      return response.data;
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || "수강신청 거절 실패";
       setError(errorMessage);
@@ -346,8 +344,8 @@ export function usePrincipalApi() {
 
     try {
       setError(null);
-      const data = await approvePrincipalRefund(refundId);
-      return data;
+      const response = await approvePrincipalRefund(refundId);
+      return response.data;
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || "환불요청 승인 실패";
       setError(errorMessage);
@@ -365,11 +363,11 @@ export function usePrincipalApi() {
 
     try {
       setError(null);
-      const data = await rejectPrincipalRefund(refundId, {
+      const response = await rejectPrincipalRefund(refundId, {
         reason,
         detailedReason,
       });
-      return data;
+      return response.data;
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || "환불요청 거절 실패";
       setError(errorMessage);
