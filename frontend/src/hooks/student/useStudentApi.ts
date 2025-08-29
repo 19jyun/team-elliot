@@ -1,4 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useAppDispatch } from "@/store/hooks";
+import {
+  setCalendarSessions,
+  setCalendarRange,
+} from "@/store/slices/studentSlice";
 import {
   getMyClasses,
   getEnrollmentHistory,
@@ -30,6 +35,7 @@ import { useApiError } from "@/hooks/useApiError";
 
 // Student 대시보드에서 사용할 API 훅
 export function useStudentApi() {
+  const dispatch = useAppDispatch();
   const { handleApiError } = useApiError();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,36 +50,6 @@ export function useStudentApi() {
     startDate: Date;
     endDate: Date;
   } | null>(null);
-
-  // 기본 데이터 로드 함수 (기존 수강 중인 클래스/세션)
-  const loadAllData = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await getMyClasses();
-      const data = response.data;
-      if (data) {
-        setSessionClasses(data.sessionClasses || []);
-
-        // calendarRange가 문자열로 오는 경우 Date 객체로 변환
-        if (data.calendarRange) {
-          setCalendarRange({
-            startDate: new Date(data.calendarRange.startDate),
-            endDate: new Date(data.calendarRange.endDate),
-          });
-        } else {
-          setCalendarRange(null);
-        }
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "데이터를 불러오는데 실패했습니다."
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
 
   // 학원 목록 로드 함수
   const loadAcademies = useCallback(async () => {
@@ -364,11 +340,6 @@ export function useStudentApi() {
     return response.data;
   }, []);
 
-  // 컴포넌트 마운트 시 데이터 로드
-  useEffect(() => {
-    loadAllData();
-  }, [loadAllData]);
-
   // 캘린더용 세션 데이터 변환 (ConnectedCalendar에서 사용)
   const convertedSessions = useMemo(() => {
     if (!sessionClasses || sessionClasses.length === 0) {
@@ -447,7 +418,7 @@ export function useStudentApi() {
     // 변환된 데이터
     convertedSessions,
 
-    // 캘린더 관련
+    // 캘린더 관련 (Redux store에서 가져옴)
     calendarRange: computedCalendarRange,
 
     // 상태
@@ -457,8 +428,6 @@ export function useStudentApi() {
     // 헬퍼 함수들
     getSessionsByDate,
 
-    // 데이터 리로드
-    loadAllData,
     loadAcademies,
     loadAvailableClasses,
     loadAvailableSessions,

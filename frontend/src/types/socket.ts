@@ -28,18 +28,21 @@ export interface SocketEvents {
   // 수강신청 승인 (원장/선생님 → 수강생)
   enrollment_accepted: {
     enrollmentId: number;
+    sessionId?: number;
     timestamp: string;
   };
 
   // 수강신청 거절 (원장/선생님 → 수강생)
   enrollment_rejected: {
     enrollmentId: number;
+    sessionId?: number;
     timestamp: string;
   };
 
   // 환불 요청 승인 (원장/선생님 → 수강생)
   refund_accepted: {
     refundId: number;
+    sessionId?: number;
     timestamp: string;
   };
 

@@ -8,6 +8,15 @@ export interface StudentData {
 
   // 환불/취소 내역
   cancellationHistory: CancellationHistory[];
+
+  // 캘린더 세션 데이터 (새로 추가)
+  calendarSessions: StudentClass[];
+
+  // 캘린더 범위 (새로 추가)
+  calendarRange: {
+    startDate: string;
+    endDate: string;
+  } | null;
 }
 
 // Student 관련 하위 타입들
@@ -38,6 +47,13 @@ export interface StudentClass {
   currentStudents?: number;
   maxStudents?: number;
   classId?: number;
+  isAlreadyEnrolled?: boolean;
+  studentEnrollmentStatus?:
+    | "PENDING"
+    | "CONFIRMED"
+    | "REJECTED"
+    | "REFUND_REQUESTED";
+  isOptimistic?: boolean; // 낙관적 업데이트용 플래그
   class?: {
     id: number;
     className: string;

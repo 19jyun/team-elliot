@@ -996,6 +996,7 @@ export class RefundService {
         this.socketGateway.notifyRefundAccepted(
           result.updatedRefundRequest.id,
           student.userRefId,
+          result.updatedEnrollment.sessionId,
         );
       }
     } catch (e) {

@@ -6,17 +6,31 @@ import { useAppDispatch } from '@/store/hooks'
 import { 
   updateStudentEnrollmentHistory,
   updateStudentCancellationHistory,
+  removeCalendarSession,
+  updateCalendarSession,
 } from '@/store/slices/studentSlice'
 import { useStudentApi } from '@/hooks/student/useStudentApi'
 
 export function StudentSocketListener() {
   const dispatch = useAppDispatch()
   const { loadEnrollmentHistory, loadCancellationHistory } = useStudentApi()
-  // 새로운 실시간 이벤트들 (패킷만 수신, API 호출은 나중에 구현)
   
   // 수강신청 승인 알림
   useSocketEvent('enrollment_accepted', (data) => {
     console.log('📨 수강신청 승인 패킷 수신:', data)
+    
+    // 캘린더 세션 상태 업데이트 (sessionId가 있는 경우)
+    if (data.sessionId) {
+      console.log('🔍 수강신청 승인: 캘린더 세션 상태 업데이트', { sessionId: data.sessionId })
+      dispatch(updateCalendarSession({
+        sessionId: data.sessionId,
+        updates: {
+          isAlreadyEnrolled: true,
+          studentEnrollmentStatus: 'CONFIRMED',
+        }
+      }))
+    }
+    
     toast.success('수강 신청이 승인되었습니다!')
     ;(async () => {
       try {
@@ -31,6 +45,13 @@ export function StudentSocketListener() {
   // 수강신청 거절 알림
   useSocketEvent('enrollment_rejected', (data) => {
     console.log('📨 수강신청 거절 패킷 수신:', data)
+    
+    // 캘린더에서 세션 제거 (sessionId가 있는 경우)
+    if (data.sessionId) {
+      console.log('❌ 수강신청 거절: 캘린더에서 세션 제거', { sessionId: data.sessionId })
+      dispatch(removeCalendarSession(data.sessionId))
+    }
+    
     toast.error('수강 신청이 거절되었습니다.', {
       description: '신청 내역에서 거절 사유를 확인하실 수 있습니다.',
     })
@@ -47,6 +68,13 @@ export function StudentSocketListener() {
   // 환불 요청 승인 알림
   useSocketEvent('refund_accepted', (data) => {
     console.log('📨 환불 요청 승인 패킷 수신:', data)
+    
+    // 캘린더에서 세션 제거 (sessionId가 있는 경우)
+    if (data.sessionId) {
+      console.log('✅ 환불 승인: 캘린더에서 세션 제거', { sessionId: data.sessionId })
+      dispatch(removeCalendarSession(data.sessionId))
+    }
+    
     toast.success('환불 요청이 승인되었습니다!')
     ;(async () => {
       try {

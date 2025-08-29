@@ -54,11 +54,17 @@ export function useStudentInitialization() {
         const cancellationHistoryResponse = await getCancellationHistory();
         const cancellationHistory = cancellationHistoryResponse.data;
 
-        // Redux 상태 업데이트 (enrollmentHistory와 cancellationHistory만)
+        // 캘린더 데이터 추출
+        const calendarSessions = myClasses.data?.sessionClasses || [];
+        const calendarRange = myClasses.data?.calendarRange || null;
+
+        // Redux 상태 업데이트 (캘린더 데이터 포함)
         dispatch(
           setStudentData({
             enrollmentHistory,
             cancellationHistory,
+            calendarSessions,
+            calendarRange,
           })
         );
 
