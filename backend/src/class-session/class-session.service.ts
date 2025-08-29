@@ -289,8 +289,11 @@ export class ClassSessionService {
         (enrollment) =>
           enrollment.status === 'CONFIRMED' ||
           enrollment.status === 'PENDING' ||
-          enrollment.status === 'REFUND_REJECTED_CONFIRMED',
-        // REFUND_REQUESTED는 제외하여 환불 대기중인 세션도 수강 신청 가능하도록 함
+          enrollment.status === 'REFUND_REJECTED_CONFIRMED' ||
+          enrollment.status === 'REFUND_REQUESTED' ||
+          enrollment.status === 'TEACHER_CANCELLED' ||
+          enrollment.status === 'ABSENT' ||
+          enrollment.status === 'ATTENDED',
       );
 
       const isEnrollable = !isPastStartTime && !isFull && !isAlreadyEnrolled;
@@ -315,7 +318,18 @@ export class ClassSessionService {
    * 수강 변경용 모든 세션 조회
    * 클래스의 startDate/endDate를 기준으로 캘린더 범위를 계산
    */
-  async getClassSessionsForModification(classId: number, studentId: number) {
+  async getClassSessionsForModification(classId: number, userId: number) {
+    // Student 테이블에서 userRefId로 직접 조회
+    const student = await this.prisma.student.findUnique({
+      where: { userRefId: userId },
+      select: { id: true },
+    });
+
+    if (!student) {
+      throw new Error('Student not found');
+    }
+
+    const studentId = student.id;
     // 클래스 정보 조회 (startDate, endDate 포함)
     const classInfo = await this.prisma.class.findUnique({
       where: { id: classId },
@@ -383,14 +397,25 @@ export class ClassSessionService {
         (enrollment) =>
           enrollment.status === 'CONFIRMED' ||
           enrollment.status === 'PENDING' ||
-          enrollment.status === 'REFUND_REJECTED_CONFIRMED',
+          enrollment.status === 'REFUND_REJECTED_CONFIRMED' ||
+          enrollment.status === 'REFUND_REQUESTED' ||
+          enrollment.status === 'TEACHER_CANCELLED' ||
+          enrollment.status === 'ABSENT' ||
+          enrollment.status === 'ATTENDED',
       );
 
-      // 수강 변경 가능 여부
+      // 수강 변경 가능 여부 (새로 신청 가능한 세션)
       const isSelectable = !isPastStartTime && !isFull && !isAlreadyEnrolled;
 
-      // 환불 신청 가능 여부
-      const canBeCancelled = !isPastStartTime && isAlreadyEnrolled;
+      // 환불 신청 가능 여부 (이미 신청했지만 취소 가능한 세션)
+      const canBeCancelled =
+        !isPastStartTime &&
+        session.enrollments.some(
+          (enrollment) =>
+            enrollment.status === 'PENDING' ||
+            enrollment.status === 'CONFIRMED' ||
+            enrollment.status === 'REFUND_REJECTED_CONFIRMED',
+        );
 
       // 전체 선택 가능 여부 (수강 변경 또는 환불 신청 중 하나라도 가능)
       const isModifiable = isSelectable || canBeCancelled;
@@ -425,7 +450,16 @@ export class ClassSessionService {
    * 선택된 클래스들의 모든 세션 조회 (enrollment/modification 모드용)
    * 클래스의 startDate/endDate를 기준으로 캘린더 범위를 계산
    */
-  async getClassSessionsForEnrollment(classIds: number[], studentId?: number) {
+  async getClassSessionsForEnrollment(classIds: number[], userId?: number) {
+    // User 테이블의 id로 Student 테이블의 id를 찾기
+    let studentId: number | undefined;
+    if (userId) {
+      const student = await this.prisma.student.findUnique({
+        where: { userRefId: userId },
+        select: { id: true },
+      });
+      studentId = student?.id;
+    }
     // 선택된 클래스들의 정보 조회 (startDate, endDate 포함)
     const classes = await this.prisma.class.findMany({
       where: { id: { in: classIds } },
@@ -511,8 +545,19 @@ export class ClassSessionService {
    */
   async getStudentAvailableSessionsForEnrollment(
     academyId: number,
-    studentId: number,
+    userId: number, // User 테이블의 id
   ) {
+    // Student 테이블에서 userRefId로 직접 조회
+    const student = await this.prisma.student.findUnique({
+      where: { userRefId: userId },
+      select: { id: true },
+    });
+
+    if (!student) {
+      throw new Error('Student not found');
+    }
+
+    const studentId = student.id;
     // 해당 학원의 모든 클래스 조회
     const classes = await this.prisma.class.findMany({
       where: { academyId },
@@ -612,12 +657,16 @@ export class ClassSessionService {
       // 수강 가능 여부 판단
       const isFull = session.currentStudents >= session.class.maxStudents;
       const isPastStartTime = now >= sessionStartTime;
+
       const isAlreadyEnrolled = session.enrollments.some(
         (enrollment) =>
           enrollment.status === 'CONFIRMED' ||
           enrollment.status === 'PENDING' ||
           enrollment.status === 'REFUND_REJECTED_CONFIRMED' ||
-          enrollment.status === 'REFUND_REQUESTED',
+          enrollment.status === 'REFUND_REQUESTED' ||
+          enrollment.status === 'TEACHER_CANCELLED' ||
+          enrollment.status === 'ABSENT' ||
+          enrollment.status === 'ATTENDED',
       );
 
       const isEnrollable = !isPastStartTime && !isFull && !isAlreadyEnrolled;
@@ -692,13 +741,16 @@ export class ClassSessionService {
     });
 
     if (existingEnrollment) {
-      // 활성 상태인 경우 중복 신청 불가
+      // 활성 상태인 경우 중복 신청 불가 (수강신청 불가능한 상태들)
       if (
         [
           'PENDING',
           'CONFIRMED',
           'REFUND_REJECTED_CONFIRMED',
           'REFUND_REQUESTED',
+          'TEACHER_CANCELLED',
+          'ABSENT',
+          'ATTENDED',
         ].includes(existingEnrollment.status)
       ) {
         throw new ConflictException({
@@ -712,19 +764,22 @@ export class ClassSessionService {
         });
       }
 
-      // 비활성 상태(CANCELLED, REJECTED 등)인 경우 기존 수강신청을 PENDING으로 업데이트
-      const updatedEnrollment = await this.prisma.sessionEnrollment.update({
+      // 비활성 상태(CANCELLED, REJECTED 등)인 경우 기존 수강신청을 삭제하고 새로운 수강신청 생성
+      await this.prisma.sessionEnrollment.delete({
         where: {
           studentId_sessionId: {
             studentId,
             sessionId,
           },
         },
+      });
+
+      // 새로운 SessionEnrollment 생성
+      const newEnrollment = await this.prisma.sessionEnrollment.create({
         data: {
+          studentId,
+          sessionId,
           status: 'PENDING',
-          enrolledAt: new Date(),
-          cancelledAt: null,
-          rejectedAt: null,
         },
         include: {
           session: {
@@ -740,7 +795,7 @@ export class ClassSessionService {
         },
       });
 
-      return updatedEnrollment;
+      return newEnrollment;
     }
 
     if (session.currentStudents >= session.class.maxStudents) {
@@ -1584,7 +1639,18 @@ export class ClassSessionService {
   /**
    * 학생의 특정 클래스 수강 신청 현황 조회 (수강 변경/취소용)
    */
-  async getStudentClassEnrollments(classId: number, studentId: number) {
+  async getStudentClassEnrollments(classId: number, userId: number) {
+    // Student 테이블에서 userRefId로 직접 조회
+    const student = await this.prisma.student.findUnique({
+      where: { userRefId: userId },
+      select: { id: true },
+    });
+
+    if (!student) {
+      throw new Error('Student not found');
+    }
+
+    const studentId = student.id;
     // 해당 클래스의 모든 세션과 학생의 수강 신청 현황을 함께 조회
     const classSessions = await this.prisma.classSession.findMany({
       where: { classId },

@@ -171,8 +171,7 @@ export function EnrollmentModificationPaymentStep({
       const existingEnrollments = JSON.parse(existingEnrollmentsData);
       const selectedSessions = JSON.parse(selectedSessionsData);
 
-      console.log('🔍 디버깅 - existingEnrollments:', existingEnrollments);
-      console.log('🔍 디버깅 - selectedSessions:', selectedSessions);
+      
 
       // 기존에 신청된 세션들 (활성 상태)
       const originalEnrolledSessions = existingEnrollments.filter(
@@ -193,9 +192,8 @@ export function EnrollmentModificationPaymentStep({
         (session: any) => new Date(session.date).toISOString().split("T")[0]
       );
 
-      console.log('🔍 디버깅 - originalEnrolledSessions:', originalEnrolledSessions);
-      console.log('🔍 디버깅 - originalDates:', originalDates);
-      console.log('🔍 디버깅 - selectedDates:', selectedDates);
+  
+      
 
       // 취소할 세션들의 enrollment ID
       const cancellations = originalEnrolledSessions

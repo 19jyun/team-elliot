@@ -716,7 +716,7 @@ export class StudentService {
       });
     }
 
-    // 이미 수강 신청한 세션인지 확인
+    // 이미 수강 신청한 세션인지 확인 (수강신청 불가능한 상태만 체크)
     const existingEnrollment = await this.prisma.sessionEnrollment.findUnique({
       where: {
         studentId_sessionId: {
@@ -727,15 +727,30 @@ export class StudentService {
     });
 
     if (existingEnrollment) {
-      throw new ConflictException({
-        code: 'ALREADY_ENROLLED',
-        message: '이미 수강 신청한 세션입니다.',
-        details: {
-          studentId: student.id,
-          sessionId,
-          enrollmentId: existingEnrollment.id,
-        },
-      });
+      // 수강신청 불가능한 상태들: PENDING, CONFIRMED, REFUND_REQUESTED, TEACHER_CANCELLED, ABSENT, ATTENDED, REFUND_REJECTED_CONFIRMED
+      const nonEnrollableStatuses = [
+        'PENDING',
+        'CONFIRMED',
+        'REFUND_REQUESTED',
+        'TEACHER_CANCELLED',
+        'ABSENT',
+        'ATTENDED',
+        'REFUND_REJECTED_CONFIRMED',
+      ];
+
+      if (nonEnrollableStatuses.includes(existingEnrollment.status)) {
+        throw new ConflictException({
+          code: 'ALREADY_ENROLLED',
+          message: '이미 수강 신청한 세션입니다.',
+          details: {
+            studentId: student.id,
+            sessionId,
+            enrollmentId: existingEnrollment.id,
+            existingStatus: existingEnrollment.status,
+          },
+        });
+      }
+      // REJECTED, CANCELLED, REFUND_CANCELLED 상태는 재신청 가능하므로 계속 진행
     }
 
     // 입금 정보 반환

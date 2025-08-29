@@ -81,7 +81,6 @@ export const studentSlice = createSlice({
 
     // === 낙관적 업데이트 관련 액션들 ===
 
-    // 8. 낙관적 수강신청 추가
     addOptimisticEnrollment: (state, action) => {
       if (state.data) {
         const optimisticEnrollment: EnrollmentHistory & {
@@ -94,23 +93,34 @@ export const studentSlice = createSlice({
       }
     },
 
-    // 9. 낙관적 수강신청을 실제 데이터로 교체
     replaceOptimisticEnrollment: (state, action) => {
       if (state.data?.enrollmentHistory) {
         const { optimisticId, realEnrollment } = action.payload;
-        const index = state.data.enrollmentHistory.findIndex(
+
+        // 기존 optimistic enrollment 제거
+        const optimisticIndex = state.data.enrollmentHistory.findIndex(
           (e) => e.id === optimisticId
         );
-        if (index !== -1) {
-          state.data.enrollmentHistory[index] = {
-            ...realEnrollment,
-            isOptimistic: false,
-          };
+        if (optimisticIndex !== -1) {
+          state.data.enrollmentHistory.splice(optimisticIndex, 1);
         }
+
+        // 동일한 id를 가진 기존 enrollment가 있는지 확인하고 제거
+        const existingIndex = state.data.enrollmentHistory.findIndex(
+          (e) => e.id === realEnrollment.id
+        );
+        if (existingIndex !== -1) {
+          state.data.enrollmentHistory.splice(existingIndex, 1);
+        }
+
+        // 새로운 enrollment 추가
+        state.data.enrollmentHistory.unshift({
+          ...realEnrollment,
+          isOptimistic: false,
+        });
       }
     },
 
-    // 10. 낙관적 수강신청 제거 (실패 시)
     removeOptimisticEnrollment: (state, action) => {
       if (state.data?.enrollmentHistory) {
         const optimisticId = action.payload;
@@ -120,7 +130,6 @@ export const studentSlice = createSlice({
       }
     },
 
-    // 11. 낙관적 환불 요청 추가
     addOptimisticCancellation: (state, action) => {
       if (state.data) {
         const optimisticCancellation: CancellationHistory & {
@@ -133,7 +142,6 @@ export const studentSlice = createSlice({
       }
     },
 
-    // 12. 낙관적 환불 요청을 실제 데이터로 교체
     replaceOptimisticCancellation: (state, action) => {
       if (state.data?.cancellationHistory) {
         const { optimisticId, realCancellation } = action.payload;
@@ -149,7 +157,6 @@ export const studentSlice = createSlice({
       }
     },
 
-    // 13. 낙관적 환불 요청 제거 (실패 시)
     removeOptimisticCancellation: (state, action) => {
       if (state.data?.cancellationHistory) {
         const optimisticId = action.payload;
@@ -159,7 +166,6 @@ export const studentSlice = createSlice({
       }
     },
 
-    // 14. WebSocket 이벤트 액션들
     updateStudentEnrollmentFromSocket: (state, action) => {
       const { enrollmentId, status, data } =
         action.payload as SocketEventData<"enrollment_status_changed">;

@@ -143,24 +143,24 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
   };
 
   useEffect(() => {
-    console.log('🔍 EnrollmentPaymentStep - contextSessions:', contextSessions);
+
     
     // Context에서 세션 정보를 우선 사용하고, 없으면 localStorage에서 가져옴
     let sessions: SelectedSession[] = [];
     
     if (contextSessions && contextSessions.length > 0) {
       sessions = contextSessions;
-      console.log('🔍 Context에서 세션 데이터 사용:', sessions);
+
     } else if (typeof window !== 'undefined') {
       const sessionsData = localStorage.getItem('selectedSessions');
       
       if (sessionsData) {
         sessions = JSON.parse(sessionsData);
-        console.log('🔍 localStorage에서 세션 데이터 사용:', sessions);
+
       }
     }
     
-    console.log('🔍 최종 사용할 세션 데이터:', sessions);
+
     
     if (sessions.length > 0) {
       // 이미 수강 신청한 세션이 있는지 확인
