@@ -195,11 +195,12 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
     setIsProcessing(true);
     
     try {
-      // 새로운 수강 신청 모드: 기존 로직
+      // 새로운 수강 신청 모드: 실제 세션 데이터 기반
       const sessionIds = selectedSessions.map(session => session.id);
       
       // 백엔드에 세션별 수강 신청 요청 (낙관적 업데이트 포함)
-      const result = await enrollSessions(sessionIds);
+      // 실제 세션 데이터를 전달하여 정확한 낙관적 업데이트 수행
+      const result = await enrollSessions(sessionIds, selectedSessions);
       
       // 성공 시 완료 페이지로 이동
       setEnrollmentStep('complete');

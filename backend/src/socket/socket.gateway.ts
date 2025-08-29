@@ -141,34 +141,49 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   // 수강신청 승인 알림
-  notifyEnrollmentAccepted(enrollmentId: number, studentUserRefId: number) {
+  notifyEnrollmentAccepted(
+    enrollmentId: number,
+    studentUserRefId: number,
+    sessionId?: number,
+  ) {
     console.log(`📢 수강신청 승인 알림: ${enrollmentId}`);
 
     // 해당 학생에게 알림
     this.server.to(`user:${studentUserRefId}`).emit('enrollment_accepted', {
       enrollmentId,
+      sessionId,
       timestamp: new Date().toISOString(),
     });
   }
 
   // 수강신청 거절 알림
-  notifyEnrollmentRejected(enrollmentId: number, studentUserRefId: number) {
+  notifyEnrollmentRejected(
+    enrollmentId: number,
+    studentUserRefId: number,
+    sessionId?: number,
+  ) {
     console.log(`📢 수강신청 거절 알림: ${enrollmentId}`);
 
     // 해당 학생에게 알림
     this.server.to(`user:${studentUserRefId}`).emit('enrollment_rejected', {
       enrollmentId,
+      sessionId,
       timestamp: new Date().toISOString(),
     });
   }
 
   // 환불 요청 승인 알림
-  notifyRefundAccepted(refundId: number, studentUserRefId: number) {
+  notifyRefundAccepted(
+    refundId: number,
+    studentUserRefId: number,
+    sessionId?: number,
+  ) {
     console.log(`📢 환불 요청 승인 알림: ${refundId}`);
 
     // 해당 학생에게 알림
     this.server.to(`user:${studentUserRefId}`).emit('refund_accepted', {
       refundId,
+      sessionId,
       timestamp: new Date().toISOString(),
     });
   }

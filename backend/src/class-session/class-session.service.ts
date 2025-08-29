@@ -2278,6 +2278,7 @@ export class ClassSessionService {
         this.socketGateway.notifyEnrollmentAccepted(
           updatedEnrollment.id,
           student.userRefId,
+          updatedEnrollment.sessionId,
         );
       }
     } catch (e) {
@@ -2783,6 +2784,7 @@ export class ClassSessionService {
         this.socketGateway.notifyEnrollmentAccepted(
           updatedEnrollment.id,
           student.userRefId,
+          updatedEnrollment.sessionId,
         );
       }
     } catch (e) {
@@ -2890,6 +2892,7 @@ export class ClassSessionService {
         this.socketGateway.notifyEnrollmentRejected(
           result.id,
           student.userRefId,
+          result.sessionId,
         );
       }
     } catch (e) {

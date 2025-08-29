@@ -3,14 +3,14 @@
 import { useSession } from 'next-auth/react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSelector } from 'react-redux'
 
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
 import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessionModal'
 import { StudentSessionDetailModal } from '@/components/features/student/classes/StudentSessionDetailModal'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
-import { useStudentApi } from '@/hooks/student/useStudentApi'
-import { useRoleCalendarApi } from '@/hooks/calendar/useRoleCalendarApi'
+import type { RootState } from '@/store/index'
 
 export default function StudentDashboard() {
   const router = useRouter()
@@ -23,20 +23,48 @@ export default function StudentDashboard() {
 
   const { navigateToSubPage } = useDashboardNavigation()
 
-  // API 데이터 사용
-  const { 
-    calendarRange, 
-    isLoading: studentApiLoading, 
-    error: studentApiError 
-  } = useStudentApi()
-  const { 
-    calendarSessions, 
-    isLoading: calendarLoading, 
-    error: calendarError 
-  } = useRoleCalendarApi("STUDENT")
+  // Redux store에서 캘린더 데이터 가져오기
+  const studentData = useSelector((state: RootState) => state.student.data);
+  const rawCalendarSessions = studentData?.calendarSessions || [];
+  const rawCalendarRange = studentData?.calendarRange || null;
+  
+  // StudentClass를 ClassSession으로 변환
+  const calendarSessions = rawCalendarSessions.map(session => ({
+    id: session.id,
+    classId: session.classId || session.id,
+    date: session.date || '',
+    startTime: session.startTime,
+    endTime: session.endTime,
+    currentStudents: session.currentStudents || 0,
+    maxStudents: session.maxStudents || 0,
+    isEnrollable: false,
+    isFull: (session.currentStudents || 0) >= (session.maxStudents || 0),
+    isPastStartTime: session.date ? new Date(session.date + ' ' + session.startTime) < new Date() : false,
+    isAlreadyEnrolled: true,
+    studentEnrollmentStatus: 'CONFIRMED' as const,
+    class: {
+      id: session.class?.id || session.classId || session.id,
+      className: session.class?.className || session.name,
+      level: session.class?.level || 'BEGINNER',
+      tuitionFee: session.class?.tuitionFee?.toString() || '50000',
+      teacher: {
+        id: session.class?.teacher?.id || 0,
+        name: session.class?.teacher?.name || session.teacherName,
+      },
+    },
+  }));
+  
 
-  const isLoading = studentApiLoading || calendarLoading
-  const error = studentApiError || calendarError
+  
+  // calendarRange를 Date 객체로 변환
+  const calendarRange = rawCalendarRange ? {
+    startDate: new Date(rawCalendarRange.startDate),
+    endDate: new Date(rawCalendarRange.endDate),
+  } : undefined;
+  
+  // Redux store에서 데이터만 사용 (student initialization에서 이미 로드됨)
+  const isLoading = false
+  const error = null
 
   // 날짜 클릭 관련 상태 추가
   const [clickedDate, setClickedDate] = useState<Date | null>(null)
