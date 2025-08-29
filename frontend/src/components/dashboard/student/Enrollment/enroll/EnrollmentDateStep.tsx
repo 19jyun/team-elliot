@@ -35,12 +35,16 @@ export function EnrollmentDateStep() {
   const selectedClassSessions = React.useMemo(() => {
     if (!availableSessions || !selectedClassIds.length) return [];
     
+
+    
     const filteredSessions = availableSessions.filter(session => 
       selectedClassIds.includes(session.classId)
     );
     
+
+    
     // AvailableSession을 ClassSession 형식으로 변환
-    return filteredSessions.map(session => ({
+    const result = filteredSessions.map(session => ({
       id: session.id,
       classId: session.classId,
       date: session.date,
@@ -64,6 +68,12 @@ export function EnrollmentDateStep() {
         academy: session.class.academy,
       },
     }));
+    
+
+    
+
+    
+    return result;
   }, [availableSessions, selectedClassIds]);
 
   // 캘린더 범위 계산
@@ -106,6 +116,9 @@ export function EnrollmentDateStep() {
   ];
 
   const handleSessionSelect = (sessionId: number) => {
+    // 선택하려는 세션 정보 찾기
+    const targetSession = selectedClassSessions.find(session => session.id === sessionId);
+    
     setSelectedSessionIds(prev => {
       const newSet = new Set(prev);
       if (newSet.has(sessionId)) {

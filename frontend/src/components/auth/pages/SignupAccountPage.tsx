@@ -209,20 +209,30 @@ export function SignupAccountPage() {
 
     setErrors(newErrors)
 
-    if (!hasError) {
-      // step3 데이터도 세션에 저장
-      const prevData = JSON.parse(sessionStorage.getItem('signupData') || '{}')
-      sessionStorage.setItem(
-        'signupData',
-        JSON.stringify({
-          ...prevData,
-          userId: formData.userId,
-          password: formData.password,
-          confirmPassword: formData.confirmPassword,
-        }),
-      )
-      navigateToAuthSubPage('signup-terms')
+    // 에러가 있으면 3초 후 자동으로 에러 메시지 제거
+    if (hasError) {
+      setTimeout(() => {
+        setErrors({
+          userId: '',
+          password: '',
+          confirmPassword: '',
+        })
+      }, 3000)
+      return
     }
+
+    // step3 데이터도 세션에 저장
+    const prevData = JSON.parse(sessionStorage.getItem('signupData') || '{}')
+    sessionStorage.setItem(
+      'signupData',
+      JSON.stringify({
+        ...prevData,
+        userId: formData.userId,
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
+      }),
+    )
+    navigateToAuthSubPage('signup-terms')
   }
 
   return (
@@ -255,7 +265,7 @@ export function SignupAccountPage() {
       </div>
 
       <div className="flex flex-col mt-16 w-full">
-        <div className="flex flex-col w-full gap-3">
+        <div className="flex flex-col w-full gap-6">
           <InputField
             label="아이디"
             id="userId"

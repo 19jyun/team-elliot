@@ -3,7 +3,10 @@ import type { PrincipalState, PrincipalData } from "@/types/store/principal";
 import type { SocketEventData } from "@/types/socket";
 
 const initialState: PrincipalState = {
-  data: null,
+  data: {
+    enrollments: [],
+    refundRequests: [],
+  },
   isLoading: false,
   error: null,
 };
@@ -19,7 +22,7 @@ export const principalSlice = createSlice({
 
     // 수강신청 실시간 업데이트
     updatePrincipalEnrollment: (state, action) => {
-      if (state.data?.enrollments) {
+      if (state.data?.enrollments && Array.isArray(state.data.enrollments)) {
         const index = state.data.enrollments.findIndex(
           (e) => e.id === action.payload.id
         );
@@ -33,7 +36,10 @@ export const principalSlice = createSlice({
 
     // 환불요청 실시간 업데이트
     updatePrincipalRefundRequest: (state, action) => {
-      if (state.data?.refundRequests) {
+      if (
+        state.data?.refundRequests &&
+        Array.isArray(state.data.refundRequests)
+      ) {
         const index = state.data.refundRequests.findIndex(
           (r) => r.id === action.payload.id
         );
@@ -49,7 +55,7 @@ export const principalSlice = createSlice({
     updatePrincipalEnrollmentFromSocket: (state, action) => {
       const { enrollmentId, status, data } =
         action.payload as SocketEventData<"enrollment_status_changed">;
-      if (state.data?.enrollments) {
+      if (state.data?.enrollments && Array.isArray(state.data.enrollments)) {
         const index = state.data.enrollments.findIndex(
           (e) => e.id === enrollmentId
         );
@@ -66,7 +72,10 @@ export const principalSlice = createSlice({
     updatePrincipalRefundRequestFromSocket: (state, action) => {
       const { refundId, status, data } =
         action.payload as SocketEventData<"refund_request_status_changed">;
-      if (state.data?.refundRequests) {
+      if (
+        state.data?.refundRequests &&
+        Array.isArray(state.data.refundRequests)
+      ) {
         const index = state.data.refundRequests.findIndex(
           (r) => r.id === refundId
         );
@@ -90,7 +99,10 @@ export const principalSlice = createSlice({
     },
 
     clearPrincipalData: (state) => {
-      state.data = null;
+      state.data = {
+        enrollments: [],
+        refundRequests: [],
+      };
       state.isLoading = false;
       state.error = null;
     },

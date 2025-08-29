@@ -1,5 +1,7 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import { getSession } from "next-auth/react";
+import { ErrorHandler } from "@/lib/errorHandler";
+import { ApiResponse, AppError } from "@/types/api";
 
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "/api",
@@ -52,16 +54,36 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// 401 에러 로깅만 수행
+// 응답 인터셉터 - 에러 처리만 담당 (백엔드에서 이미 표준화된 응답 제공)
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // 백엔드에서 이미 {success, data, timestamp, path} 형태로 응답하므로 그대로 반환
+    return response;
+  },
   (error) => {
-    if (error.response?.status === 401) {
-      console.error(
-        "401 Unauthorized - 토큰이 만료되었거나 인증에 실패했습니다."
-      );
+    // 에러 응답 처리
+    if (error.response?.data) {
+      const apiError = error.response.data as ApiResponse;
+      const appError = ErrorHandler.handle(apiError);
+
+      if (appError) {
+        // 인증 에러는 전역 처리
+        if (
+          appError.type === "AUTHENTICATION" &&
+          ["TOKEN_EXPIRED", "INVALID_TOKEN"].includes(appError.code)
+        ) {
+          if (appError.action) {
+            appError.action();
+          }
+        }
+
+        return Promise.reject(appError);
+      }
     }
-    return Promise.reject(error);
+
+    // 네트워크 에러 등 처리
+    const networkError = ErrorHandler.handleNetworkError(error);
+    return Promise.reject(networkError);
   }
 );
 

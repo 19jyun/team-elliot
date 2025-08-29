@@ -10,6 +10,7 @@ import {
   Body,
   UseInterceptors,
   UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { PrincipalService } from './principal.service';
@@ -55,7 +56,27 @@ export class PrincipalController {
   async createClass(@GetUser() user: any, @Body() createClassDto: any) {
     // Principal의 ID를 가져와서 클래스 생성
     const principal = await this.principalService.getPrincipalInfo(user.id);
-    return this.classService.createClass(createClassDto, 'PRINCIPAL');
+
+    // Principal의 학원 ID를 자동으로 설정
+    const principalWithAcademy = await this.principalService.getPrincipalData(
+      user.id,
+    );
+    const academyId = principalWithAcademy.academy?.id;
+
+    if (!academyId) {
+      throw new BadRequestException({
+        code: 'ACADEMY_NOT_FOUND',
+        message: 'Principal이 소속된 학원을 찾을 수 없습니다.',
+      });
+    }
+
+    // academyId를 자동으로 설정
+    const classData = {
+      ...createClassDto,
+      academyId: academyId,
+    };
+
+    return this.classService.createClass(classData, 'PRINCIPAL');
   }
 
   // Principal의 학원 모든 강사 조회

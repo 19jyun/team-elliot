@@ -5,6 +5,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi'
+import { useApiError } from '@/hooks/useApiError'
 import { ClassList } from '@/components/common/ClassContainer/ClassList'
 import { CommonClassData } from '@/components/common/ClassContainer/ClassCard'
 import { ClassSessionModal } from '@/components/common/ClassContainer/ClassSessionModal'
@@ -24,6 +25,7 @@ export const PrincipalClassesContainer = () => {
 
   // API 기반 데이터 관리
   const { classes, sessions, loadClasses, loadSessions, isLoading, error, isPrincipal } = usePrincipalApi()
+  const { handleApiError } = useApiError()
 
   // 컴포넌트 마운트 시 데이터 로드
   useEffect(() => {
@@ -44,10 +46,8 @@ export const PrincipalClassesContainer = () => {
 
   // 에러 처리
   if (error) {
-    if ((error as any)?.response?.status === 401) {
-      signOut({ redirect: true, callbackUrl: '/auth' });
-      return null;
-    }
+    // 에러가 발생하면 useApiError로 처리
+    handleApiError(error);
     
     return (
       <div className="flex flex-col items-center justify-center min-h-full">

@@ -11,7 +11,11 @@ export function usePrincipalData() {
 
   // 수강신청 대기 중인 세션들
   const pendingEnrollmentSessions = useMemo(() => {
-    if (!principalData?.enrollments) return [];
+    if (
+      !principalData?.enrollments ||
+      !Array.isArray(principalData.enrollments)
+    )
+      return [];
 
     const pendingEnrollments = principalData.enrollments.filter(
       (enrollment) => enrollment.status === "PENDING"
@@ -49,7 +53,11 @@ export function usePrincipalData() {
 
   // 환불요청 대기 중인 세션들
   const pendingRefundSessions = useMemo(() => {
-    if (!principalData?.refundRequests) return [];
+    if (
+      !principalData?.refundRequests ||
+      !Array.isArray(principalData.refundRequests)
+    )
+      return [];
 
     const pendingRefunds = principalData.refundRequests.filter(
       (refund) => refund.status === "PENDING"
@@ -95,10 +103,14 @@ export function usePrincipalData() {
   // 특정 세션의 수강신청 목록
   const getSessionEnrollments = useCallback(
     (sessionId: number) => {
-      return (
-        principalData?.enrollments?.filter(
-          (enrollment) => enrollment.sessionId === sessionId
-        ) || []
+      if (
+        !principalData?.enrollments ||
+        !Array.isArray(principalData.enrollments)
+      ) {
+        return [];
+      }
+      return principalData.enrollments.filter(
+        (enrollment) => enrollment.sessionId === sessionId
       );
     },
     [principalData?.enrollments]
@@ -107,10 +119,14 @@ export function usePrincipalData() {
   // 특정 세션의 환불요청 목록
   const getSessionRefundRequests = useCallback(
     (sessionId: number) => {
-      return (
-        principalData?.refundRequests?.filter(
-          (refund: any) => refund.sessionEnrollment?.session?.id === sessionId
-        ) || []
+      if (
+        !principalData?.refundRequests ||
+        !Array.isArray(principalData.refundRequests)
+      ) {
+        return [];
+      }
+      return principalData.refundRequests.filter(
+        (refund: any) => refund.sessionEnrollment?.session?.id === sessionId
       );
     },
     [principalData?.refundRequests]
@@ -118,7 +134,10 @@ export function usePrincipalData() {
 
   // 수강신청 통계
   const enrollmentStats = useMemo(() => {
-    if (!principalData?.enrollments) {
+    if (
+      !principalData?.enrollments ||
+      !Array.isArray(principalData.enrollments)
+    ) {
       return { total: 0, pending: 0, confirmed: 0, rejected: 0 };
     }
 
@@ -138,7 +157,10 @@ export function usePrincipalData() {
 
   // 환불요청 통계
   const refundStats = useMemo(() => {
-    if (!principalData?.refundRequests) {
+    if (
+      !principalData?.refundRequests ||
+      !Array.isArray(principalData.refundRequests)
+    ) {
       return { total: 0, pending: 0, approved: 0, rejected: 0 };
     }
 
@@ -160,8 +182,8 @@ export function usePrincipalData() {
 
   return {
     // 실시간 데이터
-    enrollments: principalData?.enrollments || [],
-    refundRequests: principalData?.refundRequests || [],
+    enrollments: principalData?.enrollments,
+    refundRequests: principalData?.refundRequests,
     isLoading,
     error,
 

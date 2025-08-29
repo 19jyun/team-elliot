@@ -159,8 +159,18 @@ export function TeacherProfileCard({
     e.preventDefault();
     e.stopPropagation();
     
-    if (canEdit && fileInputRef.current) {
+    if (!isEditing) {
+      return;
+    }
+    
+    if (!fileInputRef.current) {
+      return;
+    }
+    
+    try {
       fileInputRef.current.click();
+    } catch (error) {
+      console.error('파일 입력 필드 클릭 실패:', error);
     }
   };
 
@@ -413,10 +423,10 @@ export function TeacherProfileCard({
         <div className="flex items-start gap-4">
           <div className="relative">
             <div 
-              className={`relative ${canEdit ? 'cursor-pointer' : ''}`}
+              className={`relative ${isEditing ? 'cursor-pointer' : ''}`}
               onClick={handlePhotoClick}
             >
-              <Avatar className={`h-20 w-20 ${canEdit ? 'ring-2 ring-blue-500 ring-offset-2 hover:ring-blue-600' : ''}`}>
+              <Avatar className={`h-20 w-20 ${isEditing ? 'ring-2 ring-blue-500 ring-offset-2 hover:ring-blue-600' : ''}`}>
                 <AvatarImage 
                   src={previewUrl || getImageUrl(currentProfile.photoUrl) || ''} 
                   alt={currentProfile.name} 
@@ -425,7 +435,7 @@ export function TeacherProfileCard({
                   {currentProfile.name?.charAt(0)}
                 </AvatarFallback>
               </Avatar>
-              {canEdit && (
+              {isEditing && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 hover:opacity-100 transition-opacity">
                   <Camera className="h-6 w-6 text-white" />
                 </div>

@@ -43,24 +43,28 @@ export function EnrollmentModificationContainer({ classId, className, month }: E
 
   // Redux에서 해당 클래스의 수강 신청 정보 필터링
   const existingEnrollments = React.useMemo(() => {
-    if (!enrollmentHistory) return [];
+    if (!enrollmentHistory) {
+      return [];
+    }
     
-    return enrollmentHistory
-      .filter(enrollment => enrollment.session.class.id === classId)
-      .map(enrollment => ({
-        id: enrollment.session.id,
-        date: enrollment.session.date,
-        startTime: enrollment.session.startTime,
-        endTime: enrollment.session.endTime,
-        class: enrollment.session.class,
-        enrollment: {
-          id: enrollment.id,
-          status: enrollment.status as any, // 타입 호환성을 위해 any로 캐스팅
-          enrolledAt: enrollment.enrolledAt,
-          description: enrollment.description,
-          refundRejection: enrollment.refundRejection
-        }
-      }));
+    const filtered = enrollmentHistory.filter(enrollment => 
+      enrollment.session.class.id === classId
+    );
+    
+    return filtered.map(enrollment => ({
+      id: enrollment.session.id,
+      date: enrollment.session.date,
+      startTime: enrollment.session.startTime,
+      endTime: enrollment.session.endTime,
+      class: enrollment.session.class,
+      enrollment: {
+        id: enrollment.id,
+        status: enrollment.status as any, // 타입 호환성을 위해 any로 캐스팅
+        enrolledAt: enrollment.enrolledAt,
+        description: enrollment.description,
+        refundRejection: enrollment.refundRejection
+      }
+    }));
   }, [enrollmentHistory, classId]);
 
   // 수강 변경 금액 계산
@@ -99,16 +103,18 @@ export function EnrollmentModificationContainer({ classId, className, month }: E
       (enrollment: any) => new Date(enrollment.date).toISOString().split("T")[0]
     );
 
-    // 새로 선택된 세션 수
-    const newSessionsCount = dates.length;
-
-    // 취소될 세션 수 (기존에 신청되었지만 현재 선택되지 않은 세션들)
-    const cancelledSessionsCount = originalDates.filter(
-      (date) => !dates.includes(date)
+    // 새로 추가될 세션 수 (기존에 없던 세션들)
+    const newlyAddedSessionsCount = dates.filter(
+      date => !originalDates.includes(date)
     ).length;
 
-    // 순 변경 세션 수
-    const netChange = newSessionsCount - originalEnrolledSessions.length;
+    // 새로 취소될 세션 수 (기존에 있던 세션들)
+    const newlyCancelledSessionsCount = originalDates.filter(
+      date => !dates.includes(date)
+    ).length;
+
+    // 순 변경 세션 수 = 새로 추가 - 새로 취소
+    const netChange = newlyAddedSessionsCount - newlyCancelledSessionsCount;
 
     // 총 금액 계산
     const totalAmount = netChange * actualSessionPrice;
@@ -127,23 +133,29 @@ export function EnrollmentModificationContainer({ classId, className, month }: E
     console.log('수강 변경 정보:', {
       dates,
       originalEnrolledSessions: originalEnrolledSessions.length,
-      newSessionsCount,
-      cancelledSessionsCount,
+      newlyAddedSessionsCount,
+      newlyCancelledSessionsCount,
       netChange,
       totalAmount,
       changeType
     });
     
+    // 실제 변경 사항이 있는지 확인
+    const hasChanges = newlyAddedSessionsCount > 0 || newlyCancelledSessionsCount > 0;
+    
     if (changeType === "no_change") {
-      // 변경 사항이 없으면 완료 페이지로
-      setEnrollmentStep('complete');
+      if (hasChanges) {
+        setEnrollmentStep('payment');
+      } else {
+        setEnrollmentStep('complete');
+      }
     } else if (changeType === "additional_payment") {
       // 추가 결제가 필요하면 결제 페이지로
       setEnrollmentStep('payment');
     } else if (changeType === "refund") {
       // 환불이 필요하면 환불 신청 페이지로
       setRefundAmount(Math.abs(totalAmount));
-      setCancelledSessionsCount(cancelledSessionsCount);
+      setCancelledSessionsCount(newlyCancelledSessionsCount);
       setEnrollmentStep('refund-request');
     }
   };

@@ -109,15 +109,6 @@ export default function PrincipalProfilePage() {
 
   return (
     <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px] relative">
-      <StatusBar 
-        time="9:41"
-        icons={[
-          { src: '/icons/signal.svg', alt: 'Signal', width: 'w-4', aspectRatio: 'square' },
-          { src: '/icons/wifi.svg', alt: 'WiFi', width: 'w-4', aspectRatio: 'square' },
-          { src: '/icons/battery.svg', alt: 'Battery', width: 'w-6', aspectRatio: 'square' }
-        ]}
-        logoSrc="/icons/logo.svg"
-      />
       <div className="flex flex-col px-5 py-6">
         <h1 className="text-2xl font-bold text-stone-700">
           {profile?.name || session?.user?.name}님의 정보

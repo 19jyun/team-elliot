@@ -25,10 +25,12 @@ import type {
   CreateRefundRequestResponse,
 } from "@/types/api/refund";
 import type { ClassDetailsResponse } from "@/types/api/class";
-import axios from "@/lib/axios";
+import { getClassDetails as getClassDetailsApi } from "@/api/class";
+import { useApiError } from "@/hooks/useApiError";
 
 // Student 대시보드에서 사용할 API 훅
 export function useStudentApi() {
+  const { handleApiError } = useApiError();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionClasses, setSessionClasses] = useState<any[]>([]);
@@ -49,17 +51,20 @@ export function useStudentApi() {
     setError(null);
 
     try {
-      const data = await getMyClasses();
-      setSessionClasses(data.sessionClasses || []);
+      const response = await getMyClasses();
+      const data = response.data;
+      if (data) {
+        setSessionClasses(data.sessionClasses || []);
 
-      // calendarRange가 문자열로 오는 경우 Date 객체로 변환
-      if (data.calendarRange) {
-        setCalendarRange({
-          startDate: new Date(data.calendarRange.startDate),
-          endDate: new Date(data.calendarRange.endDate),
-        });
-      } else {
-        setCalendarRange(null);
+        // calendarRange가 문자열로 오는 경우 Date 객체로 변환
+        if (data.calendarRange) {
+          setCalendarRange({
+            startDate: new Date(data.calendarRange.startDate),
+            endDate: new Date(data.calendarRange.endDate),
+          });
+        } else {
+          setCalendarRange(null);
+        }
       }
     } catch (err) {
       setError(
@@ -73,10 +78,11 @@ export function useStudentApi() {
   // 학원 목록 로드 함수
   const loadAcademies = useCallback(async () => {
     try {
-      const data = await getMyAcademies(); // Changed from getAcademies()
-      setAcademies(data);
+      const response = await getMyAcademies();
+      setAcademies(response.data || []);
     } catch (err) {
       console.error("Failed to load academies:", err);
+      setAcademies([]);
     }
   }, []);
 
@@ -85,10 +91,12 @@ export function useStudentApi() {
     try {
       if (!academyId) return;
 
-      const data = await getStudentAvailableSessionsForEnrollment(academyId);
+      const response = await getStudentAvailableSessionsForEnrollment(
+        academyId
+      );
 
-      // API 응답에서 세션 데이터 추출
-      const sessions = data.sessions || [];
+      // API 응답에서 세션 데이터 추출 (response.data.sessions)
+      const sessions = response.data?.sessions || [];
 
       // 세션에서 클래스 정보를 추출하여 중복 제거
       const classMap = new Map<number, any>();
@@ -139,7 +147,7 @@ export function useStudentApi() {
     }
   }, []);
 
-  // 배치 수강 신청 함수
+  // 배치 수강 신청 함수 (기존 로직 유지, 새로운 useEnrollment hook 사용 권장)
   const enrollSessions = useCallback(async (sessionIds: number[]) => {
     try {
       const result = await batchEnrollSessions(sessionIds);
@@ -156,7 +164,8 @@ export function useStudentApi() {
   // 수강 신청 내역 로드 함수
   const loadEnrollmentHistory = useCallback(async () => {
     try {
-      const data = await getEnrollmentHistory();
+      const response = await getEnrollmentHistory();
+      const data = response.data;
       setEnrollmentHistory(data || []);
       return data || [];
     } catch (err) {
@@ -173,7 +182,8 @@ export function useStudentApi() {
   // 환불/취소 내역 로드 함수
   const loadCancellationHistory = useCallback(async () => {
     try {
-      const data = await getCancellationHistory();
+      const response = await getCancellationHistory();
+      const data = response.data;
       setCancellationHistory(data || []);
       return data || [];
     } catch (err) {
@@ -191,7 +201,7 @@ export function useStudentApi() {
   const loadModificationSessions = useCallback(async (classId: number) => {
     try {
       const response = await getClassSessionsForModification(classId);
-      return response;
+      return response.data;
     } catch (err) {
       console.error("수강 변경용 세션 데이터 로드 실패:", err);
       setError(
@@ -224,7 +234,7 @@ export function useStudentApi() {
     []
   );
 
-  // 환불 요청 생성 (학생용)
+  // 환불 요청 생성 (학생용) (기존 로직 유지, 새로운 useRefund hook 사용 권장)
   const createRefundRequest = useCallback(
     async (
       data: CreateRefundRequestDto
@@ -246,7 +256,8 @@ export function useStudentApi() {
   // 사용자 프로필 로드 함수
   const loadUserProfile = useCallback(async () => {
     try {
-      const data = await getMyProfile();
+      const response = await getMyProfile();
+      const data = response.data;
       setUserProfile(data || null);
     } catch (err) {
       console.error("사용자 프로필 로드 실패:", err);
@@ -265,6 +276,7 @@ export function useStudentApi() {
         const sanitized: Record<string, any> = {};
         Object.entries(profileData || {}).forEach(([key, value]) => {
           if (value === "" || value === undefined || value === null) return;
+
           if (key === "birthDate" && typeof value === "string") {
             // 'YYYY-MM-DD' 입력을 ISO 8601 문자열로 변환
             const date = new Date(value);
@@ -348,10 +360,8 @@ export function useStudentApi() {
 
   // 클래스 상세 조회 (학생 화면용)
   const getClassDetails = useCallback(async (classId: number) => {
-    const res = await axios.get<ClassDetailsResponse>(
-      `/classes/${classId}/details`
-    );
-    return res.data;
+    const response = await getClassDetailsApi(classId);
+    return response.data;
   }, []);
 
   // 컴포넌트 마운트 시 데이터 로드

@@ -1,41 +1,54 @@
-import axiosInstance from "@/lib/axios";
+import { get, post, put, del } from "./apiClient";
+import type { ApiResponse } from "@/types/api";
+import { ErrorHandler } from "@/lib/errorHandler";
+import { AppError } from "@/types/api";
+
+// 에러 처리를 위한 래퍼 함수
+const handleApiError = (error: any): never => {
+  if (error.response?.data) {
+    // 백엔드에서 구조화된 에러 응답이 온 경우
+    const appError = ErrorHandler.handle(error.response.data);
+    if (appError) {
+      throw appError;
+    }
+  }
+
+  // 네트워크 에러나 기타 에러
+  const networkError = ErrorHandler.handleNetworkError(error);
+  throw networkError;
+};
 
 // === Principal Dashboard Redux 데이터 초기화용 API ===
 
 // PrincipalData 전체 초기화 (Redux용)
-export const getPrincipalData = async () => {
-  const response = await axiosInstance.get("/principal/me/data");
-  return response.data;
+export const getPrincipalData = (): Promise<ApiResponse<any>> => {
+  return get<ApiResponse<any>>("/principal/me/data");
 };
 
 // Principal 전용 API 함수들
 
 // 1. Principal의 학원 정보 조회
-export const getPrincipalAcademy = async () => {
-  const response = await axiosInstance.get("/principal/academy");
-  return response.data;
+export const getPrincipalAcademy = (): Promise<ApiResponse<any>> => {
+  return get<ApiResponse<any>>("/principal/academy");
 };
 
 // 2. Principal의 학원에 속한 모든 세션 조회 (캘린더용)
-export const getPrincipalAllSessions = async () => {
-  const response = await axiosInstance.get("/principal/sessions");
-  return response.data;
+export const getPrincipalAllSessions = (): Promise<ApiResponse<any>> => {
+  return get<ApiResponse<any>>("/principal/sessions");
 };
 
 // 3. Principal의 학원에 속한 모든 클래스 조회
-export const getPrincipalAllClasses = async () => {
-  const response = await axiosInstance.get("/principal/classes");
-  return response.data;
+export const getPrincipalAllClasses = (): Promise<ApiResponse<any>> => {
+  return get<ApiResponse<any>>("/principal/classes");
 };
 
 // Principal의 클래스 생성
-export const createPrincipalClass = async (data: {
+export const createPrincipalClass = (data: {
   className: string;
   description: string;
   maxStudents: number;
   tuitionFee: number;
   teacherId: number;
-  academyId: number;
   dayOfWeek: string;
   level: string;
   startDate: string;
@@ -43,117 +56,106 @@ export const createPrincipalClass = async (data: {
   startTime: string;
   endTime: string;
   backgroundColor?: string;
-}) => {
-  const response = await axiosInstance.post("/principal/classes", data);
-  return response.data;
+}): Promise<ApiResponse<any>> => {
+  return post<ApiResponse<any>>("/principal/classes", data);
 };
 
 // 4. Principal의 학원에 속한 모든 선생님 조회
-export const getPrincipalAllTeachers = async () => {
-  const response = await axiosInstance.get("/principal/teachers");
-  return response.data;
+export const getPrincipalAllTeachers = (): Promise<ApiResponse<any>> => {
+  return get<ApiResponse<any>>("/principal/teachers");
 };
 
 // 5. Principal의 학원에 속한 모든 수강생 조회
-export const getPrincipalAllStudents = async () => {
-  const response = await axiosInstance.get("/principal/students");
-  return response.data;
+export const getPrincipalAllStudents = (): Promise<ApiResponse<any>> => {
+  return get<ApiResponse<any>>("/principal/students");
 };
 
 // 6. Principal의 학원에 속한 모든 수강신청 조회 (Redux store용)
-export const getPrincipalAllEnrollments = async () => {
-  const response = await axiosInstance.get("/principal/enrollments");
-  return response.data;
+export const getPrincipalAllEnrollments = (): Promise<ApiResponse<any>> => {
+  return get<ApiResponse<any>>("/principal/enrollments");
 };
 
 // 7. Principal의 학원에 속한 모든 환불요청 조회 (Redux store용)
-export const getPrincipalAllRefundRequests = async () => {
-  const response = await axiosInstance.get("/principal/refund-requests");
-  return response.data;
+export const getPrincipalAllRefundRequests = (): Promise<ApiResponse<any>> => {
+  return get<ApiResponse<any>>("/principal/refund-requests");
 };
 
 // Principal의 세션 수강생 조회
-export const getPrincipalSessionEnrollments = async (sessionId: number) => {
-  const response = await axiosInstance.get(
-    `/principal/sessions/${sessionId}/enrollments`
-  );
-  return response.data;
+export const getPrincipalSessionEnrollments = (
+  sessionId: number
+): Promise<ApiResponse<any>> => {
+  return get<ApiResponse<any>>(`/principal/sessions/${sessionId}/enrollments`);
 };
 
 // === Principal 세션 컨텐츠 관리 API ===
-export const getSessionContents = async (sessionId: number) => {
-  const response = await axiosInstance.get(
-    `/principal/sessions/${sessionId}/contents`
-  );
-  return response.data;
+export const getSessionContents = (
+  sessionId: number
+): Promise<ApiResponse<any>> => {
+  return get<ApiResponse<any>>(`/principal/sessions/${sessionId}/contents`);
 };
 
-export const addSessionContent = async (
+export const addSessionContent = (
   sessionId: number,
   data: { poseId: number; note?: string }
-) => {
-  const response = await axiosInstance.post(
+): Promise<ApiResponse<any>> => {
+  return post<ApiResponse<any>>(
     `/principal/sessions/${sessionId}/contents`,
     data
   );
-  return response.data;
 };
 
-export const updateSessionContent = async (
+export const updateSessionContent = (
   sessionId: number,
   contentId: number,
   data: { poseId?: number; note?: string }
-) => {
-  const response = await axiosInstance.put(
+): Promise<ApiResponse<any>> => {
+  return put<ApiResponse<any>>(
     `/principal/sessions/${sessionId}/contents/${contentId}`,
     data
   );
-  return response.data;
 };
 
-export const deleteSessionContent = async (
+export const deleteSessionContent = (
   sessionId: number,
   contentId: number
-) => {
-  const response = await axiosInstance.delete(
+): Promise<ApiResponse<any>> => {
+  return del<ApiResponse<any>>(
     `/principal/sessions/${sessionId}/contents/${contentId}`
   );
-  return response.data;
 };
 
-export const reorderSessionContents = async (
+export const reorderSessionContents = (
   sessionId: number,
   data: { orderedContentIds: number[] }
-) => {
-  const response = await axiosInstance.put(
+): Promise<ApiResponse<any>> => {
+  return put<ApiResponse<any>>(
     `/principal/sessions/${sessionId}/contents/reorder`,
     data
   );
-  return response.data;
 };
 
 // Principal의 학원 정보 수정
-export const updatePrincipalAcademy = async (data: {
+export const updatePrincipalAcademy = (data: {
   name?: string;
   phoneNumber?: string;
   address?: string;
   description?: string;
-}) => {
-  const response = await axiosInstance.put("/principal/academy", data);
-  return response.data;
+}): Promise<ApiResponse<any>> => {
+  return put<ApiResponse<any>>("/principal/academy", data);
 };
 
 // Principal의 프로필 정보 조회
-export const getPrincipalProfile = async (principalId?: number) => {
+export const getPrincipalProfile = (
+  principalId?: number
+): Promise<ApiResponse<any>> => {
   const url = principalId
     ? `/principal/${principalId}/profile`
     : "/principal/profile";
-  const response = await axiosInstance.get(url);
-  return response.data;
+  return get<ApiResponse<any>>(url);
 };
 
 // Principal의 프로필 정보 수정
-export const updatePrincipalProfile = async (data: {
+export const updatePrincipalProfile = (data: {
   name?: string;
   phoneNumber?: string;
   introduction?: string;
@@ -162,125 +164,109 @@ export const updatePrincipalProfile = async (data: {
   bankName?: string;
   accountNumber?: string;
   accountHolder?: string;
-}) => {
-  const response = await axiosInstance.put("/principal/profile", data);
-  return response.data;
+}): Promise<ApiResponse<any>> => {
+  return put<ApiResponse<any>>("/principal/profile", data);
 };
 
 // Principal의 프로필 사진 업로드
-export const updatePrincipalProfilePhoto = async (photo: File) => {
+export const updatePrincipalProfilePhoto = (
+  photo: File
+): Promise<ApiResponse<any>> => {
   const formData = new FormData();
   formData.append("photo", photo);
 
-  const response = await axiosInstance.put(
-    "/principal/profile/photo",
-    formData,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    }
-  );
-  return response.data;
+  return put<ApiResponse<any>>("/principal/profile/photo", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
 };
 
 // === Principal 수강 신청/환불 신청 관리 API ===
 
 // 1. Principal의 세션별 요청 목록 조회
-export const getPrincipalSessionsWithPendingRequests = async (
+export const getPrincipalSessionsWithPendingRequests = (
   requestType: "enrollment" | "refund"
-) => {
-  const response = await axiosInstance.get(
+): Promise<ApiResponse<any>> => {
+  return get<ApiResponse<any>>(
     `/principal/sessions-with-${requestType}-requests`
   );
-  return response.data;
 };
 
 // 2. 특정 세션의 요청 목록 조회
-export const getPrincipalSessionRequests = async (
+export const getPrincipalSessionRequests = (
   sessionId: number,
   requestType: "enrollment" | "refund"
-) => {
-  const response = await axiosInstance.get(
+): Promise<ApiResponse<any>> => {
+  return get<ApiResponse<any>>(
     `/principal/sessions/${sessionId}/${requestType}-requests`
   );
-  return response.data;
 };
 
 // 3. 수강 신청 승인
-export const approvePrincipalEnrollment = async (enrollmentId: number) => {
-  const response = await axiosInstance.post(
+export const approvePrincipalEnrollment = (
+  enrollmentId: number
+): Promise<ApiResponse<any>> => {
+  return post<ApiResponse<any>>(
     `/principal/enrollments/${enrollmentId}/approve`
   );
-  return response.data;
 };
 
 // 4. 수강 신청 거절
-export const rejectPrincipalEnrollment = async (
+export const rejectPrincipalEnrollment = (
   enrollmentId: number,
   data: { reason: string; detailedReason?: string }
-) => {
-  const response = await axiosInstance.post(
+): Promise<ApiResponse<any>> => {
+  return post<ApiResponse<any>>(
     `/principal/enrollments/${enrollmentId}/reject`,
     data
   );
-  return response.data;
 };
 
 // 5. 환불 요청 승인
-export const approvePrincipalRefund = async (refundId: number) => {
-  const response = await axiosInstance.post(
-    `/principal/refunds/${refundId}/approve`
-  );
-  return response.data;
+export const approvePrincipalRefund = (
+  refundId: number
+): Promise<ApiResponse<any>> => {
+  return post<ApiResponse<any>>(`/principal/refunds/${refundId}/approve`);
 };
 
 // 6. 환불 요청 거절
-export const rejectPrincipalRefund = async (
+export const rejectPrincipalRefund = (
   refundId: number,
   data: { reason: string; detailedReason?: string }
-) => {
-  const response = await axiosInstance.put(
-    `/principal/refunds/${refundId}/reject`,
-    data
-  );
-  return response.data;
+): Promise<ApiResponse<any>> => {
+  return put<ApiResponse<any>>(`/principal/refunds/${refundId}/reject`, data);
 };
 
 // === Principal 선생님/수강생 관리 API ===
 
 // 1. Principal의 학원 소속 선생님 목록 조회 (기존 API 활용)
-export const getPrincipalAcademyTeachers = async () => {
-  const response = await axiosInstance.get("/principal/teachers");
-  return response.data;
+export const getPrincipalAcademyTeachers = (): Promise<ApiResponse<any>> => {
+  return get<ApiResponse<any>>("/principal/teachers");
 };
 
 // 2. Principal의 학원 소속 수강생 목록 조회 (기존 API 활용)
-export const getPrincipalAcademyStudents = async () => {
-  const response = await axiosInstance.get("/principal/students");
-  return response.data;
+export const getPrincipalAcademyStudents = (): Promise<ApiResponse<any>> => {
+  return get<ApiResponse<any>>("/principal/students");
 };
 
 // 3. 선생님을 학원에서 제거
-export const removePrincipalTeacher = async (teacherId: number) => {
-  const response = await axiosInstance.delete(
-    `/principal/teachers/${teacherId}`
-  );
-  return response.data;
+export const removePrincipalTeacher = (
+  teacherId: number
+): Promise<ApiResponse<any>> => {
+  return del<ApiResponse<any>>(`/principal/teachers/${teacherId}`);
 };
 
 // 6. 수강생을 학원에서 제거
-export const removePrincipalStudent = async (studentId: number) => {
-  const response = await axiosInstance.delete(
-    `/principal/students/${studentId}`
-  );
-  return response.data;
+export const removePrincipalStudent = (
+  studentId: number
+): Promise<ApiResponse<any>> => {
+  return del<ApiResponse<any>>(`/principal/students/${studentId}`);
 };
 
 // 7. 수강생의 세션 수강 현황 조회
-export const getPrincipalStudentSessionHistory = async (studentId: number) => {
-  const response = await axiosInstance.get(
-    `/principal/students/${studentId}/sessions`
-  );
-  return response.data;
+export const getPrincipalStudentSessionHistory = (
+  studentId: number
+): Promise<ApiResponse<any>> => {
+  return get<ApiResponse<any>>(`/principal/students/${studentId}/sessions`);
 };

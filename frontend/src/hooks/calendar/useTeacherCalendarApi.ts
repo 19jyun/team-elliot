@@ -20,8 +20,12 @@ export function useTeacherCalendarApi() {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await getTeacherClassesWithSessions();
-      setSessions(data.sessions || []);
+      const response = await getTeacherClassesWithSessions();
+      // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
+      const data = response.data;
+      if (data) {
+        setSessions(data.sessions || []);
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || "세션 로드 실패");
     } finally {

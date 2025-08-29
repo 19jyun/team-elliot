@@ -17,7 +17,13 @@ export class AcademyService {
     const exists = await this.prisma.academy.findUnique({
       where: { code: dto.code },
     });
-    if (exists) throw new ConflictException('이미 존재하는 학원 코드입니다.');
+    if (exists) {
+      throw new ConflictException({
+        code: 'ACADEMY_CODE_ALREADY_EXISTS',
+        message: '이미 존재하는 학원 코드입니다.',
+        details: { code: dto.code },
+      });
+    }
     return this.prisma.academy.create({ data: dto });
   }
 
@@ -31,11 +37,27 @@ export class AcademyService {
         students: true,
       },
     });
-    if (!academy) throw new NotFoundException('학원을 찾을 수 없습니다.');
-    if (academy.teachers.length > 0)
-      throw new BadRequestException('소속된 선생님이 있어 삭제할 수 없습니다.');
-    if (academy.students.length > 0)
-      throw new BadRequestException('가입된 학생이 있어 삭제할 수 없습니다.');
+    if (!academy) {
+      throw new NotFoundException({
+        code: 'ACADEMY_NOT_FOUND',
+        message: '학원을 찾을 수 없습니다.',
+        details: { academyId },
+      });
+    }
+    if (academy.teachers.length > 0) {
+      throw new BadRequestException({
+        code: 'ACADEMY_HAS_TEACHERS',
+        message: '소속된 선생님이 있어 삭제할 수 없습니다.',
+        details: { teacherCount: academy.teachers.length },
+      });
+    }
+    if (academy.students.length > 0) {
+      throw new BadRequestException({
+        code: 'ACADEMY_HAS_STUDENTS',
+        message: '가입된 학생이 있어 삭제할 수 없습니다.',
+        details: { studentCount: academy.students.length },
+      });
+    }
     await this.prisma.$transaction(async (tx) => {
       for (const c of academy.classes) {
         await tx.classSession.deleteMany({ where: { classId: c.id } });
@@ -54,7 +76,13 @@ export class AcademyService {
   // 학원 상세 (공통)
   async getAcademyById(id: number) {
     const academy = await this.prisma.academy.findUnique({ where: { id } });
-    if (!academy) throw new NotFoundException('학원을 찾을 수 없습니다.');
+    if (!academy) {
+      throw new NotFoundException({
+        code: 'ACADEMY_NOT_FOUND',
+        message: '학원을 찾을 수 없습니다.',
+        details: { academyId: id },
+      });
+    }
     return academy;
   }
 
@@ -64,19 +92,38 @@ export class AcademyService {
     const student = await this.prisma.student.findUnique({
       where: { userRefId: userId },
     });
-    if (!student) throw new NotFoundException('학생을 찾을 수 없습니다.');
+    if (!student) {
+      throw new NotFoundException({
+        code: 'STUDENT_NOT_FOUND',
+        message: '학생을 찾을 수 없습니다.',
+        details: { userId },
+      });
+    }
 
     const academy = await this.prisma.academy.findUnique({
       where: { code: dto.code },
     });
-    if (!academy)
-      throw new NotFoundException('해당 코드의 학원을 찾을 수 없습니다.');
+    if (!academy) {
+      throw new NotFoundException({
+        code: 'ACADEMY_CODE_NOT_FOUND',
+        message: '해당 코드의 학원을 찾을 수 없습니다.',
+        details: { code: dto.code },
+      });
+    }
+
     const exists = await this.prisma.studentAcademy.findUnique({
       where: {
         studentId_academyId: { studentId: student.id, academyId: academy.id },
       },
     });
-    if (exists) throw new ConflictException('이미 가입된 학원입니다.');
+    if (exists) {
+      throw new ConflictException({
+        code: 'STUDENT_ALREADY_JOINED',
+        message: '이미 가입된 학원입니다.',
+        details: { academyId: academy.id, academyName: academy.name },
+      });
+    }
+
     await this.prisma.studentAcademy.create({
       data: { studentId: student.id, academyId: academy.id },
     });
@@ -89,7 +136,13 @@ export class AcademyService {
     const student = await this.prisma.student.findUnique({
       where: { userRefId: userId },
     });
-    if (!student) throw new NotFoundException('학생을 찾을 수 없습니다.');
+    if (!student) {
+      throw new NotFoundException({
+        code: 'STUDENT_NOT_FOUND',
+        message: '학생을 찾을 수 없습니다.',
+        details: { userId },
+      });
+    }
 
     const exists = await this.prisma.studentAcademy.findUnique({
       where: {
@@ -99,7 +152,14 @@ export class AcademyService {
         },
       },
     });
-    if (!exists) throw new BadRequestException('가입되지 않은 학원입니다.');
+    if (!exists) {
+      throw new BadRequestException({
+        code: 'STUDENT_NOT_JOINED',
+        message: '가입되지 않은 학원입니다.',
+        details: { academyId: dto.academyId },
+      });
+    }
+
     await this.prisma.studentAcademy.delete({
       where: {
         studentId_academyId: {
@@ -122,7 +182,13 @@ export class AcademyService {
         },
       },
     });
-    if (!student) throw new NotFoundException('학생을 찾을 수 없습니다.');
+    if (!student) {
+      throw new NotFoundException({
+        code: 'STUDENT_NOT_FOUND',
+        message: '학생을 찾을 수 없습니다.',
+        details: { userId },
+      });
+    }
     return student.academies.map((sa) => sa.academy);
   }
 
@@ -168,7 +234,11 @@ export class AcademyService {
     });
 
     if (!teacher) {
-      throw new NotFoundException('Teacher not found');
+      throw new NotFoundException({
+        code: 'TEACHER_NOT_FOUND',
+        message: '선생님을 찾을 수 없습니다.',
+        details: { teacherId },
+      });
     }
 
     return teacher.academy;
@@ -181,7 +251,11 @@ export class AcademyService {
     });
 
     if (!teacher) {
-      throw new NotFoundException('Teacher not found');
+      throw new NotFoundException({
+        code: 'TEACHER_NOT_FOUND',
+        message: '선생님을 찾을 수 없습니다.',
+        details: { teacherId },
+      });
     }
 
     const academy = await this.prisma.academy.findUnique({
@@ -189,7 +263,11 @@ export class AcademyService {
     });
 
     if (!academy) {
-      throw new NotFoundException('해당 코드의 학원을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'ACADEMY_CODE_NOT_FOUND',
+        message: '해당 코드의 학원을 찾을 수 없습니다.',
+        details: { code: academyCode },
+      });
     }
 
     // Teacher의 학원 변경
@@ -213,7 +291,11 @@ export class AcademyService {
     });
 
     if (!teacher) {
-      throw new NotFoundException('Teacher not found');
+      throw new NotFoundException({
+        code: 'TEACHER_NOT_FOUND',
+        message: '선생님을 찾을 수 없습니다.',
+        details: { teacherId },
+      });
     }
 
     // 학원 코드 중복 확인
@@ -222,7 +304,11 @@ export class AcademyService {
     });
 
     if (existingAcademy) {
-      throw new ConflictException('이미 존재하는 학원 코드입니다.');
+      throw new ConflictException({
+        code: 'ACADEMY_CODE_ALREADY_EXISTS',
+        message: '이미 존재하는 학원 코드입니다.',
+        details: { code: createAcademyDto.code },
+      });
     }
 
     // 학원 생성
@@ -249,7 +335,11 @@ export class AcademyService {
     });
 
     if (!teacher) {
-      throw new NotFoundException('Teacher not found');
+      throw new NotFoundException({
+        code: 'TEACHER_NOT_FOUND',
+        message: '선생님을 찾을 수 없습니다.',
+        details: { teacherId },
+      });
     }
 
     // 학원 코드 중복 확인
@@ -258,7 +348,11 @@ export class AcademyService {
     });
 
     if (existingAcademy) {
-      throw new ConflictException('이미 존재하는 학원 코드입니다.');
+      throw new ConflictException({
+        code: 'ACADEMY_CODE_ALREADY_EXISTS',
+        message: '이미 존재하는 학원 코드입니다.',
+        details: { code: createAcademyDto.code },
+      });
     }
 
     // 트랜잭션으로 학원 생성 및 Teacher 가입
@@ -299,11 +393,19 @@ export class AcademyService {
     });
 
     if (!teacher) {
-      throw new NotFoundException('Teacher not found');
+      throw new NotFoundException({
+        code: 'TEACHER_NOT_FOUND',
+        message: '선생님을 찾을 수 없습니다.',
+        details: { teacherId },
+      });
     }
 
     if (!teacher.academy) {
-      throw new BadRequestException('소속된 학원이 없습니다.');
+      throw new BadRequestException({
+        code: 'TEACHER_NOT_IN_ACADEMY',
+        message: '소속된 학원이 없습니다.',
+        details: { teacherId },
+      });
     }
 
     // 학원 정보 업데이트
@@ -328,11 +430,19 @@ export class AcademyService {
     });
 
     if (!teacher) {
-      throw new NotFoundException('Teacher not found');
+      throw new NotFoundException({
+        code: 'TEACHER_NOT_FOUND',
+        message: '선생님을 찾을 수 없습니다.',
+        details: { teacherId },
+      });
     }
 
     if (!teacher.academy) {
-      throw new BadRequestException('소속된 학원이 없습니다.');
+      throw new BadRequestException({
+        code: 'TEACHER_NOT_IN_ACADEMY',
+        message: '소속된 학원이 없습니다.',
+        details: { teacherId },
+      });
     }
 
     // Teacher가 가진 클래스가 있는지 확인
@@ -341,9 +451,11 @@ export class AcademyService {
     });
 
     if (teacherClasses.length > 0) {
-      throw new BadRequestException(
-        '담당하고 있는 클래스가 있어 학원을 탈퇴할 수 없습니다.',
-      );
+      throw new BadRequestException({
+        code: 'TEACHER_HAS_CLASSES',
+        message: '담당하고 있는 클래스가 있어 학원을 탈퇴할 수 없습니다.',
+        details: { classCount: teacherClasses.length },
+      });
     }
 
     // Teacher를 학원에서 분리
@@ -370,12 +482,20 @@ export class AcademyService {
     });
 
     if (!teacher) {
-      throw new NotFoundException('Teacher not found');
+      throw new NotFoundException({
+        code: 'TEACHER_NOT_FOUND',
+        message: '선생님을 찾을 수 없습니다.',
+        details: { teacherId },
+      });
     }
 
     // 이미 학원에 소속되어 있는지 확인
     if (teacher.academyId) {
-      throw new BadRequestException('이미 학원에 소속되어 있습니다.');
+      throw new BadRequestException({
+        code: 'TEACHER_ALREADY_IN_ACADEMY',
+        message: '이미 학원에 소속되어 있습니다.',
+        details: { academyId: teacher.academyId },
+      });
     }
 
     // 학원 코드로 학원 찾기
@@ -384,7 +504,11 @@ export class AcademyService {
     });
 
     if (!academy) {
-      throw new NotFoundException('해당 코드의 학원을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'ACADEMY_CODE_NOT_FOUND',
+        message: '해당 코드의 학원을 찾을 수 없습니다.',
+        details: { code: joinAcademyRequestDto.code },
+      });
     }
 
     // 이미 가입 요청이 있는지 확인
@@ -397,7 +521,11 @@ export class AcademyService {
     });
 
     if (existingRequest) {
-      throw new BadRequestException('이미 가입 요청이 진행 중입니다.');
+      throw new BadRequestException({
+        code: 'JOIN_REQUEST_ALREADY_EXISTS',
+        message: '이미 가입 요청이 진행 중입니다.',
+        details: { requestId: existingRequest.id },
+      });
     }
 
     // 가입 요청 생성
@@ -427,7 +555,13 @@ export class AcademyService {
         },
       },
     });
-    if (!student) throw new NotFoundException('학생을 찾을 수 없습니다.');
+    if (!student) {
+      throw new NotFoundException({
+        code: 'STUDENT_NOT_FOUND',
+        message: '학생을 찾을 수 없습니다.',
+        details: { studentId },
+      });
+    }
     return student.academies.map((sa) => sa.academy);
   }
 
@@ -436,12 +570,25 @@ export class AcademyService {
     const academy = await this.prisma.academy.findUnique({
       where: { code: joinAcademyDto.code },
     });
-    if (!academy)
-      throw new NotFoundException('해당 코드의 학원을 찾을 수 없습니다.');
+    if (!academy) {
+      throw new NotFoundException({
+        code: 'ACADEMY_CODE_NOT_FOUND',
+        message: '해당 코드의 학원을 찾을 수 없습니다.',
+        details: { code: joinAcademyDto.code },
+      });
+    }
+
     const exists = await this.prisma.studentAcademy.findUnique({
       where: { studentId_academyId: { studentId, academyId: academy.id } },
     });
-    if (exists) throw new ConflictException('이미 가입된 학원입니다.');
+    if (exists) {
+      throw new ConflictException({
+        code: 'STUDENT_ALREADY_JOINED',
+        message: '이미 가입된 학원입니다.',
+        details: { academyId: academy.id, academyName: academy.name },
+      });
+    }
+
     await this.prisma.studentAcademy.create({
       data: { studentId, academyId: academy.id },
     });
@@ -458,7 +605,14 @@ export class AcademyService {
         },
       },
     });
-    if (!exists) throw new BadRequestException('가입되지 않은 학원입니다.');
+    if (!exists) {
+      throw new BadRequestException({
+        code: 'STUDENT_NOT_JOINED',
+        message: '가입되지 않은 학원입니다.',
+        details: { academyId: leaveAcademyDto.academyId },
+      });
+    }
+
     await this.prisma.studentAcademy.delete({
       where: {
         studentId_academyId: {
@@ -481,11 +635,19 @@ export class AcademyService {
     });
 
     if (!principal) {
-      throw new NotFoundException('principal not found');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: '원장을 찾을 수 없습니다.',
+        details: { principalId: principalTeacherId },
+      });
     }
 
     if (!principal.academy) {
-      throw new BadRequestException('소속된 학원이 없습니다.');
+      throw new BadRequestException({
+        code: 'PRINCIPAL_NOT_IN_ACADEMY',
+        message: '소속된 학원이 없습니다.',
+        details: { principalId: principalTeacherId },
+      });
     }
 
     // 해당 수강생이 Teacher의 학원에 속하는지 확인
@@ -497,7 +659,11 @@ export class AcademyService {
     });
 
     if (!studentAcademy) {
-      throw new ForbiddenException('해당 수강생에 접근할 권한이 없습니다.');
+      throw new ForbiddenException({
+        code: 'STUDENT_NOT_IN_ACADEMY',
+        message: '해당 수강생에 접근할 권한이 없습니다.',
+        details: { studentId, academyId: principal.academyId },
+      });
     }
 
     // 수강생을 학원에서 제거
@@ -526,13 +692,21 @@ export class AcademyService {
     });
 
     if (!principalTeacher?.academy) {
-      throw new NotFoundException('소속된 학원이 없습니다.');
+      throw new NotFoundException({
+        code: 'TEACHER_NOT_IN_ACADEMY',
+        message: '소속된 학원이 없습니다.',
+        details: { teacherId: principalTeacherId },
+      });
     }
 
     const isPrincipal =
       principalTeacher.academy.principal?.id === principalTeacherId;
     if (!isPrincipal) {
-      throw new ForbiddenException('학원 관리 권한이 없습니다.');
+      throw new ForbiddenException({
+        code: 'INSUFFICIENT_PERMISSIONS',
+        message: '학원 관리 권한이 없습니다.',
+        details: { teacherId: principalTeacherId, requiredRole: 'PRINCIPAL' },
+      });
     }
 
     // 수강생이 해당 학원에 속하는지 확인
@@ -546,7 +720,11 @@ export class AcademyService {
     });
 
     if (!studentAcademy) {
-      throw new NotFoundException('해당 수강생을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'STUDENT_NOT_IN_ACADEMY',
+        message: '해당 수강생을 찾을 수 없습니다.',
+        details: { studentId, academyId: principalTeacher.academy.id },
+      });
     }
 
     // 수강생의 모든 세션 수강 내역과 관련 데이터 삭제

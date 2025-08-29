@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { toast } from 'sonner';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
+import { useEnrollment } from '@/hooks/student/useEnrollment';
 import { PrincipalPaymentBox } from '@/components/features/student/enrollment/month/date/payment/PrincipalPaymentBox';
 import { PaymentConfirmFooter } from '@/components/features/student/enrollment/month/date/payment/PaymentConfirmFooter';
 import { SelectedSession, PrincipalPaymentInfo } from '@/components/features/student/enrollment/month/date/payment/types';
@@ -16,7 +17,8 @@ interface EnrollmentPaymentStepProps {
 export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps) {
   const { enrollment, setEnrollmentStep } = useDashboardNavigation();
   const { selectedSessions: contextSessions } = enrollment;
-  const { enrollSessions, loadSessionPaymentInfo } = useStudentApi();
+  const { loadSessionPaymentInfo } = useStudentApi();
+  const { enrollSessions } = useEnrollment();
   const [selectedSessions, setSelectedSessions] = useState<SelectedSession[]>([]);
   const [principalPayment, setPrincipalPayment] = useState<PrincipalPaymentInfo | null>(null);
   const [confirmed, setConfirmed] = useState(false);
@@ -59,20 +61,20 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
       const classFees: any[] = [];
       let totalAmount = 0;
       
-      // 각 세션별로 결제 정보를 가져옴
-      for (const session of sessions) {
-        try {
-          const paymentInfo = await loadSessionPaymentInfo(session.id);
-          
-          if (paymentInfo && paymentInfo.principal) {
-            // 원장 정보는 첫 번째 세션에서 가져옴 (모든 세션이 같은 원장)
-            if (!principalInfo) {
-              principalInfo = paymentInfo.principal;
-            }
-            
-            // 실제 클래스의 tuitionFee를 사용하여 수강료 계산
-            const className = session.class?.className || '클래스';
-            const sessionFee = Number(paymentInfo.tuitionFee) || 0;
+             // 각 세션별로 결제 정보를 가져옴
+       for (const session of sessions) {
+         try {
+           const paymentInfo = await loadSessionPaymentInfo(session.id);
+           
+              if (paymentInfo && paymentInfo.data && paymentInfo.data.principal) {
+              // 원장 정보는 첫 번째 세션에서 가져옴 (모든 세션이 같은 원장)
+              if (!principalInfo) {
+                principalInfo = paymentInfo.data.principal;
+              }
+              
+              // 실제 클래스의 tuitionFee를 사용하여 수강료 계산
+              const className = session.class?.className || '클래스';
+              const sessionFee = Number(paymentInfo.data.tuitionFee) || 0;
             
             // 클래스 수강료 정보 추가
             const existingFee = classFees.find(fee => fee.name === className);
@@ -141,18 +143,24 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
   };
 
   useEffect(() => {
+
+    
     // Context에서 세션 정보를 우선 사용하고, 없으면 localStorage에서 가져옴
     let sessions: SelectedSession[] = [];
     
     if (contextSessions && contextSessions.length > 0) {
       sessions = contextSessions;
+
     } else if (typeof window !== 'undefined') {
       const sessionsData = localStorage.getItem('selectedSessions');
       
       if (sessionsData) {
         sessions = JSON.parse(sessionsData);
+
       }
     }
+    
+
     
     if (sessions.length > 0) {
       // 이미 수강 신청한 세션이 있는지 확인
@@ -170,6 +178,8 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
       setSelectedSessions(sessions);
       // 실제 결제 정보 로드
       loadPaymentInfoForSessions(sessions);
+    } else {
+      console.warn('🔍 세션 데이터가 없습니다!');
     }
   }, [contextSessions, loadSessionPaymentInfo, setEnrollmentStep]);
 
@@ -188,16 +198,12 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
       // 새로운 수강 신청 모드: 기존 로직
       const sessionIds = selectedSessions.map(session => session.id);
       
-      // 백엔드에 세션별 수강 신청 요청
+      // 백엔드에 세션별 수강 신청 요청 (낙관적 업데이트 포함)
       const result = await enrollSessions(sessionIds);
       
-      if (result.success > 0) {
-        toast.success(`${result.success}개 세션의 수강 신청이 완료되었습니다.`);
-        setEnrollmentStep('complete');
-        onComplete?.();
-      } else {
-        toast.error('수강 신청에 실패했습니다.');
-      }
+      // 성공 시 완료 페이지로 이동
+      setEnrollmentStep('complete');
+      onComplete?.();
     } catch (error) {
       console.error('Enrollment error:', error);
       toast.error(error instanceof Error ? error.message : '처리 중 오류가 발생했습니다.');

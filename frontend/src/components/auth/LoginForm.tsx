@@ -44,17 +44,6 @@ export function LoginForm() {
 
   return (
     <div className="flex flex-col w-full">
-      {/* StatusBar */}
-      <StatusBar 
-        time="9:41"
-        icons={[
-          { src: '/icons/signal.svg', alt: 'Signal', width: 'w-4', aspectRatio: 'square' },
-          { src: '/icons/wifi.svg', alt: 'WiFi', width: 'w-4', aspectRatio: 'square' },
-          { src: '/icons/battery.svg', alt: 'Battery', width: 'w-6', aspectRatio: 'square' }
-        ]}
-        logoSrc="/icons/logo.svg"
-      />
-
       {/* 뒤로가기 버튼 */}
       <div className="flex gap-2.5 items-center px-2.5 py-2">
         <div className="flex gap-2.5 items-center self-stretch p-2.5 my-auto w-11">

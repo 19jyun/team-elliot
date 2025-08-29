@@ -35,11 +35,13 @@ import type {
   UpdatePrincipalProfileRequest,
 } from "@/types/api/principal";
 import type { BalletPose, PoseDifficulty } from "@/types/api/ballet-pose";
-import axios from "@/lib/axios";
+import { getBalletPoses, getBalletPose } from "@/api/ballet-pose";
+import { useApiError } from "@/hooks/useApiError";
 
 // Principal API 데이터 훅
 export function usePrincipalApi() {
   const { data: session, status } = useSession();
+  const { handleApiError } = useApiError();
   const [profile, setProfile] = useState<PrincipalProfile | null>(null);
   const [academy, setAcademy] = useState<PrincipalAcademy | null>(null);
   const [classes, setClasses] = useState<PrincipalClass[]>([]);
@@ -59,12 +61,19 @@ export function usePrincipalApi() {
 
     try {
       setError(null);
-      const data = await getPrincipalProfile();
-      setProfile(data);
+      setIsLoading(true);
+      const response = await getPrincipalProfile();
+      const data = response.data;
+      if (data) {
+        setProfile(data);
+      }
     } catch (err: any) {
-      setError(err.response?.data?.message || "프로필 로드 실패");
+      handleApiError(err);
+      setError(err.message || "프로필 로드 실패");
+    } finally {
+      setIsLoading(false);
     }
-  }, [isPrincipal]);
+  }, [isPrincipal, handleApiError]);
 
   // 학원 정보 로드
   const loadAcademy = useCallback(async () => {
@@ -72,8 +81,11 @@ export function usePrincipalApi() {
 
     try {
       setError(null);
-      const data = await getPrincipalAcademy();
-      setAcademy(data);
+      const response = await getPrincipalAcademy();
+      const data = response.data;
+      if (data) {
+        setAcademy(data);
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || "학원 정보 로드 실패");
     }
@@ -85,8 +97,11 @@ export function usePrincipalApi() {
 
     try {
       setError(null);
-      const data = await getPrincipalAllClasses();
-      setClasses(data);
+      const response = await getPrincipalAllClasses();
+      const data = response.data;
+      if (data) {
+        setClasses(data);
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || "클래스 목록 로드 실패");
     }
@@ -98,8 +113,11 @@ export function usePrincipalApi() {
 
     try {
       setError(null);
-      const data = await getPrincipalAllTeachers();
-      setTeachers(data);
+      const response = await getPrincipalAllTeachers();
+      const data = response.data;
+      if (data) {
+        setTeachers(data);
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || "선생님 목록 로드 실패");
     }
@@ -111,8 +129,11 @@ export function usePrincipalApi() {
 
     try {
       setError(null);
-      const data = await getPrincipalAllStudents();
-      setStudents(data);
+      const response = await getPrincipalAllStudents();
+      const data = response.data;
+      if (data) {
+        setStudents(data);
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || "학생 목록 로드 실패");
     }
@@ -124,8 +145,11 @@ export function usePrincipalApi() {
 
     try {
       setError(null);
-      const data = await getPrincipalAllSessions();
-      setSessions(data);
+      const response = await getPrincipalAllSessions();
+      const data = response.data;
+      if (data) {
+        setSessions(data);
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || "세션 목록 로드 실패");
     }
@@ -138,8 +162,9 @@ export function usePrincipalApi() {
 
       try {
         setError(null);
-        const data = await getPrincipalSessionEnrollments(sessionId);
-        return data;
+        const response = await getPrincipalSessionEnrollments(sessionId);
+        const data = response.data;
+        return data || null;
       } catch (err: any) {
         setError(err.response?.data?.message || "수강생 목록 로드 실패");
         return null;
@@ -181,7 +206,12 @@ export function usePrincipalApi() {
 
   // 업데이트/액션 래퍼들 (컴포넌트에서 API 직접 호출 금지 목적)
   const updateProfile = async (data: UpdatePrincipalProfileRequest) => {
-    return updatePrincipalProfile(data);
+    const response = await updatePrincipalProfile(data);
+
+    // 프로필 업데이트 후 데이터 다시 로드
+    await loadProfile();
+
+    return response;
   };
   const updateProfilePhoto = async (photo: File) => {
     return updatePrincipalProfilePhoto(photo);
@@ -239,14 +269,12 @@ export function usePrincipalApi() {
   const fetchBalletPoses = async (
     difficulty?: PoseDifficulty
   ): Promise<BalletPose[]> => {
-    const res = await axios.get("/ballet-poses", {
-      params: difficulty ? { difficulty } : undefined,
-    });
-    return res.data;
+    const response = await getBalletPoses(difficulty);
+    return response.data || [];
   };
   const fetchBalletPose = async (id: number): Promise<BalletPose> => {
-    const res = await axios.get(`/ballet-poses/${id}`);
-    return res.data;
+    const response = await getBalletPose(id);
+    return response.data!;
   };
 
   // 헬퍼 함수들
@@ -279,8 +307,8 @@ export function usePrincipalApi() {
 
     try {
       setError(null);
-      const data = await approvePrincipalEnrollment(enrollmentId);
-      return data;
+      const response = await approvePrincipalEnrollment(enrollmentId);
+      return response.data;
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || "수강신청 승인 실패";
       setError(errorMessage);
@@ -298,11 +326,11 @@ export function usePrincipalApi() {
 
     try {
       setError(null);
-      const data = await rejectPrincipalEnrollment(enrollmentId, {
+      const response = await rejectPrincipalEnrollment(enrollmentId, {
         reason,
         detailedReason,
       });
-      return data;
+      return response.data;
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || "수강신청 거절 실패";
       setError(errorMessage);
@@ -316,8 +344,8 @@ export function usePrincipalApi() {
 
     try {
       setError(null);
-      const data = await approvePrincipalRefund(refundId);
-      return data;
+      const response = await approvePrincipalRefund(refundId);
+      return response.data;
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || "환불요청 승인 실패";
       setError(errorMessage);
@@ -335,11 +363,11 @@ export function usePrincipalApi() {
 
     try {
       setError(null);
-      const data = await rejectPrincipalRefund(refundId, {
+      const response = await rejectPrincipalRefund(refundId, {
         reason,
         detailedReason,
       });
-      return data;
+      return response.data;
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || "환불요청 거절 실패";
       setError(errorMessage);

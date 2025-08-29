@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ClassService } from '../class/class.service';
 import { AcademyService } from '../academy/academy.service';
 import { JoinAcademyRequestDto } from '../academy/dto/join-academy-request.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class TeacherService {
@@ -44,7 +45,11 @@ export class TeacherService {
     });
 
     if (!teacher) {
-      throw new NotFoundException('선생님을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'TEACHER_NOT_FOUND',
+        message: '선생님을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return {
@@ -71,31 +76,23 @@ export class TeacherService {
     };
   }
 
-  async updateProfile(
-    userId: number,
-    updateData: {
-      name?: string;
-      phoneNumber?: string;
-      introduction?: string;
-      education?: string[];
-      specialties?: string[];
-      certifications?: string[];
-      yearsOfExperience?: number;
-      availableTimes?: any;
-    },
-  ) {
+  async updateProfile(userId: number, updateProfileDto: UpdateProfileDto) {
     const teacher = await this.prisma.teacher.findUnique({
       where: { userRefId: userId },
     });
 
     if (!teacher) {
-      throw new NotFoundException('선생님을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'TEACHER_NOT_FOUND',
+        message: '선생님을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     // User 테이블 업데이트 데이터 (이름이 변경된 경우에만)
-    const userUpdateData = updateData.name
+    const userUpdateData = updateProfileDto.name
       ? {
-          name: updateData.name,
+          name: updateProfileDto.name,
           updatedAt: new Date(),
         }
       : null;
@@ -106,7 +103,7 @@ export class TeacherService {
       const teacher = await tx.teacher.update({
         where: { userRefId: userId },
         data: {
-          ...updateData,
+          ...updateProfileDto,
           updatedAt: new Date(),
         },
         select: {
@@ -173,7 +170,11 @@ export class TeacherService {
     });
 
     if (!teacher) {
-      throw new NotFoundException('선생님을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'TEACHER_NOT_FOUND',
+        message: '선생님을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     const photoUrl = `/uploads/teacher-photos/${photo.filename}`;
@@ -253,7 +254,11 @@ export class TeacherService {
     });
 
     if (!teacher) {
-      throw new NotFoundException('선생님을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'TEACHER_NOT_FOUND',
+        message: '선생님을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     // startDate와 endDate를 포함하여 반환
@@ -317,7 +322,11 @@ export class TeacherService {
     });
 
     if (!teacher) {
-      throw new NotFoundException('선생님을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'TEACHER_NOT_FOUND',
+        message: '선생님을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     // 1. KST 기준 오늘 날짜 추출
@@ -458,7 +467,11 @@ export class TeacherService {
     });
 
     if (!teacher) {
-      throw new NotFoundException('선생님을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'TEACHER_NOT_FOUND',
+        message: '선생님을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return this.academyService.getTeacherAcademy(teacher.id);
@@ -472,7 +485,11 @@ export class TeacherService {
     });
 
     if (!teacher) {
-      throw new NotFoundException('선생님을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'TEACHER_NOT_FOUND',
+        message: '선생님을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return this.academyService.changeTeacherAcademy(teacher.id, academyCode);
@@ -486,7 +503,11 @@ export class TeacherService {
     });
 
     if (!teacher) {
-      throw new NotFoundException('선생님을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'TEACHER_NOT_FOUND',
+        message: '선생님을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return this.academyService.leaveAcademyByTeacher(teacher.id);
@@ -503,7 +524,11 @@ export class TeacherService {
     });
 
     if (!teacher) {
-      throw new NotFoundException('선생님을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'TEACHER_NOT_FOUND',
+        message: '선생님을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return this.academyService.requestJoinAcademyByTeacher(
@@ -547,11 +572,19 @@ export class TeacherService {
     });
 
     if (!teacherData) {
-      throw new NotFoundException('Teacher not found');
+      throw new NotFoundException({
+        code: 'TEACHER_NOT_FOUND',
+        message: 'Teacher not found',
+        details: { userId },
+      });
     }
 
     if (!teacherData.academy) {
-      throw new NotFoundException('Teacher is not associated with any academy');
+      throw new NotFoundException({
+        code: 'ACADEMY_NOT_FOUND',
+        message: 'Teacher is not associated with any academy',
+        details: { userId },
+      });
     }
 
     // Principal 정보
@@ -727,7 +760,11 @@ export class TeacherService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal not found');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal not found',
+        details: { principalId },
+      });
     }
 
     return principal.academy.teachers;
@@ -741,7 +778,11 @@ export class TeacherService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal not found');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal not found',
+        details: { principalId },
+      });
     }
 
     // 해당 강사가 Principal의 학원에 속하는지 확인
@@ -753,12 +794,20 @@ export class TeacherService {
     });
 
     if (!teacher) {
-      throw new ForbiddenException('해당 강사에 접근할 권한이 없습니다.');
+      throw new ForbiddenException({
+        code: 'FORBIDDEN_ACCESS',
+        message: '해당 강사에 접근할 권한이 없습니다.',
+        details: { teacherId, principalId },
+      });
     }
 
     // Principal 자신은 제거할 수 없음
     if (teacherId === principalId) {
-      throw new BadRequestException('자신을 제거할 수 없습니다.');
+      throw new BadRequestException({
+        code: 'BAD_REQUEST',
+        message: '자신을 제거할 수 없습니다.',
+        details: { teacherId, principalId },
+      });
     }
 
     // 강사 제거 (학원에서 분리)

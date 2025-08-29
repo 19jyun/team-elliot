@@ -20,14 +20,18 @@ const timeSlots = [
 
 function formatTime(date: string | Date) {
   const d = new Date(date);
-  const h = d.getHours().toString().padStart(2, '0');
-  const m = d.getMinutes().toString().padStart(2, '0');
+  // 한국 시간대 고려
+  const koreanTime = new Date(d.getTime() + (9 * 60 * 60 * 1000)); // UTC+9
+  const h = koreanTime.getHours().toString().padStart(2, '0');
+  const m = koreanTime.getMinutes().toString().padStart(2, '0');
   return `${h}:${m}`;
 }
 
 function formatTimeForCalendar(date: string | Date) {
   const d = new Date(date);
-  const h = d.getHours().toString();
+  // 한국 시간대 고려
+  const koreanTime = new Date(d.getTime() + (9 * 60 * 60 * 1000)); // UTC+9
+  const h = koreanTime.getHours().toString();
   return h;
 }
 
@@ -59,7 +63,8 @@ export function EnrollmentClassStep() {
   const filteredClasses = React.useMemo(() => {
     if (!selectedAcademyId || !availableClasses) return [];
     
-    return availableClasses.filter(classItem => classItem.academyId === selectedAcademyId);
+    const filtered = availableClasses.filter(classItem => classItem.academyId === selectedAcademyId);
+    return filtered;
   }, [selectedAcademyId, availableClasses]);
 
   // 클래스별로 그룹핑하고 타임테이블 형식으로 변환
@@ -69,8 +74,15 @@ export function EnrollmentClassStep() {
     return filteredClasses.map(classItem => {
       // 각 클래스의 첫 번째 세션 정보를 사용하여 시간 정보 구성
       const firstSession = classItem.availableSessions?.[0];
-      const sessionDate = firstSession ? new Date(firstSession.date) : new Date();
-      const dayOfWeek = days[sessionDate.getDay() === 0 ? 6 : sessionDate.getDay() - 1]; // 일요일을 7번째로 변환
+      
+      if (!firstSession) {
+        return null;
+      }
+
+      // 세션 날짜에서 요일 계산 (한국 시간대 고려)
+      const sessionDate = new Date(firstSession.date);
+      const koreanDayOfWeek = sessionDate.getDay(); // 0: 일요일, 1: 월요일, ..., 6: 토요일
+      const dayOfWeek = days[koreanDayOfWeek === 0 ? 6 : koreanDayOfWeek - 1]; // 일요일을 7번째로 변환
       
       return {
         id: classItem.id,
@@ -79,12 +91,12 @@ export function EnrollmentClassStep() {
         tuitionFee: classItem.tuitionFee,
         teacher: classItem.teacher,
         dayOfWeek: dayOfWeek,
-        startTime: firstSession?.startTime || classItem.startTime,
-        endTime: firstSession?.endTime || classItem.endTime,
+        startTime: firstSession.startTime,
+        endTime: firstSession.endTime,
         backgroundColor: classItem.backgroundColor,
         sessionCount: classItem.availableSessions?.length || 0,
       };
-    });
+    }).filter(Boolean); // null 값 제거
   }, [filteredClasses]);
 
   // localStorage 확인하여 이전에 동의했다면 정책 건너뛰기
@@ -256,20 +268,27 @@ export function EnrollmentClassStep() {
             ))}
 
             {/* ClassCard들을 Grid와 같은 레벨에 배치 */}
-            {classesWithSessions?.map((classInfo: any) => {
-              const startDate = new Date(classInfo.startTime);
-              const endDate = new Date(classInfo.endTime);
-              const startHour = startDate.getHours();
-              const durationInMinutes = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
-              const durationInHours = durationInMinutes / 60;
-              const gridRowSpan = Math.ceil(durationInHours);
-              const actualHeight = durationInHours * 110;
-              
-              // Grid 위치 계산
-              const dayIndex = days.indexOf(classInfo.dayOfWeek);
-              const timeIndex = timeSlots.indexOf(startHour.toString());
-              const gridRow = timeIndex + 1;
-              const gridColumn = dayIndex + 2; // 1은 시간 열이므로 +2
+             {classesWithSessions?.map((classInfo: any) => {
+               const startDate = new Date(classInfo.startTime);
+               const endDate = new Date(classInfo.endTime);
+               
+               // 한국 시간대 고려
+               const koreanStartTime = new Date(startDate.getTime() + (9 * 60 * 60 * 1000));
+               const koreanEndTime = new Date(endDate.getTime() + (9 * 60 * 60 * 1000));
+               
+               const startHour = koreanStartTime.getHours();
+               const durationInMinutes = (koreanEndTime.getTime() - koreanStartTime.getTime()) / (1000 * 60);
+               const durationInHours = durationInMinutes / 60;
+               const gridRowSpan = Math.ceil(durationInHours);
+               const actualHeight = durationInHours * 110;
+               
+               // Grid 위치 계산
+               const dayIndex = days.indexOf(classInfo.dayOfWeek);
+               const timeIndex = timeSlots.indexOf(startHour.toString());
+               const gridRow = timeIndex + 1;
+               const gridColumn = dayIndex + 2; // 1은 시간 열이므로 +2
+               
+               
               
               return (
                 <ClassCard

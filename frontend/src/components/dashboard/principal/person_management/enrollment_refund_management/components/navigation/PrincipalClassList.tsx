@@ -26,15 +26,8 @@ export function PrincipalClassList() {
 
   // 선택된 탭에 따라 원본 데이터 결정
   const rawData = selectedTab === 'enrollment' 
-    ? enrollments 
-    : refundRequests;
-
-  // 디버깅: 환불 요청 데이터 확인
-  if (selectedTab === 'refund') {
-    console.log('환불 요청 원본 데이터:', rawData);
-    console.log('환불 요청 개수:', rawData.length);
-    console.log('대기 중인 환불 요청:', rawData.filter((refund: any) => refund.status === "PENDING"));
-  }
+    ? enrollments || []
+    : refundRequests || [];
 
   // 클래스별로 그룹화
   const classMap = new Map();

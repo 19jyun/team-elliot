@@ -1,4 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -30,20 +35,55 @@ export class SocketConnectionManager {
       const token = client.handshake.auth.token;
       if (!token) {
         this.logger.warn(`❌ 토큰 없음: ${client.id}`);
-        client.disconnect();
-        return;
+        throw new UnauthorizedException({
+          code: 'TOKEN_MISSING',
+          message: '인증 토큰이 없습니다.',
+          details: { clientId: client.id },
+        });
       }
 
-      const decoded = this.jwtService.verify(token);
+      if (typeof token !== 'string') {
+        this.logger.warn(`❌ 유효하지 않은 토큰 형식: ${client.id}`);
+        throw new BadRequestException({
+          code: 'INVALID_TOKEN_FORMAT',
+          message: '유효하지 않은 토큰 형식입니다.',
+          details: { clientId: client.id, tokenType: typeof token },
+        });
+      }
+
+      let decoded;
+      try {
+        decoded = this.jwtService.verify(token);
+      } catch (jwtError) {
+        this.logger.warn(`❌ JWT 토큰 검증 실패: ${client.id}`, jwtError);
+        throw new UnauthorizedException({
+          code: 'INVALID_TOKEN',
+          message: '유효하지 않은 토큰입니다.',
+          details: { clientId: client.id, error: jwtError.message },
+        });
+      }
+
       const userId = decoded.sub;
       const role = decoded.role;
+
+      if (!userId || !role) {
+        this.logger.warn(`❌ 토큰에 필수 정보 누락: ${client.id}`);
+        throw new BadRequestException({
+          code: 'INCOMPLETE_TOKEN',
+          message: '토큰에 필수 정보가 누락되었습니다.',
+          details: { clientId: client.id, userId, role },
+        });
+      }
 
       // 사용자 정보 조회
       const user = await this.getUserInfo(userId, role);
       if (!user) {
         this.logger.warn(`❌ 사용자 정보 없음: ${client.id}`);
-        client.disconnect();
-        return;
+        throw new BadRequestException({
+          code: 'USER_NOT_FOUND',
+          message: '사용자 정보를 찾을 수 없습니다.',
+          details: { clientId: client.id, userId, role },
+        });
       }
 
       // 클라이언트 정보 저장
@@ -81,6 +121,18 @@ export class SocketConnectionManager {
       });
     } catch (error) {
       this.logger.error(`❌ 클라이언트 연결 실패: ${client.id}`, error);
+
+      // 에러 정보를 클라이언트에게 전송
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof BadRequestException
+      ) {
+        client.emit('connection_error', {
+          code: error.getResponse()['code'] || 'CONNECTION_ERROR',
+          message: error.getResponse()['message'] || '연결에 실패했습니다.',
+        });
+      }
+
       client.disconnect();
     }
   }
@@ -91,6 +143,22 @@ export class SocketConnectionManager {
   }
 
   private async getUserInfo(userId: number, role: string) {
+    if (!userId || userId <= 0) {
+      throw new BadRequestException({
+        code: 'INVALID_USER_ID',
+        message: '유효하지 않은 사용자 ID입니다.',
+        details: { userId },
+      });
+    }
+
+    if (!role || typeof role !== 'string') {
+      throw new BadRequestException({
+        code: 'INVALID_ROLE',
+        message: '유효하지 않은 역할입니다.',
+        details: { role },
+      });
+    }
+
     switch (role) {
       case 'STUDENT':
         return this.getStudentInfo(userId);
@@ -99,7 +167,11 @@ export class SocketConnectionManager {
       case 'PRINCIPAL':
         return this.getPrincipalInfo(userId);
       default:
-        return null;
+        throw new BadRequestException({
+          code: 'UNKNOWN_ROLE',
+          message: '알 수 없는 역할입니다.',
+          details: { role, validRoles: ['STUDENT', 'TEACHER', 'PRINCIPAL'] },
+        });
     }
   }
 

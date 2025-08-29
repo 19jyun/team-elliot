@@ -16,9 +16,13 @@ describe('BalletPoseService', () => {
     balletPose: {
       findMany: jest.fn(),
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+    },
+    sessionContent: {
+      findMany: jest.fn(),
     },
   };
 
@@ -127,6 +131,7 @@ describe('BalletPoseService', () => {
         updatedAt: new Date(),
       };
 
+      mockPrismaService.balletPose.findFirst.mockResolvedValue(null);
       mockPrismaService.balletPose.create.mockResolvedValue(expectedPose);
 
       const result = await service.create(createBalletPoseDto, mockImage);
@@ -155,6 +160,7 @@ describe('BalletPoseService', () => {
         updatedAt: new Date(),
       };
 
+      mockPrismaService.balletPose.findFirst.mockResolvedValue(null);
       mockPrismaService.balletPose.create.mockResolvedValue(expectedPose);
 
       const result = await service.create(createBalletPoseDto);
@@ -199,6 +205,7 @@ describe('BalletPoseService', () => {
       };
 
       mockPrismaService.balletPose.findUnique.mockResolvedValue(existingPose);
+      mockPrismaService.balletPose.findFirst.mockResolvedValue(null);
       mockPrismaService.balletPose.update.mockResolvedValue(expectedPose);
 
       const result = await service.update(
@@ -245,6 +252,7 @@ describe('BalletPoseService', () => {
       };
 
       mockPrismaService.balletPose.findUnique.mockResolvedValue(existingPose);
+      mockPrismaService.balletPose.findFirst.mockResolvedValue(null);
       mockPrismaService.balletPose.update.mockResolvedValue(expectedPose);
 
       const result = await service.update(poseId, updateBalletPoseDto);
@@ -296,6 +304,7 @@ describe('BalletPoseService', () => {
       };
 
       mockPrismaService.balletPose.findUnique.mockResolvedValue(existingPose);
+      mockPrismaService.sessionContent.findMany.mockResolvedValue([]);
       mockPrismaService.balletPose.delete.mockResolvedValue(deletedPose);
 
       const result = await service.remove(poseId);

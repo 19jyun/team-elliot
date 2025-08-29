@@ -1,6 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateAcademyDto } from './dto/update-academy.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { SocketGateway } from '../socket/socket.gateway';
 import { ClassService } from '../class/class.service';
 import { ClassSessionService } from '../class-session/class-session.service';
@@ -57,7 +62,11 @@ export class PrincipalService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return principal.academy;
@@ -70,7 +79,11 @@ export class PrincipalService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return this.classSessionService.getPrincipalSessions(principal.id);
@@ -83,7 +96,11 @@ export class PrincipalService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return this.classService.getPrincipalClasses(principal.id);
@@ -96,7 +113,11 @@ export class PrincipalService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return this.teacherService.getPrincipalTeachers(principal.id);
@@ -109,7 +130,11 @@ export class PrincipalService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return this.studentService.getPrincipalStudents(principal.id);
@@ -122,7 +147,11 @@ export class PrincipalService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return this.classSessionService.getPrincipalEnrollments(principal.id);
@@ -135,10 +164,14 @@ export class PrincipalService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
-    return this.refundService.getPrincipalRefundRequests(userId);
+    return this.refundService.getPrincipalRefundRequests(principal.id);
   }
 
   // Principal 정보 조회
@@ -146,12 +179,17 @@ export class PrincipalService {
     const principal = await this.prisma.principal.findUnique({
       where: { userRefId: userId },
       include: {
+        user: true,
         academy: true,
       },
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return principal;
@@ -226,7 +264,11 @@ export class PrincipalService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal not found');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     // Redux store에 맞는 형태로 데이터 구성
@@ -361,7 +403,7 @@ export class PrincipalService {
   // Principal 프로필 정보 수정
   async updateProfile(
     userId: number,
-    updateProfileDto: any,
+    updateProfileDto: UpdateProfileDto,
     photo?: Express.Multer.File,
   ) {
     const principal = await this.prisma.principal.findUnique({
@@ -525,7 +567,11 @@ export class PrincipalService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return this.classSessionService.getPrincipalSessionsWithEnrollmentRequests(
@@ -540,10 +586,16 @@ export class PrincipalService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
-    return this.refundService.getPrincipalSessionsWithRefundRequests(userId);
+    return this.refundService.getPrincipalSessionsWithRefundRequests(
+      principal.id,
+    );
   }
 
   // 특정 세션의 수강 신청 요청 목록 조회
@@ -553,7 +605,11 @@ export class PrincipalService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return this.classSessionService.getPrincipalSessionEnrollmentRequests(
@@ -569,7 +625,11 @@ export class PrincipalService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return this.refundService.getPrincipalSessionRefundRequests(
@@ -585,7 +645,11 @@ export class PrincipalService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return this.classSessionService.approveEnrollmentByPrincipal(
@@ -605,7 +669,11 @@ export class PrincipalService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return this.classSessionService.rejectEnrollmentByPrincipal(
@@ -622,7 +690,11 @@ export class PrincipalService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return this.refundService.approveRefundByPrincipal(refundId, userId);
@@ -639,7 +711,11 @@ export class PrincipalService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return this.refundService.rejectRefundByPrincipal(
@@ -658,7 +734,11 @@ export class PrincipalService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return this.teacherService.removeTeacherByPrincipal(
@@ -674,7 +754,11 @@ export class PrincipalService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return this.studentService.removeStudentByPrincipal(
@@ -690,7 +774,11 @@ export class PrincipalService {
     });
 
     if (!principal) {
-      throw new NotFoundException('Principal을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     return this.studentService.getStudentSessionHistoryByPrincipal(

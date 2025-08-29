@@ -15,7 +15,7 @@ interface PrincipalStudentSessionHistoryModalProps {
 }
 
 export function PrincipalStudentSessionHistoryModal({ student, onClose }: PrincipalStudentSessionHistoryModalProps) {
-  const [history, setHistory] = useState<any[] | null>(null);
+  const [history, setHistory] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { getStudentSessionHistory } = usePrincipalApi();
 
@@ -24,7 +24,8 @@ export function PrincipalStudentSessionHistoryModal({ student, onClose }: Princi
       setIsLoading(true);
       try {
         const response = await getStudentSessionHistory(Number(student.id));
-        setHistory(response);
+        // 백엔드 인터셉터에 의해 응답이 { success, data, timestamp, path } 구조로 래핑됨
+        setHistory(response.data || []);
       } catch (error: any) {
         toast.error(error.response?.data?.message || '수강생 현황 조회에 실패했습니다.');
       } finally {
@@ -105,7 +106,7 @@ export function PrincipalStudentSessionHistoryModal({ student, onClose }: Princi
 
   return (
     <SlideUpModal
-      isOpen={!!history}
+      isOpen={true}
       onClose={onClose}
       title={`${student.name}님의 수강 현황`}
       contentClassName="pb-6"
@@ -119,7 +120,7 @@ export function PrincipalStudentSessionHistoryModal({ student, onClose }: Princi
           <div className="text-center py-8 text-gray-500">
             <p>수강 현황을 불러오는 중...</p>
           </div>
-        ) : (
+        ) : history.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -139,7 +140,7 @@ export function PrincipalStudentSessionHistoryModal({ student, onClose }: Princi
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {history?.map((session: any) => (
+                {history.map((session: any) => (
                   <tr key={session.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {session.session.class.className}
@@ -157,6 +158,10 @@ export function PrincipalStudentSessionHistoryModal({ student, onClose }: Princi
                 ))}
               </tbody>
             </table>
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <p>수강 기록이 없습니다.</p>
           </div>
         )}
       </div>

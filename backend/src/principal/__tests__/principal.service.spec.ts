@@ -332,7 +332,7 @@ describe('PrincipalService', () => {
       expect(result).toEqual(principalInfo);
       expect(prisma.principal.findUnique).toHaveBeenCalledWith({
         where: { userRefId },
-        include: { academy: true },
+        include: { academy: true, user: true },
       });
     });
 

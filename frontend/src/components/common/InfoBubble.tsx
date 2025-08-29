@@ -14,6 +14,7 @@ interface InfoBubbleProps {
   selectValue?: string;
   onSelectChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   options?: { value: string; label: string }[];
+  className?: string;
 }
 
 export const InfoBubble: React.FC<InfoBubbleProps> = ({
@@ -29,9 +30,10 @@ export const InfoBubble: React.FC<InfoBubbleProps> = ({
   selectValue,
   onSelectChange,
   options,
+  className,
 }) => {
   return (
-    <div className="flex items-center h-[56px] border border-[#D9D9D9] rounded-xl px-5 bg-white w-full" style={{ minWidth: 0 }}>
+    <div className={`flex items-center h-[56px] border border-[#D9D9D9] rounded-xl px-5 bg-white w-full ${className || ''}`} style={{ minWidth: 0 }}>
       <div className="text-sm font-medium text-[#262626] w-20 flex-shrink-0 truncate">{label}</div>
       <div style={{ marginLeft: 4, marginRight: 12, width: 1, height: 16, background: '#E5E5E5' }} />
       {type === 'input' ? (

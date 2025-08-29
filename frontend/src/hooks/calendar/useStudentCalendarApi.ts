@@ -20,11 +20,15 @@ export function useStudentCalendarApi() {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await getMyClasses();
+      const response = await getMyClasses();
+
+      // API 응답 구조 확인
+      const data = response.data;
+
       // MyClassesResponse에서 세션 데이터 추출
       const allSessions = [
-        ...(data.enrollmentClasses || []),
-        ...(data.sessionClasses || []),
+        ...(data?.enrollmentClasses || []),
+        ...(data?.sessionClasses || []),
       ];
       setSessions(allSessions);
     } catch (err: any) {
@@ -64,31 +68,33 @@ export function useStudentCalendarApi() {
   };
 
   // 캘린더용 세션 데이터 변환 (ConnectedCalendar에서 사용하는 형식으로 맞춤)
-  const calendarSessions = sessions.map((session) => ({
-    id: session.id,
-    classId: session.classId || session.id,
-    date: session.date,
-    startTime: session.startTime,
-    endTime: session.endTime,
-    currentStudents: session.currentStudents || 0,
-    maxStudents: session.maxStudents || 0,
-    isEnrollable: false, // student-view에서는 선택 불가
-    isFull: session.currentStudents >= session.maxStudents,
-    isPastStartTime:
-      new Date(session.date + " " + session.startTime) < new Date(),
-    isAlreadyEnrolled: true, // 이미 수강 중인 세션
-    studentEnrollmentStatus: "CONFIRMED",
-    class: {
-      id: session.class?.id || session.classId || session.id,
-      className: session.class?.className || "클래스",
-      level: session.class?.level || "BEGINNER",
-      tuitionFee: session.class?.tuitionFee?.toString() || "50000",
-      teacher: {
-        id: session.class?.teacher?.id || 0,
-        name: session.class?.teacher?.name || "선생님",
+  const calendarSessions = sessions.map((session) => {
+    return {
+      id: session.id,
+      classId: session.classId || session.id,
+      date: session.date,
+      startTime: session.startTime,
+      endTime: session.endTime,
+      currentStudents: session.currentStudents || 0,
+      maxStudents: session.maxStudents || 0,
+      isEnrollable: false, // student-view에서는 선택 불가
+      isFull: session.currentStudents >= session.maxStudents,
+      isPastStartTime:
+        new Date(session.date + " " + session.startTime) < new Date(),
+      isAlreadyEnrolled: true, // 이미 수강 중인 세션
+      studentEnrollmentStatus: "CONFIRMED",
+      class: {
+        id: session.class?.id || session.classId || session.id,
+        className: session.class?.className || "클래스",
+        level: session.class?.level || "BEGINNER",
+        tuitionFee: session.class?.tuitionFee?.toString() || "50000",
+        teacher: {
+          id: session.class?.teacher?.id || 0,
+          name: session.class?.teacher?.name || "선생님",
+        },
       },
-    },
-  }));
+    };
+  });
 
   return {
     // 데이터

@@ -47,76 +47,18 @@ export function useStudentInitialization() {
         const myProfile = await getMyProfile();
 
         // 3. 수강 신청/결제 내역
-        const enrollmentHistory = await getEnrollmentHistory();
+        const enrollmentHistoryResponse = await getEnrollmentHistory();
+        const enrollmentHistory = enrollmentHistoryResponse.data;
 
         // 4. 환불/취소 내역
-        const cancellationHistory = await getCancellationHistory();
+        const cancellationHistoryResponse = await getCancellationHistory();
+        const cancellationHistory = cancellationHistoryResponse.data;
 
-        // 5. 가입한 학원 목록 - 응답 데이터만 추출
-        const myAcademies = await getMyAcademies();
-        // 6. 수강 가능한 클래스/세션 정보 (모든 학원)
-        let allAvailableClasses: any[] = [];
-        let allAvailableSessions: any[] = [];
-
-        if (myAcademies.length > 0) {
-          // 각 학원별로 수강 가능한 세션 조회
-          for (const academy of myAcademies) {
-            try {
-              const availableData =
-                await getStudentAvailableSessionsForEnrollment(academy.id);
-              console.log(
-                `✅ ${academy.name} 수강 가능한 세션 로드 완료:`,
-                availableData
-              );
-
-              if (availableData.sessions && availableData.sessions.length > 0) {
-                // 세션 데이터 추가
-                allAvailableSessions.push(...availableData.sessions);
-
-                // 클래스 데이터 추출 (중복 제거)
-                const classMap = new Map();
-                availableData.sessions.forEach((session: any) => {
-                  if (session.class && !classMap.has(session.class.id)) {
-                    classMap.set(session.class.id, {
-                      ...session.class,
-                      availableSessions: availableData.sessions.filter(
-                        (s: any) => s.classId === session.class.id
-                      ),
-                    });
-                  }
-                });
-
-                allAvailableClasses.push(...Array.from(classMap.values()));
-              }
-            } catch (error) {
-              console.warn(
-                `⚠️ ${academy.name} 수강 가능한 세션 로드 실패:`,
-                error
-              );
-            }
-          }
-
-          console.log("수강 가능한 클래스/세션 로드 완료:", {
-            classes: allAvailableClasses.length,
-            sessions: allAvailableSessions.length,
-          });
-        }
-
-        // Redux 상태 업데이트
+        // Redux 상태 업데이트 (enrollmentHistory와 cancellationHistory만)
         dispatch(
           setStudentData({
-            userProfile: myProfile,
-            academies: myAcademies, // 직렬화 가능한 데이터만 저장
-            enrollmentClasses: myClasses.enrollmentClasses,
-            sessionClasses: myClasses.sessionClasses,
-            availableClasses: allAvailableClasses, // 수강 가능한 클래스 목록
-            availableSessions: allAvailableSessions, // 수강 가능한 세션 목록
             enrollmentHistory,
             cancellationHistory,
-            calendarRange: myClasses.calendarRange,
-            enrollmentProgress: {
-              currentStep: "academy-selection",
-            },
           })
         );
 

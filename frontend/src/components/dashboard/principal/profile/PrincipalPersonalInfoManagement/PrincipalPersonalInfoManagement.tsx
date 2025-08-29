@@ -10,6 +10,8 @@ import { User, Phone, Building, Edit, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { UpdatePrincipalProfileRequest } from '@/types/api/principal';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
+import { validatePrincipalProfileData } from '@/utils/validation';
+import { useApiError } from '@/hooks/useApiError';
 
 export function PrincipalPersonalInfoManagement() {
   const [isEditing, setIsEditing] = useState(false);
@@ -23,8 +25,13 @@ export function PrincipalPersonalInfoManagement() {
   const [timeLeft, setTimeLeft] = useState(180); // 3분 = 180초
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
+  // Validation 관련 상태
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [isShaking, setIsShaking] = useState(false);
+
   // API 기반 데이터 관리
   const { profile, loadProfile, error, isPrincipal, updateProfile } = usePrincipalApi();
+  const { handleApiError, fieldErrors, clearErrors } = useApiError();
 
   // 컴포넌트 마운트 시 프로필 로드
   useEffect(() => {
@@ -74,8 +81,11 @@ export function PrincipalPersonalInfoManagement() {
       const originalPhone = profile.phoneNumber || '';
       const currentPhone = editedInfo.phoneNumber || '';
       
+      // 전화번호 형식 체크 (01X-XXXX-XXXX 형식이면 13자)
+      const isPhoneComplete = /^01[0-9]-[0-9]{4}-[0-9]{4}$/.test(currentPhone);
+      
       // 전화번호가 실제로 변경되었을 때만 인증 상태 리셋
-      if (currentPhone !== originalPhone && currentPhone.length === 11) {
+      if (currentPhone !== originalPhone && isPhoneComplete) {
         // 이미 인증이 필요한 상태가 아니라면 새로 설정
         if (!isPhoneVerificationRequired) {
           setIsPhoneVerificationRequired(true);
@@ -89,7 +99,7 @@ export function PrincipalPersonalInfoManagement() {
         setIsTimerRunning(false);
         setTimeLeft(180);
         setVerificationCode('');
-      } else if (currentPhone.length !== 11) {
+      } else if (!isPhoneComplete) {
         setIsPhoneVerificationRequired(false);
         setIsPhoneVerified(false);
         setIsTimerRunning(false);
@@ -117,29 +127,46 @@ export function PrincipalPersonalInfoManagement() {
   };
 
   const handleSave = async () => {
-    if (!editedInfo.name?.trim()) {
-      toast.error('이름을 입력해주세요.');
-      return;
-    }
-
     if (isPhoneVerificationRequired && !isPhoneVerified) {
       toast.error('전화번호 인증을 완료해주세요.');
       return;
     }
 
+    // 프론트엔드 validation 수행
+    const validation = validatePrincipalProfileData(editedInfo);
+    if (!validation.isValid) {
+      // validation 에러를 fieldErrors로 변환
+      const fieldErrorMap: Record<string, string> = {};
+      validation.errors.forEach(error => {
+        fieldErrorMap[error.field] = error.message;
+      });
+      
+      // 에러 상태 설정 및 흔들림 애니메이션 트리거
+      setValidationErrors(fieldErrorMap);
+      setIsShaking(true);
+      setTimeout(() => {
+        setIsShaking(false);
+        // 1초 후 validation 에러도 자동으로 제거
+        setTimeout(() => {
+          setValidationErrors({});
+        }, 1000);
+      }, 1000);
+      
+      return;
+    }
+
     try {
       setIsLoading(true);
-      await updateProfile(editedInfo);
+      clearErrors(); // 요청 시작 시 에러 초기화
+      setValidationErrors({}); // validation 에러도 초기화
       
-      // API 데이터 다시 로드
-      loadProfile();
+      await updateProfile(editedInfo);
       
       setIsEditing(false);
       handleCancelVerification();
       toast.success('개인정보가 성공적으로 업데이트되었습니다.');
     } catch (error) {
-      console.error('개인정보 업데이트 실패:', error);
-      toast.error('개인정보 업데이트에 실패했습니다.');
+      handleApiError(error, { disableToast: false, disableConsole: true });
     } finally {
       setIsLoading(false);
     }
@@ -158,7 +185,7 @@ export function PrincipalPersonalInfoManagement() {
     // 확인 버튼 클릭 시 인증 완료 처리
     console.log('인증 확인 버튼 클릭 - 인증 완료');
     setIsPhoneVerified(true);
-    // 타이머는 계속 실행 (인증번호 입력 필드 유지)
+    setIsTimerRunning(false);
     setVerificationCode(''); // 인증번호 입력 필드 초기화
     toast.success('전화번호 인증이 완료되었습니다.');
   };
@@ -277,12 +304,31 @@ export function PrincipalPersonalInfoManagement() {
               {isEditing ? (
                 <Input
                   value={editedInfo.name || ''}
-                  onChange={(e) => setEditedInfo({ ...editedInfo, name: e.target.value })}
+                  onChange={(e) => {
+                    setEditedInfo({ ...editedInfo, name: e.target.value });
+                    // 입력 필드 변경 시 해당 필드의 validation 에러 초기화
+                    if (validationErrors.name) {
+                      setValidationErrors(prev => ({
+                        ...prev,
+                        name: ''
+                      }));
+                    }
+                  }}
                   placeholder="이름을 입력하세요"
                   disabled={isLoading}
+                  className={`transition-all duration-200 ${
+                    (fieldErrors.name || validationErrors.name) ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  } ${
+                    isShaking && (fieldErrors.name || validationErrors.name) ? 'animate-shake' : ''
+                  }`}
                 />
               ) : (
                 <p className="text-gray-700 py-2">{profile.name || '이름이 없습니다.'}</p>
+              )}
+              {(fieldErrors.name || validationErrors.name) && (
+                <p className="text-red-500 text-sm animate-in fade-in">
+                  {fieldErrors.name || validationErrors.name}
+                </p>
               )}
             </div>
 
@@ -299,10 +345,23 @@ export function PrincipalPersonalInfoManagement() {
                   <div className="flex gap-2">
                     <PhoneInput
                       value={editedInfo.phoneNumber || ''}
-                      onChange={(value) => setEditedInfo({ ...editedInfo, phoneNumber: value })}
+                      onChange={(value) => {
+                        setEditedInfo({ ...editedInfo, phoneNumber: value });
+                        // 입력 필드 변경 시 해당 필드의 validation 에러 초기화
+                        if (validationErrors.phoneNumber) {
+                          setValidationErrors(prev => ({
+                            ...prev,
+                            phoneNumber: ''
+                          }));
+                        }
+                      }}
                       placeholder="전화번호를 입력하세요"
                       disabled={isLoading}
-                      className="flex-1"
+                      className={`flex-1 transition-all duration-200 ${
+                        (fieldErrors.phoneNumber || validationErrors.phoneNumber) ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                      } ${
+                        isShaking && (fieldErrors.phoneNumber || validationErrors.phoneNumber) ? 'animate-shake' : ''
+                      }`}
                     />
                     {isPhoneVerificationRequired && !isPhoneVerified && (
                       <Button
@@ -322,7 +381,7 @@ export function PrincipalPersonalInfoManagement() {
                   </div>
                   
                   {/* 인증번호 입력 필드 */}
-                  {isPhoneVerificationRequired && isTimerRunning && (
+                  {isPhoneVerificationRequired && !isPhoneVerified && isTimerRunning && (
                     <div className="flex gap-2">
                       <div className="flex-1 relative">
                         <Input
@@ -362,6 +421,11 @@ export function PrincipalPersonalInfoManagement() {
                 </div>
               ) : (
                 <p className="text-gray-700 py-2">{profile.phoneNumber || '전화번호가 없습니다.'}</p>
+              )}
+              {(fieldErrors.phoneNumber || validationErrors.phoneNumber) && (
+                <p className="text-red-500 text-sm animate-in fade-in">
+                  {fieldErrors.phoneNumber || validationErrors.phoneNumber}
+                </p>
               )}
             </div>
 

@@ -24,16 +24,18 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException(
-        '아이디 또는 비밀번호가 올바르지 않습니다.',
-      );
+      throw new UnauthorizedException({
+        code: 'USER_NOT_FOUND',
+        message: '아이디 또는 비밀번호가 올바르지 않습니다.',
+      });
     }
 
     // 비밀번호 확인
     if (!(await bcrypt.compare(password, user.password))) {
-      throw new UnauthorizedException(
-        '아이디 또는 비밀번호가 올바르지 않습니다.',
-      );
+      throw new UnauthorizedException({
+        code: 'INVALID_PASSWORD',
+        message: '아이디 또는 비밀번호가 올바르지 않습니다.',
+      });
     }
 
     // 역할에 따라 해당 테이블에서 추가 정보 가져오기
@@ -42,7 +44,10 @@ export class AuthService {
         where: { userRefId: user.id },
       });
       if (!principal) {
-        throw new UnauthorizedException('Principal 정보를 찾을 수 없습니다.');
+        throw new UnauthorizedException({
+          code: 'PRINCIPAL_NOT_FOUND',
+          message: 'Principal 정보를 찾을 수 없습니다.',
+        });
       }
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...result } = principal;
@@ -56,7 +61,10 @@ export class AuthService {
         where: { userRefId: user.id },
       });
       if (!teacher) {
-        throw new UnauthorizedException('Teacher 정보를 찾을 수 없습니다.');
+        throw new UnauthorizedException({
+          code: 'TEACHER_NOT_FOUND',
+          message: 'Teacher 정보를 찾을 수 없습니다.',
+        });
       }
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...result } = teacher;
@@ -70,7 +78,10 @@ export class AuthService {
         where: { userRefId: user.id },
       });
       if (!student) {
-        throw new UnauthorizedException('Student 정보를 찾을 수 없습니다.');
+        throw new UnauthorizedException({
+          code: 'STUDENT_NOT_FOUND',
+          message: 'Student 정보를 찾을 수 없습니다.',
+        });
       }
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...result } = student;
@@ -108,7 +119,10 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new ConflictException('이미 사용중인 아이디입니다.');
+      throw new ConflictException({
+        code: 'USER_ID_ALREADY_EXISTS',
+        message: '이미 사용중인 아이디입니다.',
+      });
     }
 
     // 비밀번호 해싱

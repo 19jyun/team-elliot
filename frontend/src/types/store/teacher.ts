@@ -1,24 +1,8 @@
 // Teacher 전용 Redux 타입들
-import type { Academy, SessionEnrollment } from "./common";
+import type { SessionEnrollment } from "./common";
 
-// Teacher 전용 데이터 타입
+// Teacher 전용 데이터 타입 (실시간 업데이트가 필요한 데이터만)
 export interface TeacherData {
-  // 1. 선생님의 프로필 정보 및 개인정보
-  userProfile: TeacherProfile;
-
-  // 2. 선생님이 소속된 학원
-  academy: Academy | null;
-
-  // 3. 선생님이 소속된 학원의 원장
-  principal: Principal | null;
-
-  // 4. 선생님이 담당하는 클래스 리스트 (하위 데이터 포함)
-  classes: TeacherClass[];
-
-  // 5. 클래스 리스트의 세션 (하위 데이터 포함)
-  sessions: TeacherSession[];
-
-  // 6. 모든 수강신청 정보 (세션별로 그룹화)
   enrollments: SessionEnrollment[];
 }
 

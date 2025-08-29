@@ -92,7 +92,7 @@ function StudentDashboardContent() {
 
         {/* Socket 관련 컴포넌트들 */}
         <RoleBasedSocketListener />
-        <SocketStatus />
+        {/* <SocketStatus /> */}
       </main>
     </div>
   );

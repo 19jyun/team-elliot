@@ -312,15 +312,15 @@ async function main() {
       maxStudents: 10,
       tuitionFee: 150000,
       dayOfWeek: 'MONDAY',
-      startTime: new Date('2024-01-01T06:00:00Z'),
-      endTime: new Date('2024-01-01T07:00:00Z'),
+      startTime: new Date('2024-01-01T19:00:00Z'),
+      endTime: new Date('2024-01-01T20:00:00Z'),
       teacherId: teacher.id,
       academyId: academy.id,
       classDetailId: classDetail.id,
       level: 'BEGINNER',
       status: 'OPEN',
-      startDate: new Date('2025-07-01'),
-      endDate: new Date('2025-08-31'),
+      startDate: new Date('2025-08-01'),
+      endDate: new Date('2025-10-31'),
       backgroundColor: 'orange-100',
     },
     {
@@ -330,15 +330,15 @@ async function main() {
       maxStudents: 8,
       tuitionFee: 200000,
       dayOfWeek: 'WEDNESDAY',
-      startTime: new Date('2024-01-01T06:00:00Z'),
-      endTime: new Date('2024-01-01T07:00:00Z'),
+      startTime: new Date('2024-01-01T20:00:00Z'),
+      endTime: new Date('2024-01-01T21:00:00Z'),
       teacherId: teacher.id,
       academyId: academy.id,
       classDetailId: classDetail.id,
       level: 'ADVANCED',
       status: 'OPEN',
-      startDate: new Date('2025-07-01'),
-      endDate: new Date('2025-08-31'),
+      startDate: new Date('2025-08-01'),
+      endDate: new Date('2025-10-31'),
       backgroundColor: 'slate-300',
     },
     {
@@ -348,15 +348,15 @@ async function main() {
       maxStudents: 12,
       tuitionFee: 130000,
       dayOfWeek: 'FRIDAY',
-      startTime: new Date('2024-01-01T09:00:00Z'),
-      endTime: new Date('2024-01-01T10:00:00Z'),
+      startTime: new Date('2024-01-01T18:00:00Z'),
+      endTime: new Date('2024-01-01T19:00:00Z'),
       teacherId: teacher.id,
       academyId: academy.id,
       classDetailId: classDetail.id,
       level: 'BEGINNER',
       status: 'OPEN',
-      startDate: new Date('2025-07-01'),
-      endDate: new Date('2025-08-31'),
+      startDate: new Date('2025-08-01'),
+      endDate: new Date('2025-10-31'),
       backgroundColor: 'rose-100',
     },
   ];
@@ -516,56 +516,231 @@ async function main() {
     }
   }
 
-  // 테스트용 세션 등록 및 결제 생성
+  // 테스트용 세션 등록 및 결제 생성 - 다양한 status로 생성
   if (firstClass && firstClass.classSessions.length > 0) {
-    const firstSession = firstClass.classSessions[0];
+    const sessions = firstClass.classSessions.slice(0, 5); // 처음 5개 세션 사용
 
-    // 세션 등록 생성 (upsert 사용)
-    const sessionEnrollment = await prisma.sessionEnrollment.upsert({
-      where: {
-        studentId_sessionId: {
-          studentId: student.id,
-          sessionId: firstSession.id,
+    // 다양한 status의 enrollment 생성
+    const enrollmentStatuses = [
+      'PENDING',
+      'CONFIRMED',
+      'REJECTED',
+      'CANCELLED',
+      'REFUND_REQUESTED',
+    ];
+
+    for (let i = 0; i < sessions.length; i++) {
+      const session = sessions[i];
+      const status = enrollmentStatuses[i % enrollmentStatuses.length];
+
+      // 세션 등록 생성
+      const sessionEnrollment = await prisma.sessionEnrollment.upsert({
+        where: {
+          studentId_sessionId: {
+            studentId: student.id,
+            sessionId: session.id,
+          },
         },
-      },
-      update: {},
-      create: {
-        sessionId: firstSession.id,
-        studentId: student.id,
-        status: 'CONFIRMED',
-      },
+        update: {
+          status: status,
+        },
+        create: {
+          sessionId: session.id,
+          studentId: student.id,
+          status: status,
+          enrolledAt: new Date(`2025-07-${20 + i}T10:00:00Z`),
+          ...(status === 'REJECTED' && {
+            rejectedAt: new Date(`2025-07-${22 + i}T14:00:00Z`),
+          }),
+          ...(status === 'CANCELLED' && {
+            cancelledAt: new Date(`2025-07-${23 + i}T16:00:00Z`),
+          }),
+        },
+      });
+
+      // CONFIRMED 상태인 경우에만 결제 생성
+      if (status === 'CONFIRMED') {
+        await prisma.payment.upsert({
+          where: {
+            sessionEnrollmentId: sessionEnrollment.id,
+          },
+          update: {},
+          create: {
+            sessionEnrollmentId: sessionEnrollment.id,
+            studentId: student.id,
+            amount: 150000,
+            status: 'COMPLETED',
+            method: 'CARD',
+            paidAt: new Date(`2025-07-${21 + i}T10:30:00Z`),
+          },
+        });
+      }
+
+      // REFUND_REQUESTED 상태인 경우 환불 요청 생성
+      if (status === 'REFUND_REQUESTED') {
+        await prisma.refundRequest.createMany({
+          data: {
+            sessionEnrollmentId: sessionEnrollment.id,
+            studentId: student.id,
+            reason: '개인 사정으로 인한 수강 취소',
+            refundAmount: 150000,
+            status: 'PENDING',
+            requestedAt: new Date(`2025-08-${5 + i}T14:30:00Z`),
+            bankName: '신한은행',
+            accountNumber: '110-123-456789',
+            accountHolder: '이학생',
+          },
+          skipDuplicates: true,
+        });
+      }
+    }
+
+    // 추가 학생들을 생성하여 더 다양한 enrollment 상태 생성
+    const additionalStudents = [
+      { userId: 'student456', name: '박학생', phoneNumber: '010-1111-2222' },
+      { userId: 'student789', name: '최학생', phoneNumber: '010-3333-4444' },
+      { userId: 'student101', name: '정학생', phoneNumber: '010-5555-6666' },
+    ];
+
+    for (const studentData of additionalStudents) {
+      const additionalStudent = await prisma.student.upsert({
+        where: { userId: studentData.userId },
+        update: {},
+        create: {
+          userId: studentData.userId,
+          password: hashedPassword,
+          name: studentData.name,
+          phoneNumber: studentData.phoneNumber,
+          userRefId: (
+            await prisma.user.upsert({
+              where: { userId: studentData.userId },
+              update: {},
+              create: {
+                userId: studentData.userId,
+                password: hashedPassword,
+                name: studentData.name,
+                role: 'STUDENT',
+              },
+            })
+          ).id,
+        },
+      });
+
+      // 학생을 학원에 가입시킴
+      await prisma.studentAcademy.upsert({
+        where: {
+          studentId_academyId: {
+            studentId: additionalStudent.id,
+            academyId: academy.id,
+          },
+        },
+        update: {},
+        create: {
+          studentId: additionalStudent.id,
+          academyId: academy.id,
+        },
+      });
+
+      // 각 학생별로 다른 세션에 다양한 상태로 등록
+      const additionalStatuses = [
+        'TEACHER_CANCELLED',
+        'ABSENT',
+        'ATTENDED',
+        'REFUND_CANCELLED',
+        'REFUND_REJECTED_CONFIRMED',
+      ];
+
+      for (let i = 0; i < additionalStatuses.length; i++) {
+        if (i < sessions.length) {
+          const session = sessions[i];
+          const status = additionalStatuses[i];
+
+          const enrollment = await prisma.sessionEnrollment.upsert({
+            where: {
+              studentId_sessionId: {
+                studentId: additionalStudent.id,
+                sessionId: session.id,
+              },
+            },
+            update: {
+              status: status,
+            },
+            create: {
+              sessionId: session.id,
+              studentId: additionalStudent.id,
+              status: status,
+              enrolledAt: new Date(`2025-07-${25 + i}T10:00:00Z`),
+              ...(status === 'TEACHER_CANCELLED' && {
+                cancelledAt: new Date(`2025-07-${26 + i}T12:00:00Z`),
+              }),
+            },
+          });
+
+          // ATTENDED 상태인 경우 결제도 생성
+          if (status === 'ATTENDED') {
+            await prisma.payment.upsert({
+              where: {
+                sessionEnrollmentId: enrollment.id,
+              },
+              update: {},
+              create: {
+                sessionEnrollmentId: enrollment.id,
+                studentId: additionalStudent.id,
+                amount: 150000,
+                status: 'COMPLETED',
+                method: 'CARD',
+                paidAt: new Date(`2025-07-${24 + i}T10:30:00Z`),
+              },
+            });
+          }
+        }
+      }
+    }
+
+    // 다양한 상태의 환불 요청 생성
+    const refundStatuses = ['PENDING', 'APPROVED', 'REJECTED'];
+    const refundReasons = [
+      '개인 사정으로 인한 수강 취소',
+      '강사 변경으로 인한 취소',
+      '수업 일정 변경으로 인한 취소',
+      '건강상의 이유로 인한 취소',
+      '기타 개인적인 사유',
+    ];
+
+    // 첫 번째 학생의 첫 번째 세션에 대한 환불 요청들을 다양한 상태로 생성
+    const firstEnrollment = await prisma.sessionEnrollment.findFirst({
+      where: { studentId: student.id },
     });
 
-    // 결제 생성 (upsert 사용)
-    const testPayment = await prisma.payment.upsert({
-      where: {
-        sessionEnrollmentId: sessionEnrollment.id,
-      },
-      update: {},
-      create: {
-        sessionEnrollmentId: sessionEnrollment.id,
-        studentId: student.id,
-        amount: 150000,
-        status: 'COMPLETED',
-        method: 'CARD',
-        paidAt: new Date(),
-      },
-    });
-
-    // 환불 요청 생성 (createMany 사용하여 중복 방지)
-    await prisma.refundRequest.createMany({
-      data: {
-        sessionEnrollmentId: sessionEnrollment.id,
-        studentId: student.id,
-        reason: '개인 사정으로 인한 수강 취소',
-        refundAmount: 150000,
-        status: 'PENDING',
-        bankName: '신한은행',
-        accountNumber: '110-123-456789',
-        accountHolder: '이학생',
-      },
-      skipDuplicates: true,
-    });
+    if (firstEnrollment) {
+      for (let i = 0; i < refundStatuses.length; i++) {
+        await prisma.refundRequest.createMany({
+          data: {
+            sessionEnrollmentId: firstEnrollment.id,
+            studentId: student.id,
+            reason: refundReasons[i % refundReasons.length],
+            refundAmount: 150000,
+            status: refundStatuses[i],
+            requestedAt: new Date(`2025-08-${10 + i}T14:30:00Z`),
+            ...(refundStatuses[i] === 'APPROVED' && {
+              processedAt: new Date(`2025-08-${11 + i}T10:00:00Z`),
+              processReason: '환불 요청 승인',
+              actualRefundAmount: 150000,
+              processedBy: principalUser.id,
+            }),
+            ...(refundStatuses[i] === 'REJECTED' && {
+              processedAt: new Date(`2025-08-${11 + i}T10:00:00Z`),
+              processReason: '수업 시작 후 환불 불가',
+              processedBy: principalUser.id,
+            }),
+            bankName: '신한은행',
+            accountNumber: '110-123-456789',
+            accountHolder: '이학생',
+          },
+          skipDuplicates: true,
+        });
+      }
+    }
   }
 
   console.log('Seed data created successfully');

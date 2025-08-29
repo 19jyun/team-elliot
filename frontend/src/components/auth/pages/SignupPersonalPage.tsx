@@ -214,7 +214,7 @@ export function SignupPersonalPage() {
   // 전화번호 변경 감지
   useEffect(() => {
     const cleanPhoneNumber = formData.phoneNumber.replace(/-/g, '');
-    const phoneRegex = /^01[0|1|6|7|8|9][0-9]{7,8}$/;
+    const phoneRegex = /^01[0|1|6|7|8|9][0-9]{8}$/;
     
     if (phoneRegex.test(cleanPhoneNumber)) {
       setIsPhoneVerificationRequired(true);
@@ -233,7 +233,7 @@ export function SignupPersonalPage() {
 
   const handleSendVerification = async () => {
     const cleanPhoneNumber = formData.phoneNumber.replace(/-/g, '')
-    const phoneRegex = /^01[0|1|6|7|8|9][0-9]{7,8}$/
+    const phoneRegex = /^01[0|1|6|7|8|9][0-9]{8}$/
 
     if (!phoneRegex.test(cleanPhoneNumber)) {
       setErrors((prev) => ({
@@ -267,9 +267,51 @@ export function SignupPersonalPage() {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
+  // 다음 버튼 활성화 조건 체크
+  const isNextButtonEnabled = () => {
+    // 이름이 없으면 비활성화
+    if (!formData.name.trim()) {
+      return false;
+    }
+
+    // 전화번호가 없으면 비활성화
+    if (!formData.phoneNumber) {
+      return false;
+    }
+
+    // 전화번호 형식 검증
+    const cleanPhoneNumber = formData.phoneNumber.replace(/-/g, '');
+    const phoneRegex = /^01[0|1|6|7|8|9][0-9]{8}$/;
+    
+    if (!phoneRegex.test(cleanPhoneNumber)) {
+      return false;
+    }
+
+    // 인증이 필요한 경우 인증 완료 여부 확인
+    if (isPhoneVerificationRequired && !isPhoneVerified) {
+      return false;
+    }
+
+    return true;
+  };
+
   const handleNextStep = () => {
-    if (!formData.name || !formData.phoneNumber) {
-      toast.error('이름과 전화번호를 입력해주세요')
+    if (!formData.name) {
+      toast.error('이름을 입력해주세요')
+      return
+    }
+
+    if (!formData.phoneNumber) {
+      toast.error('전화번호를 입력해주세요')
+      return
+    }
+
+    // 전화번호 형식 검증
+    const cleanPhoneNumber = formData.phoneNumber.replace(/-/g, '');
+    const phoneRegex = /^01[0|1|6|7|8|9][0-9]{8}$/;
+    
+    if (!phoneRegex.test(cleanPhoneNumber)) {
+      toast.error('올바른 전화번호 형식을 입력해주세요')
       return
     }
 
@@ -441,11 +483,11 @@ export function SignupPersonalPage() {
             onClick={handleNextStep}
             className={cn(
               'mt-6 w-full h-11 px-8 inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-              formData.name && formData.phoneNumber && (!isPhoneVerificationRequired || isPhoneVerified)
+              isNextButtonEnabled()
                 ? 'bg-primary text-white hover:bg-primary/90'
                 : 'bg-stone-300 text-white cursor-not-allowed',
             )}
-            disabled={!formData.name || !formData.phoneNumber || (isPhoneVerificationRequired && !isPhoneVerified)}
+            disabled={!isNextButtonEnabled()}
           >
             다음으로
           </button>

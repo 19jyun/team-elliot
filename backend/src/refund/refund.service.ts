@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ClassSessionService } from '../class-session/class-session.service';
@@ -28,7 +29,11 @@ export class RefundService {
     });
 
     if (!user) {
-      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'USER_NOT_FOUND',
+        message: '사용자를 찾을 수 없습니다.',
+        details: { userId },
+      });
     }
 
     // Student 정보 찾기
@@ -37,7 +42,11 @@ export class RefundService {
     });
 
     if (!student) {
-      throw new NotFoundException('Student를 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'STUDENT_NOT_FOUND',
+        message: 'Student를 찾을 수 없습니다.',
+        details: { userRefId: user.id },
+      });
     }
 
     return student;
@@ -66,14 +75,24 @@ export class RefundService {
     });
 
     if (!sessionEnrollment) {
-      throw new NotFoundException('세션 수강 신청을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'SESSION_ENROLLMENT_NOT_FOUND',
+        message: '세션 수강 신청을 찾을 수 없습니다.',
+        details: { sessionEnrollmentId: dto.sessionEnrollmentId },
+      });
     }
 
     // 권한 확인 (자신의 수강 신청만 환불 요청 가능)
     if (sessionEnrollment.studentId !== studentId) {
-      throw new ForbiddenException(
-        '자신의 수강 신청만 환불 요청할 수 있습니다.',
-      );
+      throw new ForbiddenException({
+        code: 'INSUFFICIENT_PERMISSIONS',
+        message: '자신의 수강 신청만 환불 요청할 수 있습니다.',
+        details: {
+          studentId,
+          enrollmentStudentId: sessionEnrollment.studentId,
+          sessionEnrollmentId: dto.sessionEnrollmentId,
+        },
+      });
     }
 
     // 이미 환불 요청이 있는지 확인
@@ -87,16 +106,30 @@ export class RefundService {
     });
 
     if (existingRefundRequest) {
-      throw new BadRequestException('이미 환불 요청이 진행 중입니다.');
+      throw new ConflictException({
+        code: 'REFUND_REQUEST_ALREADY_EXISTS',
+        message: '이미 환불 요청이 진행 중입니다.',
+        details: {
+          sessionEnrollmentId: dto.sessionEnrollmentId,
+          existingRefundRequestId: existingRefundRequest.id,
+          existingStatus: existingRefundRequest.status,
+        },
+      });
     }
 
     // 수업이 이미 시작되었는지 확인
     const now = new Date();
     const sessionStartTime = new Date(sessionEnrollment.session.startTime);
     if (now >= sessionStartTime) {
-      throw new BadRequestException(
-        '수업이 이미 시작되어 환불 요청할 수 없습니다.',
-      );
+      throw new BadRequestException({
+        code: 'SESSION_ALREADY_STARTED',
+        message: '수업이 이미 시작되어 환불 요청할 수 없습니다.',
+        details: {
+          sessionStartTime: sessionStartTime.toISOString(),
+          currentTime: now.toISOString(),
+          sessionEnrollmentId: dto.sessionEnrollmentId,
+        },
+      });
     }
 
     // 환불 요청 생성과 동시에 enrollment status를 REFUND_REQUESTED로 변경
@@ -179,19 +212,37 @@ export class RefundService {
     });
 
     if (!refundRequest) {
-      throw new NotFoundException('환불 요청을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'REFUND_REQUEST_NOT_FOUND',
+        message: '환불 요청을 찾을 수 없습니다.',
+        details: { refundRequestId },
+      });
     }
 
     // 권한 확인
     if (refundRequest.studentId !== studentId) {
-      throw new ForbiddenException('자신의 환불 요청만 취소할 수 있습니다.');
+      throw new ForbiddenException({
+        code: 'INSUFFICIENT_PERMISSIONS',
+        message: '자신의 환불 요청만 취소할 수 있습니다.',
+        details: {
+          studentId,
+          refundRequestStudentId: refundRequest.studentId,
+          refundRequestId,
+        },
+      });
     }
 
     // 상태 확인 (대기 중인 요청만 취소 가능)
     if (refundRequest.status !== 'PENDING') {
-      throw new BadRequestException(
-        '대기 중인 환불 요청만 취소할 수 있습니다.',
-      );
+      throw new BadRequestException({
+        code: 'REFUND_REQUEST_NOT_PENDING',
+        message: '대기 중인 환불 요청만 취소할 수 있습니다.',
+        details: {
+          refundRequestId,
+          currentStatus: refundRequest.status,
+          requiredStatus: 'PENDING',
+        },
+      });
     }
 
     // 환불 요청 취소
@@ -231,14 +282,24 @@ export class RefundService {
     });
 
     if (!refundRequest) {
-      throw new NotFoundException('환불 요청을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        code: 'REFUND_REQUEST_NOT_FOUND',
+        message: '환불 요청을 찾을 수 없습니다.',
+        details: { refundRequestId: dto.refundRequestId },
+      });
     }
 
     // 상태 확인 (대기 중인 요청만 처리 가능)
     if (refundRequest.status !== 'PENDING') {
-      throw new BadRequestException(
-        '대기 중인 환불 요청만 처리할 수 있습니다.',
-      );
+      throw new BadRequestException({
+        code: 'REFUND_REQUEST_NOT_PENDING',
+        message: '대기 중인 환불 요청만 처리할 수 있습니다.',
+        details: {
+          refundRequestId: dto.refundRequestId,
+          currentStatus: refundRequest.status,
+          requiredStatus: 'PENDING',
+        },
+      });
     }
 
     // 환불 요청 처리
@@ -283,10 +344,22 @@ export class RefundService {
 
     // Socket 이벤트 발생 - 환불 요청 승인 알림
     if (dto.status === 'APPROVED' || dto.status === 'PARTIAL_APPROVED') {
-      this.socketGateway.notifyRefundAccepted(
-        processedRefundRequest.id,
-        processedRefundRequest.studentId,
-      );
+      try {
+        // Student의 userRefId 조회
+        const student = await this.prisma.student.findUnique({
+          where: { id: processedRefundRequest.studentId },
+          select: { userRefId: true },
+        });
+
+        if (student) {
+          this.socketGateway.notifyRefundAccepted(
+            processedRefundRequest.id,
+            student.userRefId,
+          );
+        }
+      } catch (e) {
+        console.warn('Socket notifyRefundAccepted failed:', e);
+      }
     }
 
     return processedRefundRequest;
@@ -586,15 +659,27 @@ export class RefundService {
     );
 
     // Socket 이벤트 발생 - 환불 요청 거절 알림
-    this.socketGateway.notifyRefundRejected(result.id, result.studentId);
+    try {
+      // Student의 userRefId 조회
+      const student = await this.prisma.student.findUnique({
+        where: { id: result.studentId },
+        select: { userRefId: true },
+      });
+
+      if (student) {
+        this.socketGateway.notifyRefundRejected(result.id, student.userRefId);
+      }
+    } catch (e) {
+      console.warn('Socket notifyRefundRejected failed:', e);
+    }
 
     return result;
   }
 
   // Principal의 학원 모든 환불요청 조회
-  async getPrincipalRefundRequests(userId: number) {
+  async getPrincipalRefundRequests(principalId: number) {
     const principal = await this.prisma.principal.findUnique({
-      where: { userRefId: userId },
+      where: { id: principalId },
       include: { academy: true },
     });
 
@@ -901,10 +986,18 @@ export class RefundService {
 
     // 소켓 알림: 환불 요청 승인
     try {
-      this.socketGateway.notifyRefundAccepted(
-        result.updatedRefundRequest.id,
-        result.updatedRefundRequest.sessionEnrollment.studentId,
-      );
+      // Student의 userRefId 조회
+      const student = await this.prisma.student.findUnique({
+        where: { id: result.updatedRefundRequest.sessionEnrollment.studentId },
+        select: { userRefId: true },
+      });
+
+      if (student) {
+        this.socketGateway.notifyRefundAccepted(
+          result.updatedRefundRequest.id,
+          student.userRefId,
+        );
+      }
     } catch (e) {
       console.warn('Socket notifyRefundAccepted failed:', e);
     }
@@ -1023,10 +1116,18 @@ export class RefundService {
 
     // 소켓 알림: 환불 요청 거절
     try {
-      this.socketGateway.notifyRefundRejected(
-        result.updatedRefundRequest.id,
-        result.updatedRefundRequest.sessionEnrollment.studentId,
-      );
+      // Student의 userRefId 조회
+      const student = await this.prisma.student.findUnique({
+        where: { id: result.updatedRefundRequest.sessionEnrollment.studentId },
+        select: { userRefId: true },
+      });
+
+      if (student) {
+        this.socketGateway.notifyRefundRejected(
+          result.updatedRefundRequest.id,
+          student.userRefId,
+        );
+      }
     } catch (e) {
       console.warn('Socket notifyRefundRejected failed:', e);
     }
