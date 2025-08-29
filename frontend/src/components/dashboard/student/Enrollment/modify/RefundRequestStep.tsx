@@ -6,8 +6,14 @@ import { StatusStep } from '@/components/features/student/enrollment/month/Statu
 import { InfoBubble } from '@/components/common/InfoBubble';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 // 역할 분리: 환불 생성/취소는 학생 전용 API 파일로 이동 필요 (추후 구현 예정)
-import { RefundReason } from '@/types/api/refund';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
+import { useRefund } from '@/hooks/student/useRefund';
+import { 
+  validateCompleteRefundRequest, 
+  getRefundReasonOptions,
+  RefundReason,
+  ValidationError 
+} from '@/utils/refundRequestValidation';
 
 interface RefundRequestStepProps {
   refundAmount: number;
@@ -31,6 +37,8 @@ const banks = [
 export function RefundRequestStep({ refundAmount, cancelledSessionsCount, onComplete }: RefundRequestStepProps) {
   const { goBack } = useDashboardNavigation();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isShaking, setIsShaking] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [accountInfo, setAccountInfo] = useState({
     bank: '',
     accountNumber: '',
@@ -39,7 +47,7 @@ export function RefundRequestStep({ refundAmount, cancelledSessionsCount, onComp
   const [saveAccount, setSaveAccount] = useState(false);
   const [refundReason, setRefundReason] = useState<RefundReason>(RefundReason.PERSONAL_SCHEDULE);
   const [detailedReason, setDetailedReason] = useState('');
-  const { createRefundRequest } = useStudentApi();
+  const { createRefundRequest } = useRefund();
 
   const statusSteps = [
     {
@@ -67,71 +75,133 @@ export function RefundRequestStep({ refundAmount, cancelledSessionsCount, onComp
       ...prev,
       [field]: value
     }));
+    
+    // 입력 시 해당 필드의 validation 에러 제거
+    if (validationErrors[field]) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  const handleRefundReasonChange = (reason: RefundReason) => {
+    setRefundReason(reason);
+    
+    // 환불 사유 변경 시 관련 validation 에러 제거
+    if (validationErrors.reason) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.reason;
+        return newErrors;
+      });
+    }
+    
+    // 기타 사유가 아닌 경우 상세 사유 에러도 제거
+    if (reason !== RefundReason.OTHER && validationErrors.detailedReason) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.detailedReason;
+        return newErrors;
+      });
+    }
+  };
+
+  const handleDetailedReasonChange = (value: string) => {
+    setDetailedReason(value);
+    
+    // 상세 사유 입력 시 해당 필드의 validation 에러 제거
+    if (validationErrors.detailedReason) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.detailedReason;
+        return newErrors;
+      });
+    }
   };
 
   const handleSubmit = async () => {
-    if (!accountInfo.bank || !accountInfo.accountNumber || !accountInfo.accountHolder) {
-      toast.error('모든 필드를 입력해주세요.');
+    // localStorage에서 기존 수강 신청 정보와 선택된 세션 정보 가져오기
+    const existingEnrollmentsData = localStorage.getItem('existingEnrollments');
+    const selectedSessionsData = localStorage.getItem('selectedSessions');
+    
+    if (!existingEnrollmentsData || !selectedSessionsData) {
+      toast.error('수강 변경 정보를 찾을 수 없습니다.');
       return;
     }
 
-    if (!refundReason) {
-      toast.error('환불 사유를 선택해주세요.');
-      return;
-    }
+    const existingEnrollments = JSON.parse(existingEnrollmentsData);
+    const selectedSessions = JSON.parse(selectedSessionsData);
 
-    if (refundReason === RefundReason.OTHER && !detailedReason.trim()) {
-      toast.error('기타를 선택하셨을 경우 상세 사유를 입력해주세요.');
-      return;
-    }
+    // 기존에 신청된 세션들 (CONFIRMED, PENDING, REFUND_REJECTED_CONFIRMED 상태)
+    const originalEnrolledSessions = existingEnrollments.filter(
+      (enrollment: any) =>
+        enrollment.enrollment &&
+        (enrollment.enrollment.status === "CONFIRMED" ||
+          enrollment.enrollment.status === "PENDING" ||
+          enrollment.enrollment.status === "REFUND_REJECTED_CONFIRMED")
+    );
 
-    if (!/^\d+$/.test(accountInfo.accountNumber.replace(/\s/g, ''))) {
-      toast.error('계좌번호는 숫자만 입력해주세요.');
-      return;
+    // 기존 신청 세션의 날짜들
+    const originalDates = originalEnrolledSessions.map(
+      (enrollment: any) => new Date(enrollment.date).toISOString().split("T")[0]
+    );
+
+    // 선택된 세션의 날짜들
+    const selectedDates = selectedSessions.map(
+      (session: any) => new Date(session.date).toISOString().split("T")[0]
+    );
+
+    // 취소될 세션들 (기존에 신청되었지만 현재 선택되지 않은 세션들)
+    const cancelledSessions = originalEnrolledSessions.filter(
+      (enrollment: any) => {
+        const enrollmentDate = new Date(enrollment.date).toISOString().split("T")[0];
+        return !selectedDates.includes(enrollmentDate);
+      }
+    );
+
+    // 각 취소된 세션에 대해 validation 수행
+    for (const cancelledSession of cancelledSessions) {
+      const sessionPrice = parseInt(cancelledSession.class?.tuitionFee || '50000');
+      
+      const refundRequestData = {
+        sessionEnrollmentId: cancelledSession.enrollment.id,
+        reason: refundReason,
+        detailedReason: refundReason === RefundReason.OTHER ? detailedReason : undefined,
+        refundAmount: sessionPrice,
+        bankName: accountInfo.bank,
+        accountNumber: accountInfo.accountNumber,
+        accountHolder: accountInfo.accountHolder
+      };
+
+      // Validation 수행
+      const validation = validateCompleteRefundRequest(refundRequestData);
+      if (!validation.isValid) {
+        // validation 에러를 fieldErrors로 변환
+        const fieldErrorMap: Record<string, string> = {};
+        validation.errors.forEach(error => {
+          fieldErrorMap[error.field] = error.message;
+        });
+        
+        // 에러 상태 설정 및 흔들림 애니메이션 트리거
+        setValidationErrors(fieldErrorMap);
+        setIsShaking(true);
+        setTimeout(() => {
+          setIsShaking(false);
+          // 1초 후 validation 에러도 자동으로 제거
+          setTimeout(() => {
+            setValidationErrors({});
+          }, 1000);
+        }, 1000);
+        
+        return;
+      }
     }
 
     setIsSubmitting(true);
     
     try {
-      // localStorage에서 기존 수강 신청 정보와 선택된 세션 정보 가져오기
-      const existingEnrollmentsData = localStorage.getItem('existingEnrollments');
-      const selectedSessionsData = localStorage.getItem('selectedSessions');
-      
-      if (!existingEnrollmentsData || !selectedSessionsData) {
-        throw new Error('수강 변경 정보를 찾을 수 없습니다.');
-      }
-
-      const existingEnrollments = JSON.parse(existingEnrollmentsData);
-      const selectedSessions = JSON.parse(selectedSessionsData);
-
-      // 기존에 신청된 세션들 (CONFIRMED, PENDING, REFUND_REJECTED_CONFIRMED 상태)
-      const originalEnrolledSessions = existingEnrollments.filter(
-        (enrollment: any) =>
-          enrollment.enrollment &&
-          (enrollment.enrollment.status === "CONFIRMED" ||
-            enrollment.enrollment.status === "PENDING" ||
-            enrollment.enrollment.status === "REFUND_REJECTED_CONFIRMED")
-      );
-
-      // 기존 신청 세션의 날짜들
-      const originalDates = originalEnrolledSessions.map(
-        (enrollment: any) => new Date(enrollment.date).toISOString().split("T")[0]
-      );
-
-      // 선택된 세션의 날짜들
-      const selectedDates = selectedSessions.map(
-        (session: any) => new Date(session.date).toISOString().split("T")[0]
-      );
-
-      // 취소될 세션들 (기존에 신청되었지만 현재 선택되지 않은 세션들)
-      const cancelledSessions = originalEnrolledSessions.filter(
-        (enrollment: any) => {
-          const enrollmentDate = new Date(enrollment.date).toISOString().split("T")[0];
-          return !selectedDates.includes(enrollmentDate);
-        }
-      );
-
-
       // 각 취소된 세션에 대해 환불 요청 생성
       const refundRequests = [];
 
@@ -207,27 +277,34 @@ export function RefundRequestStep({ refundAmount, cancelledSessionsCount, onComp
 
       {/* 환불 사유 선택 */}
       <div className="w-[335px] flex flex-col gap-3 mb-4">
-        <InfoBubble
-          label="환불 사유"
-          type="select"
-          selectValue={refundReason}
-          onSelectChange={(e: React.ChangeEvent<HTMLSelectElement>) => setRefundReason(e.target.value as RefundReason)}
-          options={[
-            { value: RefundReason.PERSONAL_SCHEDULE, label: '개인 일정' },
-            { value: RefundReason.HEALTH_ISSUE, label: '건강상 문제' },
-            { value: RefundReason.DISSATISFACTION, label: '서비스 불만족' },
-            { value: RefundReason.FINANCIAL_ISSUE, label: '경제적 사유' },
-            { value: RefundReason.OTHER, label: '기타' },
-          ]}
-        />
-        {refundReason === RefundReason.OTHER && (
+        <div className="relative">
           <InfoBubble
-            label="상세 사유"
-            type="input"
-            placeholder="상세 사유를 입력해주세요"
-            inputValue={detailedReason}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDetailedReason(e.target.value)}
+            label="환불 사유"
+            type="select"
+            selectValue={refundReason}
+            onSelectChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleRefundReasonChange(e.target.value as RefundReason)}
+            options={getRefundReasonOptions()}
+            className={isShaking && validationErrors.reason ? 'animate-shake border-red-500' : ''}
           />
+          {validationErrors.reason && (
+            <div className="text-red-500 text-xs mt-1 ml-2">{validationErrors.reason}</div>
+          )}
+        </div>
+        
+        {refundReason === RefundReason.OTHER && (
+          <div className="relative">
+            <InfoBubble
+              label="상세 사유"
+              type="input"
+              placeholder="상세 사유를 입력해주세요"
+              inputValue={detailedReason}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleDetailedReasonChange(e.target.value)}
+              className={isShaking && validationErrors.detailedReason ? 'animate-shake border-red-500' : ''}
+            />
+            {validationErrors.detailedReason && (
+              <div className="text-red-500 text-xs mt-1 ml-2">{validationErrors.detailedReason}</div>
+            )}
+          </div>
         )}
       </div>
 
@@ -241,46 +318,57 @@ export function RefundRequestStep({ refundAmount, cancelledSessionsCount, onComp
 
       {/* 입력 카드들 */}
       <div className="w-[335px] flex flex-col gap-3 mb-2">
-        <InfoBubble
-          label="은행명"
-          type="select"
-          selectValue={accountInfo.bank}
-          onSelectChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleInputChange('bank', e.target.value)}
-          options={[
-            { value: '', label: '은행명 선택' },
-            { value: 'shinhan', label: '신한은행' },
-            { value: 'kb', label: 'KB국민은행' },
-            { value: 'woori', label: '우리은행' },
-            { value: 'hana', label: '하나은행' },
-            { value: 'nh', label: 'NH농협은행' },
-            { value: 'ibk', label: 'IBK기업은행' },
-            { value: 'kakao', label: '카카오뱅크' },
-            { value: 'toss', label: '토스뱅크' },
-            { value: 'kbank', label: '케이뱅크' },
-            { value: 'other', label: '기타' },
-          ]}
-        />
-        <InfoBubble
-          label="계좌번호"
-          type="input"
-          placeholder="계좌번호 입력"
-          inputValue={accountInfo.accountNumber}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('accountNumber', e.target.value.replace(/[^0-9]/g, ''))}
-          inputProps={{
-            inputMode: 'numeric',
-            pattern: '[0-9]*',
-            maxLength: 16,
-            minLength: 8,
-            autoComplete: 'off',
-          }}
-        />
-        <InfoBubble
-          label="예금주"
-          type="input"
-          placeholder="예금주 입력"
-          inputValue={accountInfo.accountHolder}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('accountHolder', e.target.value)}
-        />
+        <div className="relative">
+          <InfoBubble
+            label="은행명"
+            type="select"
+            selectValue={accountInfo.bank}
+            onSelectChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleInputChange('bank', e.target.value)}
+            options={[
+              { value: '', label: '은행명 선택' },
+              ...banks
+            ]}
+            className={isShaking && validationErrors.bankName ? 'animate-shake border-red-500' : ''}
+          />
+          {validationErrors.bankName && (
+            <div className="text-red-500 text-xs mt-1 ml-2">{validationErrors.bankName}</div>
+          )}
+        </div>
+        
+        <div className="relative">
+          <InfoBubble
+            label="계좌번호"
+            type="input"
+            placeholder="계좌번호 입력"
+            inputValue={accountInfo.accountNumber}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('accountNumber', e.target.value.replace(/[^0-9]/g, ''))}
+            inputProps={{
+              inputMode: 'numeric',
+              pattern: '[0-9]*',
+              maxLength: 16,
+              minLength: 8,
+              autoComplete: 'off',
+            }}
+            className={isShaking && validationErrors.accountNumber ? 'animate-shake border-red-500' : ''}
+          />
+          {validationErrors.accountNumber && (
+            <div className="text-red-500 text-xs mt-1 ml-2">{validationErrors.accountNumber}</div>
+          )}
+        </div>
+        
+        <div className="relative">
+          <InfoBubble
+            label="예금주"
+            type="input"
+            placeholder="예금주 입력"
+            inputValue={accountInfo.accountHolder}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('accountHolder', e.target.value)}
+            className={isShaking && validationErrors.accountHolder ? 'animate-shake border-red-500' : ''}
+          />
+          {validationErrors.accountHolder && (
+            <div className="text-red-500 text-xs mt-1 ml-2">{validationErrors.accountHolder}</div>
+          )}
+        </div>
       </div>
 
       {/* 체크박스 */}

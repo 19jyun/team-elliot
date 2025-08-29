@@ -147,7 +147,7 @@ export function useStudentApi() {
     }
   }, []);
 
-  // 배치 수강 신청 함수
+  // 배치 수강 신청 함수 (기존 로직 유지, 새로운 useEnrollment hook 사용 권장)
   const enrollSessions = useCallback(async (sessionIds: number[]) => {
     try {
       const result = await batchEnrollSessions(sessionIds);
@@ -234,7 +234,7 @@ export function useStudentApi() {
     []
   );
 
-  // 환불 요청 생성 (학생용)
+  // 환불 요청 생성 (학생용) (기존 로직 유지, 새로운 useRefund hook 사용 권장)
   const createRefundRequest = useCallback(
     async (
       data: CreateRefundRequestDto

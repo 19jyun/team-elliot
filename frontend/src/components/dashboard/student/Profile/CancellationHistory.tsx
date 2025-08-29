@@ -198,8 +198,21 @@ export function CancellationHistory() {
                   const appliedAt = getAppliedAt(log);
                   
                   return (
-                    <Card key={log.id} className="hover:shadow-md transition-shadow">
+                    <Card 
+                      key={log.id} 
+                      className={`hover:shadow-md transition-shadow ${
+                        (log as any).isOptimistic ? 'opacity-60 bg-blue-50' : ''
+                      }`}
+                    >
                       <CardContent className="p-4">
+                        {(log as any).isOptimistic && (
+                          <div className="mb-3 p-2 bg-blue-100 border border-blue-200 rounded-md">
+                            <div className="flex items-center gap-2">
+                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                              <span className="text-sm text-blue-700 font-medium">처리 중...</span>
+                            </div>
+                          </div>
+                        )}
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-3">
