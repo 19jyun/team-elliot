@@ -1,7 +1,6 @@
 'use client'
 
 import React from 'react'
-import { format } from 'date-fns'
 
 interface SessionCardProps {
   session: any
@@ -28,18 +27,7 @@ export function SessionCard({ session, onClick, role }: SessionCardProps) {
     })
   }
 
-  const formatDayOfWeek = (dayOfWeek: string) => {
-    const dayMap: Record<string, string> = {
-      'MONDAY': '월',
-      'TUESDAY': '화',
-      'WEDNESDAY': '수',
-      'THURSDAY': '목',
-      'FRIDAY': '금',
-      'SATURDAY': '토',
-      'SUNDAY': '일',
-    }
-    return dayMap[dayOfWeek] || dayOfWeek
-  }
+
 
   const getLevelColor = (level: string) => {
     const levelColors: Record<string, string> = {

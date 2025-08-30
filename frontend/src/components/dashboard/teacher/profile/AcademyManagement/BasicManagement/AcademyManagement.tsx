@@ -2,11 +2,9 @@
 
 import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { Building2, Users } from 'lucide-react';
-import { toast } from 'sonner';
+
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
-import { AnimatedCard } from '@/components/common/AnimatedCard';
 
 // 커스텀 훅들
 import { useTeacherAcademyManagement } from '@/hooks/teacher/academy_management/useTeacherAcademyManagement';
@@ -14,17 +12,11 @@ import { useAcademyForm } from '@/hooks/useAcademyForm';
 import { usePhoneVerification } from '@/hooks/usePhoneVerification';
 
 // 분리된 컴포넌트들
-import { CreateAcademyModal } from './CreateAcademyModal';
 import { WithdrawalConfirmModal } from './WithdrawalConfirmModal';
-import { AcademyForm } from './AcademyForm';
 import { AcademyCard } from '@/components/common/AcademyCard';
 import { JoinAcademyCard } from './JoinAcademyCard';
 
-interface AcademyManagementProps {
-  onBack?: () => void;
-}
-
-export default function AcademyManagement({ onBack }: AcademyManagementProps) {
+export default function AcademyManagement() {
   const { pushFocus, popFocus } = useDashboardNavigation();
   
   // 커스텀 훅들
@@ -40,28 +32,17 @@ export default function AcademyManagement({ onBack }: AcademyManagementProps) {
     loadCurrentAcademy,
     handleJoinAcademy,
     handleWithdrawalConfirm,
-    handleCreateAcademy,
+
     handleLeaveAcademy,
   } = useTeacherAcademyManagement();
 
   const {
-    isExpanded,
-    setIsExpanded,
     isEditMode,
     editingAcademy,
     formData,
-    setFormData,
-    resetForm,
-    handleEditAcademy,
-    handleCancel,
-    isFormValid,
-    getButtonText,
   } = useAcademyForm();
 
   const {
-    isPhoneVerificationRequired,
-    isPhoneVerified,
-    resetVerification,
   } = usePhoneVerification({ 
     phoneNumber: formData.phoneNumber || '',
     isEditMode,
@@ -81,60 +62,8 @@ export default function AcademyManagement({ onBack }: AcademyManagementProps) {
     };
   }, [pushFocus, popFocus, loadCurrentAcademy]);
 
-  const handleToggleExpand = () => {
-    if (isExpanded) {
-      // 확장된 상태에서는 폼 제출
-      handleFormSubmit();
-    } else {
-      // 축소된 상태에서는 확장
-      setIsExpanded(true);
-      pushFocus('subpage');
-    }
-  };
-
-  const handleFormSubmit = () => {
-    if (!isFormValid()) {
-      toast.error('학원명과 학원 코드는 필수입니다.');
-      return;
-    }
-    
-    // 전화번호 인증이 필요한데 아직 인증되지 않은 경우
-    if (isPhoneVerificationRequired && !isPhoneVerified) {
-      toast.error('전화번호 인증을 완료해주세요.');
-      return;
-    }
-    
-    // 기본 관리에서는 학원 생성만 가능
-    handleCreateAcademy(formData);
-    
-    // 성공 시 폼 초기화
-    setIsExpanded(false);
-    resetForm();
-    resetVerification();
-  };
-
-
-
   return (
     <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px] py-2 relative">
-      {/* 학원 생성 섹션 */}
-      {/* <div className="px-5 py-2">
-        <AnimatedCard
-          isExpanded={isExpanded}
-          onToggle={handleToggleExpand}
-          onCancel={handleCancel}
-          buttonText={getButtonText()}
-          cancelButtonText="취소"
-          isButtonDisabled={isExpanded && (!isFormValid() || (isPhoneVerificationRequired && !isPhoneVerified))}
-        >
-          <AcademyForm
-            formData={formData}
-            setFormData={setFormData}
-            isEditMode={isEditMode}
-            editingAcademy={editingAcademy}
-          />
-        </AnimatedCard>
-      </div> */}
 
       {/* 새 학원 가입 섹션 */}
       <div className="px-5 py-2">

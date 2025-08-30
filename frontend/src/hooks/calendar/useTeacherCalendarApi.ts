@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { getTeacherClassesWithSessions } from "@/api/teacher";
-import type { TeacherClassesWithSessionsResponse } from "@/types/api/teacher";
 
 // Teacher Calendar API 훅
 export function useTeacherCalendarApi() {

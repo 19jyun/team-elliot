@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect } from 'react'
 import { useAppDispatch } from '@/store/hooks'
 import { useSocketEvent } from '@/hooks/socket/useSocket'
 import { 
@@ -39,34 +38,8 @@ export function SocketListener() {
     })
   })
 
-  // 클래스 정보 변경 이벤트 리스너 (Principal & Teacher 공통)
-  useSocketEvent('class_info_changed', (data) => {
-    
-    // TODO: Principal과 Teacher 클래스 정보 업데이트 로직 구현
-    toast.info('클래스 정보가 업데이트되었습니다.')
-  })
-
-  // 학원 정보 변경 이벤트 리스너 (Principal & Teacher 공통)
-  useSocketEvent('academy_info_changed', (data) => {
-    
-    // TODO: Principal과 Teacher 학원 정보 업데이트 로직 구현
-    toast.info('학원 정보가 업데이트되었습니다.')
-  })
-
-  // 수업 시간 알림 이벤트 리스너 (Principal & Teacher 공통)
-  useSocketEvent('class_reminder', (data) => {
-    
-    // 토스트 알림
-    toast.warning('수업 시간 알림', {
-      description: `${data.classData.className} - ${data.message}`,
-      duration: 10000, // 10초간 표시
-    })
-  })
-
-
-
   // 연결 확인 이벤트 리스너
-  useSocketEvent('connection_confirmed', (data) => {
+  useSocketEvent('connection_confirmed', () => {
     
     // 토스트 알림
     toast.success('실시간 연결이 설정되었습니다.', {

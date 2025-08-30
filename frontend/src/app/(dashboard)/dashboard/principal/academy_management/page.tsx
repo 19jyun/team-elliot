@@ -6,17 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Settings, Edit, Save, X } from 'lucide-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { updatePrincipalAcademy as updatePrincipalAcademyApi, getPrincipalAcademy } from '@/api/principal';
+import { updatePrincipalAcademy as updatePrincipalAcademyApi } from '@/api/principal';
 import { UpdatePrincipalAcademyRequest } from '@/types/api/principal';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 
 export default function PrincipalAcademyManagementPage() {
   const router = useRouter();
-  const { data: session, status } = useSession({
+  const { status } = useSession({
     required: true,
     onUnauthenticated() {
       router.push('/auth');
@@ -30,7 +30,7 @@ export default function PrincipalAcademyManagementPage() {
     phoneNumber: '',
     description: '',
   });
-  const queryClient = useQueryClient();
+
 
   // API 기반 데이터 관리
   const { academy, loadAcademy, isLoading, error } = usePrincipalApi();
@@ -55,7 +55,7 @@ export default function PrincipalAcademyManagementPage() {
   // 학원 정보 수정 뮤테이션
   const updateAcademyMutation = useMutation({
     mutationFn: updatePrincipalAcademyApi,
-    onSuccess: (updatedAcademy) => {
+    onSuccess: () => {
       // API 데이터 다시 로드
       loadAcademy();
       toast.success('학원 정보가 수정되었습니다.');

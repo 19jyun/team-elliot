@@ -200,7 +200,7 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
       
       // 백엔드에 세션별 수강 신청 요청 (낙관적 업데이트 포함)
       // 실제 세션 데이터를 전달하여 정확한 낙관적 업데이트 수행
-      const result = await enrollSessions(sessionIds, selectedSessions);
+      await enrollSessions(sessionIds, selectedSessions);
       
       // 성공 시 완료 페이지로 이동
       setEnrollmentStep('complete');

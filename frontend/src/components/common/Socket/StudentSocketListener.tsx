@@ -103,7 +103,7 @@ export function StudentSocketListener() {
   })
 
   // 연결 확인
-  useSocketEvent('connection_confirmed', (data) => {
+  useSocketEvent('connection_confirmed', () => {
     toast.success('실시간 연결이 설정되었습니다.', {
       description: '이제 실시간 업데이트를 받을 수 있습니다.',
     })

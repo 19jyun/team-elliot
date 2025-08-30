@@ -67,7 +67,7 @@ export const TeacherSessionCardList: React.FC<TeacherSessionCardListProps> = ({
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
         <div className="flex flex-col gap-3 pb-4">
           {sessions.map((session) => {
-            const { enrollmentCount, confirmedCount } = getEnrollmentCounts(session)
+            const { enrollmentCount } = getEnrollmentCounts(session)
             
             // level 타입 보정
             const safeLevel: LevelType =

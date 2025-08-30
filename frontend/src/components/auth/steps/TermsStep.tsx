@@ -1,14 +1,38 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { ProgressBarItem } from '@/app/(auth)/signup/ProgressBarItem';
 import { Button } from '@/components/auth/Button';
-import { CheckboxItem } from '@/app/(auth)/signup/CheckboxItem';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
+// 로컬 컴포넌트 정의
+const ProgressBarItem = ({ current, total }: { current: number; total: number }) => (
+  <div className="flex gap-2 mb-6">
+    {Array.from({ length: total }, (_, i) => (
+      <div
+        key={i}
+        className={`h-1 flex-1 rounded ${
+          i < current ? 'bg-blue-600' : 'bg-gray-300'
+        }`}
+      />
+    ))}
+  </div>
+);
+
+const CheckboxItem = ({ text, required }: { text: string; required?: boolean }) => (
+  <div className="flex gap-2 items-center py-3">
+    <div className="w-5 h-5 border border-gray-300 rounded flex items-center justify-center">
+      <div className="w-3 h-3 bg-blue-600 rounded hidden"></div>
+    </div>
+    <span className="text-sm">
+      {text}
+      {required && <span className="text-red-500 ml-1">*</span>}
+    </span>
+  </div>
+);
+
 export function TermsStep() {
-  const { signup, setTerms, setSignupStep } = useAuth();
+  const { signup, setSignupStep } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async () => {
@@ -42,10 +66,10 @@ export function TermsStep() {
           router.push('/dashboard');
         }
       } else {
-        const error = await response.json();
-        toast.error(error.message || '회원가입에 실패했습니다');
+        const errorData = await response.json();
+        toast.error(errorData.message || '회원가입에 실패했습니다');
       }
-    } catch (error) {
+    } catch {
       toast.error('회원가입 중 오류가 발생했습니다');
     }
   };
@@ -54,9 +78,7 @@ export function TermsStep() {
     setSignupStep('account-info');
   };
 
-  const handleCheckboxChange = (key: keyof typeof signup.terms) => {
-    setTerms({ ...signup.terms, [key]: !signup.terms[key] });
-  };
+
 
   return (
     <>
@@ -80,22 +102,18 @@ export function TermsStep() {
 
         <div className="flex flex-col mt-4 w-full text-base tracking-normal">
           <CheckboxItem
-            icon="https://cdn.builder.io/api/v1/image/assets/TEMP/bec1032544384dfb8d2e50d5c619a90dc6aff4131ada8b881183578489e5c959?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f"
             text="만 14세 이상입니다"
             required
           />
           <CheckboxItem
-            icon="https://cdn.builder.io/api/v1/image/assets/TEMP/bec1032544384dfb8d2e50d5c619a90dc6aff4131ada8b881183578489e5c959?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f"
             text="이용약관에 동의합니다"
             required
           />
           <CheckboxItem
-            icon="https://cdn.builder.io/api/v1/image/assets/TEMP/bec1032544384dfb8d2e50d5c619a90dc6aff4131ada8b881183578489e5c959?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f"
             text="개인정보 처리방침에 동의합니다"
             required
           />
           <CheckboxItem
-            icon="https://cdn.builder.io/api/v1/image/assets/TEMP/bec1032544384dfb8d2e50d5c619a90dc6aff4131ada8b881183578489e5c959?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f"
             text="마케팅 정보 수신에 동의합니다"
           />
         </div>

@@ -1,24 +1,5 @@
 import { get, post, put, del } from "./apiClient";
 import type { ApiResponse } from "@/types/api";
-import { ErrorHandler } from "@/lib/errorHandler";
-import { AppError } from "@/types/api";
-
-// 에러 처리를 위한 래퍼 함수
-const handleApiError = (error: any): never => {
-  if (error.response?.data) {
-    // 백엔드에서 구조화된 에러 응답이 온 경우
-    const appError = ErrorHandler.handle(error.response.data);
-    if (appError) {
-      throw appError;
-    }
-  }
-
-  // 네트워크 에러나 기타 에러
-  const networkError = ErrorHandler.handleNetworkError(error);
-  throw networkError;
-};
-
-// === Principal Dashboard Redux 데이터 초기화용 API ===
 
 // PrincipalData 전체 초기화 (Redux용)
 export const getPrincipalData = (): Promise<ApiResponse<any>> => {

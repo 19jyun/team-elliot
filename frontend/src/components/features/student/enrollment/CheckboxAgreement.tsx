@@ -3,7 +3,6 @@ import { CheckboxAgreementProps } from './types'
 
 export const CheckboxAgreement: React.FC<CheckboxAgreementProps> = ({
   text,
-  iconSrc,
   onChange,
 }) => {
   const [checked, setChecked] = React.useState(false)

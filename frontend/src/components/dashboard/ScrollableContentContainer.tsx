@@ -1,7 +1,7 @@
 'use client';
 
 import React, { ReactNode, useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 
 interface ScrollableContentContainerProps {

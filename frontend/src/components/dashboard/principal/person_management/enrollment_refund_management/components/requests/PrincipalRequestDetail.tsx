@@ -12,8 +12,7 @@ import { updatePrincipalEnrollment, updatePrincipalRefundRequest } from '@/store
 
 export function PrincipalRequestDetail() {
   const { 
-    personManagement, 
-    setPersonManagementStep
+    personManagement
   } = usePrincipalContext();
   const { selectedTab, selectedSessionId } = personManagement;
   const [showRejectionModal, setShowRejectionModal] = useState(false);
@@ -26,8 +25,7 @@ export function PrincipalRequestDetail() {
     approveEnrollment, 
     rejectEnrollment, 
     approveRefund, 
-    rejectRefund,
-    error: apiError 
+    rejectRefund
   } = usePrincipalApi();
 
   // Redux store에서 데이터 가져오기
@@ -111,9 +109,7 @@ export function PrincipalRequestDetail() {
     setSelectedRequest(null);
   };
 
-  const handleGoBack = () => {
-    setPersonManagementStep('session-list');
-  };
+
 
   if (isLoading) {
     return (

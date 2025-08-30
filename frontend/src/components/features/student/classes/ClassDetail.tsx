@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+
 // 역할 분리: 학생 화면에서 필요 시 별도 학생용 API로 대체 또는 서버 컴포넌트에서 주입
 import { ClassDetailsResponse } from '@/types/api/class';
 import { toast } from 'sonner';
@@ -15,19 +15,6 @@ interface ClassDetailProps {
   classSessions?: any[];
   showModificationButton?: boolean;
   onModificationClick?: () => void;
-}
-
-interface TeacherInfo {
-  name: string;
-  introduction?: string;
-  photoUrl?: string;
-  education?: string[];
-}
-
-interface LocationInfo {
-  name: string;
-  address?: string;
-  mapImageUrl?: string;
 }
 
 export function ClassDetail({ classId, classSessions, showModificationButton = true, onModificationClick }: ClassDetailProps) {
@@ -52,7 +39,7 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
     try {
       setIsLoading(true);
       const response = await getClassDetails(classId);
-      setClassDetails(response);
+      setClassDetails(response || null);
     } catch (error) {
       console.error('클래스 상세 정보 로드 실패:', error);
       toast.error('클래스 정보를 불러오는데 실패했습니다.');

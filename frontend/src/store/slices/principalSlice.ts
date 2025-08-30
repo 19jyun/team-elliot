@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import type { PrincipalState, PrincipalData } from "@/types/store/principal";
+import type { PrincipalState } from "@/types/store/principal";
 import type { SocketEventData } from "@/types/socket";
 
 const initialState: PrincipalState = {

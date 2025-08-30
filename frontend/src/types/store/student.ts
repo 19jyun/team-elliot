@@ -1,6 +1,3 @@
-// Student 전용 Redux 타입들
-import type { Academy } from "./common";
-
 // Student 전용 데이터 타입 (Redux에서 관리하는 데이터만)
 export interface StudentData {
   // 수강 신청/결제 내역

@@ -160,7 +160,7 @@ export function SignupAccountPage() {
     password: '',
     confirmPassword: '',
   })
-  const { check: checkDuplicateUserId, loading: checkingId } = useCheckDuplicateUserId()
+  const { check: checkDuplicateUserId } = useCheckDuplicateUserId()
 
   useEffect(() => {
     const savedData = JSON.parse(sessionStorage.getItem('signupData') || '{}')

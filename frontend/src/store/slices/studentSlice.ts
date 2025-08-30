@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import type { StudentState, StudentData } from "@/types/store/student";
+import type { StudentState } from "@/types/store/student";
 import type { SocketEventData } from "@/types/socket";
 import type {
   EnrollmentHistory,
@@ -385,16 +385,6 @@ export const studentSlice = createSlice({
       }
     },
 
-    // 15. 세션 가용성 변경 (캘린더용)
-    updateAvailableSessionFromSocket: (state, action) => {
-      // 캘린더 관련 업데이트 로직 (추후 구현)
-    },
-
-    // 16. 클래스 가용성 변경 (캘린더용)
-    updateAvailableClassFromSocket: (state, action) => {
-      // 캘린더 관련 업데이트 로직 (추후 구현)
-    },
-
     // 17. 세션 정보 업데이트 (캘린더용)
     updateSessionInfoFromSocket: (state, action) => {
       const { sessionId, updates } = action.payload;
@@ -452,8 +442,6 @@ export const {
   removeOptimisticCalendarSession,
   updateStudentEnrollmentFromSocket,
   updateStudentCancellationFromSocket,
-  updateAvailableSessionFromSocket,
-  updateAvailableClassFromSocket,
   updateSessionInfoFromSocket,
   addNewSessionFromSocket,
 } = studentSlice.actions;

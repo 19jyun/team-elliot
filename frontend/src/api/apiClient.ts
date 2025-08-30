@@ -1,7 +1,7 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import { getSession } from "next-auth/react";
 import { ErrorHandler } from "@/lib/errorHandler";
-import { ApiResponse, AppError } from "@/types/api";
+import { ApiResponse } from "@/types/api";
 
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "/api",

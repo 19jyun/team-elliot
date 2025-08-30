@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import {
   getTeacherProfile,
@@ -11,9 +11,7 @@ import {
 } from "@/api/teacher";
 import type {
   TeacherProfileResponse,
-  TeacherClassesWithSessionsResponse,
   Academy,
-  Principal,
   UpdateEnrollmentStatusRequest,
   UpdateProfileRequest,
 } from "@/types/api/teacher";
@@ -22,7 +20,7 @@ import { useApiError } from "@/hooks/useApiError";
 // Teacher API 데이터 훅
 export function useTeacherApi() {
   const { data: session, status } = useSession();
-  const { handleApiError } = useApiError();
+  const {} = useApiError();
   const [profile, setProfile] = useState<TeacherProfileResponse | null>(null);
   const [academy, setAcademy] = useState<Academy | null>(null);
   const [classes, setClasses] = useState<any[]>([]);
@@ -196,7 +194,7 @@ export function useTeacherApi() {
     });
   };
 
-  const getTeacherById = (teacherId: number) => {
+  const getTeacherById = (_teacherId: number) => {
     return profile;
   };
 

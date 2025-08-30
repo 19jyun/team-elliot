@@ -3,14 +3,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Users, Trash2 } from 'lucide-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { useEffect } from 'react';
 
 export default function PrincipalTeacherManagementSection() {
-  const queryClient = useQueryClient();
-
   // API 기반 데이터 관리
   const { teachers, loadTeachers, isLoading, error, removeTeacher } = usePrincipalApi();
 

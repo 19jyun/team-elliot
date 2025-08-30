@@ -7,10 +7,7 @@ import {
   setLoading,
   setError,
 } from "@/store/slices/teacherSlice";
-import {
-  getTeacherProfile,
-  getTeacherClassesWithSessions,
-} from "@/api/teacher";
+import { getTeacherClassesWithSessions } from "@/api/teacher";
 import { toast } from "sonner";
 
 export function useTeacherInitialization() {
@@ -37,13 +34,10 @@ export function useTeacherInitialization() {
         dispatch(setError(null));
 
         // 실시간 업데이트가 필요한 데이터만 로드 (출석체크용 enrollment)
-        const [profileResponse, classesWithSessionsResponse] =
-          await Promise.all([
-            getTeacherProfile(),
-            getTeacherClassesWithSessions(),
-          ]);
+        const [classesWithSessionsResponse] = await Promise.all([
+          getTeacherClassesWithSessions(),
+        ]);
 
-        const profile = profileResponse.data;
         const classesWithSessions = classesWithSessionsResponse.data;
 
         // 모든 enrollment 데이터를 하나의 배열로 추출

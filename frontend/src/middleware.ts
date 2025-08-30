@@ -8,15 +8,12 @@ export function middleware(request: NextRequest) {
   const protectedPaths = ["/dashboard", "/profile", "/enrollment"];
 
   // 인증이 필요하지 않은 경로들
-  const publicPaths = ["/auth", "/api"];
+  const _publicPaths = ["/auth", "/api"];
 
   // 현재 경로가 보호된 경로인지 확인
   const isProtectedPath = protectedPaths.some((path) =>
     pathname.startsWith(path)
   );
-
-  // 현재 경로가 공개 경로인지 확인
-  const isPublicPath = publicPaths.some((path) => pathname.startsWith(path));
 
   // 토큰 확인
   const token =

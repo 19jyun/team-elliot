@@ -7,20 +7,16 @@ import { toast } from 'sonner'
 
 // Principal Redux 액션들
 import { 
-  setPrincipalData,
-  updatePrincipalEnrollmentFromSocket,
-  updatePrincipalRefundRequestFromSocket
+  setPrincipalData
 } from '@/store/slices/principalSlice'
 
 // Teacher Redux 액션들
 import {
-  setTeacherRealTimeData,
   updateTeacherEnrollmentFromSocket
 } from '@/store/slices/teacherSlice'
 
 // Student Redux 액션들
 import {
-  setStudentData,
   updateStudentEnrollmentFromSocket,
   updateStudentCancellationFromSocket
 } from '@/store/slices/studentSlice'
@@ -34,7 +30,6 @@ import {
 export function UniversalSocketListener() {
   const dispatch = useAppDispatch()
   const { data: session } = useSession()
-  const currentUserId = session?.user?.id
   const currentUserRole = session?.user?.role
 
   // 수강신청 상태 변경 이벤트

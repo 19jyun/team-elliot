@@ -9,7 +9,7 @@ interface RefundCompleteStepProps {
   isModification?: boolean;
 }
 
-export function RefundCompleteStep({ refundAmount, cancelledSessionsCount, isModification }: RefundCompleteStepProps) {
+export function RefundCompleteStep({ isModification }: RefundCompleteStepProps) {
   const { resetEnrollment, clearSubPage } = useDashboardNavigation();
 
   const handleConfirm = () => {

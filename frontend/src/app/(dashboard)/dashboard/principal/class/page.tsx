@@ -9,18 +9,7 @@ import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessi
 import { SessionDetailModal } from '@/components/common/Session/SessionDetailModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
-import { ClassSession } from '@/types/api/class'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
-
-// Type for extended session
-type ExtendedSession = {
-  accessToken?: string
-  user: {
-    id: string
-    role: string
-    accessToken?: string
-  } & { name?: string | null | undefined; email?: string | null | undefined; image?: string | null | undefined }
-}
 
 // 강의 개설 카드 컴포넌트
 const CreateClassCard: React.FC<{

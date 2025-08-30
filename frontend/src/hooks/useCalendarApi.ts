@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { getPrincipalAllSessions } from "@/api/principal";
 import { getClassSessionsForEnrollment as getClassSessions } from "@/api/student";
@@ -23,7 +23,7 @@ export function useCalendarApi() {
       setIsLoading(true);
       setError(null);
       const data = await getPrincipalAllSessions();
-      setSessions(data);
+      setSessions(data.data);
     } catch (err: any) {
       setError(err.response?.data?.message || "세션 로드 실패");
     } finally {

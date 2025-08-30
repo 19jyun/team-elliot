@@ -76,7 +76,7 @@ export function ExpandableText({
       ref.current.style.maxHeight = `${currentHeight}px`;
       
       // 강제로 리플로우를 발생시켜 애니메이션 시작
-      ref.current.offsetHeight;
+      void ref.current.offsetHeight;
       
       setIsExpanded(false);
       ref.current.style.maxHeight = '0px';

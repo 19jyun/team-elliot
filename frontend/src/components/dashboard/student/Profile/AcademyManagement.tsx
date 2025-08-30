@@ -1,18 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-// 역할 분리: 타입은 로컬 정의 또는 적절한 타입에서 가져오기
-type Academy = { id: number; name: string };
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Plus, MapPin, Phone, Calendar, Users, Building2, AlertTriangle, X } from 'lucide-react';
+import { Plus, Users, Building2, AlertTriangle, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
-import { ExpandableText } from '@/components/common';
 import { AcademyCard } from '@/components/common/AcademyCard';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
 import { useApiError } from '@/hooks/useApiError';
@@ -115,12 +110,12 @@ export function AcademyManagement() {
   // 기존 useApiError 훅 사용 (이미 완성도가 높음)
   const { handleApiError, fieldErrors, clearErrors } = useApiError();
 
-  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+
   const [joinAcademyCode, setJoinAcademyCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
   const [leaveAcademyId, setLeaveAcademyId] = useState<number | null>(null);
   const [leaveAcademyName, setLeaveAcademyName] = useState<string>('');
-  const [isLeaving, setIsLeaving] = useState(false);
+  const [_isLeaving, setIsLeaving] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
 
   useEffect(() => {
@@ -239,13 +234,7 @@ export function AcademyManagement() {
     setLeaveAcademyName('');
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
+
 
   return (
     <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px] py-5 relative">

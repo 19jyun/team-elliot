@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import NextAuth from "next-auth";
 
 export async function POST(request: NextRequest) {
   try {

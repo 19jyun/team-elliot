@@ -4,15 +4,12 @@ import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { InfoBubble } from '@/components/common/InfoBubble';
-import { useDashboardNavigation } from '@/contexts/DashboardContext';
-// 역할 분리: 환불 생성/취소는 학생 전용 API 파일로 이동 필요 (추후 구현 예정)
-import { useStudentApi } from '@/hooks/student/useStudentApi';
+
 import { useRefund } from '@/hooks/student/useRefund';
 import { 
   validateCompleteRefundRequest, 
   getRefundReasonOptions,
-  RefundReason,
-  ValidationError 
+  RefundReason
 } from '@/utils/refundRequestValidation';
 
 interface RefundRequestStepProps {
@@ -34,8 +31,7 @@ const banks = [
   { value: 'other', label: '기타' },
 ];
 
-export function RefundRequestStep({ refundAmount, cancelledSessionsCount, onComplete }: RefundRequestStepProps) {
-  const { goBack } = useDashboardNavigation();
+export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestStepProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -143,20 +139,13 @@ export function RefundRequestStep({ refundAmount, cancelledSessionsCount, onComp
           enrollment.enrollment.status === "REFUND_REJECTED_CONFIRMED")
     );
 
-    // 기존 신청 세션의 날짜들
-    const originalDates = originalEnrolledSessions.map(
-      (enrollment: any) => new Date(enrollment.date).toISOString().split("T")[0]
-    );
-
-    // 선택된 세션의 날짜들
-    const selectedDates = selectedSessions.map(
-      (session: any) => new Date(session.date).toISOString().split("T")[0]
-    );
-
     // 취소될 세션들 (기존에 신청되었지만 현재 선택되지 않은 세션들)
     const cancelledSessions = originalEnrolledSessions.filter(
       (enrollment: any) => {
         const enrollmentDate = new Date(enrollment.date).toISOString().split("T")[0];
+        const selectedDates = selectedSessions.map(
+          (session: any) => new Date(session.date).toISOString().split("T")[0]
+        );
         return !selectedDates.includes(enrollmentDate);
       }
     );

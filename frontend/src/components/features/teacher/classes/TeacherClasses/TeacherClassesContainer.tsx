@@ -10,7 +10,7 @@ import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'
 
 export function TeacherClassesContainer() {
   const router = useRouter()
-  const { data: session, status } = useSession({
+  const { status } = useSession({
     required: true,
     onUnauthenticated() {
       router.push('/auth')
@@ -21,7 +21,7 @@ export function TeacherClassesContainer() {
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false)
 
   // API 기반 데이터 관리
-  const { classes: myClasses, sessions: mySessions, loadClasses, isLoading, error } = useTeacherApi()
+  const { classes: myClasses, loadClasses, isLoading, error } = useTeacherApi()
 
   // 초기 데이터 로드
   useEffect(() => {

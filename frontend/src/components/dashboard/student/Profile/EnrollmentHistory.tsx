@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Calendar, Clock, BookOpen, CheckCircle, XCircle, AlertCircle, Clock as ClockIcon } from 'lucide-react';
-import { toast } from 'sonner';
+
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { useStudentData } from '@/hooks/redux/useStudentData';
 
@@ -107,11 +107,6 @@ export function EnrollmentHistory() {
     return log.session.date;
   };
 
-  // API 응답에서 세션 ID 추출
-  const getSessionId = (log: any): number => {
-    return log.id;
-  };
-
   const filteredLogs = enrollmentHistory.filter(log => {
     if (selectedFilter === 'ALL') return true;
     const status = getEnrollmentStatus(log);
@@ -187,7 +182,6 @@ export function EnrollmentHistory() {
                   const status = getEnrollmentStatus(log);
                   const className = getClassName(log);
                   const sessionDate = getSessionDate(log);
-                  const sessionId = getSessionId(log);
                   
                   return (
                     <Card 

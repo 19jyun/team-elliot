@@ -18,7 +18,6 @@ export function withFocusManagement<P extends object>(
   const {
     focusType,
     autoRestore = true,
-    restoreOnClose = true,
     onFocusChange,
   } = config;
 

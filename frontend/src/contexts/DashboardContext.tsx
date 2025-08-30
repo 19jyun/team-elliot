@@ -1,7 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { useSession } from 'next-auth/react';
+import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { ClassesWithSessionsByMonthResponse } from '@/types/api/class';
 
 export interface NavigationItem {
@@ -105,7 +104,7 @@ interface DashboardContextType {
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
 
 export function DashboardProvider({ children }: { children: ReactNode }) {
-  const { data: session } = useSession();
+
   const [state, setState] = useState<DashboardState>({
     activeTab: 0,
     isTransitioning: false,
@@ -144,28 +143,12 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   // 사용자 역할에 따른 네비게이션 아이템 정의
   const getNavigationItems = useCallback((): NavigationItem[] => {
-    if (!session?.user) return [];
-
-    const userRole = session.user.role || 'STUDENT';
-
-    switch (userRole) {
-      case 'STUDENT':
-        return [
-          { label: '클래스 정보', href: '/dashboard/student', index: 0 },
-          { label: '수강신청', href: '/dashboard/student/enroll', index: 1 },
-          { label: '나의 정보', href: '/dashboard/student/profile', index: 2 },
-        ];
-      case 'TEACHER':
-        return [
-          { label: '내 수업', href: '/dashboard/teacher', index: 0 },
-          { label: '수업 관리', href: '/dashboard/teacher/class_management', index: 1 },
-          { label: '나의 정보', href: '/dashboard/teacher/profile', index: 2 },
-        ];
-      // ADMIN 제거됨
-      default:
-        return [];
-    }
-  }, [session?.user]);
+    return [
+      { label: '클래스 정보', href: '/dashboard', index: 0 },
+      { label: '수강신청', href: '/dashboard', index: 1 },
+      { label: '나의 정보', href: '/dashboard', index: 2 },
+    ];
+  }, []);
 
   // 포커스 설정
   const setFocus = useCallback((focus: FocusType) => {

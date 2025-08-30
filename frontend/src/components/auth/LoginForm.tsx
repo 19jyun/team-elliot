@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { InputField } from '@/components/auth/InputField';
 import { Button } from '@/components/auth/Button';
-import { StatusBar } from '@/components/ui/StatusBar';
+
 
 export function LoginForm() {
   const { login, setLoginInfo, setAuthMode } = useAuth();
@@ -29,15 +29,14 @@ export function LoginForm() {
       });
 
       if (response.ok) {
-        const data = await response.json();
         // 로그인 성공 처리
         toast.success('로그인되었습니다');
         router.push('/dashboard');
       } else {
-        const error = await response.json();
-        toast.error(error.message || '로그인에 실패했습니다');
+        const errorData = await response.json();
+        toast.error(errorData.message || '로그인에 실패했습니다');
       }
-    } catch (error) {
+    } catch {
       toast.error('로그인 중 오류가 발생했습니다');
     }
   };

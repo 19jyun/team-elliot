@@ -51,23 +51,17 @@ export function SessionDetailModal({
   const { 
     sessions: principalSessions,
     loadSessions: loadPrincipalSessions,
-    isLoading: principalLoading,
-    error: principalError,
     loadSessionEnrollments: loadPrincipalSessionEnrollments
   } = principalApi;
 
   const {
     sessions: teacherSessions,
     loadSessions: loadTeacherSessions,
-    isLoading: teacherLoading,
-    error: teacherError,
     loadSessionEnrollments: loadTeacherSessionEnrollments
   } = teacherApi;
 
   // 현재 역할에 맞는 데이터 선택
   const currentSessions = role === 'teacher' ? teacherSessions : principalSessions;
-  const currentLoading = role === 'teacher' ? teacherLoading : principalLoading;
-  const currentError = role === 'teacher' ? teacherError : principalError;
 
   // 세션 정보를 API에서 가져오기
   const session = useMemo(() => {

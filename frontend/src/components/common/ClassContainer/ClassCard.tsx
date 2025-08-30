@@ -64,7 +64,6 @@ export const ClassCard: React.FC<ClassCardProps> = ({
   classData,
   onClick,
   showTeacher = false,
-  role = 'teacher',
 }) => {
   // level 타입 보정
   const safeLevel: LevelType =

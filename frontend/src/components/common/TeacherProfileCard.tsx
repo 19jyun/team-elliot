@@ -25,7 +25,7 @@ import {
   Camera
 } from 'lucide-react';
 import { useTeacherApi } from '@/hooks/teacher/useTeacherApi';
-import { useSession } from 'next-auth/react';
+
 
 interface TeacherProfileCardProps {
   teacherId?: number; // 특정 선생님 ID (없으면 현재 로그인한 선생님)
@@ -45,7 +45,7 @@ export function TeacherProfileCard({
   compact = false
 }: TeacherProfileCardProps) {
   
-  const { data: session } = useSession();
+
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<UpdateProfileRequest>({});
   const [tempEducation, setTempEducation] = useState<string[]>([]);
@@ -61,22 +61,19 @@ export function TeacherProfileCard({
   // 특정 선생님 프로필을 조회하는 경우를 위한 상태
   // 특정 ID 조회 기능은 학생용 컴포넌트로 분리됨
   const [specificTeacherProfile] = useState<TeacherProfileResponse | null>(null);
-  const [isLoadingSpecific] = useState(false);
   const [errorSpecific] = useState<string | null>(null);
 
   // API 기반 데이터 관리 (현재 로그인한 선생님용)
-  const { profile, loadProfile, isLoading, error, isTeacher } = useTeacherApi();
+  const { profile, loadProfile, error, isTeacher } = useTeacherApi();
 
   // 현재 사용자가 선생님이고, 특정 선생님 ID가 없거나 현재 선생님의 프로필을 조회하는 경우
   const isCurrentTeacher = isTeacher && (!teacherId || teacherId === profile?.id);
   
   // 실제 사용할 프로필 데이터와 로딩/에러 상태
   const currentProfile = teacherId ? specificTeacherProfile : profile;
-  const currentIsLoading = teacherId ? isLoadingSpecific : isLoading;
   const currentError = teacherId ? errorSpecific : error;
 
-  // 특정 선생님 프로필 로드
-  const loadSpecificTeacherProfile = async () => {};
+
 
   // 컴포넌트 마운트 시 프로필 로드
   useEffect(() => {

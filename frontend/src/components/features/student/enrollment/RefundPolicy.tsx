@@ -12,7 +12,7 @@ interface RefundPolicyProps {
   onAgree?: () => void
 }
 
-export const RefundPolicy: React.FC<RefundPolicyProps> = ({ isOpen, onClose, onAgree }) => {
+export const RefundPolicy: React.FC<RefundPolicyProps> = ({ isOpen, onClose }) => {
   const [isBottom, setIsBottom] = React.useState(false)
   const [isChecked, setIsChecked] = React.useState(false)
   const contentRef = React.useRef<HTMLDivElement>(null)
@@ -82,7 +82,7 @@ export const RefundPolicy: React.FC<RefundPolicyProps> = ({ isOpen, onClose, onA
             }}
           >
             <div className="flex flex-col w-full text-base tracking-normal text-neutral-800">
-              {policyData.sections.map((section, index) => (
+              {policyData.sections.map((section: any, index: any) => (
                 <PolicySection
                   key={index}
                   title={section.title}

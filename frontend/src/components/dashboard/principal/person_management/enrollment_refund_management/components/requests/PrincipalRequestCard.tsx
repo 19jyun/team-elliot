@@ -32,7 +32,7 @@ export function PrincipalRequestCard({
         month: 'long',
         day: 'numeric',
       });
-    } catch (error) {
+    } catch {
       return '날짜 없음';
     }
   };
@@ -52,7 +52,7 @@ export function PrincipalRequestCard({
         minute: '2-digit',
         hour12: false,
       });
-    } catch (error) {
+    } catch {
       return '시간 없음';
     }
   };

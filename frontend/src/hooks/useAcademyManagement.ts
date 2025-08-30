@@ -1,14 +1,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import {
-  getMyAcademy,
-  changeAcademy,
-  createAndJoinAcademy,
-  updateAcademy,
-  leaveAcademy,
-  requestJoinAcademy,
-} from "@/api/teacher";
-import { Academy, CreateAcademyRequest } from "@/types/api/teacher";
+import { getMyAcademy, leaveAcademy, requestJoinAcademy } from "@/api/teacher";
+import { Academy } from "@/types/api/teacher";
 
 export function useAcademyManagement() {
   const [currentAcademy, setCurrentAcademy] = useState<Academy | null>(null);
@@ -29,7 +22,7 @@ export function useAcademyManagement() {
     try {
       setIsLoading(true);
       const academy = await getMyAcademy();
-      setCurrentAcademy(academy);
+      setCurrentAcademy(academy.data);
     } catch (error) {
       console.error("학원 정보 로드 실패:", error);
       toast.error("학원 정보를 불러오는데 실패했습니다.");
@@ -59,10 +52,10 @@ export function useAcademyManagement() {
   const performJoinAcademyRequest = async (code: string) => {
     try {
       setIsJoining(true);
-      const result = await requestJoinAcademy({ code });
+      await requestJoinAcademy({ code });
       setJoinCode("");
       setPendingJoinCode("");
-      toast.success(result.message);
+      toast.success("학원 가입 요청이 완료되었습니다.");
     } catch (error: any) {
       console.error("학원 가입 요청 실패:", error);
       toast.error(
@@ -106,46 +99,6 @@ export function useAcademyManagement() {
     }
   };
 
-  const handleCreateAcademy = async (formData: CreateAcademyRequest) => {
-    try {
-      setIsLoading(true);
-      const result = await createAndJoinAcademy(formData);
-      setCurrentAcademy(result.academy);
-      toast.success("새 학원이 생성되고 자동으로 소속되었습니다.");
-      return result.academy;
-    } catch (error: any) {
-      console.error("학원 생성 실패:", error);
-      toast.error(error.response?.data?.message || "학원 생성에 실패했습니다.");
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleUpdateAcademy = async (formData: CreateAcademyRequest) => {
-    try {
-      setIsLoading(true);
-      const updateData = {
-        name: formData.name,
-        phoneNumber: formData.phoneNumber,
-        address: formData.address,
-        description: formData.description,
-      };
-      const updatedAcademy = await updateAcademy(updateData);
-      setCurrentAcademy(updatedAcademy);
-      toast.success("학원 정보가 수정되었습니다.");
-      return updatedAcademy;
-    } catch (error: any) {
-      console.error("학원 정보 수정 실패:", error);
-      toast.error(
-        error.response?.data?.message || "학원 정보 수정에 실패했습니다."
-      );
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleLeaveAcademy = () => {
     setWithdrawalType("leave");
     setWithdrawalModal(true);
@@ -162,8 +115,6 @@ export function useAcademyManagement() {
     withdrawalType,
     handleJoinAcademy,
     handleWithdrawalConfirm,
-    handleCreateAcademy,
-    handleUpdateAcademy,
     handleLeaveAcademy,
     loadCurrentAcademy,
   };

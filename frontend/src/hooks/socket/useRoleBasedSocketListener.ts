@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useAppDispatch } from "@/store/hooks";
-import { useSocketEvent } from "@/hooks/socket/useSocket";
 import {
   updatePrincipalEnrollmentFromSocket,
   updatePrincipalRefundRequestFromSocket,
@@ -10,8 +9,6 @@ import { updateTeacherEnrollmentFromSocket } from "@/store/slices/teacherSlice";
 import {
   updateStudentEnrollmentFromSocket,
   updateStudentCancellationFromSocket,
-  updateAvailableSessionFromSocket,
-  updateAvailableClassFromSocket,
 } from "@/store/slices/studentSlice";
 import { toast } from "sonner";
 
@@ -32,19 +29,19 @@ const roleEventHandlers = {
         description: `${data.data.sessionEnrollment.student.name}님의 환불 요청`,
       });
     },
-    class_info_changed: (dispatch: any, data: any) => {
+    class_info_changed: (_dispatch: any, _data: any) => {
       toast.info("클래스 정보가 업데이트되었습니다.");
     },
-    academy_info_changed: (dispatch: any, data: any) => {
+    academy_info_changed: (_dispatch: any, _data: any) => {
       toast.info("학원 정보가 업데이트되었습니다.");
     },
-    class_reminder: (dispatch: any, data: any) => {
+    class_reminder: (_dispatch: any, data: any) => {
       toast.warning("수업 시간 알림", {
         description: `${data.classData.className} - ${data.message}`,
         duration: 10000,
       });
     },
-    connection_confirmed: (dispatch: any, data: any) => {
+    connection_confirmed: (_dispatch: any, _data: any) => {
       toast.success("실시간 연결이 설정되었습니다.", {
         description: "이제 실시간 업데이트를 받을 수 있습니다.",
       });
@@ -58,22 +55,22 @@ const roleEventHandlers = {
         description: `${data.data.student.name}님의 수강신청`,
       });
     },
-    refund_request_status_changed: (dispatch: any, data: any) => {
+    refund_request_status_changed: (_dispatch: any, data: any) => {
       const statusText = data.status === "APPROVED" ? "승인" : "거절";
       toast.success(`환불 요청이 ${statusText}되었습니다.`, {
         description: `${data.data.sessionEnrollment.student.name}님의 환불 요청`,
       });
     },
-    class_info_changed: (dispatch: any, data: any) => {
+    class_info_changed: (_dispatch: any, _data: any) => {
       toast.info("클래스 정보가 업데이트되었습니다.");
     },
-    class_reminder: (dispatch: any, data: any) => {
+    class_reminder: (_dispatch: any, data: any) => {
       toast.warning("수업 시간 알림", {
         description: `${data.classData.className} - ${data.message}`,
         duration: 10000,
       });
     },
-    connection_confirmed: (dispatch: any, data: any) => {
+    connection_confirmed: (_dispatch: any, _data: any) => {
       toast.success("실시간 연결이 설정되었습니다.", {
         description: "이제 실시간 업데이트를 받을 수 있습니다.",
       });
@@ -94,27 +91,25 @@ const roleEventHandlers = {
         description: "환불 요청 상태가 변경되었습니다.",
       });
     },
-    session_availability_changed: (dispatch: any, data: any) => {
-      dispatch(updateAvailableSessionFromSocket(data));
+    session_availability_changed: (_dispatch: any, _data: any) => {
       toast.info("세션 정보가 업데이트되었습니다.");
     },
-    class_availability_changed: (dispatch: any, data: any) => {
-      dispatch(updateAvailableClassFromSocket(data));
+    class_availability_changed: (_dispatch: any, _data: any) => {
       toast.info("클래스 정보가 업데이트되었습니다.");
     },
-    class_reminder: (dispatch: any, data: any) => {
+    class_reminder: (_dispatch: any, data: any) => {
       toast.warning("수업 시간 알림", {
         description: `${data.classData.className} - ${data.message}`,
         duration: 10000,
       });
     },
-    enrollment_confirmed: (dispatch: any, data: any) => {
+    enrollment_confirmed: (_dispatch: any, data: any) => {
       // 수강신청 승인 시 추가 처리
       toast.success("수강신청이 승인되었습니다!", {
         description: `${data.classData.className} 수강신청이 완료되었습니다.`,
       });
     },
-    connection_confirmed: (dispatch: any, data: any) => {
+    connection_confirmed: (_dispatch: any, _data: any) => {
       toast.success("실시간 연결이 설정되었습니다.", {
         description: "이제 실시간 업데이트를 받을 수 있습니다.",
       });

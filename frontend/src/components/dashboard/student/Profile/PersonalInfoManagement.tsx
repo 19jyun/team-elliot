@@ -6,12 +6,12 @@ import { Input } from '@/components/ui/input';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { User, Phone, Mail, Calendar, Edit, Save, X } from 'lucide-react';
+import { User, Phone, Calendar, Edit, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { UpdateProfileRequest } from '@/types/api/student';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
 import { useApiError } from '@/hooks/useApiError';
-import { validateProfileData, ValidationError } from '@/utils/validation';
+import { validateProfileData } from '@/utils/validation';
 
 export function PersonalInfoManagement() {
   const { userProfile, isLoading, error, loadUserProfile, updateUserProfile } = useStudentApi();
@@ -234,13 +234,7 @@ export function PersonalInfoManagement() {
     toast.success('전화번호 인증이 완료되었습니다.');
   };
 
-  const handleCancelVerification = () => {
-    setIsPhoneVerificationRequired(false);
-    setIsPhoneVerified(false);
-    setIsTimerRunning(false);
-    setTimeLeft(180);
-    setVerificationCode('');
-  };
+
 
   const handleClearVerificationCode = () => {
     setVerificationCode('');

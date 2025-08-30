@@ -15,14 +15,12 @@ interface EnrollmentModificationPaymentStepProps {
 }
 
 export function EnrollmentModificationPaymentStep({ 
-  additionalAmount = 0, 
-  newSessionsCount = 0,
   onComplete
 }: EnrollmentModificationPaymentStepProps) {
-  const { enrollment, setEnrollmentStep, goBack } = useDashboardNavigation();
+  const { enrollment, setEnrollmentStep } = useDashboardNavigation();
   const { selectedSessions: contextSessions } = enrollment;
   const { modifyEnrollments } = useStudentApi();
-  const [selectedSessions, setSelectedSessions] = useState<SelectedSession[]>([]);
+  const [_selectedSessions, setSelectedSessions] = useState<SelectedSession[]>([]);
   const [principalPayment, setPrincipalPayment] = useState<PrincipalPaymentInfo | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -192,8 +190,6 @@ export function EnrollmentModificationPaymentStep({
         (session: any) => new Date(session.date).toISOString().split("T")[0]
       );
 
-  
-      
 
       // 취소할 세션들의 enrollment ID
       const cancellations = originalEnrolledSessions
@@ -218,7 +214,7 @@ export function EnrollmentModificationPaymentStep({
       });
 
       // batchModifyEnrollments API 호출
-      const result = await modifyEnrollments({
+      await modifyEnrollments({
         cancellations,
         newEnrollments,
         reason: '수강 변경'

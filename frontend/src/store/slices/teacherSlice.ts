@@ -1,6 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import type { TeacherState, TeacherData } from "@/types/store/teacher";
-import type { SocketEventData } from "@/types/socket";
+import type { TeacherState } from "@/types/store/teacher";
 
 const initialState: TeacherState = {
   data: {

@@ -1,8 +1,7 @@
 import * as React from 'react'
-import { EmptyStateProps } from './types'
+import { EmptyStateProps } from '@/app/(dashboard)/types'
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
-  title,
   imageUrl,
   message,
 }) => {

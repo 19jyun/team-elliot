@@ -16,7 +16,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useTeacherInitialization } from '@/hooks/redux/useTeacherInitialization';
 import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSocketListener';
-import { SocketStatus } from '@/components/common/Socket/SocketStatus';
+
 
 function TeacherDashboardContent() {
   const { activeTab, handleTabChange } = useTeacherContext();
@@ -59,7 +59,6 @@ function TeacherDashboardContent() {
           activeTab={activeTab}
           onTabChange={handleTabChange}
           isTransitioning={isTransitioning}
-          subPage={subPage}
         >
           {tabPages}
         </DashboardContainer>

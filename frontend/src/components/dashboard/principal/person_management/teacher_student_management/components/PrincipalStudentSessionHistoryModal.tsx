@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { format } from 'date-fns';
-import { CheckCircle, XCircle, AlertCircle, Clock } from 'lucide-react';
+
 import { SlideUpModal } from '@/components/common/SlideUpModal';
 
 interface PrincipalStudentSessionHistoryModalProps {
@@ -44,35 +44,7 @@ export function PrincipalStudentSessionHistoryModal({ student, onClose }: Princi
     return format(date, 'yyyy.MM.dd');
   }
 
-  // 수강 상태 아이콘 함수
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'PENDING':
-        return <Clock className="w-4 h-4 text-yellow-500" />;
-      case 'CONFIRMED':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'CANCELLED':
-        return <XCircle className="w-4 h-4 text-red-500" />;
-      case 'ATTENDED':
-        return <CheckCircle className="w-4 h-4 text-blue-500" />;
-      case 'ABSENT':
-        return <XCircle className="w-4 h-4 text-gray-500" />;
-      case 'COMPLETED':
-        return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case 'REFUND_REQUESTED':
-        return <Clock className="w-4 h-4 text-blue-500" />;
-      case 'REFUND_REJECTED_CONFIRMED':
-        return <XCircle className="w-4 h-4 text-red-600" />;
-      case 'REJECTED':
-        return <XCircle className="w-4 h-4 text-red-500" />;
-      case 'REFUND_CANCELLED':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'TEACHER_CANCELLED':
-        return <XCircle className="w-4 h-4 text-purple-500" />;
-      default:
-        return <AlertCircle className="w-4 h-4 text-gray-500" />;
-    }
-  };
+
 
   // 수강 상태 Badge 함수
   const getStatusBadge = (status: string) => {

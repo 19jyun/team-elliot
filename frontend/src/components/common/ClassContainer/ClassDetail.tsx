@@ -9,7 +9,6 @@ interface ClassDetailProps {
 }
 
 export const ClassDetail: React.FC<ClassDetailProps> = ({
-  classId,
   classData,
   role
 }) => {

@@ -138,16 +138,16 @@ export default function DatePicker({ value, onChange, className = '' }: DatePick
   }, [year, month, day, today, oneYearLater, updateDate, getDaysInMonth]);
 
   // 포맷팅 함수들
-  const formatYear = useCallback((relative: number, absolute: number) => {
+  const formatYear = useCallback((relative: number) => {
     const yearValue = today.year + relative;
     return yearValue.toString();
   }, [today.year]);
 
-  const formatMonth = useCallback((relative: number, absolute: number) => {
+  const formatMonth = useCallback((relative: number) => {
     return (relative + 1).toString().padStart(2, '0');
   }, []);
 
-  const formatDay = useCallback((relative: number, absolute: number) => {
+  const formatDay = useCallback((relative: number) => {
     return (relative + 1).toString().padStart(2, '0');
   }, []);
 

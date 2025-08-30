@@ -1,23 +1,13 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { useAppDispatch } from "@/store/hooks";
+import { useState, useMemo, useCallback } from "react";
+
 import {
-  setCalendarSessions,
-  setCalendarRange,
-} from "@/store/slices/studentSlice";
-import {
-  getMyClasses,
   getEnrollmentHistory,
   getMyProfile,
   updateMyProfile,
   getSessionPaymentInfo,
   getCancellationHistory,
 } from "@/api/student";
-import {
-  getAcademies,
-  getMyAcademies,
-  joinAcademy,
-  leaveAcademy,
-} from "@/api/student";
+import { getMyAcademies, joinAcademy, leaveAcademy } from "@/api/student";
 import {
   getStudentAvailableSessionsForEnrollment,
   batchEnrollSessions,
@@ -29,24 +19,23 @@ import type {
   CreateRefundRequestDto,
   CreateRefundRequestResponse,
 } from "@/types/api/refund";
-import type { ClassDetailsResponse } from "@/types/api/class";
+
 import { getClassDetails as getClassDetailsApi } from "@/api/class";
 import { useApiError } from "@/hooks/useApiError";
 
 // Student 대시보드에서 사용할 API 훅
 export function useStudentApi() {
-  const dispatch = useAppDispatch();
-  const { handleApiError } = useApiError();
-  const [isLoading, setIsLoading] = useState(false);
+  const {} = useApiError();
+  const [isLoading, _setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sessionClasses, setSessionClasses] = useState<any[]>([]);
+  const [sessionClasses, _setSessionClasses] = useState<any[]>([]);
   const [academies, setAcademies] = useState<any[]>([]);
   const [availableClasses, setAvailableClasses] = useState<any[]>([]);
   const [availableSessions, setAvailableSessions] = useState<any[]>([]);
   const [enrollmentHistory, setEnrollmentHistory] = useState<any[]>([]);
   const [cancellationHistory, setCancellationHistory] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
-  const [calendarRange, setCalendarRange] = useState<{
+  const [calendarRange, _setCalendarRange] = useState<{
     startDate: Date;
     endDate: Date;
   } | null>(null);

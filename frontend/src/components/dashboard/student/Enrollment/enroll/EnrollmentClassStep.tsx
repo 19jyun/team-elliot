@@ -36,7 +36,7 @@ function formatTimeForCalendar(date: string | Date) {
 }
 
 export function EnrollmentClassStep() {
-  const { enrollment, setEnrollmentStep, setSelectedClassIds, goBack, navigateToSubPage } = useDashboardNavigation();
+  const { enrollment, setEnrollmentStep, setSelectedClassIds, goBack } = useDashboardNavigation();
   const { selectedAcademyId } = enrollment;
   const { status } = useSession({
     required: true,
@@ -163,10 +163,7 @@ export function EnrollmentClassStep() {
     setSelectedIds(prev => [...prev, id]);
   };
 
-  const handlePolicyAgree = () => {
-    localStorage.setItem('refundPolicyAgreed', 'true');
-    setShowPolicy(false);
-  };
+
 
   const handleNextStep = () => {
     if (selectedIds.length === 0) {

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useDashboardNavigation, EnrollmentStep } from '@/contexts/DashboardContext';
+import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { EnrollmentModificationDateStep } from './EnrollmentModificationDateStep';
 import { EnrollmentModificationPaymentStep } from './EnrollmentModificationPaymentStep';
 import { EnrollmentCompleteStep } from '../enroll/EnrollmentCompleteStep';
@@ -9,7 +9,7 @@ import { RefundRequestStep } from './RefundRequestStep';
 import { RefundCompleteStep } from './RefundCompleteStep';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
 import { useEnrollmentCalculation } from '@/hooks/useEnrollmentCalculation';
-import { toast } from 'sonner';
+
 
 interface EnrollmentModificationContainerProps {
   classId: number;
@@ -17,7 +17,7 @@ interface EnrollmentModificationContainerProps {
   month?: number | null;
 }
 
-export function EnrollmentModificationContainer({ classId, className, month }: EnrollmentModificationContainerProps) {
+export function EnrollmentModificationContainer({ classId, month }: EnrollmentModificationContainerProps) {
   const { enrollment, setEnrollmentStep } = useDashboardNavigation();
   const { currentStep } = enrollment;
   const { enrollmentHistory, isLoading, error, loadEnrollmentHistory } = useStudentApi();
@@ -68,7 +68,7 @@ export function EnrollmentModificationContainer({ classId, className, month }: E
   }, [enrollmentHistory, classId]);
 
   // 수강 변경 금액 계산
-  const { change, isAdditionalPayment, isRefund, isNoChange } = useEnrollmentCalculation({
+  const { change } = useEnrollmentCalculation({
     originalEnrollments: existingEnrollments,
     selectedDates,
     sessionPrice: sessionPrice

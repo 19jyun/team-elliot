@@ -1,11 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
-import {
-  initializeSocket,
-  disconnectSocket,
-  getSocket,
-  isSocketConnected,
-} from "@/lib/socket";
+import { initializeSocket, disconnectSocket, getSocket } from "@/lib/socket";
 import type {
   SocketEventName,
   SocketEventData,

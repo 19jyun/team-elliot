@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { UpdatePrincipalProfileRequest } from '@/types/api/principal';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,11 +10,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 import { 
   User, 
   GraduationCap, 
-  Award, 
   Clock, 
   Edit, 
   Save, 
@@ -36,7 +35,6 @@ interface PrincipalProfileCardProps {
 }
 
 export function PrincipalProfileCard({ 
-  principalId,
   isEditable = true, 
   onSave, 
   onCancel,
@@ -54,10 +52,8 @@ export function PrincipalProfileCard({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const queryClient = useQueryClient();
-
   // API 기반 데이터 관리
-  const { profile, loadProfile, isLoading, error, isPrincipal } = usePrincipalApi();
+  const { profile, loadProfile, error, isPrincipal } = usePrincipalApi();
 
   // 컴포넌트 마운트 시 프로필 로드
   useEffect(() => {
@@ -66,8 +62,6 @@ export function PrincipalProfileCard({
     }
   }, [isPrincipal, loadProfile]);
 
-  // 프로필 로딩 상태 (초기 로드 시에만)
-  const [isProfileLoading, setIsProfileLoading] = useState(false);
 
   // 프로필 업데이트/사진 업로드 뮤테이션
   const { updateProfile, updateProfilePhoto } = usePrincipalApi();

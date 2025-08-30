@@ -4,9 +4,9 @@ import * as React from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
-import { useDashboardNavigation } from '@/contexts/DashboardContext'
+
 import { getMyAcademy } from '@/api/teacher'
-import { toast } from 'sonner'
+
 
 // 수업 관리 카드 컴포넌트
 const ClassManagementCard: React.FC<{
@@ -47,16 +47,15 @@ const ClassManagementCard: React.FC<{
 
 export default function TeacherClassManagementPage() {
   const router = useRouter()
-  const { data: session, status } = useSession({
+  const { status } = useSession({
     required: true,
     onUnauthenticated() {
       router.push('/auth')
     },
   })
-  const { navigateToSubPage } = useDashboardNavigation()
 
   // 선생님의 학원 정보 조회
-  const { data: myAcademy, isLoading: isAcademyLoading } = useQuery({
+  const { isLoading: isAcademyLoading } = useQuery({
     queryKey: ['teacher-academy'],
     queryFn: getMyAcademy,
     enabled: status === 'authenticated',

@@ -35,7 +35,6 @@ const levelBgColor: Record<LevelType, string> = {
 export const SessionCard: React.FC<SessionCardProps> = ({
   session,
   onClick,
-  role
 }) => {
   const getEnrollmentCounts = (session: any) => {
     return {
@@ -44,7 +43,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
     }
   }
 
-  const { enrollmentCount, confirmedCount } = getEnrollmentCounts(session)
+  const { enrollmentCount } = getEnrollmentCounts(session)
   
   // level 타입 보정
   const safeLevel: LevelType =

@@ -20,7 +20,6 @@ interface EnrollmentModificationDateStepProps {
 export function EnrollmentModificationDateStep({ 
   classId, 
   existingEnrollments, 
-  month, 
   onComplete 
 }: EnrollmentModificationDateStepProps) {
   const { setSelectedSessions } = useDashboardNavigation()

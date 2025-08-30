@@ -4,13 +4,13 @@ import React, { useState } from 'react';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { StatusStep } from './StatusStep';
 import { createPrincipalClass } from '@/api/principal';
-import { useSession } from 'next-auth/react';
+
 import { toast } from 'sonner';
 
 export function CreateClassStepDetail() {
   const { createClass, setClassFormData, setCreateClassStep } = useDashboardNavigation();
   const { classFormData, selectedTeacherId } = createClass;
-  const { data: session } = useSession();
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [content, setContent] = useState(classFormData.content);

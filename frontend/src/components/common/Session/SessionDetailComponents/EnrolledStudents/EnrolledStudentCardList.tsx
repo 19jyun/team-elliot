@@ -40,7 +40,6 @@ interface EnrolledStudentCardListProps {
 export const EnrolledStudentCardList: React.FC<EnrolledStudentCardListProps> = ({
   sessionEnrollments,
   isLoading,
-  session
 }) => {
   if (isLoading) {
     return (

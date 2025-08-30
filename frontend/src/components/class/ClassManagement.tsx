@@ -1,24 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useSession } from 'next-auth/react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { useAuthorization } from '@/hooks/useAuthorization';
 
 interface ClassFormData {
@@ -65,6 +47,10 @@ export function ClassManagement() {
     }
   };
 
+  useEffect(() => {
+    fetchClasses();
+  }, []);
+
   const onSubmit = async (data: ClassFormData) => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/classes`, {
@@ -110,9 +96,12 @@ export function ClassManagement() {
     <div className="space-y-6">
       {hasPermission('manage-own-classes') && (
         <div className="flex justify-end">
-          <Button onClick={() => setIsAddingClass(!isAddingClass)}>
+          <button 
+            onClick={() => setIsAddingClass(!isAddingClass)}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
             {isAddingClass ? '취소' : '수업 추가'}
-          </Button>
+          </button>
         </div>
       )}
 
@@ -120,97 +109,127 @@ export function ClassManagement() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-white p-6 rounded-lg shadow">
           <div>
             <label className="block text-sm font-medium text-gray-700">수업명</label>
-            <Input {...register('className', { required: true })} />
+            <input 
+              {...register('className', { required: true })}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+            />
+            {errors.className && (
+              <p className="mt-1 text-sm text-red-600">수업명은 필수입니다</p>
+            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700">설명</label>
-            <Textarea {...register('description')} />
+            <textarea 
+              {...register('description')}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">최대 수강인원</label>
-              <Input
+              <input
                 type="number"
                 {...register('maxStudents', { required: true, min: 1 })}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
               />
+              {errors.maxStudents && (
+                <p className="mt-1 text-sm text-red-600">수강인원은 필수입니다</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700">수강료</label>
-              <Input
+              <input
                 type="number"
                 {...register('tuitionFee', { required: true, min: 0 })}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
               />
+              {errors.tuitionFee && (
+                <p className="mt-1 text-sm text-red-600">수강료는 필수입니다</p>
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">요일</label>
-              <Select onValueChange={(value) => register('dayOfWeek').onChange({ target: { value } })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="요일 선택" />
-                </SelectTrigger>
-                <SelectContent>
-                  {DAYS_OF_WEEK.map((day) => (
-                    <SelectItem key={day.value} value={day.value}>
-                      {day.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <select 
+                {...register('dayOfWeek', { required: true })}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+              >
+                <option value="">요일 선택</option>
+                {DAYS_OF_WEEK.map((day) => (
+                  <option key={day.value} value={day.value}>
+                    {day.label}
+                  </option>
+                ))}
+              </select>
+              {errors.dayOfWeek && (
+                <p className="mt-1 text-sm text-red-600">요일은 필수입니다</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700">시간</label>
-              <Input type="time" {...register('time', { required: true })} />
+              <input 
+                type="time" 
+                {...register('time', { required: true })}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+              />
+              {errors.time && (
+                <p className="mt-1 text-sm text-red-600">시간은 필수입니다</p>
+              )}
             </div>
           </div>
 
           <div className="flex justify-end space-x-2">
-            <Button type="submit">저장</Button>
+            <button 
+              type="submit"
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              저장
+            </button>
           </div>
         </form>
       )}
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>수업명</TableHead>
-            <TableHead>요일</TableHead>
-            <TableHead>시간</TableHead>
-            <TableHead>수강인원</TableHead>
-            <TableHead>수강료</TableHead>
-            <TableHead>작업</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+      <table className="min-w-full bg-white border border-gray-300">
+        <thead>
+          <tr className="bg-gray-50">
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">수업명</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">요일</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">시간</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">수강인원</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">수강료</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">작업</th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
           {classes.map((classItem) => (
-            <TableRow key={classItem.id}>
-              <TableCell>{classItem.className}</TableCell>
-              <TableCell>{classItem.dayOfWeek}</TableCell>
-              <TableCell>{new Date(classItem.time).toLocaleTimeString()}</TableCell>
-              <TableCell>
+            <tr key={classItem.id}>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{classItem.className}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{classItem.dayOfWeek}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(classItem.time).toLocaleTimeString()}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 {classItem.enrollments.length}/{classItem.maxStudents || '∞'}
-              </TableCell>
-              <TableCell>{classItem.tuitionFee.toLocaleString()}원</TableCell>
-              <TableCell>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{classItem.tuitionFee.toLocaleString()}원</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 {hasPermission('manage-all-classes') && (
-                  <Button
-                    variant="destructive"
-                    size="sm"
+                  <button
                     onClick={() => handleDeleteClass(classItem.id)}
+                    className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
                   >
                     삭제
-                  </Button>
+                  </button>
                 )}
-              </TableCell>
-            </TableRow>
+              </td>
+            </tr>
           ))}
-        </TableBody>
-      </Table>
+        </tbody>
+      </table>
     </div>
   );
 }

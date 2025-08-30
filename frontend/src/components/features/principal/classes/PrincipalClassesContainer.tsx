@@ -1,18 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession, signOut } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi'
 import { useApiError } from '@/hooks/useApiError'
 import { ClassList } from '@/components/common/ClassContainer/ClassList'
-import { CommonClassData } from '@/components/common/ClassContainer/ClassCard'
 import { ClassSessionModal } from '@/components/common/ClassContainer/ClassSessionModal'
 
 export const PrincipalClassesContainer = () => {
   const router = useRouter()
-  const { data: session, status } = useSession({
+  const { status } = useSession({
     required: true,
     onUnauthenticated() {
       router.push('/auth')

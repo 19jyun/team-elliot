@@ -23,7 +23,7 @@ export function useStudentData() {
   const getEnrollmentById = useCallback(
     (enrollmentId: number) => {
       return studentData?.enrollmentHistory.find(
-        (enrollment) => enrollment.id === enrollmentId
+        (enrollment: any) => enrollment.id === enrollmentId
       );
     },
     [studentData?.enrollmentHistory]
@@ -32,7 +32,7 @@ export function useStudentData() {
   const getCancellationById = useCallback(
     (cancellationId: number) => {
       return studentData?.cancellationHistory.find(
-        (cancellation) => cancellation.id === cancellationId
+        (cancellation: any) => cancellation.id === cancellationId
       );
     },
     [studentData?.cancellationHistory]

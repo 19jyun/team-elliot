@@ -4,7 +4,7 @@ import React from 'react';
 import { usePrincipalContext } from '@/contexts/PrincipalContext';
 import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
 import { Badge } from '@/components/ui/badge';
-import { Users, Calendar } from 'lucide-react';
+
 
 export function PrincipalClassList() {
   const {
@@ -16,8 +16,6 @@ export function PrincipalClassList() {
 
   // Redux store에서 데이터 가져오기
   const {
-    pendingEnrollmentSessions,
-    pendingRefundSessions,
     enrollments,
     refundRequests,
     isLoading,

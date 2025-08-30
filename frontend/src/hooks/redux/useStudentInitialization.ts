@@ -13,8 +13,6 @@ import {
   getEnrollmentHistory,
   getCancellationHistory,
 } from "@/api/student";
-import { getMyAcademies } from "@/api/student";
-import { getStudentAvailableSessionsForEnrollment } from "@/api/student";
 import { toast } from "sonner";
 
 export function useStudentInitialization() {
@@ -44,7 +42,7 @@ export function useStudentInitialization() {
         const myClasses = await getMyClasses();
 
         // 2. 개인 정보
-        const myProfile = await getMyProfile();
+        await getMyProfile();
 
         // 3. 수강 신청/결제 내역
         const enrollmentHistoryResponse = await getEnrollmentHistory();

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useDashboardNavigation, CreateClassStep } from '@/contexts/DashboardContext';
+import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { CreateClassStepInfo } from '../components/CreateClassStepInfo';
 import { CreateClassStepTeacher } from '../components/CreateClassStepTeacher';
 import { CreateClassStepSchedule } from '../components/CreateClassStepSchedule';

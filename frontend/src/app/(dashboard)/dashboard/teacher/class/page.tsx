@@ -9,18 +9,7 @@ import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessi
 import { SessionDetailModal } from '@/components/common/Session/SessionDetailModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
-import { ClassSession } from '@/types/api/class'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
-
-// Type for extended session
-type ExtendedSession = {
-  accessToken?: string
-  user: {
-    id: string
-    role: string
-    accessToken?: string
-  } & { name?: string | null | undefined; email?: string | null | undefined; image?: string | null | undefined }
-}
 
 export default function TeacherDashboardPage() {
   const router = useRouter()

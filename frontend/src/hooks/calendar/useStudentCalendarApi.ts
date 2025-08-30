@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { getMyClasses } from "@/api/student";
-import type { MyClassesResponse } from "@/types/api/student";
 
 // Student Calendar API 훅
 export function useStudentCalendarApi() {

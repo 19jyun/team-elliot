@@ -43,11 +43,11 @@ export default function TimePicker({ value, onChange, className = '' }: TimePick
   }, [hour, minute, onChange]);
 
   // 시간 포맷팅 함수
-  const formatHour = useCallback((relative: number, absolute: number) => {
+  const formatHour = useCallback((relative: number) => {
     return relative.toString().padStart(2, '0');
   }, []);
 
-  const formatMinute = useCallback((relative: number, absolute: number) => {
+  const formatMinute = useCallback((relative: number) => {
     return relative.toString().padStart(2, '0');
   }, []);
 

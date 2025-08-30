@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { useTeacherApi } from "@/hooks/teacher/useTeacherApi";
 import { toast } from "sonner";
 import { leaveAcademy, requestJoinAcademy } from "@/api/teacher";
-import { Academy, CreateAcademyRequest } from "@/types/api/teacher";
+import { CreateAcademyRequest } from "@/types/api/teacher";
 
 export function useTeacherAcademyManagement() {
   const { academy: currentAcademy, loadAcademy, isLoading } = useTeacherApi();
@@ -45,10 +45,10 @@ export function useTeacherAcademyManagement() {
   const performJoinAcademyRequest = async (code: string) => {
     try {
       setIsJoining(true);
-      const result = await requestJoinAcademy({ code });
+      await requestJoinAcademy({ code });
       setJoinCode("");
       setPendingJoinCode("");
-      toast.success(result.message);
+      toast.success("학원 가입 요청이 완료되었습니다.");
     } catch (error: any) {
       console.error("학원 가입 요청 실패:", error);
       toast.error(

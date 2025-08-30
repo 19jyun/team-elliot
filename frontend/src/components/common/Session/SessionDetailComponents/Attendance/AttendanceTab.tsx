@@ -12,7 +12,7 @@ interface AttendanceTabProps {
   isLoading?: boolean
 }
 
-export function AttendanceTab({ sessionId, enrollments, isLoading = false }: AttendanceTabProps) {
+export function AttendanceTab({ enrollments, isLoading = false }: AttendanceTabProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">

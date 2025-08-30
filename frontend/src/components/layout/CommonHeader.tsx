@@ -1,25 +1,24 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { usePathname, useRouter } from 'next/navigation';
+
 import Image from 'next/image';
 import { ArrowLeft } from 'lucide-react';
-import { useEffect } from 'react';
+
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
-import { useStudentContext, studentNavigationItems } from '@/contexts/StudentContext';
-import { useTeacherContext, teacherNavigationItems } from '@/contexts/TeacherContext';
-import { usePrincipalContext, principalNavigationItems } from '@/contexts/PrincipalContext';
+import { useStudentContext } from '@/contexts/StudentContext';
+import { useTeacherContext } from '@/contexts/TeacherContext';
+import { usePrincipalContext } from '@/contexts/PrincipalContext';
 
 export function CommonHeader() {
   const { data: session } = useSession();
-  const pathname = usePathname();
-  const router = useRouter();
+
   const { subPage, goBack } = useDashboardNavigation();
 
   // 역할별 네비게이션 정보
   let navigationItems: { label: string; value: number }[] = [];
   let activeTab = 0;
-  let handleTabChange = (tab: number) => {};
+  let handleTabChange = (_tab: number) => {};
   let principalPersonManagement: any = null;
   let principalGoBack: (() => void) | null = null;
   const userRole = session?.user?.role || 'STUDENT';
@@ -43,7 +42,7 @@ export function CommonHeader() {
       principalPersonManagement = ctx.personManagement;
       principalGoBack = ctx.goBack;
     }
-  } catch (error) {
+  } catch {
     // Context가 아직 준비되지 않은 경우 기본값 사용
   }
 
@@ -69,20 +68,6 @@ export function CommonHeader() {
     
     // 기본 뒤로가기 (DashboardContext)
     goBack();
-  };
-
-  // 기본 대시보드 페이지인지 확인
-  const isDefaultDashboard = () => {
-    if (!session?.user) return false;
-    
-    const userRole = session.user.role || 'STUDENT';
-    const defaultPaths = {
-      STUDENT: '/dashboard/student',
-      TEACHER: '/dashboard/teacher',
-      PRINCIPAL: '/dashboard/principal',
-    } as const;
-    
-    return pathname === defaultPaths[userRole as keyof typeof defaultPaths] || pathname === '/dashboard';
   };
 
   return (

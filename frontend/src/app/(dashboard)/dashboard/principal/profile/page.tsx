@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 
-import { StatusBar } from '@/components/ui/StatusBar'
+
 import { MenuLinks } from '@/components/navigation/MenuLinks'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -17,7 +17,7 @@ export default function PrincipalProfilePage() {
   const router = useRouter()
   const [showLogoutModal, setShowLogoutModal] = React.useState(false)
   const { navigateToSubPage } = useDashboardNavigation()
-  const { data: session, status } = useSession({
+  const { status } = useSession({
     required: true,
     onUnauthenticated() {
       router.push('/auth')
@@ -34,8 +34,6 @@ export default function PrincipalProfilePage() {
 
   const handleSignOut = async () => {
     try {
-      if (!session?.user) return
-
       // 백엔드 로그아웃 API 호출
       await logout()
 
@@ -111,7 +109,7 @@ export default function PrincipalProfilePage() {
     <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px] relative">
       <div className="flex flex-col px-5 py-6">
         <h1 className="text-2xl font-bold text-stone-700">
-          {profile?.name || session?.user?.name}님의 정보
+          {profile?.name}님의 정보
         </h1>
       </div>
 

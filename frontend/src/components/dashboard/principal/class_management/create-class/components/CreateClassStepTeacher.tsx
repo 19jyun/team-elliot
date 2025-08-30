@@ -16,8 +16,8 @@ interface Teacher {
 }
 
 export function CreateClassStepTeacher() {
-  const { createClass, setClassFormData, setCreateClassStep, setSelectedTeacherId, goBack } = useDashboardNavigation();
-  const { classFormData, selectedTeacherId } = createClass;
+  const { createClass, setCreateClassStep, setSelectedTeacherId, goBack } = useDashboardNavigation();
+  const { selectedTeacherId } = createClass;
   
   const [selectedTeacher, setSelectedTeacher] = useState<number | null>(selectedTeacherId);
 

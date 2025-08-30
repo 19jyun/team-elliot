@@ -110,7 +110,7 @@ export function usePrincipalData() {
         return [];
       }
       return principalData.enrollments.filter(
-        (enrollment) => enrollment.sessionId === sessionId
+        (enrollment: any) => enrollment.sessionId === sessionId
       );
     },
     [principalData?.enrollments]

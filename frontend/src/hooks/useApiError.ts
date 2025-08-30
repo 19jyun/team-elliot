@@ -42,7 +42,7 @@ export function useApiError(): UseApiErrorReturn {
     ) => {
       const userMessage = ErrorHandler.getUserFriendlyMessage(error);
       const disableToast = options?.disableToast || false;
-      const disableConsole = options?.disableConsole || false;
+      const _disableConsole = options?.disableConsole || false;
 
       switch (error.type) {
         case ErrorType.AUTHENTICATION:

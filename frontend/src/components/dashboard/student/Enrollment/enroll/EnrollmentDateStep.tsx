@@ -10,7 +10,7 @@ import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
 
 export function EnrollmentDateStep() {
-  const { enrollment, setEnrollmentStep, setSelectedSessions, goBack, navigateToSubPage } = useDashboardNavigation();
+  const { enrollment, setEnrollmentStep, setSelectedSessions, goBack } = useDashboardNavigation();
   const { selectedAcademyId, selectedClassIds } = enrollment;
   const { status } = useSession({
     required: true,
@@ -116,9 +116,6 @@ export function EnrollmentDateStep() {
   ];
 
   const handleSessionSelect = (sessionId: number) => {
-    // 선택하려는 세션 정보 찾기
-    const targetSession = selectedClassSessions.find(session => session.id === sessionId);
-    
     setSelectedSessionIds(prev => {
       const newSet = new Set(prev);
       if (newSet.has(sessionId)) {

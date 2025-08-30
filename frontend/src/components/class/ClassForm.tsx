@@ -1,4 +1,4 @@
-import { useState } from 'react'
+
 import { useForm } from 'react-hook-form'
 
 interface ClassFormProps {
@@ -28,7 +28,7 @@ export function ClassForm({ onSubmit }: ClassFormProps) {
     handleSubmit,
     formState: { errors },
   } = useForm<ClassFormData>()
-  const [selectedDay, setSelectedDay] = useState('')
+
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -102,7 +102,7 @@ export function ClassForm({ onSubmit }: ClassFormProps) {
           </label>
           <select
             {...register('dayOfWeek', { required: '요일은 필수입니다' })}
-            onChange={(e) => setSelectedDay(e.target.value)}
+
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
           >
             <option value="">요일 선택</option>

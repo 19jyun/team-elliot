@@ -1,8 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Camera } from 'lucide-react';
@@ -22,17 +21,17 @@ export function TeacherProfile({ teacherId }: TeacherProfileProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  
   const {
     register,
     handleSubmit,
-    formState: { errors },
   } = useForm<ProfileFormData>();
 
   const handlePhotoClick = () => {
-    if (isEditing && fileInputRef.current) {
-      fileInputRef.current.click();
+    if (isEditing) {
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.click();
+      }
     }
   };
 
@@ -118,8 +117,7 @@ export function TeacherProfile({ teacherId }: TeacherProfileProps) {
         </div>
         
         {isEditing && (
-          <Input
-            ref={fileInputRef}
+          <input
             type="file"
             accept="image/*"
             {...register('photo')}

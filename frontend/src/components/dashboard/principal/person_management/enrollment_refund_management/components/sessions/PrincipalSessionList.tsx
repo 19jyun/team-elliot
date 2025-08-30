@@ -3,23 +3,20 @@
 import React from 'react';
 import { usePrincipalContext } from '@/contexts/PrincipalContext';
 import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
-import { parseFromUTCISO } from '@/lib/timeUtils';
+
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Users } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 
 export function PrincipalSessionList() {
   const { 
     personManagement,
     setSelectedSessionId, 
-    setPersonManagementStep,
-    setSelectedClassId
+    setPersonManagementStep
   } = usePrincipalContext();
   const { selectedTab, selectedClassId } = personManagement;
 
   // Redux store에서 데이터 가져오기
   const { 
-    pendingEnrollmentSessions, 
-    pendingRefundSessions, 
     enrollments,
     refundRequests,
     isLoading, 
@@ -36,12 +33,12 @@ export function PrincipalSessionList() {
   
   if (selectedTab === 'enrollment') {
     // 수강신청 데이터 처리
-    const pendingEnrollments = rawData.filter((enrollment: any) => {
+    const pendingEnrollments = rawData?.filter((enrollment: any) => {
       const classId = enrollment.session?.class?.id;
       return enrollment.status === "PENDING" && classId === selectedClassId;
     });
     
-    pendingEnrollments.forEach((enrollment: any) => {
+    pendingEnrollments?.forEach((enrollment: any) => {
       const sessionId = enrollment.sessionId;
       if (!sessionMap.has(sessionId)) {
         sessionMap.set(sessionId, {
@@ -66,12 +63,12 @@ export function PrincipalSessionList() {
     });
   } else {
     // 환불신청 데이터 처리
-    const pendingRefunds = rawData.filter((refund: any) => {
+    const pendingRefunds = rawData?.filter((refund: any) => {
       const classId = refund.sessionEnrollment?.session?.class?.id;
       return refund.status === "PENDING" && classId === selectedClassId;
     });
     
-    pendingRefunds.forEach((refund: any) => {
+    pendingRefunds?.forEach((refund: any) => {
       const sessionId = refund.sessionEnrollment?.session?.id;
       if (!sessionMap.has(sessionId)) {
         sessionMap.set(sessionId, {
@@ -98,12 +95,6 @@ export function PrincipalSessionList() {
 
   const sessions = Array.from(sessionMap.values());
 
-  // 클래스 정보 추출
-  const classInfo = sessions.length > 0 ? {
-    name: sessions[0].className || sessions[0].sessionEnrollment?.session?.class?.className,
-    teacherName: sessions[0].teacherName || sessions[0].sessionEnrollment?.session?.class?.teacher?.name,
-  } : null;
-
   const handleSessionClick = (sessionId: number) => {
     setSelectedSessionId(sessionId);
     setPersonManagementStep('request-detail');
@@ -124,30 +115,11 @@ export function PrincipalSessionList() {
         day: 'numeric',
         weekday: 'long'
       });
-    } catch (error) {
+    } catch {
       return '날짜 없음';
     }
   };
 
-  const formatTime = (timeString: string) => {
-    if (!timeString || timeString === 'Invalid Date') {
-      return '시간 없음';
-    }
-    try {
-      // UTC ISO 문자열을 한국 시간으로 변환
-      const koreanTime = parseFromUTCISO(timeString);
-      if (isNaN(koreanTime.getTime())) {
-        return '시간 없음';
-      }
-      return koreanTime.toLocaleTimeString('ko-KR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      });
-    } catch (error) {
-      return '시간 없음';
-    }
-  };
 
   const getLevelColor = (level: string) => {
     const levelColors: Record<string, string> = {
@@ -158,14 +130,6 @@ export function PrincipalSessionList() {
     return levelColors[level] || '#F4E7E7';
   };
 
-  const getLevelText = (level: string) => {
-    const levelTexts: Record<string, string> = {
-      'BEGINNER': '초급',
-      'INTERMEDIATE': '중급',
-      'ADVANCED': '고급',
-    };
-    return levelTexts[level] || '초급';
-  };
 
   if (isLoading) {
     return (

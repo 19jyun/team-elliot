@@ -1,6 +1,5 @@
 import { useState, useCallback } from "react";
 import { checkDuplicateUserId as checkDuplicateUserIdApi } from "@/api/auth";
-import { CheckUserIdResponse } from "@/types/api/auth";
 
 export function useCheckDuplicateUserId() {
   const [loading, setLoading] = useState(false);
@@ -19,7 +18,7 @@ export function useCheckDuplicateUserId() {
       setIsDuplicate(!available);
       setLoading(false);
       return available;
-    } catch (err) {
+    } catch {
       setError("중복 확인에 실패했습니다.");
       setLoading(false);
       setIsDuplicate(null);

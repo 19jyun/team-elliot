@@ -12,7 +12,7 @@ import { useStudentApi } from '@/hooks/student/useStudentApi'
 
 export function EnrolledClassesContainer() {
   const router = useRouter()
-  const { data: session, status } = useSession({
+  const { status } = useSession({
     required: true,
     onUnauthenticated() {
       router.push('/auth')
@@ -29,7 +29,6 @@ export function EnrolledClassesContainer() {
   // API 데이터 사용
   const { 
     sessionClasses, 
-    convertedSessions, 
     isLoading, 
     error 
   } = useStudentApi()

@@ -31,7 +31,6 @@ export function Calendar() {
   const generateCalendarDays = () => {
     const days = []
     const totalDays = 35
-    let currentDay = 31
 
     for (let i = 0; i < totalDays; i++) {
       if (i < 1) {

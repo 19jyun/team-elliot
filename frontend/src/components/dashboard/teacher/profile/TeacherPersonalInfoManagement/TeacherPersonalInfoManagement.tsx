@@ -30,7 +30,7 @@ export function TeacherPersonalInfoManagement() {
   const [isLoading, setIsLoading] = useState(false);
 
   // API 기반 데이터 관리
-  const { profile, academy, loadProfile, loadAcademy, error, isTeacher, updateProfile } = useTeacherApi();
+  const { profile, academy, loadProfile, loadAcademy, isTeacher, updateProfile } = useTeacherApi();
   const { handleApiError, fieldErrors, clearErrors } = useApiError();
 
   // 컴포넌트 마운트 시 프로필 로드
@@ -199,14 +199,6 @@ export function TeacherPersonalInfoManagement() {
     setIsTimerRunning(false);
     setVerificationCode(''); // 인증번호 입력 필드 초기화
     toast.success('전화번호 인증이 완료되었습니다.');
-  };
-
-  const handleCancelVerification = () => {
-    setIsPhoneVerificationRequired(false);
-    setIsPhoneVerified(false);
-    setIsTimerRunning(false);
-    setTimeLeft(180);
-    setVerificationCode('');
   };
 
   const handleClearVerificationCode = () => {

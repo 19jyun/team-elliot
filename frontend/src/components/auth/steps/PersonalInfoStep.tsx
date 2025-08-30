@@ -7,7 +7,7 @@ import { Button } from '@/components/auth/Button';
 import { toast } from 'sonner';
 
 export function PersonalInfoStep() {
-  const { signup, setPersonalInfo, setSignupStep, setRole } = useAuth();
+  const { signup, setPersonalInfo, setSignupStep } = useAuth();
 
   const handleNext = () => {
     if (!signup.personalInfo.name || !signup.personalInfo.phoneNumber) {

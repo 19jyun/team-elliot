@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+
 import { User, Building2 } from 'lucide-react';
 import { TeacherPersonalInfoManagement } from './profile/TeacherPersonalInfoManagement/TeacherPersonalInfoManagement';
 import AcademyManagementContainer from './profile/AcademyManagement/AcademyManagementContainer';
@@ -11,7 +10,7 @@ import AcademyManagementContainer from './profile/AcademyManagement/AcademyManag
 type TabType = 'personal' | 'academy';
 
 export function TeacherProfilePage() {
-  const { data: session } = useSession();
+
   const [activeTab, setActiveTab] = useState<TabType>('personal');
 
   const tabs = [

@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { StatusStep } from './StatusStep';
 import { useQuery } from '@tanstack/react-query';
-import { getMyAcademy } from '@/api/teacher';
+
 import { getPrincipalAcademy } from '@/api/principal';
-import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 
 const LEVELS = [
@@ -18,7 +17,7 @@ const LEVELS = [
 export function CreateClassStepInfo() {
   const { createClass, setClassFormData, setCreateClassStep, goBack } = useDashboardNavigation();
   const { classFormData } = createClass;
-  const { data: session } = useSession();
+
 
   const [formData, setFormData] = useState({
     name: classFormData.name,
@@ -76,7 +75,7 @@ export function CreateClassStepInfo() {
     }
 
     // DashboardContext의 createClass 상태 업데이트
-    const academyId = myAcademy.id;
+    const academyId = myAcademy.data.id;
     setClassFormData({
       ...classFormData,
       name: formData.name,

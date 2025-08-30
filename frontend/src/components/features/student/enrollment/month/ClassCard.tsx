@@ -31,10 +31,6 @@ export const ClassCard: React.FC<ExtendedClassCardProps> = ({
   teacher,
   startTime,
   endTime,
-  dayIndex,
-  startHour,
-  bgColor,
-  containerWidth,
   selected = false,
   onClick,
   onInfoClick,
@@ -46,11 +42,11 @@ export const ClassCard: React.FC<ExtendedClassCardProps> = ({
   const subTextColor = selected ? 'text-white' : 'text-zinc-600'
   const infoBtnText = selected ? 'text-[#573B30]' : 'text-zinc-600'
 
-  const dayWidth = `calc((${containerWidth} - 25px) / 7)`
+  //const dayWidth = `calc((${containerWidth} - 25px) / 7)`
 
-  const leftPosition = `calc(25px + (${dayIndex} * ${dayWidth}))`
+  // const leftPosition = `calc(25px + (${dayIndex} * ${dayWidth}))`
 
-  const topPosition = `${(startHour - 4) * 105}px`
+  // const topPosition = `${(startHour - 4) * 105}px`
 
   return (
     <div
