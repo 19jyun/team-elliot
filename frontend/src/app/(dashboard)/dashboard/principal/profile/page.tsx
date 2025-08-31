@@ -30,7 +30,7 @@ export default function PrincipalProfilePage() {
   // 초기 데이터 로드
   React.useEffect(() => {
     loadProfile();
-  }, []);
+  }, [loadProfile]);
 
   const handleSignOut = async () => {
     try {

@@ -60,7 +60,7 @@ export default function PrincipalPersonManagementPage() {
   // 컴포넌트 마운트 시 academy 데이터 로드
   useEffect(() => {
     loadAcademy();
-  }, []);
+  }, [loadAcademy]);
 
   const handleEnrollmentRefundManagement = () => {
     // 학원 정보 확인

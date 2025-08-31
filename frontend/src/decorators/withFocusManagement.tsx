@@ -36,12 +36,12 @@ export function withFocusManagement<P extends object>(
           onFocusChange?.('dashboard');
         };
       }
-    }, [pushFocus, popFocus, focusType, autoRestore, onFocusChange]);
+    }, [pushFocus, popFocus]);
 
     // 포커스 변경 감지
     useEffect(() => {
       onFocusChange?.(currentFocus);
-    }, [currentFocus, onFocusChange]);
+    }, [currentFocus]);
 
     return <WrappedComponent {...props} />;
   };

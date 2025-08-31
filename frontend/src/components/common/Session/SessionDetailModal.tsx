@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { SessionEnrollmentsResponse } from '@/types/api/teacher'
@@ -66,24 +66,14 @@ export function SessionDetailModal({
   // 세션 정보를 API에서 가져오기
   const session = useMemo(() => {
     if (!sessionId || !currentSessions) return null;
-    const result = currentSessions.find((s: any) => s.id === sessionId);
+    const result = currentSessions.find((s: { id: number }) => s.id === sessionId);
     return result;
   }, [sessionId, currentSessions]);
 
   // Teacher와 Principal은 동일한 권한을 가짐
   const canManageSessions = role === 'teacher' || role === 'principal'
 
-  // 세션 수강생 정보 로드 (API 호출)
-  useEffect(() => {
-    if (isOpen && sessionId && canManageSessions) {
-      loadSessionEnrollments()
-    } else {
-      setEnrollmentData(null)
-      setIsLoading(false)
-    }
-  }, [isOpen, sessionId, canManageSessions])
-
-  const loadSessionEnrollments = async () => {
+  const loadSessionEnrollments = useCallback(async () => {
     try {
       setIsLoading(true)
       // 역할에 따라 다른 API 호출
@@ -101,7 +91,17 @@ export function SessionDetailModal({
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [role, sessionId, loadPrincipalSessionEnrollments, loadTeacherSessionEnrollments])
+
+  // 세션 수강생 정보 로드 (API 호출)
+  useEffect(() => {
+    if (isOpen && sessionId && canManageSessions) {
+      loadSessionEnrollments()
+    } else {
+      setEnrollmentData(null)
+      setIsLoading(false)
+    }
+  }, [isOpen, sessionId, canManageSessions, loadSessionEnrollments])
 
   // 세션 데이터 로드
   useEffect(() => {
@@ -112,7 +112,7 @@ export function SessionDetailModal({
         loadPrincipalSessions();
       }
     }
-  }, [isOpen, sessionId, role])
+  }, [isOpen, sessionId, role, loadTeacherSessions, loadPrincipalSessions])
 
   useEffect(() => {
     if (isOpen && sessionId) {

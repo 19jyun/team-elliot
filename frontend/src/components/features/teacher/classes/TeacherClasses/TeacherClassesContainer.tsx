@@ -26,7 +26,7 @@ export function TeacherClassesContainer() {
   // 초기 데이터 로드
   useEffect(() => {
     loadClasses();
-  }, []);
+  }, [loadClasses]);
 
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {

@@ -389,7 +389,7 @@ export function useApiError(): UseApiErrorReturn {
           break;
       }
     },
-    []
+    [clearErrorAfterDelay]
   );
 
   const handleApiError = useCallback(

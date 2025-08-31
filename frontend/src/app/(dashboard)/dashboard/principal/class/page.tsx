@@ -73,7 +73,7 @@ export default function PrincipalClassPage() {
   // 초기 데이터 로드
   useEffect(() => {
     loadSessions();
-  }, []);
+  }, [loadSessions]);
 
   // 백엔드에서 받은 캘린더 범위 사용 (새로운 정책 적용)
   const calendarRange = useMemo(() => {

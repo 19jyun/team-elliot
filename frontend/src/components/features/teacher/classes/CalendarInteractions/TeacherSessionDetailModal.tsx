@@ -1,11 +1,11 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { getSessionEnrollments } from '@/api/teacher'
 import { SessionEnrollmentsResponse } from '@/types/api/teacher'
-import { AttendanceTab } from './SessionComponents/Attendance/AttendanceTab'
+import { AttendanceTab } from '@/components/common/Session/SessionDetailComponents/Attendance/AttendanceTab'
 import { SessionContentTab } from '../../../../common/Session/SessionDetailComponents/Pose/SessionContentTab'
 import { PoseSelectionModal } from '../../../../common/Session/SessionDetailComponents/Pose/PoseSelectionModal'
 import { useAddSessionContent } from '@/hooks/useSessionContents'
@@ -40,6 +40,20 @@ export function TeacherSessionDetailModal({
 
   const addContentMutation = useAddSessionContent(session?.id || 0)
 
+
+
+  const loadSessionEnrollments = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      const data = await getSessionEnrollments(session.id)
+      setEnrollmentData(data.data || null)
+    } catch (error) {
+      console.error('세션 수강생 정보 로드 실패:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [session.id])
+
   useEffect(() => {
     if (isOpen && session?.id) {
       loadSessionEnrollments()
@@ -50,19 +64,7 @@ export function TeacherSessionDetailModal({
       setActiveTab('overview')
       setIsPoseSelectionOpen(false)
     }
-  }, [isOpen, session?.id])
-
-  const loadSessionEnrollments = async () => {
-    try {
-      setIsLoading(true)
-      const data = await getSessionEnrollments(session.id)
-      setEnrollmentData(data)
-    } catch (error) {
-      console.error('세션 수강생 정보 로드 실패:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  }, [isOpen, session?.id, loadSessionEnrollments])
 
   const formatTime = (time: string | Date) => {
     const date = typeof time === 'string' ? new Date(time) : time

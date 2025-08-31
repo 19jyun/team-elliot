@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 // 역할 분리: 학생 화면에서 필요 시 별도 학생용 API로 대체 또는 서버 컴포넌트에서 주입
 import { ClassDetailsResponse } from '@/types/api/class';
@@ -23,19 +23,7 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
   const { navigateToSubPage } = useDashboardNavigation();
   const { getClassDetails } = useStudentApi();
 
-  useEffect(() => {
-    if (classId) {
-      loadClassDetails();
-    }
-  }, [classId]);
-
-  // teacher 정보 디버깅
-  useEffect(() => {
-    if (classDetails?.teacher) {
-    }
-  }, [classDetails?.teacher]);
-
-  const loadClassDetails = async () => {
+  const loadClassDetails = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await getClassDetails(classId);
@@ -46,7 +34,19 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [classId, getClassDetails]);
+
+  useEffect(() => {
+    if (classId) {
+      loadClassDetails();
+    }
+  }, [classId, loadClassDetails]);
+
+  // teacher 정보 디버깅
+  useEffect(() => {
+    if (classDetails?.teacher) {
+    }
+  }, [classDetails?.teacher]);
 
   const formatTime = (time: string | Date) => {
     const date = typeof time === 'string' ? new Date(time) : time;

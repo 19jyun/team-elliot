@@ -50,7 +50,7 @@ export default function PrincipalAcademyManagementPage() {
   // 초기 데이터 로드
   useEffect(() => {
     loadAcademy();
-  }, []);
+  }, [loadAcademy]);
 
   // 학원 정보 수정 뮤테이션
   const updateAcademyMutation = useMutation({

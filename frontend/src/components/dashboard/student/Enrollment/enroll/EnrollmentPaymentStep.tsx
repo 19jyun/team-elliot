@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { toast } from 'sonner';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
@@ -53,7 +53,7 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
   ]
 
   // 세션별 결제 정보 로드 - 원장 기준으로 통합
-  const loadPaymentInfoForSessions = async (sessions: SelectedSession[]) => {
+  const loadPaymentInfoForSessions = useCallback(async (sessions: SelectedSession[]) => {
     setIsLoadingPaymentInfo(true);
     
     try {
@@ -140,7 +140,7 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
     } finally {
       setIsLoadingPaymentInfo(false);
     }
-  };
+  }, [loadSessionPaymentInfo]);
 
   useEffect(() => {
 
@@ -181,7 +181,7 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
     } else {
       console.warn('🔍 세션 데이터가 없습니다!');
     }
-  }, [contextSessions, loadSessionPaymentInfo, setEnrollmentStep]);
+  }, [contextSessions, loadSessionPaymentInfo, setEnrollmentStep, loadPaymentInfoForSessions]);
 
   // 복사 버튼 클릭 시 toast
   const handleCopy = () => {

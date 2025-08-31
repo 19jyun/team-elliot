@@ -14,33 +14,35 @@ export function CommonHeader() {
   const { data: session } = useSession();
 
   const { subPage, goBack } = useDashboardNavigation();
-
-  // 역할별 네비게이션 정보
+  const userRole = session?.user?.role || 'STUDENT';
+  
+  // 모든 Hook을 최상위에서 호출 (조건부 Hook 호출 문제 해결)
+  const studentContext = useStudentContext();
+  const teacherContext = useTeacherContext();
+  const principalContext = usePrincipalContext();
+  
+  // 조건부로 context 값 결정
   let navigationItems: { label: string; value: number }[] = [];
   let activeTab = 0;
   let handleTabChange = (_tab: number) => {};
   let principalPersonManagement: any = null;
   let principalGoBack: (() => void) | null = null;
-  const userRole = session?.user?.role || 'STUDENT';
   
   try {
     if (userRole === 'STUDENT') {
-      const ctx = useStudentContext();
-      navigationItems = ctx.navigationItems;
-      activeTab = ctx.activeTab;
-      handleTabChange = ctx.handleTabChange;
+      navigationItems = studentContext.navigationItems;
+      activeTab = studentContext.activeTab;
+      handleTabChange = studentContext.handleTabChange;
     } else if (userRole === 'TEACHER') {
-      const ctx = useTeacherContext();
-      navigationItems = ctx.navigationItems;
-      activeTab = ctx.activeTab;
-      handleTabChange = ctx.handleTabChange;
+      navigationItems = teacherContext.navigationItems;
+      activeTab = teacherContext.activeTab;
+      handleTabChange = teacherContext.handleTabChange;
     } else if (userRole === 'PRINCIPAL') {
-      const ctx = usePrincipalContext();
-      navigationItems = ctx.navigationItems;
-      activeTab = ctx.activeTab;
-      handleTabChange = ctx.handleTabChange;
-      principalPersonManagement = ctx.personManagement;
-      principalGoBack = ctx.goBack;
+      navigationItems = principalContext.navigationItems;
+      activeTab = principalContext.activeTab;
+      handleTabChange = principalContext.handleTabChange;
+      principalPersonManagement = principalContext.personManagement;
+      principalGoBack = principalContext.goBack;
     }
   } catch {
     // Context가 아직 준비되지 않은 경우 기본값 사용

@@ -17,32 +17,43 @@ interface WheelProps {
 }
 
 export default function Wheel(props: WheelProps) {
-  const perspective = props.perspective || "center"
+  const { 
+    perspective: perspectiveProp = "center",
+    length,
+    loop,
+    setValue,
+    width,
+    label,
+    onChange,
+    initIdx
+  } = props
+  
+  const perspective = perspectiveProp
   const wheelSize = 20
-  const slides = props.length
+  const slides = length
   const slideDegree = 360 / wheelSize
-  const slidesPerView = props.loop ? 9 : 1
+  const slidesPerView = loop ? 9 : 1
   const [sliderState, setSliderState] = React.useState<TrackDetails | null>(
     null
   )
   const size = useRef(0)
-  const onChangeRef = useRef(props.onChange)
+  const onChangeRef = useRef(onChange)
   const lastIndexRef = useRef<number | null>(null)
 
   // onChange ref 업데이트
   React.useEffect(() => {
-    onChangeRef.current = props.onChange
-  }, [props.onChange])
+    onChangeRef.current = onChange
+  }, [onChange])
 
   const options = useRef<KeenSliderOptions>({
     slides: {
       number: slides,
-      origin: props.loop ? "center" : "auto",
+      origin: loop ? "center" : "auto",
       perView: slidesPerView,
     },
     vertical: true,
-    initial: props.initIdx || 0,
-    loop: props.loop,
+    initial: initIdx || 0,
+    loop: loop,
     dragSpeed: (val) => {
       const height = size.current
       return (
@@ -61,7 +72,7 @@ export default function Wheel(props: WheelProps) {
     detailsChanged: (s) => {
       setSliderState(s.track.details)
     },
-    rubberband: !props.loop,
+    rubberband: !loop,
     mode: "free-snap",
   })
 
@@ -75,19 +86,19 @@ export default function Wheel(props: WheelProps) {
   // 현재 선택된 값이 변경될 때만 onChange 호출 (중복 호출 방지)
   React.useEffect(() => {
     if (sliderState && onChangeRef.current) {
-      const currentIndex = sliderState.abs % props.length;
+      const currentIndex = sliderState.abs % length;
       // 이전 인덱스와 다를 때만 호출
       if (lastIndexRef.current !== currentIndex) {
         lastIndexRef.current = currentIndex;
         onChangeRef.current(currentIndex);
       }
     }
-  }, [sliderState?.abs, props.length])
+  }, [sliderState, length])
 
   // slideValues를 useMemo로 최적화
   const slideValues = useMemo(() => {
     if (!sliderState) return []
-    const offset = props.loop ? 1 / 2 - 1 / slidesPerView / 2 : 0
+    const offset = loop ? 1 / 2 - 1 / slidesPerView / 2 : 0
 
     const values = []
     for (let i = 0; i < slides; i++) {
@@ -102,8 +113,8 @@ export default function Wheel(props: WheelProps) {
       // 스타일 객체를 인라인으로 생성하지 않고 문자열로 최적화
       const transform = `rotateX(${rotate}deg) translateZ(${radius}px)`
       
-      const value = props.setValue
-        ? props.setValue(i, sliderState.abs + Math.round(distance))
+      const value = setValue
+        ? setValue(i, sliderState.abs + Math.round(distance))
         : i
       
       // 선택된 슬라이드인지 확인 (중앙에 가까운 슬라이드)
@@ -112,7 +123,7 @@ export default function Wheel(props: WheelProps) {
       values.push({ transform, value, isSelected })
     }
     return values
-  }, [sliderState, props.loop, slidesPerView, slides, wheelSize, radius, props.setValue])
+  }, [sliderState, loop, slidesPerView, slides, wheelSize, radius, setValue])
 
   return (
     <div
@@ -127,7 +138,7 @@ export default function Wheel(props: WheelProps) {
         }}
       />
       <div className="wheel__inner">
-        <div className="wheel__slides" style={{ width: props.width + "px" }}>
+        <div className="wheel__slides" style={{ width: width + "px" }}>
           {slideValues.map(({ transform, value, isSelected }, idx) => (
             <div 
               className={`wheel__slide ${isSelected ? 'selected' : ''}`} 
@@ -141,7 +152,7 @@ export default function Wheel(props: WheelProps) {
             </div>
           ))}
         </div>
-        {props.label && (
+        {label && (
           <div
             className="wheel__label"
             style={{

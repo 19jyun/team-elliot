@@ -81,7 +81,7 @@ export function TeacherProfileCard({
       // 현재 로그인한 선생님 프로필 조회
       loadProfile();
     }
-  }, [isTeacher, profile]);
+  }, [isTeacher, profile, loadProfile]);
 
   // 편집 가능 여부 결정
   // 1. isEditable이 false이거나

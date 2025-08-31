@@ -32,7 +32,7 @@ export const PrincipalClassesContainer = () => {
       loadClasses();
       loadSessions();
     }
-  }, []);
+  }, [isPrincipal, loadClasses, loadSessions]);
 
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {

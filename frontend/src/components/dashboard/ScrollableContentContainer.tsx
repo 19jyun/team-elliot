@@ -104,7 +104,7 @@ export function ScrollableContentContainer({
       container.removeEventListener('touchmove', handleTouchMove);
       container.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [activeTab, onTabChange, isDashboardFocused]);
+  }, [activeTab, onTabChange, isDashboardFocused, children]);
 
   return (
     <div className="relative w-full overflow-hidden">

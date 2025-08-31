@@ -78,17 +78,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: '',
   });
 
-  // 인증 모드 변경
-  const handleSetAuthMode = useCallback((mode: AuthMode) => {
-    setAuthMode(mode);
-    // 모드 변경 시 상태 초기화
-    if (mode === 'signup') {
-      resetSignup();
-    } else {
-      resetLogin();
-    }
-  }, []);
-
   // 서브페이지 네비게이션
   const navigateToAuthSubPage = useCallback((page: string) => {
     setAuthSubPage(page);
@@ -121,10 +110,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [authSubPage]);
 
-  // 서브페이지 초기화
-  const clearAuthSubPage = useCallback(() => {
-    setAuthSubPage(null);
-  }, []);
 
   // 회원가입 관련 메서드들
   const setSignupStep = useCallback((step: SignupStep) => {
@@ -165,6 +150,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const resetLogin = useCallback(() => {
     setLogin({ userId: '', password: '' });
   }, []);
+
+    // 서브페이지 초기화
+  const clearAuthSubPage = useCallback(() => {
+    setAuthSubPage(null);
+  }, []);
+
+    // 인증 모드 변경
+  const handleSetAuthMode = useCallback((mode: AuthMode) => {
+    setAuthMode(mode);
+    // 모드 변경 시 상태 초기화
+    if (mode === 'signup') {
+      resetSignup();
+    } else {
+      resetLogin();
+    }
+  }, [resetSignup, resetLogin]);
 
   return (
     <AuthContext.Provider value={{

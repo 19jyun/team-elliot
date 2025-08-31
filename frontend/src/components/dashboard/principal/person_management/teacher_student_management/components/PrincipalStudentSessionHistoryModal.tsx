@@ -34,7 +34,7 @@ export function PrincipalStudentSessionHistoryModal({ student, onClose }: Princi
     };
 
     fetchHistory();
-  }, [student.id]);
+  }, [student.id, getStudentSessionHistory]);
 
   // 날짜 포맷 함수
   function formatDate(dateStr?: string) {
