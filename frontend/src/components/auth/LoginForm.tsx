@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { InputField } from '@/components/auth/InputField';
 import { Button } from '@/components/auth/Button';
+import Image from 'next/image';
 
 
 export function LoginForm() {
@@ -46,10 +47,12 @@ export function LoginForm() {
       {/* 뒤로가기 버튼 */}
       <div className="flex gap-2.5 items-center px-2.5 py-2">
         <div className="flex gap-2.5 items-center self-stretch p-2.5 my-auto w-11">
-          <img
+          <Image
             loading="lazy"
             src="https://cdn.builder.io/api/v1/image/assets/TEMP/99d663a7cc4ce56bcb24a91168e88c60bb7df63e17dace2e992d6911ce1c206c?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f"
             alt="Back"
+            width={24}
+            height={24}
             className="object-contain self-stretch my-auto w-6 aspect-square"
           />
         </div>
@@ -58,10 +61,12 @@ export function LoginForm() {
       {/* 메인 컨텐츠 */}
       <div className="flex flex-col px-5 w-full">
         {/* 로고 */}
-        <img
+        <Image
           loading="lazy"
           src="https://cdn.builder.io/api/v1/image/assets/TEMP/97130cde9aeee244b068f8f7ae85c80577a223db166a059a272277cf5c389cd?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f"
           alt="Logo"
+          width={220}
+          height={49}
           className="object-contain max-w-full aspect-[4.48] w-[220px] mx-auto"
         />
 

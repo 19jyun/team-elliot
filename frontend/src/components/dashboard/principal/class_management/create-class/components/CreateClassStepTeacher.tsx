@@ -6,6 +6,7 @@ import { StatusStep } from './StatusStep';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { getImageUrl } from '@/utils/imageUtils';
+import Image from 'next/image';
 
 interface Teacher {
   id: number;
@@ -166,9 +167,11 @@ export function CreateClassStepTeacher() {
                       {/* 선생님 프로필 이미지 */}
                       <div className="w-12 h-12 rounded-full bg-stone-200 flex items-center justify-center">
                         {teacher.photoUrl ? (
-                          <img
+                          <Image
                             src={getImageUrl(teacher.photoUrl) || ''}
                             alt={teacher.name}
+                            width={48}
+                            height={48}
                             className="w-12 h-12 rounded-full object-cover"
                           />
                         ) : (

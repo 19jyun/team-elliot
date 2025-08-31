@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { CloseIcon } from '@/components/icons'
 import { useEffect } from 'react'
 import { IconButton } from '@/components/ui/IconButton'
 import { LogoutModalProps } from '@/app/(dashboard)/types'
@@ -30,12 +31,7 @@ export function LogoutModal({ onLogout, onClose }: LogoutModalProps) {
       <div className="flex overflow-hidden flex-col pt-2.5 mb-0 w-full max-w-md mx-4 bg-white rounded-3xl">
         <div className="flex gap-10 justify-between items-center mx-2.5 w-full">
           <IconButton onClick={handleClose}>
-            <img
-              loading="lazy"
-              src="/icons/close.svg"
-              className="object-contain self-stretch my-auto w-6 aspect-square"
-              alt="Close"
-            />
+            <CloseIcon className="object-contain self-stretch my-auto w-6 aspect-square" />
           </IconButton>
         </div>
         <div className="mx-5 text-lg font-semibold leading-tight text-center text-neutral-800">

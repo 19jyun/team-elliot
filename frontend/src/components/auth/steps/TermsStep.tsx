@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/auth/Button';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 // 로컬 컴포넌트 정의
 const ProgressBarItem = ({ current, total }: { current: number; total: number }) => (
@@ -90,10 +91,12 @@ export function TermsStep() {
       <form className="flex flex-col mt-5 w-full">
         <div className="flex gap-2 items-center py-4 w-full text-base font-medium tracking-normal leading-snug border-b border-solid border-b-stone-400 text-stone-700">
           <div className="flex gap-2 items-center self-stretch px-1 my-auto">
-            <img
+            <Image
               loading="lazy"
               src="https://cdn.builder.io/api/v1/image/assets/TEMP/bec1032544384dfb8d2e50d5c619a90dc6aff4131ada8b881183578489e5c959?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f"
               alt=""
+              width={24}
+              height={24}
               className="object-contain shrink-0 self-stretch my-auto w-6 aspect-square"
             />
             <div className="self-stretch my-auto">모두 동의합니다</div>

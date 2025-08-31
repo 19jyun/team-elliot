@@ -1,8 +1,14 @@
 import * as React from 'react'
-import { CancellationOption as CancellationOptionType } from './types'
+import Image from 'next/image'
+
+interface CancellationOption {
+  id: number
+  text: string
+  selected?: boolean
+}
 
 interface CancellationOptionProps {
-  option: CancellationOptionType
+  option: CancellationOption
 }
 
 export const CancellationOption: React.FC<CancellationOptionProps> = ({
@@ -19,10 +25,12 @@ export const CancellationOption: React.FC<CancellationOptionProps> = ({
       tabIndex={0}
     >
       <div className="self-stretch my-auto">{option.text}</div>
-      <img
+      <Image
         loading="lazy"
         src={`http://b.io/ext_${9 + option.id}-`}
         alt=""
+        width={24}
+        height={24}
         className="object-contain shrink-0 self-stretch my-auto w-6 aspect-square"
       />
     </div>

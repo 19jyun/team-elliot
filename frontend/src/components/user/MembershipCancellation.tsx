@@ -1,4 +1,5 @@
 import * as React from 'react'
+import Image from 'next/image'
 import { StatusBar } from '@/components/ui/StatusBar'
 import { AddressBar } from '@/components/navigation/AddressBar'
 import { CancellationOption } from './CancellationOption'
@@ -7,14 +8,49 @@ import { cancellationOptions } from '@/app/(dashboard)/data'
 export const MembershipCancellation: React.FC = () => {
   return (
     <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px]">
-      <StatusBar />
+      <StatusBar
+        time="9:41"
+        icons={[
+          {
+            src:
+              'https://cdn.builder.io/api/v1/image/assets/TEMP/4e8736a26a142e1ec8b201682842001784745b236983c002f8b27d3bc6251b4f?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f',
+            alt: '',
+            width: '3.5',
+            aspectRatio: 'square',
+          },
+          {
+            src:
+              'https://cdn.builder.io/api/v1/image/assets/TEMP/b20cf3d1a1089c2ce3efe80fde511dfa79ef6f908eb5c2afa869720c4b684cd6?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f',
+            alt: '',
+            width: '18px',
+            aspectRatio: '1.29',
+          },
+          {
+            src:
+              'https://cdn.builder.io/api/v1/image/assets/TEMP/66bdfbf4144bc6fe6e7c9aaad83d0d997eb74a2c0d0f143be9a2a02fcbc6416e?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f',
+            alt: '',
+            width: '18px',
+            aspectRatio: '1.29',
+          },
+          {
+            src:
+              'https://cdn.builder.io/api/v1/image/assets/TEMP/ad8416e32d558b3e2e98e7b3505a32dddc696afea388798cbb7abed266bcf512?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f',
+            alt: '',
+            width: '27px',
+            aspectRatio: '1.93',
+          },
+        ]}
+        logoSrc="https://cdn.builder.io/api/v1/image/assets/TEMP/677c14e60b9630b64a79b4f5afdb2402e56ed965e67c09e84ef18c83eeaf4e3f?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f"
+      />
       <AddressBar />
       <div className="flex gap-10 justify-between items-center px-2.5 py-2 w-full">
         <div className="flex gap-2.5 items-center self-stretch p-2.5 my-auto w-11">
-          <img
+          <Image
             loading="lazy"
             src="https://cdn.builder.io/api/v1/image/assets/TEMP/bcd9bb6258819f3aa5d48c4b53cfdbb58edd1beb02be396f51e8f02be74c4867?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f"
             alt="Back"
+            width={24}
+            height={24}
             className="object-contain self-stretch my-auto w-6 aspect-square"
           />
         </div>

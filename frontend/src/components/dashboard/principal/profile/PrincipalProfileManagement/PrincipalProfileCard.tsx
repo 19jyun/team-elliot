@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { getImageUrl } from '@/utils/imageUtils';
+import Image from 'next/image';
 
 interface PrincipalProfileCardProps {
   principalId?: number; // 특정 원장 ID (없으면 현재 로그인한 원장)
@@ -274,9 +275,11 @@ export function PrincipalProfileCard({
                   onClick={handlePhotoClick}
                 >
                   {previewUrl || getImageUrl(profile.photoUrl) ? (
-                    <img 
+                    <Image 
                       src={previewUrl || getImageUrl(profile.photoUrl) || ''} 
                       alt={profile.name}
+                      width={48}
+                      height={48}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -358,9 +361,11 @@ export function PrincipalProfileCard({
                 onClick={handlePhotoClick}
               >
                 {previewUrl || getImageUrl(profile.photoUrl) ? (
-                  <img 
+                  <Image 
                     src={previewUrl || getImageUrl(profile.photoUrl) || ''} 
                     alt={profile.name}
+                    width={80}
+                    height={80}
                     className="w-full h-full object-cover"
                   />
                 ) : (

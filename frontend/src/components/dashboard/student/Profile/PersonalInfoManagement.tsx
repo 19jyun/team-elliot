@@ -7,6 +7,7 @@ import { PhoneInput } from '@/components/ui/phone-input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { User, Phone, Calendar, Edit, Save, X } from 'lucide-react';
+import { CloseCircleIcon } from '@/components/icons';
 import { toast } from 'sonner';
 import { UpdateProfileRequest } from '@/types/api/student';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
@@ -452,11 +453,9 @@ export function PersonalInfoManagement() {
                             onClick={handleClearVerificationCode}
                             className="p-1 hover:bg-gray-100 rounded"
                           >
-                            <img 
-                              src="/icons/close-circle.svg" 
-                              alt="인증번호 지우기" 
-                              width="16" 
-                              height="16"
+                            <CloseCircleIcon 
+                              width={16} 
+                              height={16}
                             />
                           </button>
                           <div className="text-sm font-mono" style={{ color: '#573B30', fontFamily: 'Pretendard Variable' }}>
@@ -534,7 +533,7 @@ export function PersonalInfoManagement() {
               <label className="text-sm font-medium text-gray-700">생년월일</label>
               {isEditing ? (
                 <div className="space-y-1">
-                                     <Input
+                    <Input
                      value={editedInfo.birthDate || ''}
                      onChange={(e) => handleInputChange('birthDate', e.target.value)}
                      placeholder="생년월일을 입력하세요"
@@ -564,7 +563,7 @@ export function PersonalInfoManagement() {
               <label className="text-sm font-medium text-gray-700">레벨</label>
               {isEditing ? (
                 <div className="space-y-1">
-                                     <select
+                   <select
                      value={editedInfo.level || ''}
                      onChange={(e) => handleInputChange('level', e.target.value)}
                      className={`w-full p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 ${
@@ -596,7 +595,7 @@ export function PersonalInfoManagement() {
               <label className="text-sm font-medium text-gray-700">특이사항</label>
               {isEditing ? (
                 <div className="space-y-1">
-                                     <Input
+                   <Input
                      value={editedInfo.notes || ''}
                      onChange={(e) => handleInputChange('notes', e.target.value)}
                      placeholder="특이사항을 입력하세요 (알러지, 부상 이력 등)"

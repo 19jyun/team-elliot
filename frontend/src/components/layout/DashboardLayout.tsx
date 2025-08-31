@@ -7,6 +7,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession()
@@ -19,7 +20,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <Link href="/dashboard" className="flex items-center space-x-3">
-                <img src="/logo.png" alt="Logo" className="h-8 w-8" />
+                <Image src="/logo.png" alt="Logo" width={32} height={32} className="h-8 w-8" />
                 <span className="text-xl font-bold text-indigo-600">
                   학원 관리 시스템
                 </span>

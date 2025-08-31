@@ -7,6 +7,7 @@ import { PhoneInput } from '@/components/ui/phone-input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { User, Phone, Building, Edit, Save, X } from 'lucide-react';
+import { CloseCircleIcon } from '@/components/icons';
 import { toast } from 'sonner';
 import { UpdateProfileRequest } from '@/types/api/teacher';
 import { useTeacherApi } from '@/hooks/teacher/useTeacherApi';
@@ -385,11 +386,9 @@ export function TeacherPersonalInfoManagement() {
                               onClick={handleClearVerificationCode}
                               className="p-1 hover:bg-gray-100 rounded"
                             >
-                              <img 
-                                src="/icons/close-circle.svg" 
-                                alt="인증번호 지우기" 
-                                width="16" 
-                                height="16"
+                              <CloseCircleIcon 
+                                width={16} 
+                                height={16}
                               />
                             </button>
                             <div className="text-sm font-mono" style={{ color: '#573B30', fontFamily: 'Pretendard Variable' }}>

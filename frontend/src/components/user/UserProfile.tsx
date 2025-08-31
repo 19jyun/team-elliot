@@ -2,13 +2,9 @@ import * as React from 'react'
 import { StatusBar } from '@/components/ui/StatusBar'
 import { Navigation } from '@/components/navigation/Navigation'
 import { MenuLinks } from '@/components/navigation/MenuLinks'
+import Image from 'next/image'
 
 export function UserProfile() {
-  const navItems = [
-    { label: '클래스 정보' },
-    { label: '수강신청' },
-    { label: '나의 정보', isActive: true },
-  ]
 
   const menuLinks = [
     {
@@ -72,32 +68,38 @@ export function UserProfile() {
       <div className="flex flex-col justify-center px-3 py-2.5 w-full text-lg whitespace-nowrap bg-white shadow-sm text-neutral-800 max-sm:hidden">
         <div className="flex gap-5 justify-between py-2 pr-3.5 pl-16 w-full bg-gray-200 rounded-[30px]">
           <div className="flex gap-2 justify-center items-center">
-            <img
+            <Image
               loading="lazy"
               src="https://cdn.builder.io/api/v1/image/assets/TEMP/4d74427f5efa3bb80636af8afc7bd65185b50a388a7ea910c1be17801ef8c6ec?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f"
               alt=""
+              width={16}
+              height={16}
               className="object-contain shrink-0 self-stretch my-auto w-4 aspect-square"
             />
             <div className="self-stretch my-auto">teamelliot.kr/</div>
           </div>
-          <img
+          <Image
             loading="lazy"
             src="https://cdn.builder.io/api/v1/image/assets/TEMP/e52511d6c5f60e9f9c3b11bf91e9b94a881bfe5786f53d160c28e24d7a17c460?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f"
             alt=""
+            width={21}
+            height={21}
             className="object-contain shrink-0 aspect-square w-[21px]"
           />
         </div>
       </div>
       <div className="flex flex-col w-full">
         <div className="flex gap-2.5 justify-center items-center px-2.5 py-2 w-full min-h-[60px]">
-          <img
+          <Image
             loading="lazy"
             src="https://cdn.builder.io/api/v1/image/assets/TEMP/e94b4108806c5e24acc0a1b86a5f51f22a6f8a2afdb27522cea58111d5f835bf?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f"
             alt="Logo"
+            width={77}
+            height={46}
             className="object-contain self-stretch my-auto aspect-[1.68] w-[77px]"
           />
         </div>
-        <Navigation items={navItems} />
+        <Navigation />
       </div>
       <MenuLinks links={menuLinks} />
       <div className="flex flex-col px-5 mt-48 w-full text-base font-semibold leading-snug whitespace-nowrap text-neutral-400">

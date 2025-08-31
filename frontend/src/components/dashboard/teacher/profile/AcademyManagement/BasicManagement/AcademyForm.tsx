@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { CreateAcademyRequest } from '@/types/api/teacher';
 import { usePhoneVerification } from '@/hooks/usePhoneVerification';
+import { CloseCircleIcon } from '@/components/icons';
 
 interface AcademyFormProps {
   formData: CreateAcademyRequest;
@@ -108,11 +109,9 @@ export function AcademyForm({ formData, setFormData, isEditMode, editingAcademy 
                       onClick={handleClearVerificationCode}
                       className="p-1 hover:bg-gray-100 rounded"
                     >
-                      <img 
-                        src="/icons/close-circle.svg" 
-                        alt="인증번호 지우기" 
-                        width="16" 
-                        height="16"
+                      <CloseCircleIcon 
+                        width={16} 
+                        height={16}
                       />
                     </button>
                     <div className="text-sm font-mono" style={{ color: '#573B30', fontFamily: 'Pretendard Variable' }}>

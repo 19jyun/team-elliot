@@ -10,6 +10,7 @@ import { SessionDetailModal } from '@/components/common/Session/SessionDetailMod
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
+import Image from 'next/image'
 
 // 강의 개설 카드 컴포넌트
 const CreateClassCard: React.FC<{
@@ -39,10 +40,12 @@ const CreateClassCard: React.FC<{
         {description}
       </div>
     </div>
-    <img
+    <Image
       loading="lazy"
       src="https://cdn.builder.io/api/v1/image/assets/TEMP/1f7fc23429841d7be71eef4a524441a0723472cbcc37e1d51e9a8dccc0d60f49?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f"
       alt="Arrow indicator"
+      width={16}
+      height={16}
       className="object-contain shrink-0 self-stretch my-auto w-4 aspect-square"
     />
   </div>

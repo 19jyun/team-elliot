@@ -3,6 +3,7 @@
 import React from 'react';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { StatusStep } from './StatusStep';
+import { CompleteIcon } from '@/components/icons';
 
 export function CreateClassComplete() {
   const { createClass, goBack, resetCreateClass } = useDashboardNavigation();
@@ -60,7 +61,7 @@ export function CreateClassComplete() {
         <div className="flex flex-col items-center gap-6 w-full max-w-md">
           {/* 완료 아이콘 */}
           <div className="w-24 h-24 flex items-center justify-center">
-            <img src="/icons/complete.svg" alt="완료" className="w-full h-full" />
+            <CompleteIcon className="w-full h-full" />
           </div>
 
           {/* 완료 메시지 */}

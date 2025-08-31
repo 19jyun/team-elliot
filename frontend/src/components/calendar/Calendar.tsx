@@ -3,6 +3,7 @@ import { CalendarDay } from './CalendarDay'
 import { Tab } from '@/components/common/Tab'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
+import Image from 'next/image'
 
 export function Calendar() {
   const { enrollment } = useDashboardNavigation()
@@ -54,26 +55,32 @@ export function Calendar() {
       <div className="flex justify-center items-center w-full bg-white min-h-[60px] max-sm:hidden">
         <div className="flex overflow-hidden flex-1 shrink gap-1 justify-center items-center self-stretch px-9 py-6 my-auto text-lg tracking-tight leading-none text-center text-black whitespace-nowrap basis-0 font-[590] min-h-[60px] max-sm:hidden">
           <div className="self-stretch my-auto w-[35px]">9:41</div>
-          <img
+          <Image
             loading="lazy"
             src="https://cdn.builder.io/api/v1/image/assets/TEMP/4e8736a26a142e1ec8b201682842001784745b236983c002f8b27d3bc6251b4f?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f"
             alt=""
+            width={14}
+            height={14}
             className="object-contain shrink-0 self-stretch my-auto w-3.5 aspect-square max-sm:hidden"
           />
         </div>
-        <img
+        <Image
           loading="lazy"
           src="https://cdn.builder.io/api/v1/image/assets/TEMP/166296ca83fd516527c548b0550ab4e791e5c1cd46664e5ca94c71b1978b85b9?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f"
           alt="Logo"
+          width={122}
+          height={36}
           className="object-contain shrink-0 self-stretch my-auto aspect-[3.39] fill-black w-[122px] max-sm:hidden"
         />
         <div className="flex overflow-hidden flex-1 shrink gap-2.5 justify-center items-center self-stretch py-6 pr-6 pl-5 my-auto basis-[31px] min-h-[60px] max-sm:hidden">
           {[3, 4, 5].map((num) => (
-            <img
+            <Image
               key={num}
               loading="lazy"
               src={`http://b.io/ext_${num}-`}
               alt=""
+              width={18}
+              height={14}
               className="object-contain shrink-0 self-stretch my-auto aspect-[1.29] w-[18px]"
             />
           ))}
@@ -83,18 +90,22 @@ export function Calendar() {
       <div className="flex flex-col justify-center px-3 py-2.5 w-full text-lg whitespace-nowrap bg-white shadow-sm text-neutral-800 max-sm:hidden">
         <div className="flex gap-5 justify-between py-2 pr-3.5 pl-16 w-full bg-gray-200 rounded-[30px] max-sm:hidden">
           <div className="flex gap-2 justify-center items-center">
-            <img
+            <Image
               loading="lazy"
               src="https://cdn.builder.io/api/v1/image/assets/TEMP/352d224f256ed6f439a51281d759a310f2e4283345b2231407cc138112e9a5e2?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f"
               alt=""
+              width={16}
+              height={16}
               className="object-contain shrink-0 self-stretch my-auto w-4 aspect-square"
             />
             <div className="self-stretch my-auto">teamelliot.kr/</div>
           </div>
-          <img
+          <Image
             loading="lazy"
             src="https://cdn.builder.io/api/v1/image/assets/TEMP/0a6f999fc003e1ce58009d125d93f1e980012734eb6d59543a7d8dc27fcb9d83?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f"
             alt=""
+            width={21}
+            height={21}
             className="object-contain shrink-0 aspect-square w-[21px]"
           />
         </div>
@@ -103,10 +114,12 @@ export function Calendar() {
       <div className="flex flex-col w-full">
         <div className="flex flex-col w-full">
           <div className="flex gap-2.5 justify-center items-center px-2.5 py-2 w-full min-h-[60px]">
-            <img
+            <Image
               loading="lazy"
               src="https://cdn.builder.io/api/v1/image/assets/TEMP/e94b4108806c5e24acc0a1b86a5f51f22a6f8a2afdb27522cea58111d5f835bf?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f"
               alt="Brand Logo"
+              width={77}
+              height={46}
               className="object-contain self-stretch my-auto aspect-[1.68] w-[77px]"
             />
           </div>
@@ -123,10 +136,12 @@ export function Calendar() {
               <div className="self-stretch my-auto">2024년</div>
               <div className="self-stretch my-auto">1월</div>
             </div>
-            <img
+            <Image
               loading="lazy"
               src="https://cdn.builder.io/api/v1/image/assets/TEMP/8e80d656261a9135b861c3289a94066a71a11854c2d4a8208ba578cf330c4442?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f"
               alt=""
+              width={24}
+              height={24}
               className="object-contain shrink-0 self-stretch my-auto w-6 aspect-square"
             />
           </div>

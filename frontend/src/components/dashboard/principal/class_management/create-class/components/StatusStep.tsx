@@ -1,4 +1,5 @@
 import * as React from 'react'
+import Image from 'next/image'
 
 interface StatusStepProps {
   icon: string;
@@ -25,10 +26,12 @@ export const StatusStep: React.FC<StatusStepProps> = ({
   
   return (
     <div className="flex flex-col flex-1 items-center">
-      <img
+      <Image
         loading="lazy"
         src={iconSrc}
         alt={`${label} 단계 아이콘`}
+        width={32}
+        height={32}
         className="object-contain w-8 aspect-square"
       />
       <div
