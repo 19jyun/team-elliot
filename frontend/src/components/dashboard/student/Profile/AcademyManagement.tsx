@@ -64,7 +64,7 @@ function LeaveAcademyModal({ isOpen, onClose, onConfirm, academyName }: LeaveAca
         {/* 내용 */}
         <div className="p-6">
           <p className="text-gray-700 mb-4">
-            <span className="font-semibold text-red-600">"{academyName}"</span> 학원에서 탈퇴하시겠습니까?
+            <span className="font-semibold text-red-600">{academyName}</span> 학원에서 탈퇴하시겠습니까?
           </p>
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
             <div className="flex items-start gap-3">

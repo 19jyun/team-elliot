@@ -17,7 +17,7 @@ export interface MyClassesResponse {
     endDate: string;
   };
 }
-export interface ClassDetailResponse extends StudentClass {}
+export type ClassDetailResponse = StudentClass;
 export interface EnrollClassResponse {
   success: boolean;
   message: string;

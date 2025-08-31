@@ -102,7 +102,7 @@ export interface UpdateTeacherProfileRequest {
   availableTimes?: string[];
 }
 
-export interface TeacherProfileResponse extends TeacherProfile {}
+export type TeacherProfileResponse = TeacherProfile;
 
 export interface UpdateProfileRequest {
   name?: string;
@@ -115,26 +115,25 @@ export interface UpdateProfileRequest {
   availableTimes?: any;
 }
 
-export interface UpdateProfileResponse extends TeacherProfile {}
+export type UpdateProfileResponse = TeacherProfile;
 
-export interface TeacherClassesResponse
-  extends Array<{
-    id: number;
-    className: string;
-    dayOfWeek: string;
-    startTime: string;
-    endTime: string;
-    startDate: string;
-    endDate: string;
-    maxStudents: number;
-    currentStudents: number;
-    level: string;
-    tuitionFee: number;
-    description?: string;
-    backgroundColor?: string;
-    location?: string;
-    [key: string]: any;
-  }> {}
+export type TeacherClassesResponse = Array<{
+  id: number;
+  className: string;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  startDate: string;
+  endDate: string;
+  maxStudents: number;
+  currentStudents: number;
+  level: string;
+  tuitionFee: number;
+  description?: string;
+  backgroundColor?: string;
+  location?: string;
+  [key: string]: any;
+}>;
 
 export interface TeacherClass {
   id: number;
@@ -189,7 +188,7 @@ export interface TeacherSession {
   confirmedCount: number;
 }
 
-export interface TeacherSessionsResponse extends Array<TeacherSession> {}
+export type TeacherSessionsResponse = TeacherSession[];
 
 export interface SessionEnrollment {
   id: number;
@@ -290,7 +289,7 @@ export interface UpdateEnrollmentStatusRequest {
   reason?: string;
 }
 
-export interface UpdateEnrollmentStatusResponse extends SessionEnrollment {}
+export type UpdateEnrollmentStatusResponse = SessionEnrollment;
 
 export interface BatchUpdateEnrollmentStatusRequest {
   enrollmentIds: number[];

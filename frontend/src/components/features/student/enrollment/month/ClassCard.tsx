@@ -42,10 +42,8 @@ export const ClassCard: React.FC<ExtendedClassCardProps> = ({
   const subTextColor = selected ? 'text-white' : 'text-zinc-600'
   const infoBtnText = selected ? 'text-[#573B30]' : 'text-zinc-600'
 
-  //const dayWidth = `calc((${containerWidth} - 25px) / 7)`
-
+  // const dayWidth = `calc((${containerWidth} - 25px) / 7)`
   // const leftPosition = `calc(25px + (${dayIndex} * ${dayWidth}))`
-
   // const topPosition = `${(startHour - 4) * 105}px`
 
   return (
@@ -89,7 +87,9 @@ export const ClassCard: React.FC<ExtendedClassCardProps> = ({
         aria-label={`${level} 정보보기`}
         onClick={e => {
           e.stopPropagation();
-          onInfoClick && onInfoClick();
+          if (onInfoClick) {
+            onInfoClick();
+          }
         }}
       >
         정보보기

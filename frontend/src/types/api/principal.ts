@@ -136,11 +136,8 @@ export interface UpdatePrincipalProfileRequest {
 }
 
 // API 응답 타입들
-export interface GetPrincipalAcademyResponse extends PrincipalAcademy {}
-export interface GetPrincipalAllSessionsResponse
-  extends Array<PrincipalSession> {}
-export interface GetPrincipalAllClassesResponse extends Array<PrincipalClass> {}
-export interface GetPrincipalAllTeachersResponse
-  extends Array<PrincipalTeacher> {}
-export interface GetPrincipalAllStudentsResponse
-  extends Array<PrincipalStudent> {}
+export type GetPrincipalAcademyResponse = PrincipalAcademy;
+export type GetPrincipalAllSessionsResponse = PrincipalSession[];
+export type GetPrincipalAllClassesResponse = PrincipalClass[];
+export type GetPrincipalAllTeachersResponse = PrincipalTeacher[];
+export type GetPrincipalAllStudentsResponse = PrincipalStudent[];

@@ -80,7 +80,7 @@ export interface ClassDetailsResponse extends Class {
     curriculum: string[];
   };
 }
-export interface AllClassesResponse extends Array<Class> {}
+export type AllClassesResponse = Class[];
 export interface CreateClassRequest {
   className: string;
   description: string;
@@ -119,8 +119,8 @@ export interface CreateClassResponse {
   sessionCount: number;
   message: string;
 }
-export interface UpdateClassRequest extends Partial<Omit<Class, "id">> {}
-export interface UpdateClassResponse extends Class {}
+export type UpdateClassRequest = Partial<Omit<Class, "id">>;
+export type UpdateClassResponse = Class;
 export interface EnrollClassRequest {
   studentId: number;
 }
@@ -184,7 +184,7 @@ export interface GetClassSessionsRequest {
   classId: number;
 }
 
-export interface GetClassSessionsResponse extends Array<ClassSession> {}
+export type GetClassSessionsResponse = ClassSession[];
 
 // 새로운 enrollment/modification 모드용 응답 타입
 export interface GetClassSessionsForEnrollmentResponse {
