@@ -33,6 +33,12 @@ import type {
   PrincipalStudent,
   PrincipalSession,
   UpdatePrincipalProfileRequest,
+  CreatePrincipalClassRequest,
+  UpdatePrincipalAcademyRequest,
+  CreateSessionContentRequest,
+  UpdateSessionContentRequest,
+  RejectEnrollmentRequest,
+  RejectRefundRequest,
 } from "@/types/api/principal";
 import type { BalletPose, PoseDifficulty } from "@/types/api/ballet-pose";
 import { getBalletPoses, getBalletPose } from "@/api/ballet-pose";
@@ -67,9 +73,10 @@ export function usePrincipalApi() {
       if (data) {
         setProfile(data);
       }
-    } catch (err: any) {
-      handleApiError(err);
-      setError(err.message || "프로필 로드 실패");
+    } catch (err: unknown) {
+      const error = err as Error;
+      handleApiError(error);
+      setError(error.message || "프로필 로드 실패");
     } finally {
       setIsLoading(false);
     }
@@ -86,8 +93,9 @@ export function usePrincipalApi() {
       if (data) {
         setAcademy(data);
       }
-    } catch (err: any) {
-      setError(err.response?.data?.message || "학원 정보 로드 실패");
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      setError(error.response?.data?.message || "학원 정보 로드 실패");
     }
   }, [isPrincipal]);
 
@@ -102,8 +110,9 @@ export function usePrincipalApi() {
       if (data) {
         setClasses(data);
       }
-    } catch (err: any) {
-      setError(err.response?.data?.message || "클래스 목록 로드 실패");
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      setError(error.response?.data?.message || "클래스 목록 로드 실패");
     }
   }, [isPrincipal]);
 
@@ -118,8 +127,9 @@ export function usePrincipalApi() {
       if (data) {
         setTeachers(data);
       }
-    } catch (err: any) {
-      setError(err.response?.data?.message || "선생님 목록 로드 실패");
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      setError(error.response?.data?.message || "선생님 목록 로드 실패");
     }
   }, [isPrincipal]);
 
@@ -134,8 +144,9 @@ export function usePrincipalApi() {
       if (data) {
         setStudents(data);
       }
-    } catch (err: any) {
-      setError(err.response?.data?.message || "학생 목록 로드 실패");
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      setError(error.response?.data?.message || "학생 목록 로드 실패");
     }
   }, [isPrincipal]);
 
@@ -150,8 +161,9 @@ export function usePrincipalApi() {
       if (data) {
         setSessions(data);
       }
-    } catch (err: any) {
-      setError(err.response?.data?.message || "세션 목록 로드 실패");
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      setError(error.response?.data?.message || "세션 목록 로드 실패");
     }
   }, [isPrincipal]);
 
@@ -165,8 +177,9 @@ export function usePrincipalApi() {
         const response = await getPrincipalSessionEnrollments(sessionId);
         const data = response.data;
         return data || null;
-      } catch (err: any) {
-        setError(err.response?.data?.message || "수강생 목록 로드 실패");
+      } catch (err: unknown) {
+        const error = err as { response?: { data?: { message?: string } } };
+        setError(error.response?.data?.message || "수강생 목록 로드 실패");
         return null;
       }
     },
@@ -189,8 +202,9 @@ export function usePrincipalApi() {
         loadStudents(),
         loadSessions(),
       ]);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "데이터 로드 실패");
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      setError(error.response?.data?.message || "데이터 로드 실패");
     } finally {
       setIsLoading(false);
     }
@@ -218,7 +232,7 @@ export function usePrincipalApi() {
   };
 
   // 클래스 생성
-  const createClass = async (data: any) => {
+  const createClass = async (data: CreatePrincipalClassRequest) => {
     return createPrincipalClass(data);
   };
 
@@ -228,14 +242,14 @@ export function usePrincipalApi() {
   };
   const addSessionContent = async (
     sessionId: number,
-    data: { poseId: number; note?: string }
+    data: CreateSessionContentRequest
   ) => {
     return apiAddSessionContent(sessionId, data);
   };
   const updateSessionContent = async (
     sessionId: number,
     contentId: number,
-    data: { poseId?: number; note?: string }
+    data: UpdateSessionContentRequest
   ) => {
     return apiUpdateSessionContent(sessionId, contentId, data);
   };
@@ -261,7 +275,7 @@ export function usePrincipalApi() {
   };
 
   // 학원 정보 업데이트
-  const updateAcademy = async (data: any) => {
+  const updateAcademy = async (data: UpdatePrincipalAcademyRequest) => {
     return updatePrincipalAcademy(data);
   };
 
@@ -309,8 +323,10 @@ export function usePrincipalApi() {
       setError(null);
       const response = await approvePrincipalEnrollment(enrollmentId);
       return response.data;
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || "수강신청 승인 실패";
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      const errorMessage =
+        error.response?.data?.message || "수강신청 승인 실패";
       setError(errorMessage);
       throw new Error(errorMessage);
     }
@@ -329,10 +345,12 @@ export function usePrincipalApi() {
       const response = await rejectPrincipalEnrollment(enrollmentId, {
         reason,
         detailedReason,
-      });
+      } as RejectEnrollmentRequest);
       return response.data;
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || "수강신청 거절 실패";
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      const errorMessage =
+        error.response?.data?.message || "수강신청 거절 실패";
       setError(errorMessage);
       throw new Error(errorMessage);
     }
@@ -346,8 +364,10 @@ export function usePrincipalApi() {
       setError(null);
       const response = await approvePrincipalRefund(refundId);
       return response.data;
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || "환불요청 승인 실패";
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      const errorMessage =
+        error.response?.data?.message || "환불요청 승인 실패";
       setError(errorMessage);
       throw new Error(errorMessage);
     }
@@ -366,10 +386,12 @@ export function usePrincipalApi() {
       const response = await rejectPrincipalRefund(refundId, {
         reason,
         detailedReason,
-      });
+      } as RejectRefundRequest);
       return response.data;
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || "환불요청 거절 실패";
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      const errorMessage =
+        error.response?.data?.message || "환불요청 거절 실패";
       setError(errorMessage);
       throw new Error(errorMessage);
     }

@@ -314,3 +314,32 @@ export type GetPrincipalAllSessionsResponse = PrincipalSession[];
 export type GetPrincipalAllClassesResponse = PrincipalClass[];
 export type GetPrincipalAllTeachersResponse = PrincipalTeacher[];
 export type GetPrincipalAllStudentsResponse = PrincipalStudent[];
+
+// 누락된 타입들 추가
+export interface CreatePrincipalClassRequest {
+  className: string;
+  description?: string;
+  level: string;
+  maxStudents: number;
+  tuitionFee: number;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  startDate: string;
+  endDate: string;
+  backgroundColor?: string;
+  location?: string;
+  teacherId: number;
+}
+
+export interface CreateSessionContentRequest {
+  poseId: number;
+  order?: number;
+  notes?: string;
+}
+
+export interface UpdateSessionContentRequest {
+  poseId?: number;
+  order?: number;
+  notes?: string;
+}

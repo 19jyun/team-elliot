@@ -28,6 +28,7 @@ import {
   RemoveTeacherResponse,
   RemoveStudentResponse,
   StudentSessionHistory,
+  CreatePrincipalClassRequest,
 } from "../types/api/principal";
 import { CreateClassRequest, CreateClassResponse } from "../types/api/class";
 import { GetSessionEnrollmentsResponse } from "../types/api/class-session";
@@ -67,7 +68,7 @@ export const getPrincipalAllClasses = (): Promise<
 
 // Principal의 클래스 생성
 export const createPrincipalClass = (
-  data: CreateClassRequest
+  data: CreatePrincipalClassRequest
 ): Promise<ApiResponse<CreateClassResponse>> => {
   return post<ApiResponse<CreateClassResponse>>("/principal/classes", data);
 };

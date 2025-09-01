@@ -22,19 +22,39 @@ import type {
 
 import { getClassDetails as getClassDetailsApi } from "@/api/class";
 import { useApiError } from "@/hooks/useApiError";
+import type {
+  StudentProfile,
+  AvailableSessionForEnrollment,
+  ClassSessionForEnrollment,
+  EnrollmentHistory,
+  CancellationHistory,
+  UpdateStudentProfileRequest,
+  GetMyAcademiesResponse,
+  StudentBatchEnrollSessionsRequest,
+} from "@/types/api/student";
 
 // Student 대시보드에서 사용할 API 훅
 export function useStudentApi() {
   const {} = useApiError();
   const [isLoading, _setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sessionClasses, _setSessionClasses] = useState<any[]>([]);
-  const [academies, setAcademies] = useState<any[]>([]);
-  const [availableClasses, setAvailableClasses] = useState<any[]>([]);
-  const [availableSessions, setAvailableSessions] = useState<any[]>([]);
-  const [enrollmentHistory, setEnrollmentHistory] = useState<any[]>([]);
-  const [cancellationHistory, setCancellationHistory] = useState<any[]>([]);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [sessionClasses, _setSessionClasses] = useState<
+    ClassSessionForEnrollment[]
+  >([]);
+  const [academies, setAcademies] = useState<GetMyAcademiesResponse>([]);
+  const [availableClasses, setAvailableClasses] = useState<
+    AvailableSessionForEnrollment[]
+  >([]);
+  const [availableSessions, setAvailableSessions] = useState<
+    AvailableSessionForEnrollment[]
+  >([]);
+  const [enrollmentHistory, setEnrollmentHistory] = useState<
+    EnrollmentHistory[]
+  >([]);
+  const [cancellationHistory, setCancellationHistory] = useState<
+    CancellationHistory[]
+  >([]);
+  const [userProfile, setUserProfile] = useState<StudentProfile | null>(null);
   const [calendarRange, _setCalendarRange] = useState<{
     startDate: Date;
     endDate: Date;
@@ -60,22 +80,25 @@ export function useStudentApi() {
         academyId
       );
 
-      // API 응답에서 세션 데이터 추출 (response.data.sessions)
-      const sessions = response.data?.sessions || [];
+      // API 응답에서 세션 데이터 추출
+      const sessions = response.data || [];
 
       // 세션에서 클래스 정보를 추출하여 중복 제거
-      const classMap = new Map<number, any>();
-      sessions.forEach((session: any) => {
-        if (session.class) {
-          const classId = session.class.id;
-          if (!classMap.has(classId)) {
-            classMap.set(classId, {
-              ...session.class,
-              availableSessions: sessions.filter(
-                (s: any) => s.classId === classId
-              ),
-            });
-          }
+      const classMap = new Map<
+        string,
+        AvailableSessionForEnrollment & {
+          availableSessions: AvailableSessionForEnrollment[];
+        }
+      >();
+      sessions.forEach((session: AvailableSessionForEnrollment) => {
+        const className = session.className;
+        if (!classMap.has(className)) {
+          classMap.set(className, {
+            ...session,
+            availableSessions: sessions.filter(
+              (s: AvailableSessionForEnrollment) => s.className === className
+            ),
+          });
         }
       });
 
@@ -99,7 +122,7 @@ export function useStudentApi() {
       if (!academyId) return;
 
       const data = await getStudentAvailableSessionsForEnrollment(academyId);
-      const sessions = data.sessions || [];
+      const sessions = data.data || [];
 
       setAvailableSessions(sessions);
     } catch (err) {
@@ -115,7 +138,8 @@ export function useStudentApi() {
   // 배치 수강 신청 함수 (기존 로직 유지, 새로운 useEnrollment hook 사용 권장)
   const enrollSessions = useCallback(async (sessionIds: number[]) => {
     try {
-      const result = await batchEnrollSessions(sessionIds);
+      const requestData: StudentBatchEnrollSessionsRequest = { sessionIds };
+      const result = await batchEnrollSessions(requestData);
       return result;
     } catch (err) {
       console.error("배치 수강 신청 실패:", err);
@@ -206,7 +230,10 @@ export function useStudentApi() {
     ): Promise<CreateRefundRequestResponse> => {
       try {
         const res = await refundApi.createRefundRequest(data);
-        return res;
+        if (!res.data) {
+          throw new Error("환불 요청 응답 데이터가 없습니다.");
+        }
+        return res.data;
       } catch (err) {
         console.error("환불 요청 생성 실패:", err);
         setError(
@@ -236,9 +263,9 @@ export function useStudentApi() {
 
   // 사용자 프로필 업데이트 함수 (변경된 필드만 전송, 날짜 ISO 포맷 변환)
   const updateUserProfile = useCallback(
-    async (profileData: any) => {
+    async (profileData: UpdateStudentProfileRequest) => {
       try {
-        const sanitized: Record<string, any> = {};
+        const sanitized: Record<string, unknown> = {};
         Object.entries(profileData || {}).forEach(([key, value]) => {
           if (value === "" || value === undefined || value === null) return;
 
@@ -335,28 +362,28 @@ export function useStudentApi() {
       return [];
     }
 
-    return sessionClasses.map((session: any) => ({
+    return sessionClasses.map((session: ClassSessionForEnrollment) => ({
       id: session.id,
-      classId: session.classId || session.id,
+      classId: session.id, // classId가 없으므로 id 사용
       date: session.date,
       startTime: session.startTime,
       endTime: session.endTime,
-      currentStudents: session.currentStudents || 0,
+      currentStudents: session.currentEnrollments || 0,
       maxStudents: session.maxStudents || 0,
       isEnrollable: false, // student-view에서는 선택 불가
-      isFull: session.currentStudents >= session.maxStudents,
+      isFull: session.currentEnrollments >= session.maxStudents,
       isPastStartTime:
         new Date(session.date + " " + session.startTime) < new Date(),
       isAlreadyEnrolled: true, // 이미 수강 중인 세션
       studentEnrollmentStatus: "CONFIRMED",
       class: {
-        id: session.class?.id || session.classId || session.id,
-        className: session.class?.className || "클래스",
-        level: session.class?.level || "BEGINNER",
-        tuitionFee: session.class?.tuitionFee?.toString() || "50000",
+        id: session.id,
+        className: session.className || "클래스",
+        level: "BEGINNER", // 기본값 사용
+        tuitionFee: session.tuitionFee?.toString() || "50000",
         teacher: {
-          id: session.class?.teacher?.id || 0,
-          name: session.class?.teacher?.name || "선생님",
+          id: 0, // 기본값 사용
+          name: session.teacherName || "선생님",
         },
       },
     }));

@@ -14,6 +14,8 @@ import type {
   Academy,
   UpdateEnrollmentStatusRequest,
   UpdateProfileRequest,
+  TeacherClass,
+  TeacherSession,
 } from "@/types/api/teacher";
 import { useApiError } from "@/hooks/useApiError";
 
@@ -23,8 +25,8 @@ export function useTeacherApi() {
   const {} = useApiError();
   const [profile, setProfile] = useState<TeacherProfileResponse | null>(null);
   const [academy, setAcademy] = useState<Academy | null>(null);
-  const [classes, setClasses] = useState<any[]>([]);
-  const [sessions, setSessions] = useState<any[]>([]);
+  const [classes, setClasses] = useState<TeacherClass[]>([]);
+  const [sessions, setSessions] = useState<TeacherSession[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,8 +43,9 @@ export function useTeacherApi() {
       const response = await getTeacherProfile();
       // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
       setProfile(response.data || null);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "프로필 로드 실패");
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      setError(error.response?.data?.message || "프로필 로드 실패");
     }
   }, [isTeacher]);
 
@@ -54,9 +57,10 @@ export function useTeacherApi() {
       setError(null);
       const response = await getMyAcademy();
       // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
-      setAcademy(response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "학원 정보 로드 실패");
+      setAcademy(response.data || null);
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      setError(error.response?.data?.message || "학원 정보 로드 실패");
     }
   }, [isTeacher]);
 
@@ -70,13 +74,45 @@ export function useTeacherApi() {
       // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
       const data = response.data;
       if (data) {
-        setClasses(data.classes || []);
-        setSessions(data.sessions || []);
+        setClasses(data || []);
+        // TeacherClassesWithSessionsResponse는 클래스 배열이므로 세션은 별도로 처리
+        const allSessions: TeacherSession[] = [];
+        data.forEach((cls) => {
+          if (cls.sessions) {
+            // ClassSession을 TeacherSession으로 변환
+            cls.sessions.forEach((session) => {
+              allSessions.push({
+                id: session.id,
+                date: session.date,
+                startTime: session.startTime,
+                endTime: session.endTime,
+                class: {
+                  id: cls.id,
+                  className: cls.className,
+                  maxStudents: cls.maxStudents,
+                  level: cls.level,
+                  teacher: {
+                    id: profile?.id || 0,
+                    name: profile?.name || "",
+                  },
+                },
+                enrollmentCount: session.enrollments?.length || 0,
+                confirmedCount:
+                  session.enrollments?.filter((e) => e.status === "CONFIRMED")
+                    .length || 0,
+              });
+            });
+          }
+        });
+        setSessions(allSessions);
       }
-    } catch (err: any) {
-      setError(err.response?.data?.message || "클래스 및 세션 목록 로드 실패");
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      setError(
+        error.response?.data?.message || "클래스 및 세션 목록 로드 실패"
+      );
     }
-  }, [isTeacher]);
+  }, [isTeacher, profile]);
 
   // 세션 수강생 목록 로드
   const loadSessionEnrollments = useCallback(
@@ -88,8 +124,9 @@ export function useTeacherApi() {
         const response = await getSessionEnrollments(sessionId);
         // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
         return response.data;
-      } catch (err: any) {
-        setError(err.response?.data?.message || "수강생 목록 로드 실패");
+      } catch (err: unknown) {
+        const error = err as { response?: { data?: { message?: string } } };
+        setError(error.response?.data?.message || "수강생 목록 로드 실패");
         return null;
       }
     },
@@ -101,7 +138,7 @@ export function useTeacherApi() {
     async (
       enrollmentId: number,
       data: UpdateEnrollmentStatusRequest
-    ): Promise<any> => {
+    ): Promise<unknown> => {
       if (!isTeacher) return null;
 
       try {
@@ -109,8 +146,9 @@ export function useTeacherApi() {
         const response = await updateEnrollmentStatus(enrollmentId, data);
         // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
         return response.data;
-      } catch (err: any) {
-        setError(err.response?.data?.message || "수강생 상태 업데이트 실패");
+      } catch (err: unknown) {
+        const error = err as { response?: { data?: { message?: string } } };
+        setError(error.response?.data?.message || "수강생 상태 업데이트 실패");
         return null;
       }
     },
@@ -132,8 +170,9 @@ export function useTeacherApi() {
 
         // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
         return response.data;
-      } catch (err: any) {
-        setError(err.response?.data?.message || "프로필 업데이트 실패");
+      } catch (err: unknown) {
+        const error = err as { response?: { data?: { message?: string } } };
+        setError(error.response?.data?.message || "프로필 업데이트 실패");
         return null;
       }
     },
@@ -150,8 +189,9 @@ export function useTeacherApi() {
         const response = await updateTeacherProfilePhoto(photo);
         // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
         return response.data;
-      } catch (err: any) {
-        setError(err.response?.data?.message || "프로필 사진 업데이트 실패");
+      } catch (err: unknown) {
+        const error = err as { response?: { data?: { message?: string } } };
+        setError(error.response?.data?.message || "프로필 사진 업데이트 실패");
         return null;
       }
     },
@@ -167,8 +207,9 @@ export function useTeacherApi() {
       setError(null);
 
       await Promise.all([loadProfile(), loadAcademy(), loadClasses()]);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "데이터 로드 실패");
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      setError(error.response?.data?.message || "데이터 로드 실패");
     } finally {
       setIsLoading(false);
     }
@@ -184,7 +225,7 @@ export function useTeacherApi() {
   };
 
   const getSessionsByClassId = (classId: number) => {
-    return sessions.filter((session) => session.classId === classId);
+    return sessions.filter((session) => session.class.id === classId);
   };
 
   const getSessionsByDate = (date: Date) => {
@@ -208,8 +249,9 @@ export function useTeacherApi() {
         const response = await getTeacherProfile();
         // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
         return response.data;
-      } catch (err: any) {
-        setError(err.response?.data?.message || "프로필 로드 실패");
+      } catch (err: unknown) {
+        const error = err as { response?: { data?: { message?: string } } };
+        setError(error.response?.data?.message || "프로필 로드 실패");
         return null;
       }
     },
