@@ -1,3 +1,5 @@
+import type { DayOfWeek, EnrollmentStatus } from "./common";
+
 export interface TeacherProfile {
   id: number;
   name: string;
@@ -7,7 +9,7 @@ export interface TeacherProfile {
   specialties?: string[];
   certifications?: string[];
   yearsOfExperience?: number;
-  availableTimes?: string[];
+  availableTimes?: string[]; // any → string[]로 변경
   photoUrl?: string;
   academyId?: number;
   academy?: Academy;
@@ -28,45 +30,7 @@ export interface Academy {
   updatedAt: string;
 }
 
-export interface CreateAcademyRequest {
-  name: string;
-  code: string;
-  description?: string;
-  address?: string;
-  phoneNumber?: string;
-  email?: string;
-  website?: string;
-}
-
-export interface ChangeAcademyRequest {
-  code: string;
-}
-
-export interface CreateAndJoinAcademyRequest {
-  name: string;
-  code: string;
-  description?: string;
-  address?: string;
-  phoneNumber?: string;
-  email?: string;
-  website?: string;
-}
-
-export interface CreateAndJoinAcademyResponse {
-  academy: Academy;
-  teacher: TeacherProfile;
-}
-
-export interface UpdateAcademyRequest {
-  name?: string;
-  phoneNumber?: string;
-  address?: string;
-  description?: string;
-}
-
-export interface LeaveAcademyResponse {
-  message: string;
-}
+// === 학원 가입 요청 관련 타입들 ===
 
 export interface RequestJoinAcademyRequest {
   code: string;
@@ -91,6 +55,25 @@ export interface RequestJoinAcademyResponse {
   };
 }
 
+// === 학원 변경 관련 타입들 ===
+
+export interface ChangeAcademyRequest {
+  code: string;
+}
+
+export interface ChangeAcademyResponse {
+  success: boolean;
+  message: string;
+  academyId?: number;
+}
+
+export interface LeaveAcademyResponse {
+  success: boolean;
+  message: string;
+}
+
+// === 프로필 수정 관련 타입들 ===
+
 export interface UpdateTeacherProfileRequest {
   name?: string;
   phoneNumber?: string;
@@ -102,25 +85,14 @@ export interface UpdateTeacherProfileRequest {
   availableTimes?: string[];
 }
 
-export type TeacherProfileResponse = TeacherProfile;
+export type UpdateTeacherProfileResponse = TeacherProfile;
 
-export interface UpdateProfileRequest {
-  name?: string;
-  phoneNumber?: string;
-  introduction?: string;
-  education?: string[];
-  specialties?: string[];
-  certifications?: string[];
-  yearsOfExperience?: number;
-  availableTimes?: any;
-}
+// === 클래스 관련 타입들 ===
 
-export type UpdateProfileResponse = TeacherProfile;
-
-export type TeacherClassesResponse = Array<{
+export interface TeacherClass {
   id: number;
   className: string;
-  dayOfWeek: string;
+  dayOfWeek: DayOfWeek; // string → DayOfWeek로 변경
   startTime: string;
   endTime: string;
   startDate: string;
@@ -131,31 +103,31 @@ export type TeacherClassesResponse = Array<{
   tuitionFee: number;
   description?: string;
   backgroundColor?: string;
-  location?: string;
-  [key: string]: any;
-}>;
+  // location 필드는 백엔드에 존재하지 않으므로 제거
+}
 
-export interface TeacherClass {
+export type TeacherClassesResponse = TeacherClass[];
+
+export interface TeacherClassWithSessions {
   id: number;
-  name: string;
-  description?: string;
-  level: string;
-  maxStudents: number;
-  fee: number;
-  startDate: string;
-  endDate: string;
-  dayOfWeek: string;
+  className: string;
+  dayOfWeek: DayOfWeek;
   startTime: string;
   endTime: string;
-  backgroundColor?: string;
+  startDate: string;
+  endDate: string;
+  maxStudents: number;
   currentStudents: number;
-  isRegistrationOpen: boolean;
-  teacherId: number;
-  academyId: number;
-  createdAt: string;
-  updatedAt: string;
+  level: string;
+  tuitionFee: number;
+  description?: string;
+  backgroundColor?: string;
   sessions?: ClassSession[];
 }
+
+export type TeacherClassesWithSessionsResponse = TeacherClassWithSessions[];
+
+// === 세션 관련 타입들 ===
 
 export interface ClassSession {
   id: number;
@@ -190,15 +162,11 @@ export interface TeacherSession {
 
 export type TeacherSessionsResponse = TeacherSession[];
 
+// === 수강신청 관련 타입들 ===
+
 export interface SessionEnrollment {
   id: number;
-  status:
-    | "PENDING"
-    | "CONFIRMED"
-    | "CANCELLED"
-    | "ATTENDED"
-    | "ABSENT"
-    | "COMPLETED";
+  status: EnrollmentStatus; // 공통 타입 사용
   enrolledAt: string;
   student: {
     id: number;
@@ -248,44 +216,8 @@ export interface SessionEnrollmentsResponse {
   };
 }
 
-export interface UpdateClassDetailsRequest {
-  description?: string;
-  locationName?: string;
-  mapImageUrl?: string;
-  requiredItems?: string[];
-  curriculum?: string[];
-}
-
-export interface UpdateClassDetailsResponse {
-  id: number;
-  className: string;
-  classDetail: {
-    id: number;
-    description: string;
-    locationName: string;
-    mapImageUrl: string;
-    requiredItems: string[];
-    curriculum: string[];
-  };
-}
-
-export interface TeacherClassesWithSessionsResponse {
-  classes: TeacherClassesResponse;
-  sessions: TeacherSessionsResponse;
-  calendarRange?: {
-    startDate: string;
-    endDate: string;
-  };
-}
-
 export interface UpdateEnrollmentStatusRequest {
-  status:
-    | "PENDING"
-    | "CONFIRMED"
-    | "CANCELLED"
-    | "ATTENDED"
-    | "ABSENT"
-    | "COMPLETED";
+  status: EnrollmentStatus; // 공통 타입 사용
   reason?: string;
 }
 
@@ -293,13 +225,7 @@ export type UpdateEnrollmentStatusResponse = SessionEnrollment;
 
 export interface BatchUpdateEnrollmentStatusRequest {
   enrollmentIds: number[];
-  status:
-    | "PENDING"
-    | "CONFIRMED"
-    | "CANCELLED"
-    | "ATTENDED"
-    | "ABSENT"
-    | "COMPLETED";
+  status: EnrollmentStatus; // 공통 타입 사용
   reason?: string;
 }
 
@@ -308,9 +234,8 @@ export interface BatchUpdateEnrollmentStatusResponse {
   total: number;
 }
 
-// === API Response 타입들 ===
+// === Principal 관련 타입들 ===
 
-// Principal - 학원 원장 정보
 export interface Principal {
   id: number;
   userId: string;
@@ -327,7 +252,8 @@ export interface Principal {
   updatedAt: string;
 }
 
-// TeacherData 초기화용 API Response
+// === TeacherData 초기화용 API Response ===
+
 export interface TeacherDataResponse {
   userProfile: TeacherProfile;
   academy: Academy | null;
@@ -335,3 +261,9 @@ export interface TeacherDataResponse {
   classes: TeacherClassesResponse;
   sessions: TeacherSessionsResponse;
 }
+
+// === 기존 타입들과의 호환성을 위한 별칭들 ===
+
+export type TeacherProfileResponse = TeacherProfile;
+export type UpdateProfileRequest = UpdateTeacherProfileRequest;
+export type UpdateProfileResponse = UpdateTeacherProfileResponse;

@@ -1,3 +1,5 @@
+import type { DayOfWeek, EnrollmentStatus } from "./common";
+
 export interface Class {
   id: number;
   className: string;
@@ -8,7 +10,7 @@ export interface Class {
   tuitionFee: number;
   teacherId: number;
   academyId: number;
-  dayOfWeek: string;
+  dayOfWeek: DayOfWeek; // string → DayOfWeek로 변경
   startTime: string;
   endTime: string;
   level: string;
@@ -39,7 +41,7 @@ export interface ClassSession {
   isFull?: boolean;
   isPastStartTime?: boolean;
   isAlreadyEnrolled?: boolean;
-  studentEnrollmentStatus?: string | null;
+  studentEnrollmentStatus?: EnrollmentStatus | null; // string → EnrollmentStatus로 변경
   class?: {
     id: number;
     className: string;
@@ -57,15 +59,7 @@ export interface SessionEnrollment {
   id: number;
   studentId: number;
   sessionId: number;
-  status:
-    | "PENDING"
-    | "CONFIRMED"
-    | "REJECTED"
-    | "CANCELLED"
-    | "REFUND_REQUESTED"
-    | "REFUND_CANCELLED"
-    | "REFUND_REJECTED_CONFIRMED"
-    | "TEACHER_CANCELLED";
+  status: EnrollmentStatus; // 공통 타입 사용
   enrolledAt: string;
   cancelledAt?: string;
 }
@@ -80,7 +74,9 @@ export interface ClassDetailsResponse extends Class {
     curriculum: string[];
   };
 }
+
 export type AllClassesResponse = Class[];
+
 export interface CreateClassRequest {
   className: string;
   description: string;
@@ -88,7 +84,7 @@ export interface CreateClassRequest {
   tuitionFee: number;
   teacherId: number;
   academyId: number;
-  dayOfWeek: string;
+  dayOfWeek: DayOfWeek; // string → DayOfWeek로 변경
   level: string;
   startDate: string;
   endDate: string;
@@ -107,7 +103,7 @@ export interface CreateClassResponse {
   tuitionFee: string;
   teacherId: number;
   academyId: number;
-  dayOfWeek: string;
+  dayOfWeek: DayOfWeek; // string → DayOfWeek로 변경
   startTime: string;
   endTime: string;
   level: string;
@@ -119,22 +115,28 @@ export interface CreateClassResponse {
   sessionCount: number;
   message: string;
 }
+
 export type UpdateClassRequest = Partial<Omit<Class, "id">>;
 export type UpdateClassResponse = Class;
+
 export interface EnrollClassRequest {
   studentId: number;
 }
+
 export interface EnrollClassResponse {
   success: boolean;
   message: string;
 }
+
 export interface UnenrollClassRequest {
   studentId: number;
 }
+
 export interface UnenrollClassResponse {
   success: boolean;
   message: string;
 }
+
 export interface ClassesByMonthResponse {
   id: number;
   className: string;
@@ -143,7 +145,7 @@ export interface ClassesByMonthResponse {
     name: string;
     photoUrl: string;
   };
-  dayOfWeek: string;
+  dayOfWeek: DayOfWeek; // string → DayOfWeek로 변경
   startTime: string;
   endTime: string;
   level: string;
@@ -158,7 +160,7 @@ export interface ClassesWithSessionsByMonthResponse {
     name: string;
     photoUrl: string;
   };
-  dayOfWeek: string;
+  dayOfWeek: DayOfWeek; // string → DayOfWeek로 변경
   startTime: string;
   endTime: string;
   level: string;
@@ -175,7 +177,7 @@ export interface ClassesWithSessionsByMonthResponse {
     isFull: boolean;
     isPastStartTime: boolean;
     isAlreadyEnrolled: boolean;
-    studentEnrollmentStatus: string | null;
+    studentEnrollmentStatus: EnrollmentStatus | null; // string → EnrollmentStatus로 변경
   }[];
 }
 
@@ -233,14 +235,7 @@ export interface StudentClassEnrollmentsResponse {
     endTime: string;
     enrollment?: {
       id: number;
-      status:
-        | "PENDING"
-        | "CONFIRMED"
-        | "REJECTED"
-        | "CANCELLED"
-        | "REFUND_REQUESTED"
-        | "REFUND_CANCELLED"
-        | "TEACHER_CANCELLED";
+      status: EnrollmentStatus; // 공통 타입 사용
       enrolledAt: string;
       cancelledAt?: string;
     };

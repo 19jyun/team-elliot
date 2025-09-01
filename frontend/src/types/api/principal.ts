@@ -135,6 +135,179 @@ export interface UpdatePrincipalProfileRequest {
   accountHolder?: string;
 }
 
+// PrincipalData 전체 초기화용 API Response
+export interface PrincipalDataResponse {
+  userProfile: PrincipalProfile;
+  academy: PrincipalAcademy | null;
+  classes: PrincipalClass[];
+  sessions: PrincipalSession[];
+  teachers: PrincipalTeacher[];
+  students: PrincipalStudent[];
+}
+
+// 세션 컨텐츠 관련 응답 타입들
+export interface SessionContentResponse {
+  id: number;
+  sessionId: number;
+  poseId: number;
+  order: number;
+  notes?: string;
+  createdAt: string;
+  pose: {
+    id: number;
+    name: string;
+    imageUrl?: string;
+    description: string;
+    difficulty: string;
+  };
+}
+
+export interface CreateSessionContentResponse {
+  id: number;
+  sessionId: number;
+  poseId: number;
+  order: number;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface UpdateSessionContentResponse {
+  id: number;
+  sessionId: number;
+  poseId: number;
+  order: number;
+  notes?: string;
+  updatedAt: string;
+}
+
+export interface DeleteSessionContentResponse {
+  message: string;
+}
+
+export interface ReorderSessionContentsRequest {
+  orderedContentIds: number[];
+}
+
+export interface ReorderSessionContentsResponse {
+  message: string;
+  contents: SessionContentResponse[];
+}
+
+// 수강 신청/환불 신청 관련 타입들
+export interface SessionWithPendingRequests {
+  id: number;
+  date: string;
+  startTime: string;
+  endTime: string;
+  class: {
+    id: number;
+    className: string;
+    teacher: {
+      id: number;
+      name: string;
+    };
+  };
+  pendingCount: number;
+}
+
+export interface EnrollmentRequest {
+  id: number;
+  studentId: number;
+  studentName: string;
+  studentPhoneNumber?: string;
+  status: string;
+  enrolledAt: string;
+  reason?: string;
+}
+
+export interface RefundRequest {
+  id: number;
+  studentId: number;
+  studentName: string;
+  studentPhoneNumber?: string;
+  reason: string;
+  detailedReason?: string;
+  refundAmount: number;
+  status: string;
+  requestedAt: string;
+}
+
+export interface ApproveEnrollmentResponse {
+  message: string;
+  enrollment: {
+    id: number;
+    status: string;
+    updatedAt: string;
+  };
+}
+
+export interface RejectEnrollmentRequest {
+  reason: string;
+  detailedReason?: string;
+}
+
+export interface RejectEnrollmentResponse {
+  message: string;
+  enrollment: {
+    id: number;
+    status: string;
+    rejectedAt: string;
+    rejectionReason: string;
+    rejectionDetailedReason?: string;
+  };
+}
+
+export interface ApproveRefundResponse {
+  message: string;
+  refund: {
+    id: number;
+    status: string;
+    approvedAt: string;
+  };
+}
+
+export interface RejectRefundRequest {
+  reason: string;
+  detailedReason?: string;
+}
+
+export interface RejectRefundResponse {
+  message: string;
+  refund: {
+    id: number;
+    status: string;
+    rejectedAt: string;
+    rejectionReason: string;
+    rejectionDetailedReason?: string;
+  };
+}
+
+export interface RemoveTeacherResponse {
+  message: string;
+}
+
+export interface RemoveStudentResponse {
+  message: string;
+}
+
+export interface StudentSessionHistory {
+  id: number;
+  date: string;
+  startTime: string;
+  endTime: string;
+  status: string;
+  class: {
+    id: number;
+    className: string;
+    teacher: {
+      id: number;
+      name: string;
+    };
+  };
+  enrollmentStatus: string;
+  enrolledAt: string;
+}
+
 // API 응답 타입들
 export type GetPrincipalAcademyResponse = PrincipalAcademy;
 export type GetPrincipalAllSessionsResponse = PrincipalSession[];

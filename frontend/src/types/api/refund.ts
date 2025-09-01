@@ -35,7 +35,7 @@ export interface ProcessRefundRequestDto {
   actualRefundAmount?: number;
 }
 
-// 환불 상태 enum
+// 환불 상태 enum (Refund API 전용 - 더 상세한 상태 포함)
 export enum RefundStatus {
   PENDING = "PENDING",
   APPROVED = "APPROVED",
@@ -147,3 +147,6 @@ export interface ProcessRefundRequestResponse {
   data: RefundRequestResponse;
   message: string;
 }
+
+// 전체 환불 요청 목록 조회 응답 타입
+export type GetRefundRequestsResponse = RefundRequestResponse[];

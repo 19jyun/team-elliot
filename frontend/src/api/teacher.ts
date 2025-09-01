@@ -2,38 +2,48 @@ import { get, post, put } from "./apiClient";
 import type { ApiResponse } from "@/types/api";
 import {
   TeacherProfileResponse,
-  UpdateProfileRequest,
-  UpdateProfileResponse,
+  UpdateTeacherProfileRequest,
+  UpdateTeacherProfileResponse,
+  TeacherClassesResponse,
   TeacherClassesWithSessionsResponse,
   SessionEnrollmentsResponse,
   UpdateEnrollmentStatusRequest,
   UpdateEnrollmentStatusResponse,
   BatchUpdateEnrollmentStatusRequest,
   BatchUpdateEnrollmentStatusResponse,
+  Academy,
+  RequestJoinAcademyRequest,
+  RequestJoinAcademyResponse,
+  ChangeAcademyRequest,
+  ChangeAcademyResponse,
+  LeaveAcademyResponse,
+  TeacherDataResponse,
 } from "@/types/api/teacher";
 
-// 프로필 관련 API
+// === 프로필 관련 API ===
+
 export const getTeacherProfile = (): Promise<
   ApiResponse<TeacherProfileResponse>
 > => {
   return get<ApiResponse<TeacherProfileResponse>>("/teachers/me");
 };
 
-// ID 기반 조회는 백엔드 미지원 → 제거
-
 export const updateTeacherProfile = (
-  data: UpdateProfileRequest
-): Promise<ApiResponse<UpdateProfileResponse>> => {
-  return put<ApiResponse<UpdateProfileResponse>>("/teachers/me/profile", data);
+  data: UpdateTeacherProfileRequest
+): Promise<ApiResponse<UpdateTeacherProfileResponse>> => {
+  return put<ApiResponse<UpdateTeacherProfileResponse>>(
+    "/teachers/me/profile",
+    data
+  );
 };
 
 export const updateTeacherProfilePhoto = (
   photo: File
-): Promise<ApiResponse<UpdateProfileResponse>> => {
+): Promise<ApiResponse<UpdateTeacherProfileResponse>> => {
   const formData = new FormData();
   formData.append("photo", photo);
 
-  return put<ApiResponse<UpdateProfileResponse>>(
+  return put<ApiResponse<UpdateTeacherProfileResponse>>(
     "/teachers/me/profile/photo",
     formData,
     {
@@ -44,8 +54,19 @@ export const updateTeacherProfilePhoto = (
   );
 };
 
-// 클래스 관련 API
-// 교사용: 내 클래스 및 세션 묶음 조회
+// === Teacher 데이터 초기화 API ===
+
+export const getTeacherData = (): Promise<ApiResponse<TeacherDataResponse>> => {
+  return get<ApiResponse<TeacherDataResponse>>("/teachers/me/data");
+};
+
+// === 클래스 관련 API ===
+
+export const getMyClasses = (): Promise<
+  ApiResponse<TeacherClassesResponse>
+> => {
+  return get<ApiResponse<TeacherClassesResponse>>("/teachers/me/classes");
+};
 
 export const getTeacherClassesWithSessions = (): Promise<
   ApiResponse<TeacherClassesWithSessionsResponse>
@@ -55,7 +76,8 @@ export const getTeacherClassesWithSessions = (): Promise<
   );
 };
 
-// 세션 관련 API
+// === 세션 관련 API ===
+
 export const getSessionEnrollments = (
   sessionId: number
 ): Promise<ApiResponse<SessionEnrollmentsResponse>> => {
@@ -83,30 +105,30 @@ export const batchUpdateEnrollmentStatus = (
   );
 };
 
-// 클래스 상세 수정은 원장 전용 → 제거
+// === 학원 관련 API ===
 
-// 학원 관련 API (교사용)
-export const getMyAcademy = (): Promise<ApiResponse<any>> => {
-  return get<ApiResponse<any>>("/teachers/me/academy");
+export const requestJoinAcademy = (
+  data: RequestJoinAcademyRequest
+): Promise<ApiResponse<RequestJoinAcademyResponse>> => {
+  return post<ApiResponse<RequestJoinAcademyResponse>>(
+    "/teachers/me/request-join-academy",
+    data
+  );
 };
 
-export const changeAcademy = (data: {
-  code: string;
-}): Promise<ApiResponse<any>> => {
-  return post<ApiResponse<any>>("/teachers/me/change-academy", data);
+export const getMyAcademy = (): Promise<ApiResponse<Academy | null>> => {
+  return get<ApiResponse<Academy | null>>("/teachers/me/academy");
 };
 
-// 백엔드 미지원: 학원 생성/생성+가입 API 제거
-
-// 백엔드 미지원: 학원 수정 제거
-
-export const leaveAcademy = (): Promise<ApiResponse<any>> => {
-  return post<ApiResponse<any>>("/teachers/me/leave-academy");
+export const changeAcademy = (
+  data: ChangeAcademyRequest
+): Promise<ApiResponse<ChangeAcademyResponse>> => {
+  return post<ApiResponse<ChangeAcademyResponse>>(
+    "/teachers/me/change-academy",
+    data
+  );
 };
 
-export const requestJoinAcademy = (data: {
-  code: string;
-}): Promise<ApiResponse<any>> => {
-  return post<ApiResponse<any>>("/teachers/me/request-join-academy", data);
+export const leaveAcademy = (): Promise<ApiResponse<LeaveAcademyResponse>> => {
+  return post<ApiResponse<LeaveAcademyResponse>>("/teachers/me/leave-academy");
 };
-// 백엔드 미지원: 학원 선생 목록/원장 정보/Redux 초기화 API 제거
