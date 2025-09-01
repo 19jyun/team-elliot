@@ -18,7 +18,7 @@ export interface TeacherProfile {
   specialties: string[];
   certifications: string[];
   yearsOfExperience?: number;
-  availableTimes?: any;
+  availableTimes?: string[];
   academyId?: number;
   createdAt: string;
   updatedAt: string;

@@ -58,3 +58,21 @@ export interface ClassSessionBase extends SessionCore {
 }
 
 export type LevelType = "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
+
+// === Academy 관련 공통 타입들 ===
+
+export interface AcademySummary {
+  id: number;
+  name: string;
+  code: string;
+}
+
+export interface Academy extends AcademySummary {
+  description?: string;
+  address?: string;
+  phoneNumber?: string;
+  email?: string;
+  website?: string;
+  createdAt: string;
+  updatedAt: string;
+}

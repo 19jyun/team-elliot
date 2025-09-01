@@ -2,7 +2,6 @@ import { useState, useCallback } from "react";
 import { useTeacherApi } from "@/hooks/teacher/useTeacherApi";
 import { toast } from "sonner";
 import { leaveAcademy, requestJoinAcademy } from "@/api/teacher";
-import { CreateAcademyRequest } from "@/types/api/teacher";
 
 export function useTeacherAcademyManagement() {
   const { academy: currentAcademy, loadAcademy, isLoading } = useTeacherApi();
@@ -93,18 +92,6 @@ export function useTeacherAcademyManagement() {
     }
   };
 
-  const handleCreateAcademy = async (_formData: CreateAcademyRequest) => {
-    // 교사는 학원 생성 권한이 없음
-    toast.error("학원 생성은 원장만 가능합니다.");
-    return Promise.reject(new Error("Teacher cannot create academy"));
-  };
-
-  const handleUpdateAcademy = async (_formData: CreateAcademyRequest) => {
-    // 교사는 학원 정보 수정 권한이 없음
-    toast.error("학원 정보 수정은 원장만 가능합니다.");
-    return Promise.reject(new Error("Teacher cannot update academy"));
-  };
-
   const handleLeaveAcademy = () => {
     setWithdrawalType("leave");
     setWithdrawalModal(true);
@@ -122,8 +109,6 @@ export function useTeacherAcademyManagement() {
     loadCurrentAcademy,
     handleJoinAcademy,
     handleWithdrawalConfirm,
-    handleCreateAcademy,
-    handleUpdateAcademy,
     handleLeaveAcademy,
   };
 }

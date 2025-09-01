@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { CreateAcademyRequest } from "@/types/api/teacher";
-import { Academy } from "@/types/api/teacher";
+import { CreateAcademyRequest } from "@/types/api/academy";
+import { Academy } from "@/types/api/common";
 
 export function useAcademyForm() {
   const [isExpanded, setIsExpanded] = useState(false);

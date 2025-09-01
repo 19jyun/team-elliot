@@ -341,7 +341,7 @@ export const validateTeacherProfileData = (data: {
   specialties?: string[];
   certifications?: string[];
   yearsOfExperience?: number;
-  availableTimes?: any;
+  availableTimes?: string[];
 }): ValidationResult => {
   const allErrors: ValidationError[] = [];
 

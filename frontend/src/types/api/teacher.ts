@@ -3,10 +3,18 @@ import type {
   EnrollmentStatus,
   ClassBase,
   ClassSessionBase,
+  TeacherRef,
+  SessionCore,
+  Academy,
+  AcademySummary,
 } from "./common";
+import type { SessionContent } from "./session-content";
+
+// === Teacher Profile 관련 타입들 ===
 
 export interface TeacherProfile {
   id: number;
+  userId: number;
   name: string;
   phoneNumber: string;
   introduction?: string;
@@ -14,23 +22,10 @@ export interface TeacherProfile {
   specialties?: string[];
   certifications?: string[];
   yearsOfExperience?: number;
-  availableTimes?: string[]; // any → string[]로 변경
+  availableTimes?: string[]; // any에서 string[]로 변경
   photoUrl?: string;
   academyId?: number;
-  academy?: Academy;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Academy {
-  id: number;
-  name: string;
-  code: string;
-  description?: string;
-  address?: string;
-  phoneNumber?: string;
-  email?: string;
-  website?: string;
+  academy?: AcademySummary | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -87,7 +82,7 @@ export interface UpdateTeacherProfileRequest {
   specialties?: string[];
   certifications?: string[];
   yearsOfExperience?: number;
-  availableTimes?: string[];
+  availableTimes?: string[]; // any에서 string[]로 변경
 }
 
 export type UpdateTeacherProfileResponse = TeacherProfile;
@@ -95,7 +90,7 @@ export type UpdateTeacherProfileResponse = TeacherProfile;
 // === 클래스 관련 타입들 ===
 
 export interface TeacherClass extends ClassBase {
-  dayOfWeek: DayOfWeek; // string → DayOfWeek로 변경
+  dayOfWeek: DayOfWeek;
   startTime: string;
   endTime: string;
   startDate: string;
@@ -104,7 +99,7 @@ export interface TeacherClass extends ClassBase {
   currentStudents: number;
   description?: string;
   backgroundColor?: string;
-  // location 필드는 백엔드에 존재하지 않으므로 제거
+  enrollments?: ClassEnrollment[];
 }
 
 export type TeacherClassesResponse = TeacherClass[];
@@ -119,35 +114,39 @@ export interface TeacherClassWithSessions extends ClassBase {
   currentStudents: number;
   description?: string;
   backgroundColor?: string;
-  sessions?: ClassSession[];
+  classSessions: ClassSession[]; // required로 변경
 }
 
-export type TeacherClassesWithSessionsResponse = TeacherClassWithSessions[];
+// 백엔드 getTeacherClassesWithSessions 응답 구조에 맞춰 수정
+export interface TeacherClassesWithSessionsResponse {
+  classes: TeacherClassWithSessions[];
+  sessions: TeacherSession[];
+  calendarRange: {
+    startDate: string;
+    endDate: string;
+  };
+}
 
 // === 세션 관련 타입들 ===
 
 export interface ClassSession extends ClassSessionBase {
   status: "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
-  classId: number; // ClassSessionBase의 optional classId를 required로 오버라이드
+  classId: number;
+  currentStudents: number;
+  maxStudents: number;
   createdAt: string;
   updatedAt: string;
   enrollments?: SessionEnrollment[];
+  contents?: SessionContent[];
 }
 
-export interface TeacherSession {
-  id: number;
-  date: string;
-  startTime: string;
-  endTime: string;
+export interface TeacherSession extends SessionCore {
   class: {
     id: number;
     className: string;
     maxStudents: number;
     level: string;
-    teacher: {
-      id: number;
-      name: string;
-    };
+    teacher: TeacherRef;
   };
   enrollmentCount: number;
   confirmedCount: number;
@@ -157,15 +156,24 @@ export type TeacherSessionsResponse = TeacherSession[];
 
 // === 수강신청 관련 타입들 ===
 
+export interface ClassEnrollment {
+  id: number;
+  student: {
+    id: number;
+    name: string;
+  };
+}
+
 export interface SessionEnrollment {
   id: number;
-  status: EnrollmentStatus; // 공통 타입 사용
+  studentId: number;
+  sessionId: number;
+  status: EnrollmentStatus;
   enrolledAt: string;
   student: {
     id: number;
     name: string;
     phoneNumber?: string;
-    level?: string;
   };
   payment?: {
     id: number;
@@ -191,10 +199,7 @@ export interface SessionEnrollmentsResponse {
     class: {
       id: number;
       className: string;
-      teacher: {
-        id: number;
-        name: string;
-      };
+      teacher: TeacherRef;
     };
   };
   enrollments: SessionEnrollment[];
@@ -210,7 +215,7 @@ export interface SessionEnrollmentsResponse {
 }
 
 export interface UpdateEnrollmentStatusRequest {
-  status: EnrollmentStatus; // 공통 타입 사용
+  status: EnrollmentStatus;
   reason?: string;
 }
 
@@ -218,7 +223,7 @@ export type UpdateEnrollmentStatusResponse = SessionEnrollment;
 
 export interface BatchUpdateEnrollmentStatusRequest {
   enrollmentIds: number[];
-  status: EnrollmentStatus; // 공통 타입 사용
+  status: EnrollmentStatus;
   reason?: string;
 }
 
@@ -247,12 +252,37 @@ export interface Principal {
 
 // === TeacherData 초기화용 API Response ===
 
+// 백엔드 getTeacherData에서 반환하는 Academy 타입 (include로 많은 관계 포함)
+export interface TeacherDataAcademy extends Academy {
+  principal?: Principal;
+  teachers?: TeacherProfile[];
+  classes?: TeacherClassWithSessions[];
+  students?: Array<{
+    id: number;
+    name: string;
+    phoneNumber?: string;
+  }>;
+}
+
 export interface TeacherDataResponse {
   userProfile: TeacherProfile;
-  academy: Academy | null;
+  academy: TeacherDataAcademy | null;
   principal: Principal | null;
-  classes: TeacherClassesResponse;
-  sessions: TeacherSessionsResponse;
+  classes: TeacherClassesWithSessionsResponse;
+  sessions: ClassSession[];
+  enrollments: Array<
+    SessionEnrollment & {
+      session: {
+        id: number;
+        date: string;
+        startTime: string;
+        endTime: string;
+        class: ClassBase & {
+          teacher: TeacherRef;
+        };
+      };
+    }
+  >;
 }
 
 // === 기존 타입들과의 호환성을 위한 별칭들 ===
@@ -260,3 +290,29 @@ export interface TeacherDataResponse {
 export type TeacherProfileResponse = TeacherProfile;
 export type UpdateProfileRequest = UpdateTeacherProfileRequest;
 export type UpdateProfileResponse = UpdateTeacherProfileResponse;
+
+// === 클래스 상세 정보 수정 관련 타입들 ===
+
+export interface UpdateClassDetailsRequest {
+  description?: string;
+  locationName?: string;
+  mapImageUrl?: string;
+  requiredItems?: string[];
+  curriculum?: string[];
+}
+
+export interface UpdateClassDetailsResponse {
+  id: number;
+  className: string;
+  classDetail: {
+    id: number;
+    description: string;
+    locationName: string;
+    mapImageUrl: string;
+    requiredItems: string[];
+    curriculum: string[];
+    teacherId: number;
+    createdAt: string;
+    updatedAt: string;
+  };
+}

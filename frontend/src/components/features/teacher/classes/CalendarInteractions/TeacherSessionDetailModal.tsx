@@ -3,8 +3,12 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
-import { getSessionEnrollments } from '@/api/teacher'
-import { SessionEnrollmentsResponse } from '@/types/api/teacher'
+
+import { SessionEnrollmentsResponse, TeacherSession } from '@/types/api/teacher'
+import { getStatusText, getStatusColor } from '@/utils/formatting'
+import { toSessionEnrollmentDisplayVM } from '@/lib/adapters/teacher'
+import { SessionEnrollmentDisplayVM } from '@/types/view/teacher'
+import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'
 import { AttendanceTab } from '@/components/common/Session/SessionDetailComponents/Attendance/AttendanceTab'
 import { SessionContentTab } from '../../../../common/Session/SessionDetailComponents/Pose/SessionContentTab'
 import { PoseSelectionModal } from '../../../../common/Session/SessionDetailComponents/Pose/PoseSelectionModal'
@@ -13,7 +17,7 @@ import { BalletPose } from '@/types/api/ballet-pose'
 
 interface TeacherSessionDetailModalProps {
   isOpen: boolean
-  session: any
+  session: TeacherSession
   onClose: () => void
 }
 
@@ -40,19 +44,22 @@ export function TeacherSessionDetailModal({
 
   const addContentMutation = useAddSessionContent(session?.id || 0)
 
+  // 수강생 데이터를 ViewModel로 변환
+  const enrollmentVMs: SessionEnrollmentDisplayVM[] = enrollmentData?.enrollments.map(toSessionEnrollmentDisplayVM) || []
 
+  const { loadSessionEnrollments: loadEnrollments } = useTeacherApi()
 
   const loadSessionEnrollments = useCallback(async () => {
     try {
       setIsLoading(true)
-      const data = await getSessionEnrollments(session.id)
-      setEnrollmentData(data.data || null)
+      const data = await loadEnrollments(session.id)
+      setEnrollmentData(data || null)
     } catch (error) {
       console.error('세션 수강생 정보 로드 실패:', error)
     } finally {
       setIsLoading(false)
     }
-  }, [session.id])
+  }, [session.id, loadEnrollments])
 
   useEffect(() => {
     if (isOpen && session?.id) {
@@ -75,29 +82,7 @@ export function TeacherSessionDetailModal({
     })
   }
 
-  const getStatusText = (status: string) => {
-    const statusMap: Record<string, string> = {
-      'PENDING': '대기',
-      'CONFIRMED': '확정',
-      'CANCELLED': '취소',
-      'ATTENDED': '출석',
-      'ABSENT': '결석',
-      'COMPLETED': '완료'
-    }
-    return statusMap[status] || status
-  }
-
-  const getStatusColor = (status: string) => {
-    const colorMap: Record<string, string> = {
-      'PENDING': 'text-yellow-600 bg-yellow-100',
-      'CONFIRMED': 'text-green-600 bg-green-100',
-      'CANCELLED': 'text-red-600 bg-red-100',
-      'ATTENDED': 'text-blue-600 bg-blue-100',
-      'ABSENT': 'text-gray-600 bg-gray-100',
-      'COMPLETED': 'text-purple-600 bg-purple-100'
-    }
-    return colorMap[status] || 'text-gray-600 bg-gray-100'
-  }
+  // 유틸리티 함수들은 utils에서 import하여 사용
 
   const navigationItems = [
     { label: '개요', value: 'overview' as TabType },
@@ -194,33 +179,33 @@ export function TeacherSessionDetailModal({
                           수강생 목록
                         </h4>
                         <div className="space-y-3">
-                          {enrollmentData.enrollments.map((enrollment) => (
+                          {enrollmentVMs.map((enrollmentVM) => (
                             <div
-                              key={enrollment.id}
+                              key={enrollmentVM.id}
                               className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg"
                             >
                               <div className="flex-1">
                                 <div className="font-medium text-stone-700">
-                                  {enrollment.student.name}
+                                  {enrollmentVM.student.name}
                                 </div>
-                                {enrollment.student.phoneNumber && (
+                                {enrollmentVM.student.phoneNumber && (
                                   <div className="text-sm text-stone-500">
-                                    {enrollment.student.phoneNumber}
+                                    {enrollmentVM.student.phoneNumber}
                                   </div>
                                 )}
-                                {enrollment.student.level && (
+                                {enrollmentVM.student.level && (
                                   <div className="text-xs text-stone-400">
-                                    레벨: {enrollment.student.level}
+                                    레벨: {enrollmentVM.student.level}
                                   </div>
                                 )}
                               </div>
                               <div className="flex items-center gap-2">
                                 <span
-                                  className={`px-2 py-1 text-xs rounded ${getStatusColor(enrollment.status)}`}
+                                  className={`px-2 py-1 text-xs rounded ${enrollmentVM.statusColor}`}
                                 >
-                                  {getStatusText(enrollment.status)}
+                                  {enrollmentVM.displayStatus}
                                 </span>
-                                {enrollment.payment && (
+                                {enrollmentVM.hasPayment && (
                                   <span className="text-xs text-green-600">
                                     결제완료
                                   </span>

@@ -1,33 +1,12 @@
 import React from 'react'
-
-interface Session {
-  id: number
-  classId: number
-  date: string
-  startTime: string
-  endTime: string
-  class: {
-    id: number
-    className: string
-    level?: string
-    maxStudents?: number
-  }
-  enrollmentCount: number
-  confirmedCount: number
-}
+import { TeacherSession } from '@/types/api/teacher'
+import { toTeacherSessionCardVM } from '@/lib/adapters/teacher'
+import { TeacherSessionCardVM } from '@/types/view/teacher'
 
 interface TeacherSessionCardListProps {
-  sessions: Session[]
-  onSessionClick: (session: Session) => void
+  sessions: TeacherSession[]
+  onSessionClick: (session: TeacherSession) => void
   isLoading: boolean
-}
-
-type LevelType = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'
-
-const levelBgColor: Record<LevelType, string> = {
-  BEGINNER: '#F4E7E7',
-  INTERMEDIATE: '#FBF4D8',
-  ADVANCED: '#CBDFE3',
 }
 
 export const TeacherSessionCardList: React.FC<TeacherSessionCardListProps> = ({
@@ -35,6 +14,9 @@ export const TeacherSessionCardList: React.FC<TeacherSessionCardListProps> = ({
   onSessionClick,
   isLoading,
 }) => {
+  // ViewModel로 변환
+  const sessionVMs: TeacherSessionCardVM[] = sessions.map(toTeacherSessionCardVM)
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -43,7 +25,7 @@ export const TeacherSessionCardList: React.FC<TeacherSessionCardListProps> = ({
     )
   }
 
-  if (!sessions || sessions.length === 0) {
+  if (!sessionVMs || sessionVMs.length === 0) {
     return (
       <div className="flex flex-col h-full">
         <div className="flex flex-col items-center justify-center py-8 flex-1">
@@ -53,34 +35,18 @@ export const TeacherSessionCardList: React.FC<TeacherSessionCardListProps> = ({
     )
   }
 
-  const getEnrollmentCounts = (session: any) => {
-    // session.enrollmentCount와 session.confirmedCount가 이미 백엔드에서 계산되어 전달됨
-    return {
-      enrollmentCount: session.enrollmentCount || 0,
-      confirmedCount: session.confirmedCount || 0
-    }
-  }
-
   return (
     <div className="flex flex-col h-full">
       {/* 스크롤 가능한 리스트 */}
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
         <div className="flex flex-col gap-3 pb-4">
-          {sessions.map((session) => {
-            const { enrollmentCount } = getEnrollmentCounts(session)
-            
-            // level 타입 보정
-            const safeLevel: LevelType =
-              session.class?.level === 'INTERMEDIATE' || session.class?.level === 'ADVANCED' 
-                ? session.class.level 
-                : 'BEGINNER'
-
+          {sessionVMs.map((sessionVM) => {
             return (
               <div
-                key={session.id}
+                key={sessionVM.id}
                 className="relative flex flex-col p-4 rounded-lg border border-gray-200 cursor-pointer hover:shadow-md transition-colors"
-                style={{ background: levelBgColor[safeLevel] || '#F8F5E9' }}
-                onClick={() => onSessionClick(session)}
+                style={{ background: sessionVM.levelColor }}
+                onClick={() => onSessionClick(sessions.find(s => s.id === sessionVM.id)!)}
               >
                 {/* 날짜 정보 */}
                 <div style={{
@@ -93,12 +59,7 @@ export const TeacherSessionCardList: React.FC<TeacherSessionCardListProps> = ({
                   letterSpacing: '-0.16px',
                   marginBottom: '8px',
                 }}>
-                  {new Date(session.date).toLocaleDateString('ko-KR', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    weekday: 'long'
-                  })}
+                  {sessionVM.displayDate}
                 </div>
                 
                 {/* 시간 정보 */}
@@ -111,13 +72,7 @@ export const TeacherSessionCardList: React.FC<TeacherSessionCardListProps> = ({
                   lineHeight: '140%',
                   letterSpacing: '-0.14px',
                 }}>
-                  {new Date(session.startTime).toLocaleTimeString('ko-KR', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })} - {new Date(session.endTime).toLocaleTimeString('ko-KR', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
+                  {sessionVM.displayTime}
                 </div>
                 
                 {/* 학생수 정보 - 우측 세로 정렬 */}
@@ -132,7 +87,7 @@ export const TeacherSessionCardList: React.FC<TeacherSessionCardListProps> = ({
                     lineHeight: '140%',
                     letterSpacing: '-0.12px',
                   }}>
-                    {enrollmentCount}/{session.class?.maxStudents || '?'}
+                    {sessionVM.displayCapacity}
                   </div>
                 </div>
               </div>

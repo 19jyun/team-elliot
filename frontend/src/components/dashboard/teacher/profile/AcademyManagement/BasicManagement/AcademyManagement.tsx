@@ -50,14 +50,11 @@ export default function AcademyManagement() {
   });
 
   useEffect(() => {
-    // 컴포넌트가 마운트될 때 포커스를 subpage로 설정
     pushFocus('subpage');
     
-    // 학원 데이터 로드
     loadCurrentAcademy();
     
     return () => {
-      // 컴포넌트가 언마운트될 때 이전 포커스로 복원
       popFocus();
     };
   }, [pushFocus, popFocus, loadCurrentAcademy]);

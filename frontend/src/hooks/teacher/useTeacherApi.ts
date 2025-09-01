@@ -8,15 +8,17 @@ import {
   updateEnrollmentStatus,
   updateTeacherProfile,
   updateTeacherProfilePhoto,
+  updateClassDetails,
 } from "@/api/teacher";
 import type {
   TeacherProfileResponse,
-  Academy,
   UpdateEnrollmentStatusRequest,
   UpdateProfileRequest,
+  UpdateClassDetailsRequest,
   TeacherClass,
   TeacherSession,
 } from "@/types/api/teacher";
+import type { Academy } from "@/types/api/common";
 import { useApiError } from "@/hooks/useApiError";
 
 // Teacher API 데이터 훅
@@ -74,37 +76,9 @@ export function useTeacherApi() {
       // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
       const data = response.data;
       if (data) {
-        setClasses(data || []);
-        // TeacherClassesWithSessionsResponse는 클래스 배열이므로 세션은 별도로 처리
-        const allSessions: TeacherSession[] = [];
-        data.forEach((cls) => {
-          if (cls.sessions) {
-            // ClassSession을 TeacherSession으로 변환
-            cls.sessions.forEach((session) => {
-              allSessions.push({
-                id: session.id,
-                date: session.date,
-                startTime: session.startTime,
-                endTime: session.endTime,
-                class: {
-                  id: cls.id,
-                  className: cls.className,
-                  maxStudents: cls.maxStudents,
-                  level: cls.level,
-                  teacher: {
-                    id: profile?.id || 0,
-                    name: profile?.name || "",
-                  },
-                },
-                enrollmentCount: session.enrollments?.length || 0,
-                confirmedCount:
-                  session.enrollments?.filter((e) => e.status === "CONFIRMED")
-                    .length || 0,
-              });
-            });
-          }
-        });
-        setSessions(allSessions);
+        // 백엔드 응답 구조: { classes, sessions, calendarRange }
+        setClasses(data.classes || []);
+        setSessions(data.sessions || []);
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
@@ -112,7 +86,7 @@ export function useTeacherApi() {
         error.response?.data?.message || "클래스 및 세션 목록 로드 실패"
       );
     }
-  }, [isTeacher, profile]);
+  }, [isTeacher]);
 
   // 세션 수강생 목록 로드
   const loadSessionEnrollments = useCallback(
@@ -192,6 +166,25 @@ export function useTeacherApi() {
       } catch (err: unknown) {
         const error = err as { response?: { data?: { message?: string } } };
         setError(error.response?.data?.message || "프로필 사진 업데이트 실패");
+        return null;
+      }
+    },
+    [isTeacher]
+  );
+
+  // 클래스 상세 정보 업데이트
+  const updateClassDetailsHandler = useCallback(
+    async (classId: number, data: UpdateClassDetailsRequest) => {
+      if (!isTeacher) return null;
+
+      try {
+        setError(null);
+        const response = await updateClassDetails(classId, data);
+        // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
+        return response.data;
+      } catch (err: unknown) {
+        const error = err as { response?: { data?: { message?: string } } };
+        setError(error.response?.data?.message || "클래스 정보 업데이트 실패");
         return null;
       }
     },
@@ -280,6 +273,7 @@ export function useTeacherApi() {
     updateEnrollmentStatus: updateEnrollmentStatusHandler,
     updateProfile,
     updateProfilePhoto,
+    updateClassDetails: updateClassDetailsHandler,
     loadProfileById,
 
     // 헬퍼 함수들

@@ -1,11 +1,13 @@
 'use client'
 
 import React, { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { updateClassDetails } from '@/api/teacher'
+
 import { toast } from 'sonner'
 
-import { TeacherClassesResponse } from '@/types/api/teacher'
+import { TeacherClassesResponse, UpdateClassDetailsRequest } from '@/types/api/teacher'
+import { toTeacherClassDetailVM } from '@/lib/adapters/teacher'
+import { TeacherClassDetailVM } from '@/types/view/teacher'
+import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'
 
 type ClassData = TeacherClassesResponse[0]
 
@@ -18,6 +20,11 @@ export const TeacherClassDetail: React.FC<TeacherClassDetailProps> = ({
   classId,
   classData,
 }) => {
+  // ViewModel로 변환
+  const classDetailVM: TeacherClassDetailVM = toTeacherClassDetailVM(classData, false)
+  
+  const { updateClassDetails } = useTeacherApi()
+  
   const [isEditing, setIsEditing] = useState(false)
   const [editData, setEditData] = useState({
     description: classData.description || '',
@@ -28,55 +35,20 @@ export const TeacherClassDetail: React.FC<TeacherClassDetailProps> = ({
   })
   const [newRequiredItem, setNewRequiredItem] = useState('')
   const [newCurriculumItem, setNewCurriculumItem] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
 
-  const queryClient = useQueryClient()
-
-  const updateClassDetailsMutation = useMutation({
-    mutationFn: (data: any) => updateClassDetails(classId, data),
-    onSuccess: () => {
+  const handleSave = async () => {
+    try {
+      setIsSaving(true)
+      await updateClassDetails(classId, editData)
       toast.success('클래스 정보가 수정되었습니다.')
       setIsEditing(false)
-      queryClient.invalidateQueries({ queryKey: ['teacher-classes'] })
-    },
-    onError: (error) => {
+    } catch (error) {
       toast.error('클래스 정보 수정에 실패했습니다.')
       console.error('Update class details error:', error)
-    },
-  })
-
-  const getDayOfWeekText = (dayOfWeek: string) => {
-    const dayMap: { [key: string]: string } = {
-      'MONDAY': '월',
-      'TUESDAY': '화',
-      'WEDNESDAY': '수',
-      'THURSDAY': '목',
-      'FRIDAY': '금',
-      'SATURDAY': '토',
-      'SUNDAY': '일',
+    } finally {
+      setIsSaving(false)
     }
-    return dayMap[dayOfWeek] || dayOfWeek
-  }
-
-  const getLevelText = (level: string) => {
-    const levelMap: { [key: string]: string } = {
-      'BEGINNER': '초급',
-      'INTERMEDIATE': '중급',
-      'ADVANCED': '고급',
-    }
-    return levelMap[level] || level
-  }
-
-  const formatTime = (timeString: string) => {
-    try {
-      const date = new Date(`1970-01-01T${timeString}`)
-      return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
-    } catch {
-      return timeString
-    }
-  }
-
-  const handleSave = () => {
-    updateClassDetailsMutation.mutate(editData)
   }
 
   const handleCancel = () => {
@@ -139,10 +111,10 @@ export const TeacherClassDetail: React.FC<TeacherClassDetailProps> = ({
           <div className="flex gap-2">
             <button
               onClick={handleSave}
-              disabled={updateClassDetailsMutation.isPending}
+              disabled={isSaving}
               className="px-4 py-2 text-sm font-medium text-white bg-stone-700 rounded-lg hover:bg-stone-800 disabled:opacity-50"
             >
-              {updateClassDetailsMutation.isPending ? '저장 중...' : '저장'}
+              {isSaving ? '저장 중...' : '저장'}
             </button>
             <button
               onClick={handleCancel}
@@ -163,33 +135,33 @@ export const TeacherClassDetail: React.FC<TeacherClassDetailProps> = ({
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-stone-600">클래스명:</span>
-                  <span className="font-medium">{classData.className}</span>
+                  <span className="font-medium">{classDetailVM.displayData.className}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-stone-600">레벨:</span>
-                  <span className="font-medium">{getLevelText(classData.level)}</span>
+                  <span className="font-medium">{classDetailVM.displayData.levelText}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-stone-600">수업 시간:</span>
                   <span className="font-medium">
-                    {getDayOfWeekText(classData.dayOfWeek)} {formatTime(classData.startTime)} - {formatTime(classData.endTime)}
+                    {classDetailVM.displayData.dayOfWeekText} {classDetailVM.displayData.timeRange}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-stone-600">수강생:</span>
-                  <span className="font-medium">{classData.currentStudents} / {classData.maxStudents}명</span>
+                  <span className="font-medium">{classDetailVM.displayData.studentCount}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-stone-600">수강료:</span>
-                  <span className="font-medium">{classData.tuitionFee.toLocaleString()}원</span>
+                  <span className="font-medium">{classDetailVM.displayData.tuitionFee}</span>
                 </div>
               </div>
             </div>
 
-            {classData.description && (
+            {classDetailVM.displayData.description && (
               <div className="bg-stone-50 p-4 rounded-lg">
                 <h3 className="font-semibold text-stone-700 mb-2">클래스 설명</h3>
-                <p className="text-sm text-stone-600">{classData.description}</p>
+                <p className="text-sm text-stone-600">{classDetailVM.displayData.description}</p>
               </div>
             )}
           </div>

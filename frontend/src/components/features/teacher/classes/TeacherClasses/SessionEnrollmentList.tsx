@@ -4,11 +4,15 @@ import React from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'
 import { toast } from 'sonner'
-// CalendarInteractions 하위 컴포넌트 제거됨: 간단 카드 리스트 로컬 구현
+import { toSessionEnrollmentDisplayVM } from '@/lib/adapters/teacher'
+import { SessionEnrollmentDisplayVM } from '@/types/view/teacher'
+import { SessionEnrollment, TeacherSession } from '@/types/api/teacher'
+import { EnrollmentStatus } from '@/types/api/common'
+
 interface EnrolledStudentCardListProps {
-  sessionEnrollments: SessionEnrollment[]
+  sessionEnrollments: SessionEnrollmentDisplayVM[]
   isLoading: boolean
-  session: Session
+  session: TeacherSession
   onStatusChange: (enrollmentId: number, status: string) => void
   isUpdating?: boolean
 }
@@ -56,40 +60,10 @@ const EnrolledStudentCardList: React.FC<EnrolledStudentCardListProps> = ({
   )
 }
 
-interface SessionEnrollment {
-  id: number
-  sessionId: number
-  studentId: number
-  status: 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED'
-  student: {
-    id: number
-    name: string
-    phoneNumber: string
-    email?: string
-    level?: string
-  }
-  createdAt: string
-}
-
-interface Session {
-  id: number
-  classId: number
-  date: string
-  startTime: string
-  endTime: string
-  class: {
-    id: number
-    className: string
-    level?: string
-  }
-  enrollmentCount: number
-  confirmedCount: number
-}
-
 interface SessionEnrollmentListProps {
   sessionEnrollments: SessionEnrollment[]
   isLoading: boolean
-  session: Session
+  session: TeacherSession
 }
 
 export const SessionEnrollmentList: React.FC<SessionEnrollmentListProps> = ({
@@ -100,8 +74,11 @@ export const SessionEnrollmentList: React.FC<SessionEnrollmentListProps> = ({
   const queryClient = useQueryClient()
   const teacherApi = useTeacherApi()
 
+  // ViewModel로 변환 (실제로 사용하는 것만)
+  const enrollmentVMs: SessionEnrollmentDisplayVM[] = sessionEnrollments.map(toSessionEnrollmentDisplayVM)
+
   const updateStatusMutation = useMutation({
-    mutationFn: ({ enrollmentId, status }: { enrollmentId: number; status: string }) =>
+    mutationFn: ({ enrollmentId, status }: { enrollmentId: number; status: EnrollmentStatus }) =>
       teacherApi.updateEnrollmentStatus(enrollmentId, { status }),
     onSuccess: () => {
       toast.success('수강신청 상태가 변경되었습니다.')
@@ -115,12 +92,12 @@ export const SessionEnrollmentList: React.FC<SessionEnrollmentListProps> = ({
   })
 
   const handleStatusChange = (enrollmentId: number, newStatus: string) => {
-    updateStatusMutation.mutate({ enrollmentId, status: newStatus })
+    updateStatusMutation.mutate({ enrollmentId, status: newStatus as EnrollmentStatus })
   }
 
   return (
     <EnrolledStudentCardList
-      sessionEnrollments={sessionEnrollments}
+      sessionEnrollments={enrollmentVMs}
       isLoading={isLoading}
       session={session}
       onStatusChange={handleStatusChange}

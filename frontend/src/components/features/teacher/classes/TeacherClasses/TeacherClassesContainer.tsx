@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { ClassList } from '@/components/common/ClassContainer/ClassList'
 import { ClassSessionModal } from '@/components/common/ClassContainer/ClassSessionModal'
 import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'
+import { TeacherClass } from '@/types/api/teacher'
 
 export function TeacherClassesContainer() {
   const router = useRouter()
@@ -17,11 +18,13 @@ export function TeacherClassesContainer() {
     },
   })
 
-  const [selectedClass, setSelectedClass] = useState<any>(null)
+  const [selectedClass, setSelectedClass] = useState<TeacherClass | null>(null)
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false)
 
   // API 기반 데이터 관리
   const { classes: myClasses, loadClasses, isLoading, error } = useTeacherApi()
+
+  // ViewModel은 실제로 사용하지 않으므로 제거
 
   // 초기 데이터 로드
   useEffect(() => {
@@ -39,7 +42,8 @@ export function TeacherClassesContainer() {
 
   // 에러 처리
   if (error) {
-    if ((error as any)?.response?.status === 401) {
+    const errorResponse = error as { response?: { status?: number } }
+    if (errorResponse?.response?.status === 401) {
       signOut({ redirect: true, callbackUrl: '/auth' });
       return null;
     }
@@ -57,9 +61,13 @@ export function TeacherClassesContainer() {
     )
   }
 
-  const handleClassClick = (classData: any) => {
-    setSelectedClass(classData)
-    setIsSessionModalOpen(true)
+  const handleClassClick = (classData: unknown) => {
+    // TeacherClass의 필수 속성들이 있는지 확인
+    if (classData && typeof classData === 'object' && 
+        'id' in classData && 'className' in classData && 'level' in classData) {
+      setSelectedClass(classData as TeacherClass)
+      setIsSessionModalOpen(true)
+    }
   }
 
   const closeSessionModal = () => {

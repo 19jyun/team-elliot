@@ -1,16 +1,5 @@
 // Academy 관련 API 타입들
-
-// 학원 정보 타입
-export interface Academy {
-  id: number;
-  name: string;
-  code: string;
-  phoneNumber: string;
-  address: string;
-  description: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { Academy } from "./common";
 
 // 학원 생성 요청 타입
 export interface CreateAcademyRequest {

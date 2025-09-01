@@ -6,14 +6,8 @@ import { TeacherSessionCardList } from './TeacherSessionCardList'
 import { TeacherClassDetail } from './TeacherClassDetail'
 import { SessionEnrollmentList } from './SessionEnrollmentList'
 import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'
-import { ClassSession } from '@/types/api/class'
 
-interface Session extends ClassSession {
-  enrollmentCount: number
-  confirmedCount: number
-}
-
-import { TeacherClassesWithSessionsResponse } from '@/types/api/teacher'
+import { TeacherClassesWithSessionsResponse, TeacherSession, SessionEnrollment } from '@/types/api/teacher'
 
 type ClassData = TeacherClassesWithSessionsResponse['classes'][0]
 
@@ -22,7 +16,7 @@ type TabType = 'sessions' | 'class-detail' | 'enrollments'
 interface TeacherClassSessionModalProps {
   isOpen: boolean
   selectedClass: ClassData | null
-  sessions?: any[]  // 부모에서 전달받은 세션 데이터
+  sessions?: TeacherSession[]  // 부모에서 전달받은 세션 데이터
   onClose: () => void
 }
 
@@ -33,9 +27,9 @@ export function TeacherClassSessionModal({
   onClose 
 }: TeacherClassSessionModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>('sessions')
-  const [selectedSession, setSelectedSession] = useState<Session | null>(null)
+  const [selectedSession, setSelectedSession] = useState<TeacherSession | null>(null)
   const [isTransitioning, setIsTransitioning] = useState(false)
-  const [sessionEnrollments, setSessionEnrollments] = useState<any[]>([])
+  const [sessionEnrollments, setSessionEnrollments] = useState<SessionEnrollment[]>([])
   const [isLoadingEnrollments, setIsLoadingEnrollments] = useState(false)
 
   const { loadSessionEnrollments } = useTeacherApi()
@@ -51,16 +45,21 @@ export function TeacherClassSessionModal({
   }, [isOpen])
 
   // 선택된 클래스의 세션만 필터링
-  const filteredSessions = propSessions?.filter((session: any) => session.class.id === selectedClass?.id) || []
+  const filteredSessions = propSessions?.filter((session: TeacherSession) => session.class.id === selectedClass?.id) || []
 
   // 선택된 세션의 수강생 목록 조회
   useEffect(() => {
     if (selectedSession?.id) {
       const fetchEnrollments = async () => {
-        setIsLoadingEnrollments(true)
-        const data = await loadSessionEnrollments(selectedSession.id)
-        setSessionEnrollments(data?.enrollments || [])
-        setIsLoadingEnrollments(false)
+        try {
+          setIsLoadingEnrollments(true)
+          const data = await loadSessionEnrollments(selectedSession.id)
+          setSessionEnrollments(data?.enrollments || [])
+        } catch (error) {
+          console.error('수강생 목록 로드 실패:', error)
+        } finally {
+          setIsLoadingEnrollments(false)
+        }
       }
       fetchEnrollments()
     }
@@ -80,7 +79,7 @@ export function TeacherClassSessionModal({
     }, 300)
   }
 
-  const handleSessionClick = (session: any) => {
+  const handleSessionClick = (session: TeacherSession) => {
     setSelectedSession(session)
   }
 
@@ -161,7 +160,7 @@ export function TeacherClassSessionModal({
           <SessionEnrollmentList
             sessionEnrollments={sessionEnrollments}
             isLoading={isLoadingEnrollments}
-            session={selectedSession as any}
+            session={selectedSession}
           />
         </SlideUpModal>
       )}

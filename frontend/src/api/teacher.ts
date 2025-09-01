@@ -11,14 +11,16 @@ import {
   UpdateEnrollmentStatusResponse,
   BatchUpdateEnrollmentStatusRequest,
   BatchUpdateEnrollmentStatusResponse,
-  Academy,
   RequestJoinAcademyRequest,
   RequestJoinAcademyResponse,
   ChangeAcademyRequest,
   ChangeAcademyResponse,
   LeaveAcademyResponse,
   TeacherDataResponse,
+  UpdateClassDetailsRequest,
+  UpdateClassDetailsResponse,
 } from "@/types/api/teacher";
+import type { Academy } from "@/types/api/common";
 
 // === 프로필 관련 API ===
 
@@ -73,6 +75,16 @@ export const getTeacherClassesWithSessions = (): Promise<
 > => {
   return get<ApiResponse<TeacherClassesWithSessionsResponse>>(
     "/teachers/me/classes-with-sessions"
+  );
+};
+
+export const updateClassDetails = (
+  classId: number,
+  data: UpdateClassDetailsRequest
+): Promise<ApiResponse<UpdateClassDetailsResponse>> => {
+  return put<ApiResponse<UpdateClassDetailsResponse>>(
+    `/classes/${classId}/details`,
+    data
   );
 };
 
