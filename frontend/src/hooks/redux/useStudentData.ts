@@ -1,5 +1,9 @@
 import { useAppSelector } from "@/store/hooks";
 import { useMemo, useCallback } from "react";
+import type {
+  EnrollmentHistory,
+  CancellationHistory,
+} from "@/types/api/student";
 
 // Student 대시보드에서 사용할 데이터 훅 (Redux에서 관리하는 데이터만)
 export function useStudentData() {
@@ -21,18 +25,19 @@ export function useStudentData() {
 
   // 헬퍼 함수들
   const getEnrollmentById = useCallback(
-    (enrollmentId: number) => {
+    (enrollmentId: number): EnrollmentHistory | undefined => {
       return studentData?.enrollmentHistory.find(
-        (enrollment: any) => enrollment.id === enrollmentId
+        (enrollment: EnrollmentHistory) => enrollment.id === enrollmentId
       );
     },
     [studentData?.enrollmentHistory]
   );
 
   const getCancellationById = useCallback(
-    (cancellationId: number) => {
+    (cancellationId: number): CancellationHistory | undefined => {
       return studentData?.cancellationHistory.find(
-        (cancellation: any) => cancellation.id === cancellationId
+        (cancellation: CancellationHistory) =>
+          cancellation.id === cancellationId
       );
     },
     [studentData?.cancellationHistory]

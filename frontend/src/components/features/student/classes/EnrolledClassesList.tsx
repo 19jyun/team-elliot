@@ -1,10 +1,10 @@
-import { StudentClass } from '@/types/api/student'
+import type { EnrolledClassVM } from '@/types/view/student'
 import Image from 'next/image'
 import { EnrolledClassCard } from './EnrolledClassCard'
 
 export interface EnrolledClassesListProps {
-  classes: StudentClass[]
-  onClassClick?: (classData: StudentClass) => void
+  classes: EnrolledClassVM[]
+  onClassClick?: (classData: EnrolledClassVM) => void
   emptyMessage?: string
 }
 

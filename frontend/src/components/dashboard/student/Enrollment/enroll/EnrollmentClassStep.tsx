@@ -10,6 +10,8 @@ import { ClassDetailModal } from '@/components/features/student/classes/ClassDet
 import { RefundPolicy } from '@/components/features/student/enrollment/RefundPolicy';
 import { useState } from 'react';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
+import type { EnrollmentClassVM } from '@/types/view/student';
+import { toEnrollmentClassVMs } from '@/lib/adapters/student';
 
 const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 const daysKor = ['월', '화', '수', '목', '금', '토', '일'];
@@ -59,45 +61,24 @@ export function EnrollmentClassStep() {
     }
   }, [selectedAcademyId, loadAvailableClasses]);
 
-  // 선택된 학원의 클래스들만 필터링
-  const filteredClasses = React.useMemo(() => {
+  // 어댑터를 사용하여 EnrollmentClassVM으로 변환
+  const classesWithSessions: EnrollmentClassVM[] = React.useMemo(() => {
     if (!selectedAcademyId || !availableClasses) return [];
     
-    const filtered = availableClasses.filter(classItem => classItem.academyId === selectedAcademyId);
-    return filtered;
-  }, [selectedAcademyId, availableClasses]);
-
-  // 클래스별로 그룹핑하고 타임테이블 형식으로 변환
-  const classesWithSessions = React.useMemo(() => {
-    if (!filteredClasses || filteredClasses.length === 0) return [];
-
-    return filteredClasses.map(classItem => {
-      // 각 클래스의 첫 번째 세션 정보를 사용하여 시간 정보 구성
-      const firstSession = classItem.availableSessions?.[0];
-      
-      if (!firstSession) {
-        return null;
+    const converted = toEnrollmentClassVMs(availableClasses, selectedAcademyId);
+    
+    // 요일 계산 추가
+    return converted.map(classItem => {
+      const firstSession = classItem.availableSessions[0];
+      if (firstSession) {
+        const sessionDate = new Date(firstSession.date);
+        const koreanDayOfWeek = sessionDate.getDay();
+        const dayOfWeek = days[koreanDayOfWeek === 0 ? 6 : koreanDayOfWeek - 1];
+        return { ...classItem, dayOfWeek };
       }
-
-      // 세션 날짜에서 요일 계산 (한국 시간대 고려)
-      const sessionDate = new Date(firstSession.date);
-      const koreanDayOfWeek = sessionDate.getDay(); // 0: 일요일, 1: 월요일, ..., 6: 토요일
-      const dayOfWeek = days[koreanDayOfWeek === 0 ? 6 : koreanDayOfWeek - 1]; // 일요일을 7번째로 변환
-      
-      return {
-        id: classItem.id,
-        className: classItem.className,
-        level: classItem.level,
-        tuitionFee: classItem.tuitionFee,
-        teacher: classItem.teacher,
-        dayOfWeek: dayOfWeek,
-        startTime: firstSession.startTime,
-        endTime: firstSession.endTime,
-        backgroundColor: classItem.backgroundColor,
-        sessionCount: classItem.availableSessions?.length || 0,
-      };
-    }).filter(Boolean); // null 값 제거
-  }, [filteredClasses]);
+      return classItem;
+    });
+  }, [selectedAcademyId, availableClasses]);
 
   // localStorage 확인하여 이전에 동의했다면 정책 건너뛰기
   // selectedAcademyId가 변경될 때마다 다시 확인 (다른 학원을 선택했을 때)
@@ -143,14 +124,14 @@ export function EnrollmentClassStep() {
     }
 
     // 선택하려는 클래스의 요일 확인
-    const targetClass = classesWithSessions.find((classInfo: any) => classInfo.id === id);
+    const targetClass = classesWithSessions.find((classInfo) => classInfo.id === id);
     if (!targetClass) return;
 
     const targetDayOfWeek = targetClass.dayOfWeek;
 
     // 이미 선택된 클래스들 중 같은 요일이 있는지 확인
     const hasSameDayClass = selectedIds.some(selectedId => {
-      const selectedClass = classesWithSessions.find((classInfo: any) => classInfo.id === selectedId);
+      const selectedClass = classesWithSessions.find((classInfo) => classInfo.id === selectedId);
       return selectedClass?.dayOfWeek === targetDayOfWeek;
     });
 
@@ -265,7 +246,7 @@ export function EnrollmentClassStep() {
             ))}
 
             {/* ClassCard들을 Grid와 같은 레벨에 배치 */}
-             {classesWithSessions?.map((classInfo: any) => {
+             {classesWithSessions.map((classInfo) => {
                const startDate = new Date(classInfo.startTime);
                const endDate = new Date(classInfo.endTime);
                

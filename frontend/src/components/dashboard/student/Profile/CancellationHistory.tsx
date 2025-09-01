@@ -8,11 +8,16 @@ import { Separator } from '@/components/ui/separator';
 import { Calendar, Clock, BookOpen, CheckCircle, XCircle, AlertCircle, Clock as ClockIcon, DollarSign } from 'lucide-react';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { useStudentData } from '@/hooks/redux/useStudentData';
+import { toStudentCancellationHistoryVMs } from '@/lib/adapters/student';
+import type { StudentCancellationHistoryVM } from '@/types/view/student';
 
 export function CancellationHistory() {
   const { pushFocus, popFocus } = useDashboardNavigation();
   const { cancellationHistory, isLoading, error } = useStudentData();
   const [selectedFilter, setSelectedFilter] = useState<string>('ALL');
+
+  // API 응답을 뷰모델로 변환
+  const cancellationHistoryVMs: StudentCancellationHistoryVM[] = toStudentCancellationHistoryVMs(cancellationHistory);
 
   useEffect(() => {
     pushFocus('subpage');
@@ -88,44 +93,44 @@ export function CancellationHistory() {
   };
 
   // API 응답에서 상태 정보 추출
-  const getCancellationStatus = (log: any): string => {
+  const getCancellationStatus = (log: StudentCancellationHistoryVM): string => {
     return log.status;
   };
 
   // API 응답에서 클래스명 추출
-  const getClassName = (log: any): string => {
-    return log?.className ?? '클래스';
+  const getClassName = (log: StudentCancellationHistoryVM): string => {
+    return log.className;
   };
 
   // API 응답에서 세션 날짜 추출
-  const getSessionDate = (log: any): string => {
-    return log?.sessionDate ?? '';
+  const getSessionDate = (log: StudentCancellationHistoryVM): string => {
+    return log.sessionDate;
   };
 
   // API 응답에서 세션 ID 추출
-  const getSessionId = (log: any): number => {
-    return log?.sessionId ?? 0;
+  const getSessionId = (log: StudentCancellationHistoryVM): number => {
+    return log.sessionId ?? 0;
   };
 
   // API 응답에서 환불 금액 추출
-  const getRefundAmount = (log: any): string => {
-    if (typeof log?.refundAmount === 'number') {
+  const getRefundAmount = (log: StudentCancellationHistoryVM): string => {
+    if (typeof log.refundAmount === 'number') {
       return `${log.refundAmount.toLocaleString()}원`;
     }
     return '금액 정보 없음';
   };
 
   // 신청/처리 일시 추출 (백엔드 평면 필드 호환)
-  const getAppliedAt = (log: any): string | undefined => {
-    return log?.requestedAt;
+  const getAppliedAt = (log: StudentCancellationHistoryVM): string | undefined => {
+    return log.requestedAt;
   };
 
   // 설명/사유 추출 (백엔드 평면 필드 호환)
-  const getDescription = (log: any): string => {
-    return log?.reason || '';
+  const getDescription = (log: StudentCancellationHistoryVM): string => {
+    return log.reason || '';
   };
 
-  const filteredLogs = cancellationHistory.filter(log => {
+  const filteredLogs = cancellationHistoryVMs.filter(log => {
     if (selectedFilter === 'ALL') return true;
     const status = getCancellationStatus(log);
     return status === selectedFilter;
@@ -200,11 +205,11 @@ export function CancellationHistory() {
                     <Card 
                       key={log.id} 
                       className={`hover:shadow-md transition-shadow ${
-                        (log as any).isOptimistic ? 'opacity-60 bg-blue-50' : ''
+                        log.isOptimistic ? 'opacity-60 bg-blue-50' : ''
                       }`}
                     >
                       <CardContent className="p-4">
-                        {(log as any).isOptimistic && (
+                        {log.isOptimistic && (
                           <div className="mb-3 p-2 bg-blue-100 border border-blue-200 rounded-md">
                             <div className="flex items-center gap-2">
                               <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>

@@ -1,7 +1,6 @@
 import { get, post, del } from "./apiClient";
 import type { ApiResponse } from "@/types/api";
 import {
-  Academy,
   CreateAcademyRequest,
   CreateAcademyResponse,
   GetAcademyByIdResponse,

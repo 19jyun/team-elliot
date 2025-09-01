@@ -2,12 +2,9 @@
 
 import { SlideUpModal } from '@/components/common/SlideUpModal';
 import { ClassDetail } from './ClassDetail';
+import type { ClassDetailModalVM } from '@/types/view/student';
 
-interface ClassDetailModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  classId: number;
-}
+interface ClassDetailModalProps extends ClassDetailModalVM {}
 
 export function ClassDetailModal({ isOpen, onClose, classId }: ClassDetailModalProps) {
   return (

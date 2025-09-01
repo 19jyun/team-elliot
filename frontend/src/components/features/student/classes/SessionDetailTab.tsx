@@ -3,31 +3,13 @@
 import React from 'react'
 import Image from 'next/image'
 import { useSessionContents } from '@/hooks/useSessionContents'
-import { SessionContent } from '@/types/api/session-content'
+import type { SessionDetailTabVM, SessionDetailDisplayVM, SessionContentDisplayVM } from '@/types/view/student'
+import { toSessionDetailDisplayVM } from '@/lib/adapters/student'
 
-interface SessionDetailTabProps {
-  sessionId: number
-}
+interface SessionDetailTabProps extends SessionDetailTabVM {}
 
 // 학생용 발레 자세 카드 컴포넌트
-function StudentPoseCard({ content, index }: { content: SessionContent; index: number }) {
-  const getDifficultyColor = (difficulty: string) => {
-    const colorMap: Record<string, string> = {
-      'BEGINNER': 'bg-red-100 text-red-700',
-      'INTERMEDIATE': 'bg-yellow-100 text-yellow-700',
-      'ADVANCED': 'bg-blue-100 text-blue-700',
-    }
-    return colorMap[difficulty] || 'bg-gray-100 text-gray-700'
-  }
-
-  const getDifficultyText = (difficulty: string) => {
-    const textMap: Record<string, string> = {
-      'BEGINNER': '초급',
-      'INTERMEDIATE': '중급',
-      'ADVANCED': '고급',
-    }
-    return textMap[difficulty] || difficulty
-  }
+function StudentPoseCard({ content, index }: { content: SessionContentDisplayVM; index: number }) {
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm">
@@ -41,17 +23,17 @@ function StudentPoseCard({ content, index }: { content: SessionContent; index: n
             {content.pose.name}
           </h3>
         </div>
-        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getDifficultyColor(content.pose.difficulty)}`}>
-          {getDifficultyText(content.pose.difficulty)}
+        <span className={`px-3 py-1 rounded-full text-xs font-medium ${content.pose.difficultyColor}`}>
+          {content.pose.displayDifficulty}
         </span>
       </div>
 
       {/* 자세 이미지 (있는 경우) */}
-      {content.pose.imageUrl && (
+      {content.hasImage && (
         <div className="mb-3">
           <div className="relative w-full h-48 bg-gray-100 rounded-lg overflow-hidden">
             <Image
-              src={content.pose.imageUrl}
+              src={content.pose.imageUrl!}
               alt={content.pose.name}
               fill
               className="object-cover"
@@ -69,7 +51,7 @@ function StudentPoseCard({ content, index }: { content: SessionContent; index: n
       </div>
 
       {/* 추가 노트 (있는 경우) */}
-      {content.notes && (
+      {content.hasNotes && (
         <div className="bg-stone-50 rounded-lg p-3 border-l-4 border-[#ac9592]">
           <h4 className="text-sm font-medium text-stone-600 mb-1">강사 노트</h4>
           <p className="text-sm text-stone-700 leading-relaxed whitespace-pre-line">
@@ -84,7 +66,10 @@ function StudentPoseCard({ content, index }: { content: SessionContent; index: n
 export function SessionDetailTab({ sessionId }: SessionDetailTabProps) {
   const { data: contents, isLoading, error } = useSessionContents(sessionId)
 
-  if (isLoading) {
+  // View Model 생성
+  const displayVM: SessionDetailDisplayVM = toSessionDetailDisplayVM(sessionId, contents, isLoading, error?.message || null)
+
+  if (displayVM.isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
@@ -92,7 +77,7 @@ export function SessionDetailTab({ sessionId }: SessionDetailTabProps) {
     )
   }
 
-  if (error) {
+  if (displayVM.error) {
     return (
       <div className="flex flex-col items-center justify-center py-8">
         <div className="text-red-500 text-lg mb-2">⚠️</div>
@@ -106,7 +91,7 @@ export function SessionDetailTab({ sessionId }: SessionDetailTabProps) {
     )
   }
 
-  if (!contents || contents.length === 0) {
+  if (!displayVM.hasContents) {
     return (
       <div className="flex flex-col items-center justify-center py-8">
         <Image
@@ -134,13 +119,13 @@ export function SessionDetailTab({ sessionId }: SessionDetailTabProps) {
           이번 수업에서 배울 자세들
         </h3>
         <p className="text-sm text-stone-500">
-          총 {contents.length}개의 발레 자세를 순서대로 배워볼 예정입니다.
+          총 {displayVM.contents.length}개의 발레 자세를 순서대로 배워볼 예정입니다.
         </p>
       </div>
 
       {/* 자세 목록 */}
       <div className="space-y-4">
-        {contents.map((content, index) => (
+        {displayVM.contents.map((content: SessionContentDisplayVM, index: number) => (
           <StudentPoseCard
             key={content.id}
             content={content}

@@ -11,6 +11,7 @@ import {
   getRefundReasonOptions,
   RefundReason
 } from '@/utils/refundRequestValidation';
+import type { ModificationSessionVM } from '@/types/view/student';
 
 interface RefundRequestStepProps {
   refundAmount: number;
@@ -132,7 +133,7 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
 
     // 기존에 신청된 세션들 (CONFIRMED, PENDING, REFUND_REJECTED_CONFIRMED 상태)
     const originalEnrolledSessions = existingEnrollments.filter(
-      (enrollment: any) =>
+      (enrollment: ModificationSessionVM) =>
         enrollment.enrollment &&
         (enrollment.enrollment.status === "CONFIRMED" ||
           enrollment.enrollment.status === "PENDING" ||
@@ -141,10 +142,10 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
 
     // 취소될 세션들 (기존에 신청되었지만 현재 선택되지 않은 세션들)
     const cancelledSessions = originalEnrolledSessions.filter(
-      (enrollment: any) => {
+      (enrollment: ModificationSessionVM) => {
         const enrollmentDate = new Date(enrollment.date).toISOString().split("T")[0];
         const selectedDates = selectedSessions.map(
-          (session: any) => new Date(session.date).toISOString().split("T")[0]
+          (session: ModificationSessionVM) => new Date(session.date).toISOString().split("T")[0]
         );
         return !selectedDates.includes(enrollmentDate);
       }

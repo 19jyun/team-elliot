@@ -9,27 +9,37 @@ import cn from 'classnames';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { TeacherProfileCard } from '@/components/common/TeacherProfileCard';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
+import type { StudentEnrolledSessionVM, ClassDetailVM, ClassDetailDisplayVM } from '@/types/view/student';
+import { toClassDetailDisplayVM } from '@/lib/adapters/student';
+import { formatTime } from '@/utils/dateTime';
 
-interface ClassDetailProps {
-  classId: number;
-  classSessions?: any[];
-  showModificationButton?: boolean;
-  onModificationClick?: () => void;
-}
+interface ClassDetailProps extends ClassDetailVM {}
 
 export function ClassDetail({ classId, classSessions, showModificationButton = true, onModificationClick }: ClassDetailProps) {
   const [classDetails, setClassDetails] = useState<ClassDetailsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { navigateToSubPage } = useDashboardNavigation();
   const { getClassDetails } = useStudentApi();
+
+  // View Model 생성
+  const displayVM: ClassDetailDisplayVM = toClassDetailDisplayVM(
+    classId,
+    classDetails,
+    isLoading,
+    error,
+    showModificationButton
+  );
 
   const loadClassDetails = useCallback(async () => {
     try {
       setIsLoading(true);
+      setError(null);
       const response = await getClassDetails(classId);
       setClassDetails(response || null);
     } catch (error) {
       console.error('클래스 상세 정보 로드 실패:', error);
+      setError('클래스 정보를 불러오는데 실패했습니다.');
       toast.error('클래스 정보를 불러오는데 실패했습니다.');
     } finally {
       setIsLoading(false);
@@ -48,23 +58,7 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
     }
   }, [classDetails?.teacher]);
 
-  const formatTime = (time: string | Date) => {
-    const date = typeof time === 'string' ? new Date(time) : time;
-    return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
-  };
 
-  const formatDayOfWeek = (dayOfWeek: string) => {
-    const dayMap: Record<string, string> = {
-      'MONDAY': '월요일',
-      'TUESDAY': '화요일',
-      'WEDNESDAY': '수요일',
-      'THURSDAY': '목요일',
-      'FRIDAY': '금요일',
-      'SATURDAY': '토요일',
-      'SUNDAY': '일요일',
-    };
-    return dayMap[dayOfWeek] || dayOfWeek;
-  };
 
   const handleModificationRequest = () => {
     
@@ -72,7 +66,7 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
     let targetMonth = null;
     
     if (classSessions && classSessions.length > 0) {
-      const enrolledSessions = classSessions.filter((session: any) => 
+      const enrolledSessions = classSessions.filter((session: StudentEnrolledSessionVM) => 
         session.enrollment_status === 'CONFIRMED' || 
         session.enrollment_status === 'PENDING' ||
         session.enrollment_status === 'REFUND_REJECTED_CONFIRMED'
@@ -80,7 +74,7 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
       
       
       if (enrolledSessions.length > 0) {
-        const sessionDates = enrolledSessions.map((session: any) => new Date(session.date));
+        const sessionDates = enrolledSessions.map((session: StudentEnrolledSessionVM) => new Date(session.date));
         const months = sessionDates.map(date => date.getMonth() + 1); // 0-based index
         const uniqueMonths = [...new Set(months)];
         
@@ -101,7 +95,7 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
     // 기존 수강 신청이 없는 경우 가장 가까운 미래 세션의 월을 우선 선택
     if (!targetMonth) {
       const currentDate = new Date();
-      const futureSessions = classSessions?.filter((session: any) => {
+      const futureSessions = classSessions?.filter((session: StudentEnrolledSessionVM) => {
         const sessionDate = new Date(session.date);
         return sessionDate > currentDate;
       }) || [];
@@ -132,7 +126,7 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
     navigateToSubPage(subPagePath);
   };
 
-  if (isLoading) {
+  if (displayVM.isLoading) {
     return (
       <div className="flex items-center justify-center h-32">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
@@ -140,10 +134,10 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
     );
   }
 
-  if (!classDetails) {
+  if (displayVM.error || !classDetails) {
     return (
       <div className="flex items-center justify-center h-32 text-stone-500">
-        클래스 정보를 불러올 수 없습니다.
+        {displayVM.error || '클래스 정보를 불러올 수 없습니다.'}
       </div>
     );
   }
@@ -152,24 +146,24 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
     <div className="space-y-4">
       {/* 수업 제목 */}
       <div className="text-[20px] font-semibold text-[#262626] leading-[130%]">
-        {classDetails?.className}
+        {displayVM.className}
       </div>
       {/* 요일 및 시간 */}
       <div className="text-base text-[#262626]">
-        {formatDayOfWeek(classDetails?.dayOfWeek ?? '')} {formatTime(classDetails?.startTime ?? '')} - {formatTime(classDetails?.endTime ?? '')}
+        {displayVM.dayOfWeek} {formatTime(displayVM.startTime)} - {formatTime(displayVM.endTime)}
       </div>
       {/* 구분선 */}
       <div className="border-b border-gray-200" />
       {/* 수업 설명 */}
       <div className="text-base text-[#262626] whitespace-pre-line">
-        {classDetails?.classDetail?.description || classDetails?.description || '클래스 설명이 없습니다.'}
+        {displayVM.description}
       </div>
       
       {/* 선생님 프로필 카드 */}
-      {classDetails?.teacher && (
+      {displayVM.hasTeacher && displayVM.teacher && (
         <div className="mt-6">
           <TeacherProfileCard 
-            teacherId={classDetails.teacherId} 
+            teacherId={displayVM.teacher.id} 
             isEditable={false}
             showHeader={false}
             compact={true}
@@ -178,7 +172,7 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
       )}
 
       {/* 하단 고정 버튼 */}
-      {showModificationButton && (
+      {displayVM.showModificationButton && (
         <div className="mt-6">
           <button
             onClick={handleModificationRequest}

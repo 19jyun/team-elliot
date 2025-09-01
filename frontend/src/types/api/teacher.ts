@@ -1,4 +1,9 @@
-import type { DayOfWeek, EnrollmentStatus } from "./common";
+import type {
+  DayOfWeek,
+  EnrollmentStatus,
+  ClassBase,
+  ClassSessionBase,
+} from "./common";
 
 export interface TeacherProfile {
   id: number;
@@ -89,9 +94,7 @@ export type UpdateTeacherProfileResponse = TeacherProfile;
 
 // === 클래스 관련 타입들 ===
 
-export interface TeacherClass {
-  id: number;
-  className: string;
+export interface TeacherClass extends ClassBase {
   dayOfWeek: DayOfWeek; // string → DayOfWeek로 변경
   startTime: string;
   endTime: string;
@@ -99,8 +102,6 @@ export interface TeacherClass {
   endDate: string;
   maxStudents: number;
   currentStudents: number;
-  level: string;
-  tuitionFee: number;
   description?: string;
   backgroundColor?: string;
   // location 필드는 백엔드에 존재하지 않으므로 제거
@@ -108,9 +109,7 @@ export interface TeacherClass {
 
 export type TeacherClassesResponse = TeacherClass[];
 
-export interface TeacherClassWithSessions {
-  id: number;
-  className: string;
+export interface TeacherClassWithSessions extends ClassBase {
   dayOfWeek: DayOfWeek;
   startTime: string;
   endTime: string;
@@ -118,8 +117,6 @@ export interface TeacherClassWithSessions {
   endDate: string;
   maxStudents: number;
   currentStudents: number;
-  level: string;
-  tuitionFee: number;
   description?: string;
   backgroundColor?: string;
   sessions?: ClassSession[];
@@ -129,13 +126,9 @@ export type TeacherClassesWithSessionsResponse = TeacherClassWithSessions[];
 
 // === 세션 관련 타입들 ===
 
-export interface ClassSession {
-  id: number;
-  date: string;
-  startTime: string;
-  endTime: string;
+export interface ClassSession extends ClassSessionBase {
   status: "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
-  classId: number;
+  classId: number; // ClassSessionBase의 optional classId를 required로 오버라이드
   createdAt: string;
   updatedAt: string;
   enrollments?: SessionEnrollment[];

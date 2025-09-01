@@ -9,6 +9,10 @@ import { EnrolledClassesList } from '@/components/features/student/classes/Enrol
 import { ClassSessionModal } from '@/components/features/student/classes/ClassSessionModal'
 import { StudentSessionDetailModal } from '@/components/features/student/classes/StudentSessionDetailModal'
 import { useStudentApi } from '@/hooks/student/useStudentApi'
+import type { StudentClass } from '@/types/api/student'
+import type { EnrolledClassVM, ClassDataVM, StudentEnrolledSessionVM, EnrolledClassCardVM } from '@/types/view/student'
+import type { ApiError } from '@/types/ui/common'
+import { toEnrolledClassVMs, toClassDataVM, toSessionDataVM, toEnrolledClassCardVM } from '@/lib/adapters/student'
 
 export function EnrolledClassesContainer() {
   const router = useRouter()
@@ -19,11 +23,11 @@ export function EnrolledClassesContainer() {
     },
   })
 
-  const [selectedClass, setSelectedClass] = useState<any>(null)
+  const [selectedClass, setSelectedClass] = useState<EnrolledClassVM | null>(null)
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false)
   
   // StudentSessionDetailModal 상태 추가
-  const [selectedSession, setSelectedSession] = useState<any>(null)
+  const [selectedSession, setSelectedSession] = useState<StudentEnrolledSessionVM | null>(null)
   const [isSessionDetailModalOpen, setIsSessionDetailModalOpen] = useState(false)
 
   // API 데이터 사용
@@ -33,26 +37,21 @@ export function EnrolledClassesContainer() {
     error 
   } = useStudentApi()
 
-  // sessionClasses에서 enrolledClasses 추출
-  const enrolledClasses = React.useMemo(() => {
+  // sessionClasses에서 enrolledClasses 추출 (어댑터 사용)
+  const enrolledClasses: EnrolledClassVM[] = React.useMemo(() => {
     if (!sessionClasses || sessionClasses.length === 0) return [];
-    
-    // 클래스별로 그룹화하여 중복 제거
-    const classMap = new Map();
-    sessionClasses.forEach((session: any) => {
-      if (session.class) {
-        const classId = session.class.id;
-        if (!classMap.has(classId)) {
-          classMap.set(classId, {
-            ...session.class,
-            sessions: sessionClasses.filter((s: any) => s.classId === classId)
-          });
-        }
-      }
-    });
-    
-    return Array.from(classMap.values());
+    return toEnrolledClassVMs(sessionClasses);
   }, [sessionClasses]);
+
+  // ClassSessionModal에 전달할 ClassDataVM으로 변환 (어댑터 사용)
+  const selectedClassData: ClassDataVM | null = selectedClass ? toClassDataVM({
+    id: selectedClass.id,
+    name: selectedClass.name,
+    teacherName: selectedClass.teacherName,
+    dayOfWeek: 'MONDAY', // 기본값 (EnrolledClassVM에서 string으로 되어있음)
+    startTime: selectedClass.startTime,
+    endTime: selectedClass.endTime,
+  }) : null;
 
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {
@@ -65,7 +64,8 @@ export function EnrolledClassesContainer() {
 
   // 에러 처리
   if (error) {
-    if ((error as any)?.response?.status === 401) {
+    const apiError = error as ApiError;
+    if (apiError?.response?.status === 401) {
       signOut({ redirect: true, callbackUrl: '/auth' });
       return null;
     }
@@ -83,7 +83,8 @@ export function EnrolledClassesContainer() {
     )
   }
 
-  const handleClassClick = (classData: any) => {
+  const handleClassClick = (classData: EnrolledClassVM) => {
+    // StudentClass를 EnrolledClassVM으로 변환
     setSelectedClass(classData)
     setIsSessionModalOpen(true)
   }
@@ -94,7 +95,7 @@ export function EnrolledClassesContainer() {
   }
 
   // 세션 클릭 핸들러 추가
-  const handleSessionClick = (session: any) => {
+  const handleSessionClick = (session: StudentEnrolledSessionVM) => {
     setSelectedSession(session)
     setIsSessionDetailModalOpen(true)
     // ClassSessionModal은 닫지 않고 유지 (사용자가 뒤로가기 할 수 있도록)
@@ -122,7 +123,7 @@ export function EnrolledClassesContainer() {
         {/* 수강중인 클래스 리스트 */}
         <div className="w-full h-full">
           <EnrolledClassesList
-            classes={enrolledClasses || []}
+            classes={enrolledClasses}
             onClassClick={handleClassClick}
           />
         </div>
@@ -131,10 +132,10 @@ export function EnrolledClassesContainer() {
       {/* Class Session Modal */}
       <ClassSessionModal
         isOpen={isSessionModalOpen}
-        selectedClass={selectedClass}
-        sessions={sessionClasses || []}
+        selectedClass={selectedClassData}
+        sessions={selectedClass?.sessions || []}
         onClose={closeSessionModal}
-        onSessionClick={handleSessionClick} // 세션 클릭 핸들러 전달
+        onSessionClick={handleSessionClick}
       />
 
       {/* Student Session Detail Modal */}

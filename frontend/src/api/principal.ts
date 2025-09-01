@@ -30,7 +30,7 @@ import {
   StudentSessionHistory,
   CreatePrincipalClassRequest,
 } from "../types/api/principal";
-import { CreateClassRequest, CreateClassResponse } from "../types/api/class";
+import { CreateClassResponse } from "../types/api/class";
 import { GetSessionEnrollmentsResponse } from "../types/api/class-session";
 import { GetRefundRequestsResponse } from "../types/api/refund";
 

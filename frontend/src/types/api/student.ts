@@ -1,8 +1,8 @@
 import type {
   DayOfWeek,
-  PaymentStatus,
   EnrollmentStatus,
   RefundStatus,
+  ClassSessionBase,
 } from "./common";
 
 export interface StudentClass {
@@ -82,6 +82,8 @@ export interface EnrollmentHistory {
   // 거절 사유 정보
   enrollmentRejection?: RejectionDetail;
   refundRejection?: RejectionDetail;
+  // 낙관적 업데이트용 플래그
+  isOptimistic?: boolean;
 }
 
 // 거절 사유 타입
@@ -113,6 +115,8 @@ export interface CancellationHistory {
   cancelledAt?: string;
   // 거절 사유 정보
   rejectionDetail?: RejectionDetail;
+  // 낙관적 업데이트용 플래그
+  isOptimistic?: boolean;
 }
 
 // 수강 내역 응답 타입 (백엔드에서 배열을 직접 반환)
@@ -225,10 +229,32 @@ export interface ClassSessionForModification {
   isEnrolled: boolean;
   enrollmentId?: number;
   enrollmentStatus?: EnrollmentStatus; // 공통 타입 사용
+  // 백엔드에서 추가하는 속성들
+  class: {
+    id: number;
+    className: string;
+    tuitionFee: string;
+    teacher: {
+      id: number;
+      name: string;
+    };
+  };
+  isSelectable: boolean;
+  canBeCancelled: boolean;
+  isModifiable: boolean;
+  isPastStartTime: boolean;
+  isFull: boolean;
+  isAlreadyEnrolled: boolean;
+  isEnrollable: boolean;
 }
 
-export type GetClassSessionsForModificationResponse =
-  ClassSessionForModification[];
+export interface GetClassSessionsForModificationResponse {
+  sessions: ClassSessionForModification[];
+  calendarRange: {
+    startDate: string;
+    endDate: string;
+  } | null;
+}
 
 export interface StudentBatchModifyEnrollmentsRequest {
   cancellations: number[];
@@ -248,11 +274,7 @@ export interface StudentBatchModifyEnrollmentsResponse {
   }>;
 }
 
-export interface ClassSessionForEnrollment {
-  id: number;
-  date: string;
-  startTime: string;
-  endTime: string;
+export interface ClassSessionForEnrollment extends ClassSessionBase {
   className: string;
   teacherName: string;
   maxStudents: number;

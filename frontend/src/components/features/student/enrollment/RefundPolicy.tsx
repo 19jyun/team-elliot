@@ -3,6 +3,7 @@ import { PolicySection } from './PolicySection'
 import { CheckboxAgreement } from './CheckboxAgreement'
 import { Button } from './Button'
 import { policyData } from './data'
+import type { PolicySectionData } from '@/types/ui/common'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 
@@ -82,7 +83,7 @@ export const RefundPolicy: React.FC<RefundPolicyProps> = ({ isOpen, onClose }) =
             }}
           >
             <div className="flex flex-col w-full text-base tracking-normal text-neutral-800">
-              {policyData.sections.map((section: any, index: any) => (
+              {policyData.sections.map((section: PolicySectionData, index: number) => (
                 <PolicySection
                   key={index}
                   title={section.title}

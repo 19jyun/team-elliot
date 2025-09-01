@@ -9,15 +9,10 @@ import { RefundRequestStep } from './RefundRequestStep';
 import { RefundCompleteStep } from './RefundCompleteStep';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
 import { useEnrollmentCalculation } from '@/hooks/useEnrollmentCalculation';
+import type { ModificationSessionVM } from '@/types/view/student';
+import type { EnrollmentModificationContainerVM } from '@/types/view/student';
 
-
-interface EnrollmentModificationContainerProps {
-  classId: number;
-  className?: string;
-  month?: number | null;
-}
-
-export function EnrollmentModificationContainer({ classId, month }: EnrollmentModificationContainerProps) {
+export function EnrollmentModificationContainer({ classId, month }: EnrollmentModificationContainerVM) {
   const { enrollment, setEnrollmentStep } = useDashboardNavigation();
   const { currentStep } = enrollment;
   const { enrollmentHistory, isLoading, error, loadEnrollmentHistory } = useStudentApi();
@@ -41,17 +36,17 @@ export function EnrollmentModificationContainer({ classId, month }: EnrollmentMo
   const effectiveStep = currentStep === 'main' ? 'date-selection' : currentStep;
   
 
-  // Redux에서 해당 클래스의 수강 신청 정보 필터링
-  const existingEnrollments = React.useMemo(() => {
+  // Redux에서 해당 클래스의 수강 신청 정보 필터링 (ViewModel로 정규화)
+  const existingEnrollments: ModificationSessionVM[] = React.useMemo(() => {
     if (!enrollmentHistory) {
       return [];
     }
-    
-    const filtered = enrollmentHistory.filter(enrollment => 
+
+    const filtered = enrollmentHistory.filter((enrollment) =>
       enrollment.session.class.id === classId
     );
-    
-    return filtered.map(enrollment => ({
+
+    return filtered.map((enrollment) => ({
       id: enrollment.session.id,
       date: enrollment.session.date,
       startTime: enrollment.session.startTime,
@@ -59,11 +54,11 @@ export function EnrollmentModificationContainer({ classId, month }: EnrollmentMo
       class: enrollment.session.class,
       enrollment: {
         id: enrollment.id,
-        status: enrollment.status as any, // 타입 호환성을 위해 any로 캐스팅
+        status: enrollment.status,
         enrolledAt: enrollment.enrolledAt,
         description: enrollment.description,
-        refundRejection: enrollment.refundRejection
-      }
+        refundRejection: enrollment.refundRejection,
+      },
     }));
   }, [enrollmentHistory, classId]);
 
@@ -91,16 +86,16 @@ export function EnrollmentModificationContainer({ classId, month }: EnrollmentMo
     
     // 기존에 신청된 세션들 (활성 상태)
     const originalEnrolledSessions = existingEnrollments.filter(
-      (enrollment: any) =>
-        enrollment.enrollment &&
-        (enrollment.enrollment.status === "CONFIRMED" ||
-          enrollment.enrollment.status === "PENDING" ||
-          enrollment.enrollment.status === "REFUND_REJECTED_CONFIRMED")
+      (enrollment) =>
+        !!enrollment.enrollment &&
+        (enrollment.enrollment!.status === "CONFIRMED" ||
+          enrollment.enrollment!.status === "PENDING" ||
+          enrollment.enrollment!.status === "REFUND_REJECTED_CONFIRMED")
     );
 
     // 기존 신청 세션의 날짜들
     const originalDates = originalEnrolledSessions.map(
-      (enrollment: any) => new Date(enrollment.date).toISOString().split("T")[0]
+      (enrollment) => new Date(enrollment.date).toISOString().split("T")[0]
     );
 
     // 새로 추가될 세션 수 (기존에 없던 세션들)

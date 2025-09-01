@@ -1,40 +1,33 @@
-import type { DayOfWeek, EnrollmentStatus } from "./common";
+import type {
+  DayOfWeek,
+  EnrollmentStatus,
+  ClassBase,
+  ClassSessionBase,
+  TeacherRef,
+} from "./common";
 
-export interface Class {
-  id: number;
-  className: string;
+export interface Class extends ClassBase {
   classCode: string;
   description: string;
   maxStudents: number;
   currentStudents: number;
-  tuitionFee: number;
   teacherId: number;
   academyId: number;
   dayOfWeek: DayOfWeek; // string → DayOfWeek로 변경
   startTime: string;
   endTime: string;
-  level: string;
   status: string;
   startDate: string;
   endDate: string;
   backgroundColor: string;
-  teacher: {
-    id: number;
-    name: string;
-    photoUrl: string;
-  };
+  teacher: TeacherRef & { photoUrl: string };
   academy: {
     id: number;
     name: string;
   };
 }
 
-export interface ClassSession {
-  id: number;
-  classId: number;
-  date: string;
-  startTime: string;
-  endTime: string;
+export interface ClassSession extends ClassSessionBase {
   currentStudents?: number;
   maxStudents?: number;
   isEnrollable?: boolean;

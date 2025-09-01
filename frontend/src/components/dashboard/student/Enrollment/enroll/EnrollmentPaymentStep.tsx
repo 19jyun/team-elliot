@@ -8,13 +8,10 @@ import { PrincipalPaymentBox } from '@/components/features/student/enrollment/mo
 import { PaymentConfirmFooter } from '@/components/features/student/enrollment/month/date/payment/PaymentConfirmFooter';
 import { SelectedSession, PrincipalPaymentInfo } from '@/components/features/student/enrollment/month/date/payment/types';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
-
-interface EnrollmentPaymentStepProps {
-  onComplete?: () => void;
-}
+import type { EnrollmentPaymentStepVM } from '@/types/view/student';
 
 // 새로운 수강신청 플로우 전용 결제 페이지
-export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps) {
+export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
   const { enrollment, setEnrollmentStep } = useDashboardNavigation();
   const { selectedSessions: contextSessions } = enrollment;
   const { loadSessionPaymentInfo } = useStudentApi();
@@ -57,8 +54,16 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
     setIsLoadingPaymentInfo(true);
     
     try {
-      let principalInfo: any = null;
-      const classFees: any[] = [];
+      let principalInfo: {
+        bankName: string;
+        accountNumber: string;
+        accountHolder: string;
+      } | null = null;
+      const classFees: Array<{
+        name: string;
+        count: number;
+        price: number;
+      }> = [];
       let totalAmount = 0;
       
              // 각 세션별로 결제 정보를 가져옴
@@ -103,7 +108,7 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
           }
           
           const className = session.class?.className || '클래스';
-          const sessionFee = Number((session.class as any)?.tuitionFee) || 0;
+          const sessionFee = Number(session.class?.tuitionFee) || 0;
           
           const existingFee = classFees.find(fee => fee.name === className);
           if (existingFee) {

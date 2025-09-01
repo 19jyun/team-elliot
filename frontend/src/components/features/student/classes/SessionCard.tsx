@@ -1,26 +1,11 @@
 import React from 'react'
+import type { StudentEnrolledSessionVM } from '@/types/view/student'
+import type { LevelType } from '@/types/api/common'
+import { levelBgColor } from '@/types/ui/common'
 
 interface SessionCardProps {
-  session: {
-    session_id: number
-    enrollment_id: number
-    date: string
-    startTime: string
-    endTime: string
-    enrollment_status: string
-    class?: {
-      level?: string
-    }
-  }
+  session: StudentEnrolledSessionVM
   onClick: () => void
-}
-
-type LevelType = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'
-
-const levelBgColor: Record<LevelType, string> = {
-  BEGINNER: '#F4E7E7',
-  INTERMEDIATE: '#FBF4D8',
-  ADVANCED: '#CBDFE3',
 }
 
 const getStatusText = (status: string) => {

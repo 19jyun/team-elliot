@@ -1,4 +1,10 @@
 // Principal 전용 API 타입들
+import type {
+  DayOfWeek,
+  ClassBase,
+  ClassSessionBase,
+  TeacherRef,
+} from "./common";
 
 // Principal의 학원 정보
 export interface PrincipalAcademy {
@@ -15,47 +21,34 @@ export interface PrincipalAcademy {
 }
 
 // Principal의 학원 세션 정보 (캘린더용)
-export interface PrincipalSession {
-  id: number;
-  date: string;
-  startTime: string;
-  endTime: string;
+export interface PrincipalSession extends ClassSessionBase {
   status: "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
-  classId: number;
+  classId: number; // ClassSessionBase의 optional classId를 required로 오버라이드
   class: {
     id: number;
     className: string;
     level: string;
     maxStudents: number;
     currentStudents: number;
-    teacher: {
-      id: number;
-      name: string;
-    };
+    teacher: TeacherRef;
   };
   enrollmentCount: number;
   confirmedCount: number;
 }
 
 // Principal의 학원 클래스 정보
-export interface PrincipalClass {
-  id: number;
-  className: string;
+export interface PrincipalClass extends ClassBase {
   description?: string;
-  level: string;
   maxStudents: number;
   currentStudents: number;
-  tuitionFee: number;
-  dayOfWeek: string;
+  dayOfWeek: DayOfWeek;
   startTime: string;
   endTime: string;
   startDate: string;
   endDate: string;
   backgroundColor?: string;
   location?: string;
-  teacher: {
-    id: number;
-    name: string;
+  teacher: TeacherRef & {
     phoneNumber?: string;
   };
   isRegistrationOpen: boolean;

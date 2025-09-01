@@ -10,8 +10,8 @@ export const studentNavigationItems = [
 export interface StudentEnrollmentState {
   currentStep: 'main' | 'class-selection' | 'date-selection' | 'payment' | 'complete';
   selectedMonth: number | null;
-  selectedClasses: any[];
-  selectedSessions: any[];
+  selectedClasses: unknown[];
+  selectedSessions: unknown[];
   selectedClassIds: number[];
 }
 

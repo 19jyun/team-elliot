@@ -11,6 +11,8 @@ import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessi
 import { StudentSessionDetailModal } from '@/components/features/student/classes/StudentSessionDetailModal'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
 import type { RootState } from '@/store/index'
+import type { StudentCalendarSessionVM, StudentCalendarRangeVM } from '@/types/view/student'
+import { toStudentCalendarSessionVM, toStudentCalendarRangeVM } from '@/lib/adapters/student'
 
 export default function StudentDashboard() {
   const router = useRouter()
@@ -28,39 +30,28 @@ export default function StudentDashboard() {
   const rawCalendarSessions = studentData?.calendarSessions || [];
   const rawCalendarRange = studentData?.calendarRange || null;
   
-  // StudentClass를 ClassSession으로 변환
-  const calendarSessions = rawCalendarSessions.map(session => ({
-    id: session.id,
-    classId: session.classId || session.id,
-    date: session.date || '',
-    startTime: session.startTime,
-    endTime: session.endTime,
-    currentStudents: session.currentStudents || 0,
-    maxStudents: session.maxStudents || 0,
-    isEnrollable: false,
-    isFull: (session.currentStudents || 0) >= (session.maxStudents || 0),
-    isPastStartTime: session.date ? new Date(session.date + ' ' + session.startTime) < new Date() : false,
-    isAlreadyEnrolled: true,
-    studentEnrollmentStatus: 'CONFIRMED' as const,
-    class: {
-      id: session.class?.id || session.classId || session.id,
+  // StudentClass를 StudentCalendarSessionVM으로 변환 (어댑터 사용)
+  const calendarSessions: StudentCalendarSessionVM[] = rawCalendarSessions
+    .filter(session => session.date) // 날짜가 있는 세션만
+    .map(session => toStudentCalendarSessionVM({
+      id: session.id,
+      date: session.date!,
+      startTime: session.startTime,
+      endTime: session.endTime,
       className: session.class?.className || session.name,
-      level: session.class?.level || 'BEGINNER',
-      tuitionFee: session.class?.tuitionFee?.toString() || '50000',
-      teacher: {
-        id: session.class?.teacher?.id || 0,
-        name: session.class?.teacher?.name || session.teacherName,
-      },
-    },
-  }));
+      teacherName: session.teacherName,
+      maxStudents: session.maxStudents || 0,
+      currentEnrollments: session.currentStudents || 0,
+      tuitionFee: session.class?.tuitionFee || 50000,
+      isEnrolled: session.isAlreadyEnrolled || true,
+      enrollmentId: undefined,
+      enrollmentStatus: session.studentEnrollmentStatus
+    }));
   
-
-  
-  // calendarRange를 Date 객체로 변환
-  const calendarRange = rawCalendarRange ? {
-    startDate: new Date(rawCalendarRange.startDate),
-    endDate: new Date(rawCalendarRange.endDate),
-  } : undefined;
+  // calendarRange를 StudentCalendarRangeVM으로 변환 (어댑터 사용)
+  const calendarRange: StudentCalendarRangeVM | undefined = rawCalendarRange 
+    ? toStudentCalendarRangeVM(rawCalendarRange)
+    : undefined;
   
   // Redux store에서 데이터만 사용 (student initialization에서 이미 로드됨)
   const isLoading = false
@@ -71,7 +62,7 @@ export default function StudentDashboard() {
   const [isDateModalOpen, setIsDateModalOpen] = useState(false)
   
   // 세션 상세 모달 상태 추가
-  const [selectedSession, setSelectedSession] = useState<any>(null)
+  const [selectedSession, setSelectedSession] = useState<StudentCalendarSessionVM | null>(null)
   const [isSessionDetailModalOpen, setIsSessionDetailModalOpen] = useState(false)
 
   // 로딩 상태 처리
@@ -111,7 +102,7 @@ export default function StudentDashboard() {
   }
 
   // 세션 클릭 핸들러 추가
-  const handleSessionClick = (session: any) => {
+  const handleSessionClick = (session: StudentCalendarSessionVM) => {
     setSelectedSession(session)
     setIsSessionDetailModalOpen(true)
   }

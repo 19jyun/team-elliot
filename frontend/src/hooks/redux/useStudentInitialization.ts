@@ -69,11 +69,13 @@ export function useStudentInitialization() {
         toast.success("Student 대시보드가 로드되었습니다.", {
           id: "student-init",
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("❌ Student 데이터 초기화 실패:", error);
 
         const errorMessage =
-          error.response?.data?.message || "데이터 로딩에 실패했습니다.";
+          error instanceof Error
+            ? error.message
+            : "데이터 로딩에 실패했습니다.";
         dispatch(setError(errorMessage));
 
         toast.error("Student 데이터 로딩 실패", {

@@ -11,15 +11,9 @@ import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { AcademyCard } from '@/components/common/AcademyCard';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
 import { useApiError } from '@/hooks/useApiError';
+import type { LeaveAcademyModalVM } from '@/types/view/student';
 
-interface LeaveAcademyModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-  academyName: string;
-}
-
-function LeaveAcademyModal({ isOpen, onClose, onConfirm, academyName }: LeaveAcademyModalProps) {
+function LeaveAcademyModal({ isOpen, onClose, onConfirm, academyName }: LeaveAcademyModalVM) {
   const { pushFocus, popFocus } = useDashboardNavigation();
 
   useEffect(() => {
@@ -316,10 +310,14 @@ export function AcademyManagement() {
               </div>
             ) : (
               <div className="space-y-4 max-h-96 overflow-y-auto">
-                {academies.map((academy: any) => (
+                {academies.map((academy) => (
                   <AcademyCard
                     key={academy.id}
-                    academy={academy}
+                    academy={{
+                      ...academy,
+                      code: '',
+                      createdAt: academy.joinedAt,
+                    }}
                     variant="student"
                     showActionButton={true}
                     actionText="탈퇴하기"

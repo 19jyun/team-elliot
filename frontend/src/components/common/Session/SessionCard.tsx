@@ -1,6 +1,8 @@
 'use client'
 
 import React from 'react'
+import { getDifficultyText, getDifficultyBgColor } from '@/utils/difficulty'
+import { formatTime, formatDate } from '@/utils/dateTime'
 
 interface SessionCardProps {
   session: any
@@ -9,43 +11,6 @@ interface SessionCardProps {
 }
 
 export function SessionCard({ session, onClick, role }: SessionCardProps) {
-  const formatTime = (time: string | Date) => {
-    const date = typeof time === 'string' ? new Date(time) : time
-    return date.toLocaleTimeString('ko-KR', { 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      hour12: false 
-    })
-  }
-
-  const formatDate = (date: string | Date) => {
-    const dateObj = typeof date === 'string' ? new Date(date) : date
-    return dateObj.toLocaleDateString('ko-KR', { 
-      month: 'short', 
-      day: 'numeric',
-      weekday: 'short'
-    })
-  }
-
-
-
-  const getLevelColor = (level: string) => {
-    const levelColors: Record<string, string> = {
-      'BEGINNER': '#F4E7E7',
-      'INTERMEDIATE': '#FBF4D8',
-      'ADVANCED': '#CBDFE3',
-    }
-    return levelColors[level] || '#F4E7E7'
-  }
-
-  const getLevelText = (level: string) => {
-    const levelTexts: Record<string, string> = {
-      'BEGINNER': '초급',
-      'INTERMEDIATE': '중급',
-      'ADVANCED': '고급',
-    }
-    return levelTexts[level] || '초급'
-  }
 
   // Teacher와 Principal은 동일한 권한을 가짐
   const canManageSessions = role === 'teacher' || role === 'principal'
@@ -53,13 +18,13 @@ export function SessionCard({ session, onClick, role }: SessionCardProps) {
   return (
     <div
       className="flex flex-col p-4 mb-3 rounded-lg border border-gray-200 cursor-pointer hover:shadow-md transition-colors"
-      style={{ background: getLevelColor(session.class?.level || 'BEGINNER') }}
+      style={{ background: getDifficultyBgColor(session.class?.level || 'BEGINNER') }}
       onClick={onClick}
     >
       {/* 날짜 정보 */}
       <div className="flex items-center gap-2 mb-2">
         <span className="text-sm font-medium text-stone-700">
-          {formatDate(session.date)}
+          {formatDate(session.date, { includeWeekday: true })}
         </span>
       </div>
 
@@ -83,7 +48,7 @@ export function SessionCard({ session, onClick, role }: SessionCardProps) {
             background: 'var(--Primary-Dark, linear-gradient(0deg, rgba(0, 0, 0, 0.20) 0%, rgba(0, 0, 0, 0.20) 100%), #573B30)',
           }}
         >
-          {getLevelText(session.class?.level || 'BEGINNER')}
+          {getDifficultyText(session.class?.level || 'BEGINNER')}
         </span>
         <span className="text-base font-semibold text-stone-700">
           {session.class?.className || '클래스명'}
