@@ -16,9 +16,11 @@ export enum SessionEnrollmentStatus {
 
 export class UpdateEnrollmentStatusDto {
   @ApiProperty({
-    description: '수강 신청 상태',
+    description:
+      '수강 신청 상태 (PENDING: 대기중, CONFIRMED: 승인됨, REJECTED: 거부됨, CANCELLED: 취소됨, REFUND_REQUESTED: 환불 요청됨, REFUND_CANCELLED: 환불 취소됨, REFUND_REJECTED_CONFIRMED: 환불 거부됨, TEACHER_CANCELLED: 강사 취소, ABSENT: 결석, ATTENDED: 출석)',
     enum: SessionEnrollmentStatus,
     example: SessionEnrollmentStatus.CONFIRMED,
+    enumName: 'SessionEnrollmentStatus',
   })
   @IsEnum(SessionEnrollmentStatus, {
     message:
@@ -27,9 +29,10 @@ export class UpdateEnrollmentStatusDto {
   status: SessionEnrollmentStatus;
 
   @ApiProperty({
-    description: '상태 변경 사유 (선택사항)',
+    description: '상태 변경 사유 (선택사항, 최대 500자)',
     example: '수업 인원 충족으로 승인',
     required: false,
+    maxLength: 500,
   })
   @IsOptional()
   @IsString({ message: '사유는 문자열이어야 합니다.' })
@@ -39,15 +42,19 @@ export class UpdateEnrollmentStatusDto {
 
 export class BatchUpdateEnrollmentStatusDto {
   @ApiProperty({
-    description: '수강 신청 ID 목록',
+    description:
+      '수강 신청 ID 목록 (한 번에 처리할 수강 신청들의 고유 ID 배열)',
     example: [1, 2, 3, 4, 5],
+    type: [Number],
   })
   enrollmentIds: number[];
 
   @ApiProperty({
-    description: '수강 신청 상태',
+    description:
+      '수강 신청 상태 (PENDING: 대기중, CONFIRMED: 승인됨, REJECTED: 거부됨, CANCELLED: 취소됨, REFUND_REQUESTED: 환불 요청됨, REFUND_CANCELLED: 환불 취소됨, REFUND_REJECTED_CONFIRMED: 환불 거부됨, TEACHER_CANCELLED: 강사 취소, ABSENT: 결석, ATTENDED: 출석)',
     enum: SessionEnrollmentStatus,
     example: SessionEnrollmentStatus.CONFIRMED,
+    enumName: 'SessionEnrollmentStatus',
   })
   @IsEnum(SessionEnrollmentStatus, {
     message:
@@ -56,9 +63,10 @@ export class BatchUpdateEnrollmentStatusDto {
   status: SessionEnrollmentStatus;
 
   @ApiProperty({
-    description: '상태 변경 사유 (선택사항)',
+    description: '상태 변경 사유 (선택사항, 최대 500자)',
     example: '일괄 승인 처리',
     required: false,
+    maxLength: 500,
   })
   @IsOptional()
   @IsString({ message: '사유는 문자열이어야 합니다.' })

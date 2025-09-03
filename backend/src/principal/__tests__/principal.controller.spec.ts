@@ -103,18 +103,19 @@ describe('PrincipalController', () => {
     it('should create class', async () => {
       const createClassDto = { className: 'Test Class', teacherId: 1 };
       const createdClass = { id: 1, ...createClassDto };
-      mockService.getPrincipalInfo.mockResolvedValue({
+      mockService.getPrincipalData.mockResolvedValue({
         id: 1,
         name: 'Test Principal',
+        academy: { id: 1, name: 'Test Academy' },
       });
       mockClassService.createClass.mockResolvedValue(createdClass);
 
       const result = await controller.createClass(mockUser, createClassDto);
 
       expect(result).toEqual(createdClass);
-      expect(service.getPrincipalInfo).toHaveBeenCalledWith(mockUser.userRefId);
+      expect(service.getPrincipalData).toHaveBeenCalledWith(mockUser.id);
       expect(classService.createClass).toHaveBeenCalledWith(
-        createClassDto,
+        { ...createClassDto, academyId: 1 },
         'PRINCIPAL',
       );
     });

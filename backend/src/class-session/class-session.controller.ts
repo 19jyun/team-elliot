@@ -16,7 +16,18 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiParam,
+  ApiConflictResponse,
+  ApiNotFoundResponse,
+  ApiBadRequestResponse,
+  ApiUnauthorizedResponse,
+  ApiForbiddenResponse,
+} from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import {
   UpdateEnrollmentStatusDto,
@@ -144,8 +155,79 @@ export class ClassSessionController {
    */
   @Put('enrollments/batch-status')
   @Roles(Role.TEACHER)
-  @ApiOperation({ summary: '배치 수강 신청 상태 업데이트' })
-  @ApiResponse({ status: 200, description: '배치 상태 업데이트 성공' })
+  @ApiOperation({
+    summary: '배치 수강 신청 상태 업데이트',
+    description:
+      '강사 권한으로 여러 수강 신청의 상태를 한 번에 변경합니다. 대량의 수강 신청을 효율적으로 처리할 수 있습니다.',
+    operationId: 'batchUpdateEnrollmentStatus',
+  })
+  @ApiBody({
+    type: BatchUpdateEnrollmentStatusDto,
+    description: '배치 상태 변경 정보',
+    examples: {
+      batchApprove: {
+        summary: '여러 수강 신청 일괄 승인',
+        value: {
+          enrollmentIds: [1, 2, 3, 4, 5],
+          status: 'CONFIRMED',
+          reason: '일괄 승인 처리',
+        },
+      },
+      batchReject: {
+        summary: '여러 수강 신청 일괄 거부',
+        value: {
+          enrollmentIds: [6, 7, 8],
+          status: 'REJECTED',
+          reason: '수업 인원 초과로 일괄 거부',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: '배치 상태 업데이트 성공',
+    schema: {
+      example: {
+        message: '5개의 수강 신청 상태가 성공적으로 변경되었습니다.',
+        updatedCount: 5,
+        results: [
+          { id: 1, status: 'CONFIRMED', success: true },
+          { id: 2, status: 'CONFIRMED', success: true },
+          { id: 3, status: 'CONFIRMED', success: true },
+          { id: 4, status: 'CONFIRMED', success: true },
+          { id: 5, status: 'CONFIRMED', success: true },
+        ],
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: '잘못된 상태 값 또는 빈 수강 신청 목록',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: '유효하지 않은 수강 신청 상태입니다.',
+        code: 'INVALID_STATUS',
+      },
+    },
+  })
+  @ApiUnauthorizedResponse({
+    description: '인증 토큰이 없거나 만료됨',
+    schema: {
+      example: {
+        statusCode: 401,
+        message: 'Unauthorized',
+      },
+    },
+  })
+  @ApiForbiddenResponse({
+    description: '강사 권한이 부족함',
+    schema: {
+      example: {
+        statusCode: 403,
+        message: 'Forbidden resource',
+      },
+    },
+  })
   async batchUpdateEnrollmentStatus(
     @Body() batchDto: BatchUpdateEnrollmentStatusDto,
     @CurrentUser() user: any,
@@ -161,8 +243,83 @@ export class ClassSessionController {
    */
   @Put('enrollments/:enrollmentId/attendance')
   @Roles(Role.TEACHER)
-  @ApiOperation({ summary: '출석 체크' })
-  @ApiResponse({ status: 200, description: '출석 체크 성공' })
+  @ApiOperation({
+    summary: '출석 체크',
+    description:
+      '강사 권한으로 특정 수강 신청에 대한 출석 상태를 체크합니다. ATTENDED(출석) 또는 ABSENT(결석)으로 설정할 수 있습니다.',
+    operationId: 'checkAttendance',
+  })
+  @ApiParam({
+    name: 'enrollmentId',
+    description: '출석을 체크할 수강 신청의 고유 ID',
+    example: 1,
+    type: 'integer',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'string',
+          description: '출석 상태',
+          enum: ['ATTENDED', 'ABSENT'],
+          example: 'ATTENDED',
+        },
+      },
+      required: ['status'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: '출석 체크 성공',
+    schema: {
+      example: {
+        id: 1,
+        attendanceStatus: 'ATTENDED',
+        updatedAt: '2024-01-15T18:30:00.000Z',
+        message: '출석이 성공적으로 체크되었습니다.',
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: '잘못된 출석 상태 값',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: '출석 상태는 ATTENDED 또는 ABSENT여야 합니다.',
+        code: 'INVALID_ATTENDANCE_STATUS',
+      },
+    },
+  })
+  @ApiNotFoundResponse({
+    description: '수강 신청을 찾을 수 없음',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: '수강 신청을 찾을 수 없습니다.',
+        code: 'ENROLLMENT_NOT_FOUND',
+        details: { enrollmentId: 999 },
+      },
+    },
+  })
+  @ApiUnauthorizedResponse({
+    description: '인증 토큰이 없거나 만료됨',
+    schema: {
+      example: {
+        statusCode: 401,
+        message: 'Unauthorized',
+      },
+    },
+  })
+  @ApiForbiddenResponse({
+    description: '강사 권한이 부족함',
+    schema: {
+      example: {
+        statusCode: 403,
+        message: 'Forbidden resource',
+      },
+    },
+  })
   async checkAttendance(
     @Param('enrollmentId', ParseIntPipe) enrollmentId: number,
     @Body('status') attendanceStatus: 'ATTENDED' | 'ABSENT',
@@ -180,8 +337,45 @@ export class ClassSessionController {
    */
   @Post('complete-sessions')
   @Roles(Role.TEACHER)
-  @ApiOperation({ summary: '수업 완료 처리 (스케줄러용)' })
-  @ApiResponse({ status: 200, description: '수업 완료 처리 성공' })
+  @ApiOperation({
+    summary: '수업 완료 처리 (스케줄러용)',
+    description:
+      '강사 권한으로 지난 시간의 세션들을 자동으로 완료 처리합니다. 스케줄러에서 주기적으로 호출됩니다.',
+    operationId: 'completeSessions',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '수업 완료 처리 성공',
+    schema: {
+      example: {
+        message: '3개의 세션이 성공적으로 완료 처리되었습니다.',
+        completedCount: 3,
+        completedSessions: [
+          { id: 1, className: '발레 기초반', date: '2024-01-15T00:00:00.000Z' },
+          { id: 2, className: '발레 중급반', date: '2024-01-15T00:00:00.000Z' },
+          { id: 3, className: '발레 고급반', date: '2024-01-15T00:00:00.000Z' },
+        ],
+      },
+    },
+  })
+  @ApiUnauthorizedResponse({
+    description: '인증 토큰이 없거나 만료됨',
+    schema: {
+      example: {
+        statusCode: 401,
+        message: 'Unauthorized',
+      },
+    },
+  })
+  @ApiForbiddenResponse({
+    description: '강사 권한이 부족함',
+    schema: {
+      example: {
+        statusCode: 403,
+        message: 'Forbidden resource',
+      },
+    },
+  })
   async completeSessions() {
     return this.classSessionService.updateCompletedSessions();
   }
@@ -190,7 +384,77 @@ export class ClassSessionController {
 
   @Post(':sessionId/enroll')
   @Roles(Role.STUDENT)
-  @ApiOperation({ summary: '세션별 수강 신청' })
+  @ApiOperation({
+    summary: '세션별 수강 신청',
+    description:
+      '학생이 특정 세션에 수강 신청을 합니다. 이미 신청한 세션이거나 수강 인원이 초과된 경우 오류가 발생합니다.',
+    operationId: 'enrollSession',
+  })
+  @ApiParam({
+    name: 'sessionId',
+    description: '수강 신청할 세션의 고유 ID',
+    example: 1,
+    type: 'integer',
+  })
+  @ApiResponse({
+    status: 201,
+    description: '세션 수강 신청이 성공적으로 완료되었습니다.',
+    schema: {
+      example: {
+        id: 1,
+        studentId: 1,
+        sessionId: 1,
+        status: 'PENDING',
+        createdAt: '2024-01-15T10:30:00.000Z',
+        session: {
+          id: 1,
+          date: '2024-01-15T00:00:00.000Z',
+          startTime: '2024-01-15T18:00:00.000Z',
+          endTime: '2024-01-15T20:00:00.000Z',
+        },
+      },
+    },
+  })
+  @ApiConflictResponse({
+    description: '이미 수강 신청한 세션이거나 수강 인원 초과',
+    schema: {
+      example: {
+        statusCode: 409,
+        message: '이미 수강 신청한 세션입니다.',
+        code: 'ALREADY_ENROLLED',
+        details: { sessionId: 1, studentId: 1 },
+      },
+    },
+  })
+  @ApiNotFoundResponse({
+    description: '세션 또는 학생을 찾을 수 없음',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: '세션을 찾을 수 없습니다.',
+        code: 'SESSION_NOT_FOUND',
+        details: { sessionId: 999 },
+      },
+    },
+  })
+  @ApiUnauthorizedResponse({
+    description: '인증 토큰이 없거나 만료됨',
+    schema: {
+      example: {
+        statusCode: 401,
+        message: 'Unauthorized',
+      },
+    },
+  })
+  @ApiForbiddenResponse({
+    description: '학생 권한이 부족함',
+    schema: {
+      example: {
+        statusCode: 403,
+        message: 'Forbidden resource',
+      },
+    },
+  })
   async enrollSession(
     @Param('sessionId', ParseIntPipe) sessionId: number,
     @CurrentUser() user: any,
@@ -205,7 +469,75 @@ export class ClassSessionController {
 
   @Post('batch-enroll')
   @Roles(Role.STUDENT)
-  @ApiOperation({ summary: '여러 세션 일괄 수강 신청' })
+  @ApiOperation({
+    summary: '여러 세션 일괄 수강 신청',
+    description:
+      '학생이 여러 세션에 동시에 수강 신청을 합니다. 각 세션별로 수강 가능 여부가 검증됩니다.',
+    operationId: 'batchEnrollSessions',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        sessionIds: {
+          type: 'array',
+          items: { type: 'number' },
+          description: '수강 신청할 세션 ID 목록',
+          example: [1, 2, 3],
+        },
+      },
+      required: ['sessionIds'],
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: '일괄 수강 신청이 성공적으로 완료되었습니다.',
+    schema: {
+      example: {
+        message: '3개 중 2개의 세션에 성공적으로 신청되었습니다.',
+        totalCount: 3,
+        successCount: 2,
+        failedCount: 1,
+        results: [
+          { sessionId: 1, success: true, status: 'PENDING' },
+          { sessionId: 2, success: true, status: 'PENDING' },
+          {
+            sessionId: 3,
+            success: false,
+            reason: '이미 수강 신청한 세션입니다.',
+          },
+        ],
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: '빈 세션 목록 또는 잘못된 세션 ID',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: '세션 ID 목록이 비어있습니다.',
+        code: 'EMPTY_SESSION_LIST',
+      },
+    },
+  })
+  @ApiUnauthorizedResponse({
+    description: '인증 토큰이 없거나 만료됨',
+    schema: {
+      example: {
+        statusCode: 401,
+        message: 'Unauthorized',
+      },
+    },
+  })
+  @ApiForbiddenResponse({
+    description: '학생 권한이 부족함',
+    schema: {
+      example: {
+        statusCode: 403,
+        message: 'Forbidden resource',
+      },
+    },
+  })
   async batchEnrollSessions(
     @Body() data: { sessionIds: number[] },
     @CurrentUser() user: any,
@@ -226,8 +558,69 @@ export class ClassSessionController {
    */
   @Delete('enrollments/:enrollmentId')
   @Roles(Role.STUDENT)
-  @ApiOperation({ summary: '학생 수강 취소' })
-  @ApiResponse({ status: 200, description: '수강 취소 성공' })
+  @ApiOperation({
+    summary: '학생 수강 취소',
+    description:
+      '학생이 자신의 수강 신청을 취소합니다. 이미 진행된 세션이거나 취소 불가능한 상태인 경우 오류가 발생합니다.',
+    operationId: 'cancelEnrollment',
+  })
+  @ApiParam({
+    name: 'enrollmentId',
+    description: '취소할 수강 신청의 고유 ID',
+    example: 1,
+    type: 'integer',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '수강 취소 성공',
+    schema: {
+      example: {
+        message: '수강 신청이 성공적으로 취소되었습니다.',
+        enrollmentId: 1,
+        cancelledAt: '2024-01-15T10:30:00.000Z',
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: '취소할 수 없는 상태',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: '이미 진행된 세션은 취소할 수 없습니다.',
+        code: 'SESSION_ALREADY_STARTED',
+        details: { sessionId: 1, startTime: '2024-01-15T18:00:00.000Z' },
+      },
+    },
+  })
+  @ApiNotFoundResponse({
+    description: '수강 신청을 찾을 수 없음',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: '수강 신청을 찾을 수 없습니다.',
+        code: 'ENROLLMENT_NOT_FOUND',
+        details: { enrollmentId: 999 },
+      },
+    },
+  })
+  @ApiUnauthorizedResponse({
+    description: '인증 토큰이 없거나 만료됨',
+    schema: {
+      example: {
+        statusCode: 401,
+        message: 'Unauthorized',
+      },
+    },
+  })
+  @ApiForbiddenResponse({
+    description: '학생 권한이 부족함',
+    schema: {
+      example: {
+        statusCode: 403,
+        message: 'Forbidden resource',
+      },
+    },
+  })
   async cancelEnrollment(
     @Param('enrollmentId', ParseIntPipe) enrollmentId: number,
     @CurrentUser() user: any,

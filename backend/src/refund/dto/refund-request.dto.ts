@@ -18,30 +18,55 @@ export enum RefundReason {
 }
 
 export class RefundRequestDto {
-  @ApiProperty({ description: '세션 수강 신청 ID' })
+  @ApiProperty({
+    description: '세션 수강 신청 ID (환불을 요청할 세션 수강 신청의 고유 ID)',
+    example: 1,
+    minimum: 1,
+  })
   @IsNumber({}, { message: '세션 수강 신청 ID는 숫자여야 합니다.' })
   @Min(1, { message: '세션 수강 신청 ID는 1 이상이어야 합니다.' })
   sessionEnrollmentId: number;
 
-  @ApiProperty({ description: '환불 사유', enum: RefundReason })
+  @ApiProperty({
+    description:
+      '환불 사유 (PERSONAL_SCHEDULE: 개인 일정, HEALTH_ISSUE: 건강상의 이유, DISSATISFACTION: 불만족, FINANCIAL_ISSUE: 재정적 이유, OTHER: 기타)',
+    enum: RefundReason,
+    example: RefundReason.PERSONAL_SCHEDULE,
+    enumName: 'RefundReason',
+  })
   @IsEnum(RefundReason, {
     message:
       '유효하지 않은 환불 사유입니다. (PERSONAL_SCHEDULE, HEALTH_ISSUE, DISSATISFACTION, FINANCIAL_ISSUE, OTHER 중 하나여야 합니다.)',
   })
   reason: RefundReason;
 
-  @ApiProperty({ description: '상세 사유 (선택사항)' })
+  @ApiProperty({
+    description: '상세 사유 (선택사항, 환불 요청의 구체적인 이유를 설명)',
+    example: '개인 일정 변경으로 인해 수업 참여가 어려워졌습니다.',
+    required: false,
+    maxLength: 500,
+  })
   @IsOptional()
   @IsString({ message: '상세 사유는 문자열이어야 합니다.' })
   @MaxLength(500, { message: '상세 사유는 500자 이하여야 합니다.' })
   detailedReason?: string;
 
-  @ApiProperty({ description: '환불 요청 금액' })
+  @ApiProperty({
+    description: '환불 요청 금액 (원 단위, 0 이상의 값)',
+    example: 50000,
+    minimum: 0,
+  })
   @IsNumber({}, { message: '환불 요청 금액은 숫자여야 합니다.' })
   @Min(0, { message: '환불 요청 금액은 0 이상이어야 합니다.' })
   refundAmount: number;
 
-  @ApiProperty({ description: '은행명 (선택사항)' })
+  @ApiProperty({
+    description: '은행명 (선택사항, 환불을 받을 계좌의 은행명)',
+    example: '신한은행',
+    required: false,
+    maxLength: 50,
+    pattern: '^[가-힣a-zA-Z\\s]+$',
+  })
   @IsOptional()
   @IsString({ message: '은행명은 문자열이어야 합니다.' })
   @MaxLength(50, { message: '은행명은 50자 이하여야 합니다.' })
@@ -50,7 +75,13 @@ export class RefundRequestDto {
   })
   bankName?: string;
 
-  @ApiProperty({ description: '계좌번호 (선택사항)' })
+  @ApiProperty({
+    description: '계좌번호 (선택사항, 환불을 받을 계좌번호)',
+    example: '110-123456789',
+    required: false,
+    maxLength: 20,
+    pattern: '^[0-9-]+$',
+  })
   @IsOptional()
   @IsString({ message: '계좌번호는 문자열이어야 합니다.' })
   @MaxLength(20, { message: '계좌번호는 20자 이하여야 합니다.' })
@@ -59,7 +90,13 @@ export class RefundRequestDto {
   })
   accountNumber?: string;
 
-  @ApiProperty({ description: '예금주 (선택사항)' })
+  @ApiProperty({
+    description: '예금주 (선택사항, 환불을 받을 계좌의 예금주명)',
+    example: '김학생',
+    required: false,
+    maxLength: 50,
+    pattern: '^[가-힣a-zA-Z\\s]+$',
+  })
   @IsOptional()
   @IsString({ message: '예금주는 문자열이어야 합니다.' })
   @MaxLength(50, { message: '예금주는 50자 이하여야 합니다.' })
