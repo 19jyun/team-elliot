@@ -1,0 +1,43 @@
+{
+  "recommendations": [
+    "ms-vscode.vscode-typescript-next",
+    "bradlc.vscode-tailwindcss",
+    "esbenp.prettier-vscode",
+    "ms-vscode.vscode-eslint",
+    "prisma.prisma",
+    "ms-vscode.vscode-json",
+    "ms-vscode.vscode-node-debug2",
+    "ms-vscode.vscode-jest",
+    "ms-vscode.vscode-npm-script",
+    "ms-vscode.vscode-git-graph",
+    "ms-vscode.vscode-gitlens",
+    "ms-vscode.vscode-docker",
+    "ms-vscode.vscode-postgresql-client",
+    "ms-vscode.vscode-rest-client",
+    "ms-vscode.vscode-thunder-client",
+    "pkief.material-icon-theme",
+    "ms-vscode.vscode-import-cost",
+    "ms-vscode.vscode-json-transform",
+    "ms-vscode.vscode-markdownlint",
+    "streetsidesoftware.code-spell-checker",
+    "ms-vscode.vscode-edit-csv",
+    "ms-vscode.vscode-excel-viewer",
+    "ms-vscode.vscode-paste-image",
+    "ms-vscode.vscode-pull-request-github",
+    "ms-vscode.vscode-github-issue-notebooks",
+    "ms-vscode.vscode-github-pull-request",
+    "ms-vscode.vscode-github-repositories",
+    "ms-vscode.vscode-github",
+    "ms-vscode.vscode-github-actions",
+    "ms-vscode.vscode-github-issue-notebooks",
+    "ms-vscode.vscode-github-pull-request",
+    "ms-vscode.vscode-github-repositories",
+    "ms-vscode.vscode-github",
+    "ms-vscode.vscode-github-actions"
+  ],
+  "unwantedRecommendations": [
+    "ms-vscode.vscode-typescript",
+    "ms-vscode.vscode-javascript-debug",
+    "ms-vscode.vscode-javascript-debug-companion"
+  ]
+}

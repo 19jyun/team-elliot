@@ -1,0 +1,103 @@
+{
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "typescript.suggest.autoImports": true,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  "eslint.workingDirectories": ["./"],
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/coverage": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/coverage": true
+  },
+  "files.associations": {
+    "*.prisma": "prisma"
+  },
+  "prisma.format.enable": true,
+  "prisma.validate.enable": true,
+  "jest.autoRun": {
+    "watch": false,
+    "onStartup": []
+  },
+  "jest.showCoverageOnLoad": true,
+  "jest.coverageFormatter": "DefaultFormatter",
+  "jest.coverageColors": {
+    "covered": "green",
+    "uncovered": "red",
+    "partially-covered": "yellow"
+  },
+  "emmet.includeLanguages": {
+    "typescript": "html"
+  },
+  "git.ignoreLimitWarning": true,
+  "git.autofetch": true,
+  "git.confirmSync": false,
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.defaultProfile.linux": "bash",
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  "terminal.integrated.env.osx": {
+    "NODE_ENV": "development"
+  },
+  "terminal.integrated.env.linux": {
+    "NODE_ENV": "development"
+  },
+  "terminal.integrated.env.windows": {
+    "NODE_ENV": "development"
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/coverage/**": true,
+    "**/.git/**": true
+  },
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.patterns": {
+    "*.ts": "${capture}.js, ${capture}.js.map, ${capture}.d.ts",
+    "*.js": "${capture}.js.map, ${capture}.d.ts",
+    "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml",
+    "tsconfig.json": "tsconfig.*.json",
+    "nest-cli.json": "nest-cli.*.json"
+  },
+  "workbench.colorCustomizations": {
+    "activityBar.background": "#1e1e1e",
+    "activityBar.foreground": "#ffffff",
+    "activityBar.inactiveForeground": "#666666",
+    "activityBarBadge.background": "#007acc",
+    "activityBarBadge.foreground": "#ffffff"
+  },
+  "workbench.iconTheme": "material-icon-theme",
+  "material-icon-theme.folders.associations": {
+    "src": "src",
+    "test": "test",
+    "prisma": "database",
+    "postman": "api"
+  },
+  "material-icon-theme.files.associations": {
+    "*.prisma": "database",
+    "*.postman_collection.json": "api",
+    "*.dto.ts": "interface",
+    "*.entity.ts": "class",
+    "*.service.ts": "service",
+    "*.controller.ts": "controller",
+    "*.module.ts": "module",
+    "*.guard.ts": "guard",
+    "*.decorator.ts": "decorator",
+    "*.strategy.ts": "strategy"
+  }
+}

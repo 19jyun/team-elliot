@@ -1,108 +1,121 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# 🩰 Team Elliot - Backend API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+발레 학원 관리 시스템의 백엔드 API 서버입니다.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 📋 프로젝트 개요
 
-## Description
+Team Elliot은 발레 학원의 수업 관리, 학생 관리, 결제 시스템을 통합적으로 제공하는 플랫폼입니다.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+### 🎯 주요 기능
 
-## Project setup
+- **학원 관리**: 학원 정보, 강사, 학생 관리
+- **수업 관리**: 수업 생성, 세션 관리, 출석 체크
+- **결제 시스템**: 수업료 결제, 환불 처리
+- **실시간 통신**: WebSocket을 통한 실시간 알림
+- **권한 관리**: 학생/강사/원장별 역할 기반 접근 제어
 
-```bash
-$ npm install
-```
+## 🏗️ 기술 스택
 
-## Compile and run the project
+- **Framework**: NestJS 10.x
+- **Language**: TypeScript 5.x
+- **Database**: PostgreSQL 15+ with Prisma ORM
+- **Authentication**: JWT + Passport
+- **Real-time**: Socket.io
+- **File Upload**: Multer
+- **Validation**: class-validator
+- **Documentation**: Swagger/OpenAPI
+- **Testing**: Jest + Supertest
+- **Container**: Docker + Docker Compose
 
-```bash
-# development
-$ npm run start
+## 🚀 빠른 시작
 
-# watch mode
-$ npm run start:dev
+### 필수 요구사항
 
-# production mode
-$ npm run start:prod
-```
+- Node.js 18+
+- PostgreSQL 15+
+- Docker (선택사항)
 
-## Run tests
+### 1. 저장소 클론
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+git clone <repository-url>
+cd team-elliot/backend
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### 2. 의존성 설치
 
 ```bash
-$ npm install -g mau
-$ mau deploy
+npm install
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### 3. 환경변수 설정
 
-## Resources
+```bash
+cp env.example .env
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+`.env` 파일을 편집하여 다음 값들을 설정하세요:
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+```env
+DATABASE_URL=postgresql://username:password@localhost:5432/ballet_academy
+JWT_SECRET=your-super-secret-jwt-key
+NODE_ENV=development
+```
 
-## Support
+### 4. 데이터베이스 설정
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```bash
+# Prisma 클라이언트 생성
+npx prisma generate
 
-## Stay in touch
+# 데이터베이스 마이그레이션
+npx prisma migrate dev
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+# 초기 데이터 시드 (선택사항)
+npm run seed
+```
 
-## License
+### 5. 개발 서버 시작
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+```bash
+npm run start:dev
+```
 
-# Backend API
+서버가 `http://localhost:3000`에서 실행됩니다.
 
-## 테스트 환경 설정
+## 📚 API 문서
 
-### 로컬 테스트 실행
+### Swagger UI
+
+개발 서버 실행 후 다음 URL에서 API 문서를 확인할 수 있습니다:
+
+```
+http://localhost:3000/api
+```
+
+### Postman Collection
+
+`postman/` 디렉토리에 API 테스트용 Postman 컬렉션이 포함되어 있습니다.
+
+## 🧪 테스트
+
+### 테스트 실행
+
+```bash
+# 단위 테스트
+npm run test
+
+# 통합 테스트
+npm run test:integration
+
+# E2E 테스트
+npm run test:e2e
+
+# 테스트 커버리지
+npm run test:cov
+```
+
+### 통합 테스트 환경 설정
 
 ```bash
 # 테스트 데이터베이스 시작
@@ -115,45 +128,167 @@ npm run test:integration
 npm run test:db:stop
 ```
 
-### 환경변수 설정
+## 🏗️ 프로젝트 구조
 
-테스트 실행을 위해 다음 환경변수가 필요합니다:
+```
+src/
+├── academy/          # 학원 관리
+├── auth/            # 인증 및 권한 관리
+├── ballet-pose/     # 발레 자세 관리
+├── class/           # 수업 관리
+├── class-session/   # 수업 세션 관리
+├── payment/         # 결제 시스템
+├── principal/       # 원장 관리
+├── refund/          # 환불 처리
+├── session-content/ # 세션 내용 관리
+├── sms/             # SMS 서비스
+├── socket/          # 실시간 통신
+├── student/         # 학생 관리
+└── teacher/         # 강사 관리
+```
 
-- `DATABASE_URL`: PostgreSQL 연결 문자열
-- `JWT_SECRET`: JWT 토큰 서명용 시크릿 키
-- `NODE_ENV`: 환경 설정 (test)
+## 🔐 인증 및 권한
 
-### GitHub Actions
+### 사용자 역할
 
-GitHub Actions에서는 자동으로 테스트 환경이 설정되며, 다음 단계가 실행됩니다:
+- **STUDENT**: 학생 - 수업 신청, 출석 확인
+- **TEACHER**: 강사 - 수업 관리, 출석 체크
+- **PRINCIPAL**: 원장 - 학원 전체 관리
 
-1. PostgreSQL 서비스 컨테이너 시작
-2. 데이터베이스 마이그레이션 실행
-3. 테스트 스키마 생성
-4. 단위 테스트 실행
-5. 통합 테스트 실행
-6. E2E 테스트 실행
+### JWT 인증
 
-## 개발 환경 설정
+모든 보호된 API는 `Authorization: Bearer <token>` 헤더가 필요합니다.
 
-### 필수 요구사항
+## 📁 파일 업로드
 
-- Node.js 18+
-- PostgreSQL 15+
-- Docker (선택사항)
+### 지원 형식
 
-### 설치 및 실행
+- **이미지**: JPG, PNG, WEBP
+- **최대 크기**: 5MB
+- **업로드 경로**: `/uploads/`
+
+### 업로드 가능한 파일
+
+- 프로필 사진
+- 발레 자세 이미지
+- 학원 관련 이미지
+
+## 🐳 Docker
+
+### 개발 환경
 
 ```bash
-# 의존성 설치
-npm install
+# 전체 스택 시작 (앱 + 데이터베이스)
+docker-compose up -d
 
-# 환경변수 설정
-cp .env.example .env
+# 로그 확인
+docker-compose logs -f app
 
-# 데이터베이스 마이그레이션
-npx prisma migrate dev
+# 스택 중지
+docker-compose down
+```
 
-# 개발 서버 시작
+### 프로덕션 빌드
+
+```bash
+# 이미지 빌드
+docker build -t team-elliot-backend .
+
+# 컨테이너 실행
+docker run -p 3000:3000 team-elliot-backend
+```
+
+## 🔧 개발 도구
+
+### 코드 품질
+
+```bash
+# 코드 포맷팅
+npm run format
+
+# 린팅
+npm run lint
+
+# 린팅 자동 수정
+npm run lint:fix
+```
+
+### 데이터베이스 관리
+
+```bash
+# Prisma Studio (데이터베이스 GUI)
+npx prisma studio
+
+# 데이터베이스 리셋
+npm run db:reset
+
+# 데이터베이스 리셋 + 시드
+npm run db:reset:seed
+```
+
+## 📊 모니터링
+
+### 헬스체크
+
+```
+GET /health
+```
+
+### 로그 확인
+
+```bash
+# Docker 로그
+docker logs <container-name>
+
+# 애플리케이션 로그
 npm run start:dev
 ```
+
+## 🚀 배포
+
+자세한 배포 정보는 다음 문서를 참조하세요:
+
+- [배포 가이드](./DEPLOYMENT.md)
+- [CI/CD 설정](./CICD_README.md)
+
+## 🤝 기여하기
+
+### 개발 워크플로우
+
+1. `develop` 브랜치에서 작업
+2. Pull Request 생성
+3. 코드 리뷰 후 `main` 브랜치로 병합
+
+### 커밋 컨벤션
+
+```
+feat: 새로운 기능 추가
+fix: 버그 수정
+docs: 문서 수정
+style: 코드 포맷팅
+refactor: 코드 리팩토링
+test: 테스트 추가/수정
+chore: 빌드 프로세스 또는 보조 도구 변경
+```
+
+## 📞 지원
+
+### 문제 해결
+
+1. [Issues](../../issues)에서 기존 문제 확인
+2. 새로운 이슈 생성
+3. 팀원과 논의
+
+### 개발 환경 문제
+
+- Node.js 버전 확인 (18+)
+- PostgreSQL 연결 확인
+- 환경변수 설정 확인
+
+## 📄 라이선스
+
+이 프로젝트는 팀 내부용으로 개발되었습니다.
+
+---
+
+**Team Elliot Backend Team** 🩰
