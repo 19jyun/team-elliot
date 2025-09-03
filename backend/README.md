@@ -81,7 +81,7 @@ npm run seed
 npm run start:dev
 ```
 
-서버가 `http://localhost:3000`에서 실행됩니다.
+서버가 `http://localhost:3001`에서 실행됩니다.
 
 ## 📚 API 문서
 
@@ -90,7 +90,7 @@ npm run start:dev
 개발 서버 실행 후 다음 URL에서 API 문서를 확인할 수 있습니다:
 
 ```
-http://localhost:3000/api
+http://localhost:3001/api
 ```
 
 ### Postman Collection
@@ -158,6 +158,96 @@ src/
 ### JWT 인증
 
 모든 보호된 API는 `Authorization: Bearer <token>` 헤더가 필요합니다.
+
+## ⚙️ 공통 기능
+
+### 응답 인터셉터
+
+모든 API 응답은 일관된 형식으로 표준화됩니다:
+
+```typescript
+// 성공 응답
+{
+  "success": true,
+  "data": { ... },
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "path": "/api/students"
+}
+
+// 에러 응답
+{
+  "success": false,
+  "statusCode": 400,
+  "error": {
+    "code": "BAD_REQUEST",
+    "message": "잘못된 요청입니다.",
+    "details": { ... }
+  },
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "path": "/api/students"
+}
+```
+
+#### 응답 변환 규칙
+
+- **성공 응답**: `success: true`, `data` 필드에 실제 응답 데이터 포함
+- **에러 응답**: `success: false`, `error` 필드에 에러 코드, 메시지, 상세 정보 포함
+- **공통 필드**: `timestamp` (ISO 8601 형식), `path` (요청 URL)
+
+#### 인터셉터 구현
+
+```typescript
+// src/common/interceptors/response.interceptor.ts
+@Injectable()
+export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
+  intercept(
+    context: ExecutionContext,
+    next: CallHandler,
+  ): Observable<Response<T>> {
+    const request = context.switchToHttp().getRequest<Request>();
+
+    return next.handle().pipe(
+      map((data) => ({
+        success: true,
+        data,
+        timestamp: new Date().toISOString(),
+        path: request.url,
+      })),
+    );
+  }
+}
+```
+
+#### HTTP 예외 필터
+
+```typescript
+// src/common/filters/http-exception.filter.ts
+@Catch()
+export class HttpExceptionFilter implements ExceptionFilter {
+  catch(exception: unknown, host: ArgumentsHost) {
+    // ... 예외 처리 로직
+    const errorResponse = {
+      success: false,
+      statusCode: status,
+      error: {
+        code: this.extractErrorCode(exceptionResponse),
+        message: this.extractMessage(exceptionResponse),
+        details: exceptionResponse,
+      },
+      timestamp: new Date().toISOString(),
+      path: request.url,
+    };
+  }
+}
+```
+
+#### 전역 적용
+
+```typescript
+// src/main.ts
+app.useGlobalFilters(new HttpExceptionFilter());
+app.useGlobalInterceptors(new ResponseInterceptor());
+```
 
 ## 📁 파일 업로드
 
