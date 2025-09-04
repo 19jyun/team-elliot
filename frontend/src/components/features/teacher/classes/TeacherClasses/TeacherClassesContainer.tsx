@@ -7,7 +7,8 @@ import { useRouter } from 'next/navigation'
 import { ClassList } from '@/components/common/ClassContainer/ClassList'
 import { ClassSessionModal } from '@/components/common/ClassContainer/ClassSessionModal'
 import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'
-import { TeacherClass } from '@/types/api/teacher'
+import { toTeacherClassListVM, toTeacherClassSessionModalVM } from '@/lib/adapters/teacher'
+import type { TeacherClassListVM, TeacherClassSessionModalVM, TeacherClassCardVM } from '@/types/view/teacher'
 
 export function TeacherClassesContainer() {
   const router = useRouter()
@@ -18,13 +19,24 @@ export function TeacherClassesContainer() {
     },
   })
 
-  const [selectedClass, setSelectedClass] = useState<TeacherClass | null>(null)
+  const [selectedClass, setSelectedClass] = useState<TeacherClassCardVM | null>(null)
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false)
 
   // API 기반 데이터 관리
   const { classes: myClasses, loadClasses, isLoading, error } = useTeacherApi()
 
-  // ViewModel은 실제로 사용하지 않으므로 제거
+  // ViewModel 변환
+  const errorMessage = error && typeof error === 'object' && 'message' in error 
+    ? (error as { message: string }).message 
+    : typeof error === 'string' ? error : null;
+  const classListVM: TeacherClassListVM = toTeacherClassListVM(myClasses, isLoading, errorMessage);
+  
+  // 클래스 세션 모달 ViewModel
+  const classSessionModalVM: TeacherClassSessionModalVM = toTeacherClassSessionModalVM({
+    isOpen: isSessionModalOpen,
+    selectedClass: selectedClass,
+    onClose: () => setIsSessionModalOpen(false)
+  });
 
   // 초기 데이터 로드
   useEffect(() => {
@@ -32,7 +44,7 @@ export function TeacherClassesContainer() {
   }, [loadClasses]);
 
   // 로딩 상태 처리
-  if (status === 'loading' || isLoading) {
+  if (status === 'loading' || classListVM.isLoading) {
     return (
       <div className="flex items-center justify-center min-h-full">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
@@ -41,7 +53,7 @@ export function TeacherClassesContainer() {
   }
 
   // 에러 처리
-  if (error) {
+  if (classListVM.error) {
     const errorResponse = error as { response?: { status?: number } }
     if (errorResponse?.response?.status === 401) {
       signOut({ redirect: true, callbackUrl: '/auth' });
@@ -61,19 +73,11 @@ export function TeacherClassesContainer() {
     )
   }
 
-  const handleClassClick = (classData: unknown) => {
-    // TeacherClass의 필수 속성들이 있는지 확인
-    if (classData && typeof classData === 'object' && 
-        'id' in classData && 'className' in classData && 'level' in classData) {
-      setSelectedClass(classData as TeacherClass)
-      setIsSessionModalOpen(true)
-    }
+  const handleClassClick = (classData: TeacherClassCardVM) => {
+    setSelectedClass(classData)
+    setIsSessionModalOpen(true)
   }
 
-  const closeSessionModal = () => {
-    setIsSessionModalOpen(false)
-    setSelectedClass(null)
-  }
 
   return (
     <div className="flex flex-col h-full bg-white">
@@ -91,15 +95,18 @@ export function TeacherClassesContainer() {
       <main className="flex-1 overflow-hidden">
         <ClassList
           classes={myClasses}
-          onClassClick={handleClassClick}
+          onClassClick={(classData) => {
+            const classCardVM = classListVM.classes.find(c => c.id === classData.id);
+            if (classCardVM) handleClassClick(classCardVM);
+          }}
           role="teacher"
         />
       </main>
 
       <ClassSessionModal
-        isOpen={isSessionModalOpen}
-        selectedClass={selectedClass}
-        onClose={closeSessionModal}
+        isOpen={classSessionModalVM.isOpen}
+        selectedClass={classSessionModalVM.selectedClass}
+        onClose={classSessionModalVM.onClose}
         role="teacher"
       />
     </div>

@@ -6,8 +6,6 @@ import { useSessionContents } from '@/hooks/useSessionContents'
 import type { SessionDetailTabVM, SessionDetailDisplayVM, SessionContentDisplayVM } from '@/types/view/student'
 import { toSessionDetailDisplayVM } from '@/lib/adapters/student'
 
-interface SessionDetailTabProps extends SessionDetailTabVM {}
-
 // 학생용 발레 자세 카드 컴포넌트
 function StudentPoseCard({ content, index }: { content: SessionContentDisplayVM; index: number }) {
 
@@ -63,7 +61,7 @@ function StudentPoseCard({ content, index }: { content: SessionContentDisplayVM;
   )
 }
 
-export function SessionDetailTab({ sessionId }: SessionDetailTabProps) {
+export function SessionDetailTab({ sessionId }: SessionDetailTabVM) {
   const { data: contents, isLoading, error } = useSessionContents(sessionId)
 
   // View Model 생성

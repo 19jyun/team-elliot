@@ -6,6 +6,9 @@ import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
 
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from 'lucide-react';
+import { toPrincipalSessionListForRequestsVM } from '@/lib/adapters/principal';
+import type { PrincipalEnrollment, PrincipalRefundRequest } from '@/types/api/principal';
+import type { PrincipalSessionListForRequestsVM } from '@/types/view/principal';
 
 export function PrincipalSessionList() {
   const { 
@@ -23,77 +26,15 @@ export function PrincipalSessionList() {
     error 
   } = usePrincipalData();
 
-  // 선택된 탭에 따라 원본 데이터 결정
-  const rawData = selectedTab === 'enrollment' 
-    ? enrollments 
-    : refundRequests;
-
-  // 선택된 클래스의 세션만 필터링하고 세션별로 그룹화
-  const sessionMap = new Map();
-  
-  if (selectedTab === 'enrollment') {
-    // 수강신청 데이터 처리
-    const pendingEnrollments = rawData?.filter((enrollment: any) => {
-      const classId = enrollment.session?.class?.id;
-      return enrollment.status === "PENDING" && classId === selectedClassId;
-    });
-    
-    pendingEnrollments?.forEach((enrollment: any) => {
-      const sessionId = enrollment.sessionId;
-      if (!sessionMap.has(sessionId)) {
-        sessionMap.set(sessionId, {
-          sessionId,
-          className: enrollment.session?.class?.className || "클래스명 없음",
-          date: enrollment.session?.date || "",
-          startTime: enrollment.session?.startTime || "",
-          endTime: enrollment.session?.endTime || "",
-          level: "BEGINNER",
-          teacherName: enrollment.session?.class?.teacher?.name || "미지정",
-          currentStudents: 0,
-          maxStudents: 0,
-          pendingCount: 0,
-          enrollments: [],
-        });
-      }
-      const session = sessionMap.get(sessionId);
-      if (session) {
-        session.pendingCount++;
-        session.enrollments.push(enrollment);
-      }
-    });
-  } else {
-    // 환불신청 데이터 처리
-    const pendingRefunds = rawData?.filter((refund: any) => {
-      const classId = refund.sessionEnrollment?.session?.class?.id;
-      return refund.status === "PENDING" && classId === selectedClassId;
-    });
-    
-    pendingRefunds?.forEach((refund: any) => {
-      const sessionId = refund.sessionEnrollment?.session?.id;
-      if (!sessionMap.has(sessionId)) {
-        sessionMap.set(sessionId, {
-          sessionId,
-          className: refund.sessionEnrollment?.session?.class?.className || "클래스명 없음",
-          date: refund.sessionEnrollment?.session?.date || "",
-          startTime: refund.sessionEnrollment?.session?.startTime || "",
-          endTime: refund.sessionEnrollment?.session?.endTime || "",
-          level: "BEGINNER",
-          teacherName: refund.sessionEnrollment?.session?.class?.teacher?.name || "미지정",
-          currentStudents: 0,
-          maxStudents: 0,
-          pendingCount: 0,
-          refundRequests: [],
-        });
-      }
-      const session = sessionMap.get(sessionId);
-      if (session) {
-        session.pendingCount++;
-        session.refundRequests.push(refund);
-      }
-    });
-  }
-
-  const sessions = Array.from(sessionMap.values());
+  // ViewModel 생성
+  const sessionListVM: PrincipalSessionListForRequestsVM = toPrincipalSessionListForRequestsVM({
+    enrollments: (enrollments as unknown as PrincipalEnrollment[]) || [],
+    refundRequests: (refundRequests as unknown as PrincipalRefundRequest[]) || [],
+    selectedTab,
+    selectedClassId,
+    isLoading,
+    error,
+  });
 
   const handleSessionClick = (sessionId: number) => {
     setSelectedSessionId(sessionId);
@@ -131,7 +72,7 @@ export function PrincipalSessionList() {
   };
 
 
-  if (isLoading) {
+  if (sessionListVM.isLoading) {
     return (
       <div className="flex items-center justify-center flex-1">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
@@ -139,7 +80,7 @@ export function PrincipalSessionList() {
     );
   }
 
-  if (error) {
+  if (sessionListVM.error) {
     return (
       <div className="flex items-center justify-center flex-1">
         <p className="text-stone-500">데이터를 불러오는 중 오류가 발생했습니다.</p>
@@ -147,7 +88,7 @@ export function PrincipalSessionList() {
     );
   }
 
-  if (!selectedClassId) {
+  if (sessionListVM.showClassSelectionMessage) {
     return (
       <div className="flex items-center justify-center flex-1">
         <p className="text-stone-500">클래스를 선택해주세요.</p>
@@ -155,15 +96,12 @@ export function PrincipalSessionList() {
     );
   }
 
-  if (!sessions || sessions.length === 0) {
+  if (!sessionListVM.hasSessions) {
     return (
       <div className="flex items-center justify-center flex-1">
         <div className="text-center">
           <p className="text-stone-500 mb-4">
-            {selectedTab === 'enrollment' 
-              ? '수강 신청이 대기 중인 세션이 없습니다.'
-              : '환불 요청이 대기 중인 세션이 없습니다.'
-            }
+            {sessionListVM.emptyMessage}
           </p>
         </div>
       </div>
@@ -174,7 +112,7 @@ export function PrincipalSessionList() {
     <div className="flex-1 overflow-y-auto px-5 py-4">
       {/* 세션 목록 */}
       <div className="space-y-3">
-        {sessions.map((session: any) => (
+        {sessionListVM.sessions.map((session) => (
           <div
             key={session.sessionId}
             className="cursor-pointer hover:shadow-md transition-shadow border border-stone-200 rounded-lg p-4"

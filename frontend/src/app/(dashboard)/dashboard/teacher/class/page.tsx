@@ -10,6 +10,9 @@ import { SessionDetailModal } from '@/components/common/Session/SessionDetailMod
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
+import { toTeacherCalendarSessionVM, toTeacherSessionDetailModalVM, toClassSessionForCalendar } from '@/lib/adapters/teacher'
+import type { TeacherSessionDetailModalVM } from '@/types/view/teacher'
+import type { TeacherSession } from '@/types/api/teacher'
 
 export default function TeacherDashboardPage() {
   const router = useRouter()
@@ -30,7 +33,7 @@ export default function TeacherDashboardPage() {
   const [isDateModalOpen, setIsDateModalOpen] = useState(false)
   
   // 세션 상세 모달 상태 추가
-  const [selectedSession, setSelectedSession] = useState<any>(null)
+  const [selectedSession, setSelectedSession] = useState<TeacherSession | null>(null)
   const [isSessionDetailModalOpen, setIsSessionDetailModalOpen] = useState(false)
 
   // 초기 데이터 로드
@@ -48,6 +51,16 @@ export default function TeacherDashboardPage() {
     };
   }, []);
 
+  // CalendarProvider용 데이터 변환 (ClassSession 타입으로 변환)
+  const classSessionsForCalendar = (calendarSessions as TeacherSession[]).map(toClassSessionForCalendar);
+  
+  // 세션 상세 모달 ViewModel
+  const sessionDetailModalVM: TeacherSessionDetailModalVM = toTeacherSessionDetailModalVM({
+    isOpen: isSessionDetailModalOpen,
+    session: selectedSession ? toTeacherCalendarSessionVM(selectedSession) : null,
+    onClose: () => setIsSessionDetailModalOpen(false)
+  });
+
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {
     return (
@@ -59,7 +72,8 @@ export default function TeacherDashboardPage() {
 
   // 에러 처리
   if (error) {
-    if ((error as any)?.response?.status === 401) {
+    const errorResponse = error as { response?: { status?: number } };
+    if (errorResponse?.response?.status === 401) {
       signOut({ redirect: true, callbackUrl: '/auth' });
       return null;
     }
@@ -90,15 +104,11 @@ export default function TeacherDashboardPage() {
   }
 
   // 세션 클릭 핸들러 추가
-  const handleSessionClick = (session: any) => {
+  const handleSessionClick = (session: TeacherSession) => {
     setSelectedSession(session)
     setIsSessionDetailModalOpen(true)
   }
 
-  const closeSessionDetailModal = () => {
-    setIsSessionDetailModalOpen(false)
-    setSelectedSession(null)
-  }
 
   // 담당 클래스 SubPage로 이동
   const handleTeacherClassesClick = () => {
@@ -144,7 +154,7 @@ export default function TeacherDashboardPage() {
         <div className="flex flex-col w-full bg-white text-stone-700" style={{ height: 'calc(100vh - 450px)' }}>
           <CalendarProvider
             mode="teacher-view"
-            sessions={calendarSessions}
+            sessions={classSessionsForCalendar}
             selectedSessionIds={new Set()}
             onSessionSelect={() => {}} // teacher-view에서는 선택 기능 없음
             onDateClick={handleDateClick}
@@ -166,9 +176,9 @@ export default function TeacherDashboardPage() {
 
       {/* Session Detail Modal - API 방식 */}
       <SessionDetailModal
-        isOpen={isSessionDetailModalOpen}
+        isOpen={sessionDetailModalVM.isOpen}
         sessionId={selectedSession?.id || null}
-        onClose={closeSessionDetailModal}
+        onClose={sessionDetailModalVM.onClose}
         role="teacher"
       />
     </div>

@@ -13,9 +13,8 @@ import type { StudentEnrolledSessionVM, ClassDetailVM, ClassDetailDisplayVM } fr
 import { toClassDetailDisplayVM } from '@/lib/adapters/student';
 import { formatTime } from '@/utils/dateTime';
 
-interface ClassDetailProps extends ClassDetailVM {}
 
-export function ClassDetail({ classId, classSessions, showModificationButton = true, onModificationClick }: ClassDetailProps) {
+export function ClassDetail({ classId, classSessions, showModificationButton = true, onModificationClick }: ClassDetailVM) {
   const [classDetails, setClassDetails] = useState<ClassDetailsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

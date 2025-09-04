@@ -8,6 +8,8 @@ import {
   getPrincipalAllStudents,
   getPrincipalAllSessions,
   getPrincipalSessionEnrollments,
+  getPrincipalAllEnrollments,
+  getPrincipalAllRefundRequests,
   approvePrincipalEnrollment,
   rejectPrincipalEnrollment,
   approvePrincipalRefund,
@@ -31,7 +33,7 @@ import type {
   PrincipalClass,
   PrincipalTeacher,
   PrincipalStudent,
-  PrincipalSession,
+  PrincipalClassSession,
   UpdatePrincipalProfileRequest,
   CreatePrincipalClassRequest,
   UpdatePrincipalAcademyRequest,
@@ -53,7 +55,7 @@ export function usePrincipalApi() {
   const [classes, setClasses] = useState<PrincipalClass[]>([]);
   const [teachers, setTeachers] = useState<PrincipalTeacher[]>([]);
   const [students, setStudents] = useState<PrincipalStudent[]>([]);
-  const [sessions, setSessions] = useState<PrincipalSession[]>([]);
+  const [sessions, setSessions] = useState<PrincipalClassSession[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -276,7 +278,21 @@ export function usePrincipalApi() {
 
   // 학원 정보 업데이트
   const updateAcademy = async (data: UpdatePrincipalAcademyRequest) => {
-    return updatePrincipalAcademy(data);
+    const response = await updatePrincipalAcademy(data);
+
+    // 학원 정보 업데이트 후 데이터 다시 로드
+    await loadAcademy();
+
+    return response;
+  };
+
+  // 수강신청 및 환불 요청 관리
+  const getAllEnrollments = async () => {
+    return getPrincipalAllEnrollments();
+  };
+
+  const getAllRefundRequests = async () => {
+    return getPrincipalAllRefundRequests();
   };
 
   // 발레 포즈 (Principal에서 사용)
@@ -436,6 +452,9 @@ export function usePrincipalApi() {
     // 생성/수정 관련
     createClass,
     updateAcademy,
+    // 수강신청 및 환불 요청 관리
+    getAllEnrollments,
+    getAllRefundRequests,
     // 발레 포즈
     fetchBalletPoses,
     fetchBalletPose,

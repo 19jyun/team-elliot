@@ -22,38 +22,64 @@ export interface PrincipalAcademy {
 
 // Principal의 학원 세션 정보 (캘린더용)
 export interface PrincipalSession extends ClassSessionBase {
-  status: "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
   classId: number; // ClassSessionBase의 optional classId를 required로 오버라이드
-  class: {
-    id: number;
-    className: string;
-    level: string;
-    maxStudents: number;
-    currentStudents: number;
-    teacher: TeacherRef;
-  };
-  enrollmentCount: number;
-  confirmedCount: number;
 }
 
 // Principal의 학원 클래스 정보
 export interface PrincipalClass extends ClassBase {
+  classCode: string; // 백엔드에서 제공
   description?: string;
   maxStudents: number;
-  currentStudents: number;
+  tuitionFee: number; // 백엔드에서 제공
+  teacherId: number; // 백엔드에서 제공
+  academyId: number; // 백엔드에서 제공
   dayOfWeek: DayOfWeek;
   startTime: string;
   endTime: string;
+  level: string; // 백엔드에서 제공
+  status: string; // 백엔드에서 제공
   startDate: string;
   endDate: string;
   backgroundColor?: string;
   location?: string;
   teacher: TeacherRef & {
     phoneNumber?: string;
+    introduction?: string; // 백엔드에서 제공
+    photoUrl?: string; // 백엔드에서 제공
   };
-  isRegistrationOpen: boolean;
-  createdAt: string;
-  updatedAt: string;
+  academy: {
+    // 백엔드에서 제공
+    id: number;
+    name: string;
+  };
+  classSessions: PrincipalClassSession[]; // 백엔드에서 제공
+  // currentStudents, isRegistrationOpen, createdAt, updatedAt는 백엔드에서 제공되지 않음
+}
+
+// Principal 클래스 세션 정보 (백엔드 응답 구조에 맞춤)
+export interface PrincipalClassSession {
+  id: number;
+  classId: number;
+  date: string;
+  startTime: string;
+  endTime: string;
+  currentStudents: number;
+  maxStudents: number;
+  enrollments: PrincipalSessionEnrollment[];
+}
+
+// Principal 세션 수강신청 정보 (백엔드 응답 구조에 맞춤)
+export interface PrincipalSessionEnrollment {
+  id: number;
+  studentId: number;
+  sessionId: number;
+  status: string;
+  enrolledAt: string;
+  student: {
+    id: number;
+    name: string;
+    phoneNumber?: string;
+  };
 }
 
 // Principal의 학원 선생님 정보
@@ -63,13 +89,7 @@ export interface PrincipalTeacher {
   phoneNumber?: string;
   introduction?: string;
   photoUrl?: string;
-  education?: string[];
-  specialties?: string[];
-  certifications?: string[];
-  yearsOfExperience?: number;
-  joinedAt: string;
-  totalClasses: number;
-  activeClasses: number;
+  // education, specialties, certifications, yearsOfExperience, joinedAt, totalClasses, activeClasses는 백엔드에서 제공되지 않음
 }
 
 // Principal의 학원 수강생 정보
@@ -77,16 +97,7 @@ export interface PrincipalStudent {
   id: number;
   name: string;
   phoneNumber?: string;
-  emergencyContact?: string;
-  birthDate?: string;
-  notes?: string;
-  level?: string;
-  joinedAt?: string;
-  totalSessions: number;
-  confirmedSessions: number;
-  pendingSessions: number;
-  totalClasses: number;
-  activeClasses: number;
+  // emergencyContact, birthDate, notes, level, joinedAt, totalSessions, confirmedSessions, pendingSessions, totalClasses, activeClasses는 백엔드에서 제공되지 않음
 }
 
 // Principal의 학원 정보 수정 요청 타입
@@ -100,7 +111,9 @@ export interface UpdatePrincipalAcademyRequest {
 // Principal의 프로필 정보 타입
 export interface PrincipalProfile {
   id: number;
+  userId: number; // 백엔드에서 제공
   name: string;
+  email: string; // 백엔드에서 제공
   phoneNumber: string;
   introduction?: string;
   photoUrl?: string;
@@ -114,6 +127,8 @@ export interface PrincipalProfile {
     name: string;
     code: string;
   };
+  createdAt: string; // 백엔드에서 제공
+  updatedAt: string; // 백엔드에서 제공
 }
 
 // Principal의 프로필 정보 수정 요청 타입
@@ -132,10 +147,68 @@ export interface UpdatePrincipalProfileRequest {
 export interface PrincipalDataResponse {
   userProfile: PrincipalProfile;
   academy: PrincipalAcademy | null;
+  enrollments: PrincipalEnrollment[]; // 백엔드에서 제공
+  refundRequests: PrincipalRefundRequest[]; // 백엔드에서 제공
   classes: PrincipalClass[];
-  sessions: PrincipalSession[];
   teachers: PrincipalTeacher[];
   students: PrincipalStudent[];
+  // sessions는 백엔드에서 제공되지 않음 (classes.classSessions로 대체)
+}
+
+// Principal 수강신청 정보 (백엔드 응답 구조에 맞춤)
+export interface PrincipalEnrollment {
+  id: number;
+  studentId: number;
+  sessionId: number;
+  status: string;
+  enrolledAt: string;
+  session: {
+    id: number;
+    date: string;
+    startTime: string;
+    endTime: string;
+    class: {
+      id: number;
+      className: string;
+      level: string;
+      teacher: {
+        name: string;
+      };
+    };
+  };
+}
+
+// Principal 환불 요청 정보 (백엔드 응답 구조에 맞춤)
+export interface PrincipalRefundRequest {
+  id: number;
+  studentId: number;
+  sessionId: number;
+  reason: string;
+  refundAmount: number;
+  status: string;
+  requestedAt: string;
+  bankName?: string;
+  accountNumber?: string;
+  accountHolder?: string;
+  sessionEnrollment: {
+    session: {
+      id: number;
+      date: string;
+      startTime: string;
+      endTime: string;
+      class: {
+        id: number;
+        className: string;
+        level: string;
+        teacher: {
+          name: string;
+        };
+      };
+    };
+    date: string;
+    startTime: string;
+    endTime: string;
+  };
 }
 
 // 세션 컨텐츠 관련 응답 타입들
@@ -303,7 +376,7 @@ export interface StudentSessionHistory {
 
 // API 응답 타입들
 export type GetPrincipalAcademyResponse = PrincipalAcademy;
-export type GetPrincipalAllSessionsResponse = PrincipalSession[];
+export type GetPrincipalAllSessionsResponse = PrincipalClassSession[]; // 백엔드에서 classes.classSessions로 제공
 export type GetPrincipalAllClassesResponse = PrincipalClass[];
 export type GetPrincipalAllTeachersResponse = PrincipalTeacher[];
 export type GetPrincipalAllStudentsResponse = PrincipalStudent[];

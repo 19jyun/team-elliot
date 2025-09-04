@@ -1,12 +1,12 @@
 import { useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { getPrincipalAllSessions } from "@/api/principal";
-import type { Session } from "@/types/store/principal";
+import type { PrincipalClassSession } from "@/types/api/principal";
 
 // Principal Calendar API 훅
 export function usePrincipalCalendarApi() {
   const { data: session, status } = useSession();
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessions, setSessions] = useState<PrincipalClassSession[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,7 +21,7 @@ export function usePrincipalCalendarApi() {
       setIsLoading(true);
       setError(null);
       const response = await getPrincipalAllSessions();
-      setSessions(response.data);
+      setSessions(response.data || []);
     } catch (err: any) {
       setError(err.response?.data?.message || "세션 로드 실패");
     } finally {
@@ -53,18 +53,8 @@ export function usePrincipalCalendarApi() {
     return sessions.find((session) => session.id === sessionId);
   };
 
-  // 캘린더용 세션 데이터 변환
-  const calendarSessions = sessions.map((session: any) => ({
-    id: session.id,
-    title: session.title || session.class?.name || "세션",
-    date: session.date,
-    startTime: session.startTime,
-    endTime: session.endTime,
-    classId: session.classId,
-    class: session.class,
-    enrollments: session.enrollments || [],
-    status: session.status,
-  }));
+  // 캘린더용 세션 데이터 변환 (이미 PrincipalClassSession 타입이므로 그대로 사용)
+  const calendarSessions = sessions;
 
   return {
     // 데이터

@@ -13,6 +13,8 @@ import { UpdatePrincipalProfileRequest } from '@/types/api/principal';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { validatePrincipalProfileData } from '@/utils/validation';
 import { useApiError } from '@/hooks/useApiError';
+import { toPrincipalPersonalInfoManagementVM } from '@/lib/adapters/principal';
+import type { PrincipalPersonalInfoManagementVM } from '@/types/view/principal';
 
 export function PrincipalPersonalInfoManagement() {
   const [isEditing, setIsEditing] = useState(false);
@@ -33,6 +35,23 @@ export function PrincipalPersonalInfoManagement() {
   // API 기반 데이터 관리
   const { profile, loadProfile, error, isPrincipal, updateProfile } = usePrincipalApi();
   const { handleApiError, fieldErrors, clearErrors } = useApiError();
+
+  // ViewModel 생성
+  const personalInfoVM: PrincipalPersonalInfoManagementVM = toPrincipalPersonalInfoManagementVM({
+    profile,
+    isEditing,
+    editedInfo,
+    isLoading,
+    error,
+    isPrincipal,
+    isPhoneVerificationRequired,
+    isPhoneVerified,
+    verificationCode,
+    timeLeft,
+    isTimerRunning,
+    validationErrors,
+    isShaking,
+  });
 
   // 컴포넌트 마운트 시 프로필 로드
   useEffect(() => {
@@ -209,10 +228,7 @@ export function PrincipalPersonalInfoManagement() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // 초기 로딩 상태 (프로필이 없고 Principal 권한이 있는 경우)
-  const isInitialLoading = !profile && isPrincipal && !error;
-
-  if (isInitialLoading) {
+  if (personalInfoVM.isInitialLoading) {
     return (
       <div className="flex items-center justify-center min-h-full">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
@@ -220,12 +236,12 @@ export function PrincipalPersonalInfoManagement() {
     );
   }
 
-  if (error || !profile) {
+  if (personalInfoVM.error || !personalInfoVM.profile) {
     return (
       <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">데이터를 불러오는데 실패했습니다.</p>
-        {error && (
-          <p className="text-sm text-red-500 mt-2">{error}</p>
+        {personalInfoVM.error && (
+          <p className="text-sm text-red-500 mt-2">{personalInfoVM.error}</p>
         )}
         <Button
           onClick={() => loadProfile()}
@@ -262,12 +278,12 @@ export function PrincipalPersonalInfoManagement() {
                 <User className="h-5 w-5" />
                 기본 정보
               </CardTitle>
-              {!isEditing ? (
+              {!personalInfoVM.isEditing ? (
                 <Button
                   onClick={handleEdit}
                   variant="outline"
                   size="sm"
-                  disabled={isLoading}
+                  disabled={personalInfoVM.isLoading}
                 >
                   <Edit className="h-4 w-4 mr-2" />
                   수정
@@ -278,7 +294,7 @@ export function PrincipalPersonalInfoManagement() {
                     onClick={handleCancel}
                     variant="outline"
                     size="sm"
-                    disabled={isLoading}
+                    disabled={personalInfoVM.isLoading}
                   >
                     <X className="h-4 w-4 mr-2" />
                     취소
@@ -286,7 +302,7 @@ export function PrincipalPersonalInfoManagement() {
                   <Button
                     onClick={handleSave}
                     size="sm"
-                    disabled={isLoading || (isPhoneVerificationRequired && !isPhoneVerified)}
+                    disabled={!personalInfoVM.canSave}
                   >
                     <Save className="h-4 w-4 mr-2" />
                     저장
@@ -302,13 +318,13 @@ export function PrincipalPersonalInfoManagement() {
                 <User className="h-4 w-4" />
                 이름 *
               </label>
-              {isEditing ? (
+              {personalInfoVM.isEditing ? (
                 <Input
-                  value={editedInfo.name || ''}
+                  value={personalInfoVM.editedInfo.name || ''}
                   onChange={(e) => {
-                    setEditedInfo({ ...editedInfo, name: e.target.value });
+                    setEditedInfo({ ...personalInfoVM.editedInfo, name: e.target.value });
                     // 입력 필드 변경 시 해당 필드의 validation 에러 초기화
-                    if (validationErrors.name) {
+                    if (personalInfoVM.validationErrors.name) {
                       setValidationErrors(prev => ({
                         ...prev,
                         name: ''
@@ -316,19 +332,19 @@ export function PrincipalPersonalInfoManagement() {
                     }
                   }}
                   placeholder="이름을 입력하세요"
-                  disabled={isLoading}
+                  disabled={personalInfoVM.isLoading}
                   className={`transition-all duration-200 ${
-                    (fieldErrors.name || validationErrors.name) ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                    (fieldErrors.name || personalInfoVM.validationErrors.name) ? 'border-red-500 bg-red-50' : 'border-gray-300'
                   } ${
-                    isShaking && (fieldErrors.name || validationErrors.name) ? 'animate-shake' : ''
+                    personalInfoVM.isShaking && (fieldErrors.name || personalInfoVM.validationErrors.name) ? 'animate-shake' : ''
                   }`}
                 />
               ) : (
-                <p className="text-gray-700 py-2">{profile.name || '이름이 없습니다.'}</p>
+                <p className="text-gray-700 py-2">{personalInfoVM.profile?.name || '이름이 없습니다.'}</p>
               )}
-              {(fieldErrors.name || validationErrors.name) && (
+              {(fieldErrors.name || personalInfoVM.validationErrors.name) && (
                 <p className="text-red-500 text-sm animate-in fade-in">
-                  {fieldErrors.name || validationErrors.name}
+                  {fieldErrors.name || personalInfoVM.validationErrors.name}
                 </p>
               )}
             </div>
@@ -341,15 +357,15 @@ export function PrincipalPersonalInfoManagement() {
                 <Phone className="h-4 w-4" />
                 전화번호 *
               </label>
-              {isEditing ? (
+              {personalInfoVM.isEditing ? (
                 <div className="space-y-2">
                   <div className="flex gap-2">
                     <PhoneInput
-                      value={editedInfo.phoneNumber || ''}
+                      value={personalInfoVM.editedInfo.phoneNumber || ''}
                       onChange={(value) => {
-                        setEditedInfo({ ...editedInfo, phoneNumber: value });
+                        setEditedInfo({ ...personalInfoVM.editedInfo, phoneNumber: value });
                         // 입력 필드 변경 시 해당 필드의 validation 에러 초기화
-                        if (validationErrors.phoneNumber) {
+                        if (personalInfoVM.validationErrors.phoneNumber) {
                           setValidationErrors(prev => ({
                             ...prev,
                             phoneNumber: ''
@@ -357,24 +373,24 @@ export function PrincipalPersonalInfoManagement() {
                         }
                       }}
                       placeholder="전화번호를 입력하세요"
-                      disabled={isLoading}
+                      disabled={personalInfoVM.isLoading}
                       className={`flex-1 transition-all duration-200 ${
-                        (fieldErrors.phoneNumber || validationErrors.phoneNumber) ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        (fieldErrors.phoneNumber || personalInfoVM.validationErrors.phoneNumber) ? 'border-red-500 bg-red-50' : 'border-gray-300'
                       } ${
-                        isShaking && (fieldErrors.phoneNumber || validationErrors.phoneNumber) ? 'animate-shake' : ''
+                        personalInfoVM.isShaking && (fieldErrors.phoneNumber || personalInfoVM.validationErrors.phoneNumber) ? 'animate-shake' : ''
                       }`}
                     />
-                    {isPhoneVerificationRequired && !isPhoneVerified && (
+                    {personalInfoVM.isPhoneVerificationRequired && !personalInfoVM.isPhoneVerified && (
                       <Button
                         onClick={handleVerifyPhone}
                         size="sm"
-                        disabled={isTimerRunning}
+                        disabled={personalInfoVM.isTimerRunning}
                         className="whitespace-nowrap w-24"
                       >
                         인증
                       </Button>
                     )}
-                    {isPhoneVerified && (
+                    {personalInfoVM.isPhoneVerified && (
                       <div className="flex items-center px-3 py-2 text-sm text-green-600 bg-green-50 rounded-md w-24 justify-center">
                         <span>✓ 인증완료</span>
                       </div>
@@ -382,11 +398,11 @@ export function PrincipalPersonalInfoManagement() {
                   </div>
                   
                   {/* 인증번호 입력 필드 */}
-                  {isPhoneVerificationRequired && !isPhoneVerified && isTimerRunning && (
+                  {personalInfoVM.isPhoneVerificationRequired && !personalInfoVM.isPhoneVerified && personalInfoVM.isTimerRunning && (
                     <div className="flex gap-2">
                       <div className="flex-1 relative">
                         <Input
-                          value={verificationCode}
+                          value={personalInfoVM.verificationCode}
                           onChange={(e) => setVerificationCode(e.target.value)}
                           placeholder="인증번호 6자리"
                           className="pr-20"
@@ -403,14 +419,14 @@ export function PrincipalPersonalInfoManagement() {
                             />
                           </button>
                           <div className="text-sm font-mono" style={{ color: '#573B30', fontFamily: 'Pretendard Variable' }}>
-                            {formatTime(timeLeft)}
+                            {formatTime(personalInfoVM.timeLeft)}
                           </div>
                         </div>
                       </div>
                       <Button
                         onClick={handleVerifyPhone}
                         size="sm"
-                        disabled={verificationCode.length < 6}
+                        disabled={personalInfoVM.verificationCode.length < 6}
                         className="w-24"
                       >
                         확인
@@ -419,11 +435,11 @@ export function PrincipalPersonalInfoManagement() {
                   )}
                 </div>
               ) : (
-                <p className="text-gray-700 py-2">{profile.phoneNumber || '전화번호가 없습니다.'}</p>
+                <p className="text-gray-700 py-2">{personalInfoVM.phoneDisplayValue}</p>
               )}
-              {(fieldErrors.phoneNumber || validationErrors.phoneNumber) && (
+              {(fieldErrors.phoneNumber || personalInfoVM.validationErrors.phoneNumber) && (
                 <p className="text-red-500 text-sm animate-in fade-in">
-                  {fieldErrors.phoneNumber || validationErrors.phoneNumber}
+                  {fieldErrors.phoneNumber || personalInfoVM.validationErrors.phoneNumber}
                 </p>
               )}
             </div>
@@ -437,7 +453,7 @@ export function PrincipalPersonalInfoManagement() {
                 소속 학원
               </label>
               <p className="text-gray-700 py-2">
-                {profile.academy?.name || '소속 학원이 없습니다.'}
+                {personalInfoVM.academyDisplayValue}
               </p>
             </div>
           </CardContent>

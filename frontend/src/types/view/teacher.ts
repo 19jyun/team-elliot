@@ -1,6 +1,5 @@
 // Teacher 화면 전용 ViewModel 타입들
 import type { EnrollmentStatus, SessionCore, TeacherRef } from "../api/common";
-import type { TeacherSession, SessionEnrollment } from "../api/teacher";
 
 // ============= 기본 ViewModel 인터페이스 =============
 
@@ -86,4 +85,72 @@ export interface SessionEnrollmentDisplayVM {
   displayEnrolledAt: string;
   hasPayment: boolean;
   hasRefundRequests: boolean;
+}
+
+// ============= 대시보드 관련 ViewModel들 =============
+
+// Teacher 캘린더 세션 ViewModel
+export interface TeacherCalendarSessionVM extends SessionCore {
+  class: {
+    id: number;
+    className: string;
+    maxStudents: number;
+    level: string;
+    teacher: TeacherRef;
+  };
+  enrollmentCount: number;
+  confirmedCount: number;
+  // UI 표시용 계산된 필드들
+  displayDate: string;
+  displayTime: string;
+  displayCapacity: string;
+  levelColor: string;
+  isFull: boolean;
+  canManage: boolean; // 선생님이 관리할 수 있는지 여부
+}
+
+// Teacher 클래스 리스트 ViewModel
+export interface TeacherClassListVM extends BaseVM {
+  classes: TeacherClassCardVM[];
+  hasClasses: boolean;
+  totalClasses: number;
+}
+
+// Teacher 클래스 카드 ViewModel
+export interface TeacherClassCardVM {
+  id: number;
+  className: string;
+  level: string;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  maxStudents: number;
+  currentStudents: number;
+  tuitionFee: number;
+  description?: string;
+  // UI 표시용 계산된 필드들
+  displayLevel: string;
+  displayDayOfWeek: string;
+  displayTimeRange: string;
+  displayStudentCount: string;
+  displayTuitionFee: string;
+  levelColor: string;
+  isFull: boolean;
+  canManage: boolean;
+}
+
+// ============= 모달 관련 ViewModel들 =============
+
+// Teacher 세션 상세 모달 ViewModel
+export interface TeacherSessionDetailModalVM {
+  isOpen: boolean;
+  session: TeacherCalendarSessionVM | null;
+  onClose: () => void;
+}
+
+// Teacher 클래스 세션 모달 ViewModel
+export interface TeacherClassSessionModalVM {
+  isOpen: boolean;
+  selectedClass: TeacherClassCardVM | null;
+  onClose: () => void;
 }

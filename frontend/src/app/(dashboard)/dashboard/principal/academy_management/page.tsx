@@ -10,7 +10,6 @@ import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { updatePrincipalAcademy as updatePrincipalAcademyApi } from '@/api/principal';
 import { UpdatePrincipalAcademyRequest } from '@/types/api/principal';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 
@@ -33,7 +32,7 @@ export default function PrincipalAcademyManagementPage() {
 
 
   // API 기반 데이터 관리
-  const { academy, loadAcademy, isLoading, error } = usePrincipalApi();
+  const { academy, loadAcademy, updateAcademy, isLoading, error } = usePrincipalApi();
 
   // academy 데이터가 로드되면 formData 업데이트
   useEffect(() => {
@@ -54,10 +53,8 @@ export default function PrincipalAcademyManagementPage() {
 
   // 학원 정보 수정 뮤테이션
   const updateAcademyMutation = useMutation({
-    mutationFn: updatePrincipalAcademyApi,
+    mutationFn: updateAcademy,
     onSuccess: () => {
-      // API 데이터 다시 로드
-      loadAcademy();
       toast.success('학원 정보가 수정되었습니다.');
       setIsEditing(false);
     },

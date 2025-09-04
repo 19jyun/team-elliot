@@ -10,6 +10,8 @@ import { SessionDetailModal } from '@/components/common/Session/SessionDetailMod
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
+import { toClassSessionForCalendar } from '@/lib/adapters/principal'
+import type { PrincipalClassSession } from '@/types/api/principal'
 import Image from 'next/image'
 
 // 강의 개설 카드 컴포넌트
@@ -70,7 +72,7 @@ export default function PrincipalClassPage() {
   const [isDateModalOpen, setIsDateModalOpen] = useState(false)
   
   // 세션 상세 모달 상태 추가
-  const [selectedSession, setSelectedSession] = useState<any>(null)
+  const [selectedSession, setSelectedSession] = useState<PrincipalClassSession | null>(null)
   const [isSessionDetailModalOpen, setIsSessionDetailModalOpen] = useState(false)
 
   // 초기 데이터 로드
@@ -130,7 +132,7 @@ export default function PrincipalClassPage() {
   }
 
   // 세션 클릭 핸들러 추가
-  const handleSessionClick = (session: any) => {
+  const handleSessionClick = (session: PrincipalClassSession) => {
     setSelectedSession(session)
     setIsSessionDetailModalOpen(true)
   }
@@ -189,7 +191,7 @@ export default function PrincipalClassPage() {
         <div className="flex flex-col w-full bg-white text-stone-700" style={{ height: 'calc(100vh - 450px)' }}>
           <CalendarProvider
             mode="teacher-view"
-            sessions={calendarSessions}
+            sessions={calendarSessions.map(toClassSessionForCalendar)}
             selectedSessionIds={new Set()}
             onSessionSelect={() => {}} // principal-view에서는 선택 기능 없음
             onDateClick={handleDateClick}
@@ -223,7 +225,7 @@ export default function PrincipalClassPage() {
       {/* Session Detail Modal - API 방식 */}
       <SessionDetailModal
         isOpen={isSessionDetailModalOpen}
-        sessionId={selectedSession?.id}
+        sessionId={selectedSession?.id || null}
         onClose={closeSessionDetailModal}
         role="principal"
       />

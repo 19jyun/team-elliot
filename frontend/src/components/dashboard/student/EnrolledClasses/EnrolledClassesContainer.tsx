@@ -9,10 +9,9 @@ import { EnrolledClassesList } from '@/components/features/student/classes/Enrol
 import { ClassSessionModal } from '@/components/features/student/classes/ClassSessionModal'
 import { StudentSessionDetailModal } from '@/components/features/student/classes/StudentSessionDetailModal'
 import { useStudentApi } from '@/hooks/student/useStudentApi'
-import type { StudentClass } from '@/types/api/student'
-import type { EnrolledClassVM, ClassDataVM, StudentEnrolledSessionVM, EnrolledClassCardVM } from '@/types/view/student'
+import type { EnrolledClassVM, ClassDataVM, StudentEnrolledSessionVM } from '@/types/view/student'
 import type { ApiError } from '@/types/ui/common'
-import { toEnrolledClassVMs, toClassDataVM, toSessionDataVM, toEnrolledClassCardVM } from '@/lib/adapters/student'
+import { toEnrolledClassVMs, toClassDataVM } from '@/lib/adapters/student'
 
 export function EnrolledClassesContainer() {
   const router = useRouter()

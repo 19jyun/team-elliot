@@ -8,9 +8,9 @@ import { StatusStep } from '@/components/features/student/enrollment/month/Statu
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
 import { useEnrollmentCalculation } from '@/hooks/useEnrollmentCalculation'
 import { useStudentApi } from '@/hooks/student/useStudentApi'
-import type { ClassSessionForModification, GetClassSessionsForModificationResponse } from '@/types/api/student'
+import type { ClassSessionForModification } from '@/types/api/student'
 import type { ClassSession } from '@/types/api/class'
-import type { ModificationSessionVM, EnrollmentModificationDateStepVM } from '@/types/view/student'
+import type { EnrollmentModificationDateStepVM } from '@/types/view/student'
 
 export function EnrollmentModificationDateStep({ 
   classId, 

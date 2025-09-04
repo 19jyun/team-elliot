@@ -3,9 +3,8 @@
 import React, { useState } from 'react';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { StatusStep } from './StatusStep';
-import { useQuery } from '@tanstack/react-query';
 
-import { getPrincipalAcademy } from '@/api/principal';
+import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { toast } from 'sonner';
 
 const LEVELS = [
@@ -17,6 +16,9 @@ const LEVELS = [
 export function CreateClassStepInfo() {
   const { createClass, setClassFormData, setCreateClassStep, goBack } = useDashboardNavigation();
   const { classFormData } = createClass;
+  
+  // API 기반 데이터 관리
+  const { academy, loadAcademy, isLoading: isAcademyLoading } = usePrincipalApi();
 
 
   const [formData, setFormData] = useState({
@@ -27,12 +29,10 @@ export function CreateClassStepInfo() {
     price: classFormData.price || 50000,
   });
 
-  // 학원 정보 조회 (Principal용)
-  const { data: myAcademy, isLoading: isAcademyLoading } = useQuery({
-    queryKey: ['principal-academy'],
-    queryFn: getPrincipalAcademy,
-    enabled: true,
-  });
+  // 학원 정보 로드
+  React.useEffect(() => {
+    loadAcademy();
+  }, [loadAcademy]);
 
   const handleInputChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -45,7 +45,7 @@ export function CreateClassStepInfo() {
       formData.description.trim() !== '' &&
       formData.maxStudents >= 1 &&
       formData.price >= 0 &&
-      !!myAcademy
+      !!academy
     );
   };
 
@@ -69,13 +69,13 @@ export function CreateClassStepInfo() {
     }
 
     // 학원 가입 여부 확인
-    if (!myAcademy) {
+    if (!academy) {
       toast.error('학원을 먼저 가입해주세요!');
       return;
     }
 
     // DashboardContext의 createClass 상태 업데이트
-    const academyId = myAcademy.data.id;
+    const academyId = academy.id;
     setClassFormData({
       ...classFormData,
       name: formData.name,

@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 
 import { toast } from 'sonner'
 
-import { TeacherClassesResponse, UpdateClassDetailsRequest } from '@/types/api/teacher'
+import { TeacherClassesResponse } from '@/types/api/teacher'
 import { toTeacherClassDetailVM } from '@/lib/adapters/teacher'
 import { TeacherClassDetailVM } from '@/types/view/teacher'
 import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'

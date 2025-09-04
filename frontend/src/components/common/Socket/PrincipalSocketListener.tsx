@@ -3,11 +3,14 @@
 import { useSocketEvent } from '@/hooks/socket/useSocket'
 import { useAppDispatch } from '@/store/hooks'
 import { setPrincipalData } from '@/store/slices/principalSlice'
-import { getPrincipalAllEnrollments, getPrincipalAllRefundRequests } from '@/api/principal'
+import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi'
 import { toast } from 'sonner'
 
 export function PrincipalSocketListener() {
   const dispatch = useAppDispatch()
+  
+  // API 기반 데이터 관리
+  const { getAllEnrollments, getAllRefundRequests } = usePrincipalApi()
 
   // 새로운 수강신청 요청 알림
   useSocketEvent('new_enrollment_request', async (data) => {
@@ -15,11 +18,11 @@ export function PrincipalSocketListener() {
     
     try {
       // 수강신청 목록 API 호출하여 Redux 업데이트
-      const enrollmentsResponse = await getPrincipalAllEnrollments()
+      const enrollmentsResponse = await getAllEnrollments()
       const enrollments = enrollmentsResponse.data || []
       
       // 기존 환불요청 데이터 유지하면서 수강신청만 업데이트
-      const refundRequestsResponse = await getPrincipalAllRefundRequests()
+      const refundRequestsResponse = await getAllRefundRequests()
       const refundRequests = refundRequestsResponse.data || []
       
       dispatch(setPrincipalData({
@@ -43,11 +46,11 @@ export function PrincipalSocketListener() {
     
     try {
       // 환불요청 목록 API 호출하여 Redux 업데이트
-      const refundRequestsResponse = await getPrincipalAllRefundRequests()
+      const refundRequestsResponse = await getAllRefundRequests()
       const refundRequests = refundRequestsResponse.data || []
       
       // 기존 수강신청 데이터 유지하면서 환불요청만 업데이트
-      const enrollmentsResponse = await getPrincipalAllEnrollments()
+      const enrollmentsResponse = await getAllEnrollments()
       const enrollments = enrollmentsResponse.data || []
       
       dispatch(setPrincipalData({

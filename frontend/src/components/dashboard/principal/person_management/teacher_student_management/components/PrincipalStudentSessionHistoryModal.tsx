@@ -8,26 +8,42 @@ import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { format } from 'date-fns';
 
 import { SlideUpModal } from '@/components/common/SlideUpModal';
+import { toPrincipalStudentSessionHistoryModalVM } from '@/lib/adapters/principal';
+import type { PrincipalStudentSessionHistoryItem } from '@/types/view/principal';
 
 interface PrincipalStudentSessionHistoryModalProps {
-  student: any;
+  student: { id: number; name: string };
   onClose: () => void;
 }
 
 export function PrincipalStudentSessionHistoryModal({ student, onClose }: PrincipalStudentSessionHistoryModalProps) {
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<PrincipalStudentSessionHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { getStudentSessionHistory } = usePrincipalApi();
+
+  // ViewModel 생성
+  const historyModalVM = toPrincipalStudentSessionHistoryModalVM({
+    student,
+    history,
+    isLoading,
+    error,
+  });
 
   useEffect(() => {
     const fetchHistory = async () => {
       setIsLoading(true);
+      setError(null);
       try {
         const response = await getStudentSessionHistory(Number(student.id));
         // 백엔드 인터셉터에 의해 응답이 { success, data, timestamp, path } 구조로 래핑됨
-        setHistory(response.data || []);
-      } catch (error: any) {
-        toast.error(error.response?.data?.message || '수강생 현황 조회에 실패했습니다.');
+        setHistory((response.data as unknown as PrincipalStudentSessionHistoryItem[]) || []);
+      } catch (error: unknown) {
+        const errorMessage = error && typeof error === 'object' && 'response' in error 
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message 
+          : '수강생 현황 조회에 실패했습니다.';
+        setError(errorMessage || '수강생 현황 조회에 실패했습니다.');
+        toast.error(errorMessage || '수강생 현황 조회에 실패했습니다.');
       } finally {
         setIsLoading(false);
       }
@@ -80,7 +96,7 @@ export function PrincipalStudentSessionHistoryModal({ student, onClose }: Princi
     <SlideUpModal
       isOpen={true}
       onClose={onClose}
-      title={`${student.name}님의 수강 현황`}
+      title={`${historyModalVM.student.name}님의 수강 현황`}
       contentClassName="pb-6"
     >
       <div className="space-y-4">
@@ -88,11 +104,11 @@ export function PrincipalStudentSessionHistoryModal({ student, onClose }: Princi
           이 수강생의 모든 수강 기록을 확인할 수 있습니다.
         </p>
 
-        {isLoading ? (
+        {historyModalVM.isLoading ? (
           <div className="text-center py-8 text-gray-500">
             <p>수강 현황을 불러오는 중...</p>
           </div>
-        ) : history.length > 0 ? (
+        ) : historyModalVM.hasHistory ? (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -112,7 +128,7 @@ export function PrincipalStudentSessionHistoryModal({ student, onClose }: Princi
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {history.map((session: any) => (
+                {historyModalVM.history.map((session) => (
                   <tr key={session.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {session.session.class.className}
@@ -133,7 +149,7 @@ export function PrincipalStudentSessionHistoryModal({ student, onClose }: Princi
           </div>
         ) : (
           <div className="text-center py-8 text-gray-500">
-            <p>수강 기록이 없습니다.</p>
+            <p>{historyModalVM.emptyMessage}</p>
           </div>
         )}
       </div>

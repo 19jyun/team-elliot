@@ -11,9 +11,7 @@ import type { TeacherProfileResponse } from '@/types/api/teacher'
 import type { TeacherProfileCardForStudentVM, TeacherProfileDisplayVM } from '@/types/view/student'
 import { toTeacherProfileDisplayVM } from '@/lib/adapters/student'
 
-interface TeacherProfileCardForStudentProps extends TeacherProfileCardForStudentVM {}
-
-export function TeacherProfileCardForStudent({ teacherId }: TeacherProfileCardForStudentProps) {
+export function TeacherProfileCardForStudent({ teacherId }: TeacherProfileCardForStudentVM) {
   const { loadProfileById } = useTeacherApi()
   const [profile, setProfile] = useState<TeacherProfileResponse | null>(null)
   const [isLoading, setIsLoading] = useState(false)

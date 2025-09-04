@@ -3,13 +3,15 @@
 import React, { useState } from 'react';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { StatusStep } from './StatusStep';
-import { createPrincipalClass } from '@/api/principal';
-
+import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { toast } from 'sonner';
 
 export function CreateClassStepDetail() {
   const { createClass, setClassFormData, setCreateClassStep } = useDashboardNavigation();
   const { classFormData, selectedTeacherId } = createClass;
+
+  // API 기반 데이터 관리
+  const { createClass: createClassApi } = usePrincipalApi();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -67,7 +69,7 @@ export function CreateClassStepDetail() {
       setIsSubmitting(true);
       
       // 실제 API 호출 (Principal 전용)
-      await createPrincipalClass(requestData);
+      await createClassApi(requestData);
       
       toast.success('강의가 성공적으로 생성되었습니다!');
       
