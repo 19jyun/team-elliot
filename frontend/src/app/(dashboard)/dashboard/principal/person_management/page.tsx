@@ -96,7 +96,10 @@ export default function PrincipalPersonManagementPage() {
 
   // 에러 처리
   if (error) {
-    if ((error as any)?.response?.status === 401) {
+    const errorResponse = error && typeof error === 'object' && 'response' in error 
+      ? (error as { response?: { status?: number } })
+      : null;
+    if (errorResponse?.response?.status === 401) {
       signOut({ redirect: true, callbackUrl: '/auth' });
       return null;
     }

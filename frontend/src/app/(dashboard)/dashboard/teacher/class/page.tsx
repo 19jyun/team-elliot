@@ -13,6 +13,7 @@ import { useDashboardNavigation } from '@/contexts/DashboardContext'
 import { toTeacherCalendarSessionVM, toTeacherSessionDetailModalVM, toClassSessionForCalendar } from '@/lib/adapters/teacher'
 import type { TeacherSessionDetailModalVM } from '@/types/view/teacher'
 import type { TeacherSession } from '@/types/api/teacher'
+import type { ClassSession } from '@/types/api/class'
 
 export default function TeacherDashboardPage() {
   const router = useRouter()
@@ -104,8 +105,10 @@ export default function TeacherDashboardPage() {
   }
 
   // 세션 클릭 핸들러 추가
-  const handleSessionClick = (session: TeacherSession) => {
-    setSelectedSession(session)
+  const handleSessionClick = (session: ClassSession) => {
+    // ClassSession을 TeacherSession으로 변환하여 저장
+    const teacherSession = calendarSessions.find(s => s.id === session.id) as TeacherSession
+    setSelectedSession(teacherSession)
     setIsSessionDetailModalOpen(true)
   }
 

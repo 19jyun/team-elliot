@@ -16,8 +16,20 @@ export type EnrollmentStep = 'main' | 'academy-selection' | 'class-selection' | 
 export interface EnrollmentState {
   currentStep: EnrollmentStep;
   selectedMonth: number | null;
-  selectedClasses: any[];
-  selectedSessions: any[];
+  selectedClasses: ClassesWithSessionsByMonthResponse[];
+  selectedSessions: {
+    id: number;
+    date: string;
+    startTime: string;
+    endTime: string;
+    currentStudents: number;
+    maxStudents: number;
+    isEnrollable: boolean;
+    isFull: boolean;
+    isPastStartTime: boolean;
+    isAlreadyEnrolled: boolean;
+    studentEnrollmentStatus: string | null;
+  }[];
   selectedClassIds: number[];
   selectedAcademyId: number | null;
   selectedClassesWithSessions: ClassesWithSessionsByMonthResponse[];
@@ -88,15 +100,43 @@ interface DashboardContextType {
   // 수강신청 관련 메서드들
   setEnrollmentStep: (step: EnrollmentStep) => void;
   setSelectedMonth: (month: number) => void;
-  setSelectedClasses: (classes: any[]) => void;
-  setSelectedSessions: (sessions: any[]) => void;
+  setSelectedClasses: (classes: ClassesWithSessionsByMonthResponse[]) => void;
+  setSelectedSessions: (sessions: {
+    id: number;
+    date: string;
+    startTime: string;
+    endTime: string;
+    currentStudents: number;
+    maxStudents: number;
+    isEnrollable: boolean;
+    isFull: boolean;
+    isPastStartTime: boolean;
+    isAlreadyEnrolled: boolean;
+    studentEnrollmentStatus: string | null;
+  }[]) => void;
   setSelectedClassIds: (classIds: number[]) => void;
   setSelectedAcademyId: (academyId: number | null) => void;
   setSelectedClassesWithSessions: (classes: ClassesWithSessionsByMonthResponse[]) => void;
   resetEnrollment: () => void;
   // 수업 생성 관련 메서드들
   setCreateClassStep: (step: CreateClassStep) => void;
-  setClassFormData: (data: any) => void;
+  setClassFormData: (data: Partial<{
+    name: string;
+    description: string;
+    level: string;
+    maxStudents: number;
+    price: number;
+    academyId?: number;
+    schedule: {
+      days: string[];
+      startTime: string;
+      endTime: string;
+      startDate?: string;
+      endDate?: string;
+    };
+    teacherId?: number;
+    content?: string;
+  }>) => void;
   setSelectedTeacherId: (teacherId: number | null) => void;
   resetCreateClass: () => void;
 }
@@ -463,7 +503,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // 선택된 클래스들 설정
-  const setSelectedClasses = useCallback((classes: any[]) => {
+  const setSelectedClasses = useCallback((classes: ClassesWithSessionsByMonthResponse[]) => {
     setState(prev => ({
       ...prev,
       enrollment: {
@@ -474,7 +514,19 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // 선택된 세션들 설정
-  const setSelectedSessions = useCallback((sessions: any[]) => {
+  const setSelectedSessions = useCallback((sessions: {
+    id: number;
+    date: string;
+    startTime: string;
+    endTime: string;
+    currentStudents: number;
+    maxStudents: number;
+    isEnrollable: boolean;
+    isFull: boolean;
+    isPastStartTime: boolean;
+    isAlreadyEnrolled: boolean;
+    studentEnrollmentStatus: string | null;
+  }[]) => {
     setState(prev => ({
       ...prev,
       enrollment: {

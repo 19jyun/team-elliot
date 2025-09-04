@@ -32,6 +32,7 @@ import {
 } from "../types/api/principal";
 import { CreateClassResponse } from "../types/api/class";
 import { GetSessionEnrollmentsResponse } from "../types/api/class-session";
+import { SessionEnrollmentsResponse } from "../types/api/teacher";
 import { GetRefundRequestsResponse } from "../types/api/refund";
 
 // PrincipalData 전체 초기화 (Redux용)
@@ -112,8 +113,8 @@ export const getPrincipalAllRefundRequests = (): Promise<
 // Principal의 세션 수강생 조회
 export const getPrincipalSessionEnrollments = (
   sessionId: number
-): Promise<ApiResponse<GetSessionEnrollmentsResponse>> => {
-  return get<ApiResponse<GetSessionEnrollmentsResponse>>(
+): Promise<ApiResponse<SessionEnrollmentsResponse>> => {
+  return get<ApiResponse<SessionEnrollmentsResponse>>(
     `/principal/sessions/${sessionId}/enrollments`
   );
 };

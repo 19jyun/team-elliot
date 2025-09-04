@@ -12,6 +12,7 @@ import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
 import { toClassSessionForCalendar } from '@/lib/adapters/principal'
 import type { PrincipalClassSession } from '@/types/api/principal'
+import type { ClassSession } from '@/types/api/class'
 import Image from 'next/image'
 
 // 강의 개설 카드 컴포넌트
@@ -101,7 +102,10 @@ export default function PrincipalClassPage() {
 
   // 에러 처리
   if (error) {
-    if ((error as any)?.response?.status === 401) {
+    const errorResponse = error && typeof error === 'object' && 'response' in error 
+      ? (error as { response?: { status?: number } })
+      : null;
+    if (errorResponse?.response?.status === 401) {
       signOut({ redirect: true, callbackUrl: '/auth' });
       return null;
     }
@@ -132,8 +136,10 @@ export default function PrincipalClassPage() {
   }
 
   // 세션 클릭 핸들러 추가
-  const handleSessionClick = (session: PrincipalClassSession) => {
-    setSelectedSession(session)
+  const handleSessionClick = (session: ClassSession) => {
+    // ClassSession을 PrincipalClassSession으로 변환하여 저장
+    const principalSession = calendarSessions.find(s => s.id === session.id) as PrincipalClassSession
+    setSelectedSession(principalSession)
     setIsSessionDetailModalOpen(true)
   }
 

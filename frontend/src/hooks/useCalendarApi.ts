@@ -24,7 +24,7 @@ export function useCalendarApi() {
       setError(null);
       const data = await getPrincipalAllSessions();
       setSessions(data.data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.message || "세션 로드 실패");
     } finally {
       setIsLoading(false);
@@ -38,7 +38,7 @@ export function useCalendarApi() {
       setError(null);
       const data = await getClassSessions(classId);
       setSessions(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.message || "클래스 세션 로드 실패");
     } finally {
       setIsLoading(false);

@@ -1,12 +1,12 @@
 // API 응답 타입 정의
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   statusCode?: number;
   error?: {
     code: string;
     message: string;
-    details?: any;
+    details?: unknown;
   };
   timestamp: string;
   path?: string;
@@ -46,5 +46,5 @@ export interface AppError {
 export interface FieldError {
   field: string;
   message: string;
-  value?: any;
+  value?: unknown;
 }

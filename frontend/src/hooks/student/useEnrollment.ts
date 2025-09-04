@@ -193,7 +193,7 @@ export const useEnrollment = () => {
         } else {
           throw new Error("수강신청 처리에 실패했습니다.");
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         // 4. 실패 시 낙관적 업데이트 롤백
         optimisticEnrollments.forEach((enrollment) => {
           dispatch(removeOptimisticEnrollment(enrollment.id));

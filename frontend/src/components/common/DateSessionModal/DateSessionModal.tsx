@@ -6,12 +6,13 @@ import { ko } from 'date-fns/locale'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { SessionCardList } from '@/components/common/Session/SessionCardList'
 import { useRoleCalendarApi } from '@/hooks/calendar/useRoleCalendarApi'
+import type { ClassSession } from '@/types/api/class'
 
 interface DateSessionModalProps {
   isOpen: boolean
   selectedDate: Date | null
   onClose: () => void
-  onSessionClick: (session: any) => void
+  onSessionClick: (session: ClassSession) => void
   role: 'student' | 'teacher' | 'principal'
 }
 

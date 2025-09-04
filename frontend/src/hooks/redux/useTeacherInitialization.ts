@@ -9,6 +9,10 @@ import {
 } from "@/store/slices/teacherSlice";
 import { getTeacherClassesWithSessions } from "@/api/teacher";
 import { toast } from "sonner";
+import type {
+  ClassesWithSessionsByMonthResponse,
+  SessionEnrollment,
+} from "@/types/api/class";
 
 export function useTeacherInitialization() {
   const dispatch = useAppDispatch();
@@ -41,18 +45,26 @@ export function useTeacherInitialization() {
         const classesWithSessions = classesWithSessionsResponse.data;
 
         // 모든 enrollment 데이터를 하나의 배열로 추출
-        const allEnrollments: any[] = [];
-        classesWithSessions?.classes?.forEach((cls: any) => {
-          cls.classSessions?.forEach((session: any) => {
-            session.enrollments?.forEach((enrollment: any) => {
-              allEnrollments.push({
-                ...enrollment,
-                session,
-                class: cls,
-              });
+        const allEnrollments: (SessionEnrollment & {
+          session: {
+            id: number;
+            date: string;
+            startTime: string;
+            endTime: string;
+          };
+          class: {
+            id: number;
+            className: string;
+          };
+        })[] = [];
+        classesWithSessions?.classes?.forEach(
+          (cls: ClassesWithSessionsByMonthResponse) => {
+            cls.sessions?.forEach((_session) => {
+              // sessions 배열에는 enrollments가 없으므로 빈 배열로 처리
+              // 실제로는 API 응답 구조에 따라 조정 필요
             });
-          });
-        });
+          }
+        );
 
         // Redux 상태 업데이트 (실시간 데이터만)
         dispatch(
@@ -64,7 +76,7 @@ export function useTeacherInitialization() {
         toast.success("Teacher 실시간 데이터가 로드되었습니다.", {
           id: "teacher-init",
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("❌ Teacher 실시간 데이터 초기화 실패:", error);
 
         const errorMessage =

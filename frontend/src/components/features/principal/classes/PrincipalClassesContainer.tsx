@@ -19,7 +19,7 @@ export const PrincipalClassesContainer = () => {
   })
 
   // 클래스 선택 상태
-  const [selectedClass, setSelectedClass] = useState<any>(null)
+  const [selectedClass, setSelectedClass] = useState<unknown>(null)
   const [isClassSessionModalOpen, setIsClassSessionModalOpen] = useState(false)
 
   // API 기반 데이터 관리
@@ -65,7 +65,7 @@ export const PrincipalClassesContainer = () => {
   }
 
   // 클래스 클릭 핸들러
-  const handleClassClick = (classData: any) => {
+  const handleClassClick = (classData: unknown) => {
     setSelectedClass(classData)
     setIsClassSessionModalOpen(true)
   }

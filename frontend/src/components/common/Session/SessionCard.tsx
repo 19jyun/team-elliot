@@ -3,15 +3,15 @@
 import React from 'react'
 import { getDifficultyText, getDifficultyBgColor } from '@/utils/difficulty'
 import { formatTime, formatDate } from '@/utils/dateTime'
+import type { ClassSessionWithCounts } from '@/types/api/class'
 
 interface SessionCardProps {
-  session: any
+  session: ClassSessionWithCounts
   onClick: () => void
   role: 'student' | 'teacher' | 'principal'
 }
 
 export function SessionCard({ session, onClick, role }: SessionCardProps) {
-
   // Teacher와 Principal은 동일한 권한을 가짐
   const canManageSessions = role === 'teacher' || role === 'principal'
 
@@ -35,7 +35,7 @@ export function SessionCard({ session, onClick, role }: SessionCardProps) {
         </span>
         {canManageSessions && (
           <span className="text-xs text-stone-500">
-            ({session.enrollmentCount}/{session.class?.maxStudents || 0}명)
+            ({session.enrollmentCount}/{session.maxStudents || 0}명)
           </span>
         )}
       </div>

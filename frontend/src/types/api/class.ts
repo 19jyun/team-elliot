@@ -252,3 +252,11 @@ export interface BatchModifyEnrollmentsResponse {
   enrolledCount: number;
   message: string;
 }
+
+// ============= 확장된 세션 타입들 =============
+
+// enrollmentCount와 confirmedCount가 포함된 세션 타입 (Teacher/Principal API 응답용)
+export interface ClassSessionWithCounts extends ClassSession {
+  enrollmentCount: number;
+  confirmedCount: number;
+}

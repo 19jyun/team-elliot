@@ -31,18 +31,22 @@ export function useRoleData() {
 }
 
 // 타입 가드 함수들
-export function isPrincipalData(data: any): data is PrincipalData {
+export function isPrincipalData(data: unknown): data is PrincipalData {
   return (
-    data && "userProfile" in data && "academy" in data && "enrollments" in data
+    data !== null &&
+    typeof data === "object" &&
+    "userProfile" in data &&
+    "academy" in data &&
+    "enrollments" in data
   );
 }
 
-export function isStudentData(data: any): data is StudentData {
-  return data && "profile" in data;
+export function isStudentData(data: unknown): data is StudentData {
+  return data !== null && typeof data === "object" && "profile" in data;
 }
 
-export function isTeacherData(data: any): data is TeacherData {
-  return data && "profile" in data;
+export function isTeacherData(data: unknown): data is TeacherData {
+  return data !== null && typeof data === "object" && "profile" in data;
 }
 
 // ADMIN 제거됨

@@ -25,7 +25,7 @@ export function CommonHeader() {
   let navigationItems: { label: string; value: number }[] = [];
   let activeTab = 0;
   let handleTabChange = (_tab: number) => {};
-  let principalPersonManagement: any = null;
+  let principalPersonManagement: unknown = null;
   let principalGoBack: (() => void) | null = null;
   
   try {

@@ -72,7 +72,7 @@ export function toTeacherSessionCardVM(
 export function toTeacherClassDetailVM(
   classData: TeacherClass,
   isEditing: boolean = false,
-  editData?: any
+  editData?: unknown
 ): TeacherClassDetailVM {
   return {
     ...createBaseVM(),

@@ -7,7 +7,7 @@ const axiosInstance = axios.create({
 });
 
 // 세션 캐싱을 위한 변수
-let cachedSession: any = null;
+let cachedSession: unknown = null;
 let sessionCacheTime = 0;
 const SESSION_CACHE_DURATION = 5 * 60 * 1000; // 5분
 

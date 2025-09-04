@@ -99,7 +99,7 @@ export default function PrincipalTeacherManagementSection() {
         <CardContent>
           <div className="space-y-3">
             {teachers && teachers.length > 0 ? (
-              teachers.map((teacher: any) => (
+              teachers.map((teacher: unknown) => (
                 <div key={teacher.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-3">
                     <div>

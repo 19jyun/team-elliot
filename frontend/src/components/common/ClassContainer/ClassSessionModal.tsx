@@ -5,19 +5,14 @@ import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { SessionCardList } from '@/components/common/Session/SessionCardList'
 import { ClassDetail } from './ClassDetail'
 import { SessionDetailModal } from '@/components/common/Session/SessionDetailModal'
-import { ClassSession } from '@/types/api/class'
-
-interface Session extends ClassSession {
-  enrollmentCount: number
-  confirmedCount: number
-}
+import { Class, ClassSession, ClassSessionWithCounts } from '@/types/api/class'
 
 type TabType = 'sessions' | 'class-detail'
 
 interface ClassSessionModalProps {
   isOpen: boolean
-  selectedClass: any
-  sessions?: any[]
+  selectedClass: Class | null
+  sessions?: ClassSession[]
   onClose: () => void
   role: 'teacher' | 'principal'
 }
@@ -30,7 +25,7 @@ export function ClassSessionModal({
   role
 }: ClassSessionModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>('sessions')
-  const [selectedSession, setSelectedSession] = useState<Session | null>(null)
+  const [selectedSession, setSelectedSession] = useState<ClassSessionWithCounts | null>(null)
   const [isSessionDetailModalOpen, setIsSessionDetailModalOpen] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
 
@@ -44,14 +39,18 @@ export function ClassSessionModal({
     }
   }, [isOpen])
 
-  // 선택된 클래스의 세션만 필터링
-  const filteredSessions = propSessions?.filter((session: any) => {
+  // 선택된 클래스의 세션만 필터링하고 ClassSessionWithCounts로 변환
+  const filteredSessions: ClassSessionWithCounts[] = propSessions?.filter((session: ClassSession) => {
     // session.class가 없거나 session.class.id가 없는 경우 안전하게 처리
     if (!session?.class?.id || !selectedClass?.id) {
       return false
     }
     return session.class.id === selectedClass.id
-  }) || []
+  }).map((session: ClassSession): ClassSessionWithCounts => ({
+    ...session,
+    enrollmentCount: session.enrollments?.length || 0,
+    confirmedCount: session.enrollments?.filter(e => e.status === 'CONFIRMED').length || 0
+  })) || []
 
   if (!isOpen || !selectedClass) return null
 
@@ -67,7 +66,7 @@ export function ClassSessionModal({
     }, 300)
   }
 
-  const handleSessionClick = (session: any) => {
+  const handleSessionClick = (session: ClassSessionWithCounts) => {
     setSelectedSession(session)
     setIsSessionDetailModalOpen(true)
   }

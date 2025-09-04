@@ -36,7 +36,7 @@ export function withAuthorization(
     showError?: boolean;
   } = {},
 ) {
-  return function WithAuthorizationComponent(props: any) {
+  return function WithAuthorizationComponent<T extends Record<string, unknown>>(props: T) {
     const {
       hasAllPermissions,
       isAuthenticated,

@@ -149,7 +149,7 @@ export function toClassSessionForCalendar(
       id: enrollment.id,
       sessionId: session.id,
       studentId: enrollment.studentId,
-      status: enrollment.status as any, // 타입 호환성을 위해 임시 any 사용
+      status: enrollment.status as string, // 타입 호환성을 위해 string으로 캐스팅
       enrolledAt: enrollment.enrolledAt,
     })),
   };

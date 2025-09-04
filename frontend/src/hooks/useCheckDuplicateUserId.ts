@@ -11,7 +11,7 @@ export function useCheckDuplicateUserId() {
     setError(null);
 
     try {
-      const response: any = await checkDuplicateUserIdApi(userId);
+      const response: unknown = await checkDuplicateUserIdApi(userId);
 
       // apiClient 인터셉터에 의해 래핑된 응답에서 data.available에 접근
       const available = response.data?.available ?? false;

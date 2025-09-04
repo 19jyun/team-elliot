@@ -5,7 +5,7 @@ import { getMyClasses } from "@/api/student";
 // Student Calendar API 훅
 export function useStudentCalendarApi() {
   const { data: session, status } = useSession();
-  const [sessions, setSessions] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<unknown[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,7 +30,7 @@ export function useStudentCalendarApi() {
         ...(data?.sessionClasses || []),
       ];
       setSessions(allSessions);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.message || "세션 로드 실패");
     } finally {
       setIsLoading(false);

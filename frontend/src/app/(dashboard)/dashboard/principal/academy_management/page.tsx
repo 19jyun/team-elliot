@@ -58,8 +58,11 @@ export default function PrincipalAcademyManagementPage() {
       toast.success('학원 정보가 수정되었습니다.');
       setIsEditing(false);
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || '학원 정보 수정에 실패했습니다.');
+    onError: (error: unknown) => {
+      const errorMessage = error && typeof error === 'object' && 'response' in error 
+        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message 
+        : '학원 정보 수정에 실패했습니다.';
+      toast.error(errorMessage || '학원 정보 수정에 실패했습니다.');
     },
   });
 

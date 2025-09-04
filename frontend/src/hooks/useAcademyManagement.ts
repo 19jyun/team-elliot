@@ -56,7 +56,7 @@ export function useAcademyManagement() {
       setJoinCode("");
       setPendingJoinCode("");
       toast.success("학원 가입 요청이 완료되었습니다.");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("학원 가입 요청 실패:", error);
       toast.error(
         error.response?.data?.message || "학원 가입 요청에 실패했습니다."
@@ -79,7 +79,7 @@ export function useAcademyManagement() {
 
         // 그 다음 새 학원 가입 요청
         await performJoinAcademyRequest(pendingJoinCode);
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("학원 변경 실패:", error);
         toast.error(
           error.response?.data?.message || "학원 변경에 실패했습니다."
@@ -93,7 +93,7 @@ export function useAcademyManagement() {
       await leaveAcademy();
       setCurrentAcademy(null);
       toast.success("학원에서 탈퇴되었습니다.");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("학원 탈퇴 실패:", error);
       toast.error(error.response?.data?.message || "학원 탈퇴에 실패했습니다.");
     }

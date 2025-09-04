@@ -102,7 +102,10 @@ export const useReorderSessionContents = (sessionId: number) => {
   return useMutation({
     mutationFn: async (data: ReorderSessionContentsRequest) => {
       const ids =
-        (data as any).orderedContentIds ?? (data as any).contentIds ?? [];
+        (data as unknown as { orderedContentIds?: number[] })
+          .orderedContentIds ??
+        (data as unknown as { contentIds?: number[] }).contentIds ??
+        [];
       const contentIds: string[] = (ids as Array<string | number>).map(String);
       const res = await axios.patch(
         `/class-sessions/${sessionId}/contents/reorder`,

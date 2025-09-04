@@ -30,7 +30,7 @@ export class ErrorHandler {
   /**
    * 네트워크 에러 처리
    */
-  static handleNetworkError(error: any): AppError {
+  static handleNetworkError(error: unknown): AppError {
     if (!navigator.onLine) {
       return {
         type: ErrorType.NETWORK,
@@ -63,7 +63,7 @@ export class ErrorHandler {
   private static mapErrorCodeToAppError(
     code: string,
     message: string,
-    details?: any
+    details?: unknown
   ): AppError {
     switch (code) {
       // 인증 관련 에러
@@ -203,16 +203,22 @@ export class ErrorHandler {
   /**
    * 필드 에러 추출
    */
-  private static extractFieldErrors(details: any): FieldError[] {
-    if (!details || !Array.isArray(details.fieldErrors)) {
+  private static extractFieldErrors(details: unknown): FieldError[] {
+    if (
+      !details ||
+      typeof details !== "object" ||
+      !Array.isArray((details as Record<string, unknown>).fieldErrors)
+    ) {
       return [];
     }
 
-    return details.fieldErrors.map((fieldError: any) => ({
-      field: fieldError.field,
-      message: fieldError.message,
-      value: fieldError.value,
-    }));
+    return ((details as Record<string, unknown>).fieldErrors as unknown[]).map(
+      (fieldError: unknown) => ({
+        field: fieldError.field,
+        message: fieldError.message,
+        value: fieldError.value,
+      })
+    );
   }
 
   /**

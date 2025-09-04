@@ -12,7 +12,7 @@ export function useSocket() {
   const { data: session, status } = useSession();
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
-  const socketRef = useRef<any>(null);
+  const socketRef = useRef<unknown>(null);
 
   // Socket 연결
   const connect = useCallback(async () => {
@@ -48,8 +48,17 @@ export function useSocket() {
     ) => {
       const socket = getSocket();
       if (socket) {
-        socket.on(event, callback as any);
-        return () => socket.off(event, callback as any);
+        (
+          socket as {
+            on: (event: string, callback: (data: unknown) => void) => void;
+          }
+        ).on(event, callback);
+        return () =>
+          (
+            socket as {
+              off: (event: string, callback: (data: unknown) => void) => void;
+            }
+          ).off(event, callback);
       }
     },
     []

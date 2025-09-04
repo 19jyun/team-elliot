@@ -22,8 +22,13 @@ export function usePrincipalCalendarApi() {
       setError(null);
       const response = await getPrincipalAllSessions();
       setSessions(response.data || []);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "세션 로드 실패");
+    } catch (err: unknown) {
+      const errorMessage =
+        err && typeof err === "object" && "response" in err
+          ? (err as { response?: { data?: { message?: string } } }).response
+              ?.data?.message
+          : "세션 로드 실패";
+      setError(errorMessage || "세션 로드 실패");
     } finally {
       setIsLoading(false);
     }

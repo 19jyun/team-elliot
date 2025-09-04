@@ -85,7 +85,7 @@ export function SessionDetailModal({
       } else {
         throw new Error('지원하지 않는 역할입니다.')
       }
-      setEnrollmentData(data)
+      setEnrollmentData(data || null)
     } catch (error) {
       console.error('세션 수강생 정보 로드 실패:', error)
     } finally {
@@ -196,7 +196,7 @@ export function SessionDetailModal({
       <SlideUpModal
         isOpen={isOpen}
         onClose={onClose}
-        title={`${session?.class?.className} - ${formatTime(session?.startTime)}`}
+        title={`${'class' in session ? session.class?.className : '클래스'} - ${formatTime(session?.startTime)}`}
         contentClassName="pb-6"
       >
         {/* Navigation Bar - showNavigation이 true일 때만 표시 */}
@@ -260,7 +260,7 @@ export function SessionDetailModal({
                           수강생 목록
                         </h4>
                         <div className="space-y-3">
-                          {enrollmentData.enrollments?.map((enrollment: any) => (
+                          {enrollmentData.enrollments?.map((enrollment: unknown) => (
                             <div
                               key={enrollment.id}
                               className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg"
@@ -306,7 +306,7 @@ export function SessionDetailModal({
                           <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
                               <span className="text-stone-600">클래스명:</span>
-                              <span className="text-stone-700">{session.class?.className}</span>
+                              <span className="text-stone-700">{'class' in session ? session.class?.className : '클래스'}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-stone-600">날짜:</span>

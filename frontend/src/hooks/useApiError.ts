@@ -9,7 +9,7 @@ interface UseApiErrorReturn {
   clearErrors: () => void;
   handleError: (error: AppError) => void;
   handleApiError: (
-    error: any,
+    error: unknown,
     options?: { disableToast?: boolean; disableConsole?: boolean }
   ) => void;
 }
@@ -394,7 +394,7 @@ export function useApiError(): UseApiErrorReturn {
 
   const handleApiError = useCallback(
     (
-      error: any,
+      error: unknown,
       options?: { disableToast?: boolean; disableConsole?: boolean }
     ) => {
       // 콘솔 출력 제어

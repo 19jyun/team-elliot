@@ -89,7 +89,7 @@ export const useRefund = () => {
         } else {
           throw new Error("환불 요청 처리에 실패했습니다.");
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         // 5. 실패 시 낙관적 업데이트 롤백
         dispatch(removeOptimisticCancellation(optimisticCancellation.id));
 
@@ -115,7 +115,7 @@ export const useRefund = () => {
       } else {
         throw new Error("환불 요청 취소에 실패했습니다.");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage =
         error.response?.data?.message ||
         error.message ||

@@ -12,6 +12,23 @@ interface ClassFormData {
   time: string;
 }
 
+interface Enrollment {
+  id: number;
+  studentId: number;
+  status: string;
+}
+
+interface ClassData {
+  id: number;
+  className: string;
+  description: string;
+  maxStudents: number;
+  tuitionFee: number;
+  dayOfWeek: string;
+  time: string;
+  enrollments?: Enrollment[];
+}
+
 const DAYS_OF_WEEK = [
   { value: 'MONDAY', label: '월요일' },
   { value: 'TUESDAY', label: '화요일' },
@@ -25,7 +42,7 @@ const DAYS_OF_WEEK = [
 export function ClassManagement() {
   const { data: session } = useSession();
   const { hasPermission } = useAuthorization();
-  const [classes, setClasses] = useState<any[]>([]);
+  const [classes, setClasses] = useState<ClassData[]>([]);
   const [isAddingClass, setIsAddingClass] = useState(false);
 
   const {
@@ -213,7 +230,7 @@ export function ClassManagement() {
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{classItem.dayOfWeek}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(classItem.time).toLocaleTimeString()}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {classItem.enrollments.length}/{classItem.maxStudents || '∞'}
+                {classItem.enrollments?.length || 0}/{classItem.maxStudents || '∞'}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{classItem.tuitionFee.toLocaleString()}원</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

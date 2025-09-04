@@ -36,7 +36,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
   session,
   onClick,
 }) => {
-  const getEnrollmentCounts = (session: any) => {
+  const getEnrollmentCounts = (session: Session) => {
     return {
       enrollmentCount: session.enrollmentCount || 0,
       confirmedCount: session.confirmedCount || 0
