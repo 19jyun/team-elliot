@@ -52,13 +52,13 @@ export function useSocket() {
           socket as {
             on: (event: string, callback: (data: unknown) => void) => void;
           }
-        ).on(event, callback);
+        ).on(event, callback as (data: unknown) => void);
         return () =>
           (
             socket as {
               off: (event: string, callback: (data: unknown) => void) => void;
             }
-          ).off(event, callback);
+          ).off(event, callback as (data: unknown) => void);
       }
     },
     []

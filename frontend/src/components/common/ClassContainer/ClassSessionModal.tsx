@@ -11,7 +11,7 @@ type TabType = 'sessions' | 'class-detail'
 
 interface ClassSessionModalProps {
   isOpen: boolean
-  selectedClass: Class | null
+  selectedClass: Class
   sessions?: ClassSession[]
   onClose: () => void
   role: 'teacher' | 'principal'

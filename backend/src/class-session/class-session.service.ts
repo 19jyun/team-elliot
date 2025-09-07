@@ -2551,6 +2551,22 @@ export class ClassSessionService {
       throw new ForbiddenException('해당 세션에 접근할 권한이 없습니다.');
     }
 
+    // 세션 정보 조회
+    const session = await this.prisma.classSession.findUnique({
+      where: { id: sessionId },
+      include: {
+        class: {
+          include: {
+            teacher: true,
+          },
+        },
+      },
+    });
+
+    if (!session) {
+      throw new NotFoundException('세션을 찾을 수 없습니다.');
+    }
+
     // 세션의 수강생 목록 조회
     const enrollments = await this.prisma.sessionEnrollment.findMany({
       where: { sessionId },
@@ -2585,6 +2601,17 @@ export class ClassSessionService {
     );
 
     return {
+      session: {
+        id: session.id,
+        date: session.date,
+        startTime: session.startTime,
+        endTime: session.endTime,
+        class: {
+          id: session.class.id,
+          className: session.class.className,
+          teacher: session.class.teacher,
+        },
+      },
       enrollments,
       totalCount: enrollments.length,
       statusCounts,

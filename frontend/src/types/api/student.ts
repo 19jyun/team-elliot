@@ -4,6 +4,8 @@ import type {
   RefundStatus,
   ClassSessionBase,
 } from "./common";
+import type { Class } from "./class";
+import type { ClassSession as Session } from "./class-session";
 
 export interface StudentClass {
   id: number;
@@ -16,12 +18,12 @@ export interface StudentClass {
 }
 
 export interface MyClassesResponse {
-  enrollmentClasses: StudentClass[];
-  sessionClasses: StudentClass[];
+  enrollmentClasses: Class[]; // 백엔드에서 Class[] 반환
+  sessionClasses: Session[]; // 백엔드에서 Session[] 반환 (session_id, enrollment_status, enrollment_id 포함)
   calendarRange: {
     // 백엔드에서 실제로 제공되는 필드
-    startDate: string;
-    endDate: string;
+    startDate: string; // API 응답에서는 Date가 string으로 직렬화됨
+    endDate: string; // API 응답에서는 Date가 string으로 직렬화됨
   };
 }
 

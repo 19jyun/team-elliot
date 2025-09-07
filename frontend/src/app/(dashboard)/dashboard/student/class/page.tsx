@@ -12,6 +12,7 @@ import { StudentSessionDetailModal } from '@/components/features/student/classes
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
 import type { RootState } from '@/store/index'
 import type { StudentCalendarSessionVM, StudentCalendarRangeVM } from '@/types/view/student'
+import type { ClassSession } from '@/types/api/class'
 import { toStudentCalendarSessionVM, toStudentCalendarRangeVM } from '@/lib/adapters/student'
 
 export default function StudentDashboard() {
@@ -38,14 +39,14 @@ export default function StudentDashboard() {
       date: session.date!,
       startTime: session.startTime,
       endTime: session.endTime,
-      className: session.class?.className || session.name,
-      teacherName: session.teacherName,
+      className: session.class?.className || '클래스명 없음',
+      teacherName: session.teacherName || '선생님 정보 없음',
       maxStudents: session.maxStudents || 0,
       currentEnrollments: session.currentStudents || 0,
-      tuitionFee: session.class?.tuitionFee || 50000,
-      isEnrolled: session.isAlreadyEnrolled || true,
+      tuitionFee: parseInt(session.class?.tuitionFee || '50000'),
+      isEnrolled: session.isAlreadyEnrolled || false,
       enrollmentId: undefined,
-      enrollmentStatus: session.studentEnrollmentStatus
+      enrollmentStatus: session.studentEnrollmentStatus || undefined
     }));
   
   // calendarRange를 StudentCalendarRangeVM으로 변환 (어댑터 사용)
@@ -62,7 +63,7 @@ export default function StudentDashboard() {
   const [isDateModalOpen, setIsDateModalOpen] = useState(false)
   
   // 세션 상세 모달 상태 추가
-  const [selectedSession, setSelectedSession] = useState<StudentCalendarSessionVM | null>(null)
+  const [selectedSession, setSelectedSession] = useState<ClassSession | null>(null)
   const [isSessionDetailModalOpen, setIsSessionDetailModalOpen] = useState(false)
 
   // 로딩 상태 처리
@@ -102,7 +103,7 @@ export default function StudentDashboard() {
   }
 
   // 세션 클릭 핸들러 추가
-  const handleSessionClick = (session: StudentCalendarSessionVM) => {
+  const handleSessionClick = (session: ClassSession) => {
     setSelectedSession(session)
     setIsSessionDetailModalOpen(true)
   }
@@ -182,7 +183,22 @@ export default function StudentDashboard() {
       {/* Student Session Detail Modal */}
       <StudentSessionDetailModal
         isOpen={isSessionDetailModalOpen}
-        session={selectedSession}
+        session={selectedSession ? {
+          session_id: selectedSession.id,
+          date: selectedSession.date,
+          startTime: selectedSession.startTime,
+          endTime: selectedSession.endTime,
+          enrollment_status: selectedSession.studentEnrollmentStatus || 'CONFIRMED',
+          class: selectedSession.class ? {
+            id: selectedSession.class.id,
+            className: selectedSession.class.className,
+            level: selectedSession.class.level as 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'
+          } : {
+            id: 0,
+            className: '클래스명 없음',
+            level: 'BEGINNER' as const
+          }
+        } : null}
         onClose={closeSessionDetailModal}
         onlyDetail={false}
       />

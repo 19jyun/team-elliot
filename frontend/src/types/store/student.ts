@@ -1,4 +1,7 @@
 // Student 전용 데이터 타입 (Redux에서 관리하는 데이터만)
+
+import type { ClassSession as Session } from "@/types/api/class-session";
+
 export interface StudentData {
   // 수강 신청/결제 내역
   enrollmentHistory: EnrollmentHistory[];
@@ -6,8 +9,8 @@ export interface StudentData {
   // 환불/취소 내역
   cancellationHistory: CancellationHistory[];
 
-  // 캘린더 세션 데이터 (새로 추가)
-  calendarSessions: StudentClass[];
+  // 캘린더 세션 데이터 (새로 추가) - 실제로는 Session[] 타입
+  calendarSessions: Session[];
 
   // 캘린더 범위 (새로 추가)
   calendarRange: {

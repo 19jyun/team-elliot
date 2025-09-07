@@ -1,4 +1,5 @@
 // Class-session 관련 API 타입들
+import type { EnrollmentStatus } from "./common";
 
 // 수강 신청 상태 enum
 export enum SessionEnrollmentStatus {
@@ -197,7 +198,22 @@ export interface ClassSession {
   isFull?: boolean;
   isPastStartTime?: boolean;
   isAlreadyEnrolled?: boolean;
-  studentEnrollmentStatus?: SessionEnrollmentStatus | null;
+  studentEnrollmentStatus?: EnrollmentStatus | null;
+
+  // 클래스 정보 (백엔드 API 응답에 포함됨)
+  class?: {
+    id: number;
+    className: string;
+    level: string;
+    tuitionFee: string;
+    teacher?: {
+      id: number;
+      name: string;
+    };
+  };
+
+  // 선생님 이름 (백엔드 API 응답에 포함됨)
+  teacherName?: string;
 }
 
 export type GetClassSessionsResponse = ClassSession[];
