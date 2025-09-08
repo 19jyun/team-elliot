@@ -195,8 +195,13 @@ export interface AvailableSessionForEnrollment {
   };
 }
 
-export type GetStudentAvailableSessionsForEnrollmentResponse =
-  AvailableSessionForEnrollment[];
+export interface GetStudentAvailableSessionsForEnrollmentResponse {
+  sessions: AvailableSessionForEnrollment[];
+  calendarRange: {
+    startDate: string;
+    endDate: string;
+  };
+}
 
 // 수강신청/변경 관련 타입들
 export interface StudentBatchEnrollSessionsRequest {
@@ -236,6 +241,9 @@ export interface StudentBatchModifyEnrollmentsResponse {
 export interface ClassSessionForEnrollment extends ClassSessionBase {
   className: string;
   teacherName: string;
+  level?: string; // 클래스 난이도
+  classId?: number; // 클래스 ID
+  teacherId?: number; // 선생님 ID
   maxStudents: number;
   currentEnrollments: number;
   tuitionFee: number;
@@ -250,6 +258,20 @@ export interface ClassSessionForEnrollment extends ClassSessionBase {
 export interface RemoveStudentFromAcademyResponse {
   success: boolean;
   message: string;
+}
+
+// 선생님 프로필 조회 응답 (학생용)
+export interface TeacherProfileForStudentResponse {
+  id: number;
+  name: string;
+  photoUrl: string;
+  phoneNumber: string;
+  introduction: string;
+  yearsOfExperience: number;
+  education: string[];
+  specialties: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Re-export from academy

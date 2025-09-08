@@ -19,6 +19,9 @@ export function StudentSessionDetailModal({
   const { isLoading } = useStudentApi();
   const [classDetails, setClassDetails] = useState<StudentEnrolledSessionVM['class'] | null>(null)
   const [activeTab, setActiveTab] = useState<TabType>('class')
+  
+  // session.session_id는 이제 항상 실제 숫자 ID
+  const actualSessionId = session?.session_id || 0;
 
   // 모든 useEffect를 조건부 return 이전에 호출
   useEffect(() => {
@@ -96,7 +99,7 @@ export function StudentSessionDetailModal({
         {onlyDetail ? (
           // onlyDetail이 true일 때: 세션 상세 정보만 표시
           <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-            <SessionDetailTab sessionId={session.session_id} />
+            <SessionDetailTab sessionId={actualSessionId} />
           </div>
         ) : (
           // onlyDetail이 false일 때: 기존 탭 구조 유지
@@ -131,7 +134,7 @@ export function StudentSessionDetailModal({
             {/* 세션 상세 정보 탭 */}
             <div className="w-1/2 flex-shrink-0 px-1">
               <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                <SessionDetailTab sessionId={session.session_id} />
+                <SessionDetailTab sessionId={actualSessionId} />
               </div>
             </div>
           </motion.div>

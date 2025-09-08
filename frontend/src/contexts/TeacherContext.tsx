@@ -41,3 +41,8 @@ export function useTeacherContext() {
   if (!ctx) throw new Error('useTeacherContext must be used within a TeacherProvider');
   return ctx;
 }
+
+export function useOptionalTeacherContext() {
+  const ctx = useContext(TeacherContext);
+  return ctx;
+}

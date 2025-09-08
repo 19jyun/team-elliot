@@ -6,13 +6,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { User, Clock, GraduationCap, Award } from 'lucide-react'
 import { getImageUrl } from '@/utils/imageUtils'
-import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'
+import { useStudentApi } from '@/hooks/student/useStudentApi'
 import type { TeacherProfileResponse } from '@/types/api/teacher'
 import type { TeacherProfileCardForStudentVM, TeacherProfileDisplayVM } from '@/types/view/student'
-import { toTeacherProfileDisplayVM } from '@/lib/adapters/student'
+import { toTeacherProfileDisplayVM, toTeacherProfileForStudentVM } from '@/lib/adapters/student'
 
 export function TeacherProfileCardForStudent({ teacherId }: TeacherProfileCardForStudentVM) {
-  const { loadProfileById } = useTeacherApi()
+  const { getTeacherProfileForStudent } = useStudentApi()
   const [profile, setProfile] = useState<TeacherProfileResponse | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -26,8 +26,13 @@ export function TeacherProfileCardForStudent({ teacherId }: TeacherProfileCardFo
       try {
         setIsLoading(true)
         setError(null)
-        const data = await loadProfileById(teacherId)
-        if (mounted) setProfile(data || null)
+        const data = await getTeacherProfileForStudent(teacherId)
+        
+        if (mounted && data) {
+          // 어댑터 패턴을 사용하여 데이터 변환
+          const transformedData = toTeacherProfileForStudentVM(data)
+          setProfile(transformedData)
+        }
       } catch (e: unknown) {
         if (mounted) {
           const errorMessage = e && typeof e === 'object' && 'response' in e && 
@@ -45,7 +50,7 @@ export function TeacherProfileCardForStudent({ teacherId }: TeacherProfileCardFo
     return () => {
       mounted = false
     }
-  }, [teacherId, loadProfileById])
+  }, [teacherId, getTeacherProfileForStudent])
 
   if (displayVM.isLoading) {
     return (

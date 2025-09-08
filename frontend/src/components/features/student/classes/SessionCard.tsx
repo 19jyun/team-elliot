@@ -11,7 +11,7 @@ interface SessionCardProps {
 const getStatusText = (status: string) => {
   switch (status) {
     case 'PENDING':
-      return '수락 대기중'
+      return '승인 대기중'
     case 'CONFIRMED':
       return '확정'
     case 'CANCELLED':

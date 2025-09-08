@@ -69,3 +69,8 @@ export function useStudentContext() {
   if (!ctx) throw new Error('useStudentContext must be used within a StudentProvider');
   return ctx;
 }
+
+export function useOptionalStudentContext() {
+  const ctx = useContext(StudentContext);
+  return ctx;
+}

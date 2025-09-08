@@ -49,6 +49,13 @@ export class StudentController {
     return this.studentService.getMyProfile(user.id);
   }
 
+  @Get('teachers/:teacherId/profile')
+  @ApiOperation({ summary: '선생님 프로필 조회 (학생용)' })
+  @ApiResponse({ status: 200, description: '선생님 프로필 조회 성공' })
+  async getTeacherProfile(@Param('teacherId', ParseIntPipe) teacherId: number) {
+    return this.studentService.getTeacherProfile(teacherId);
+  }
+
   @Put('profile')
   async updateMyProfile(
     @CurrentUser() user: any,

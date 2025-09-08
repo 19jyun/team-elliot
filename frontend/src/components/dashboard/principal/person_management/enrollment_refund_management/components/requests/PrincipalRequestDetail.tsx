@@ -44,7 +44,7 @@ export function PrincipalRequestDetail() {
   const requests = selectedSessionId 
     ? selectedTab === 'enrollment'
       ? (getSessionEnrollments(selectedSessionId) as unknown as PrincipalEnrollment[])
-      : (getSessionRefundRequests(selectedSessionId) as unknown as PrincipalRefundRequest[])
+      : getSessionRefundRequests(selectedSessionId)
     : [];
 
   // ViewModel 생성

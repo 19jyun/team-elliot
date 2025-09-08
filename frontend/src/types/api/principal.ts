@@ -163,13 +163,18 @@ export interface PrincipalDataResponse {
   // sessions는 백엔드에서 제공되지 않음 (classes.classSessions로 대체)
 }
 
-// Principal 수강신청 정보 (백엔드 응답 구조에 맞춤)
+// Principal 수강신청 정보
 export interface PrincipalEnrollment {
   id: number;
   studentId: number;
   sessionId: number;
   status: string;
   enrolledAt: string;
+  student: {
+    id: number;
+    name: string;
+    phoneNumber?: string;
+  };
   session: {
     id: number;
     date: string;
@@ -186,7 +191,7 @@ export interface PrincipalEnrollment {
   };
 }
 
-// Principal 환불 요청 정보 (백엔드 응답 구조에 맞춤)
+// Principal 환불 요청 정보
 export interface PrincipalRefundRequest {
   id: number;
   studentId: number;
@@ -198,6 +203,11 @@ export interface PrincipalRefundRequest {
   bankName?: string;
   accountNumber?: string;
   accountHolder?: string;
+  student: {
+    id: number;
+    name: string;
+    phoneNumber?: string;
+  };
   sessionEnrollment: {
     session: {
       id: number;
@@ -207,7 +217,7 @@ export interface PrincipalRefundRequest {
       class: {
         id: number;
         className: string;
-        level: string;
+        level: string; // ✅ 백엔드에서 이제 제공함
         teacher: {
           name: string;
         };

@@ -20,6 +20,7 @@ import {
   StudentBatchModifyEnrollmentsRequest,
   StudentBatchModifyEnrollmentsResponse,
   RemoveStudentFromAcademyResponse,
+  TeacherProfileForStudentResponse,
 } from "../types/api/student";
 import {
   GetClassSessionsForModificationResponse,
@@ -51,6 +52,15 @@ export const unenrollClass = (
 // 개인 정보 조회
 export const getMyProfile = (): Promise<ApiResponse<StudentProfile>> => {
   return get<ApiResponse<StudentProfile>>("/student/profile");
+};
+
+// 선생님 프로필 조회 (학생용)
+export const getTeacherProfile = (
+  teacherId: number
+): Promise<ApiResponse<TeacherProfileForStudentResponse>> => {
+  return get<ApiResponse<TeacherProfileForStudentResponse>>(
+    `/student/teachers/${teacherId}/profile`
+  );
 };
 
 // 개인 정보 수정

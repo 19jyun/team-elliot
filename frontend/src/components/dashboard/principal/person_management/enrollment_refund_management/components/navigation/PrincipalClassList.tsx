@@ -5,7 +5,8 @@ import { usePrincipalContext } from '@/contexts/PrincipalContext';
 import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
 import { Badge } from '@/components/ui/badge';
 import { toPrincipalClassListForRequestsVM } from '@/lib/adapters/principal';
-import type { PrincipalEnrollment, PrincipalRefundRequest } from '@/types/api/principal';
+import type { PrincipalEnrollment } from '@/types/api/principal';
+import type { RefundRequestResponse } from '@/types/api/refund';
 import type { PrincipalClassListForRequestsVM } from '@/types/view/principal';
 
 
@@ -28,7 +29,7 @@ export function PrincipalClassList() {
   // ViewModel 생성
   const classListVM: PrincipalClassListForRequestsVM = toPrincipalClassListForRequestsVM({
     enrollments: (enrollments as unknown as PrincipalEnrollment[]) || [],
-    refundRequests: (refundRequests as unknown as PrincipalRefundRequest[]) || [],
+    refundRequests: refundRequests || [],
     selectedTab,
     isLoading,
     error,

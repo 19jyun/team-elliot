@@ -8,9 +8,9 @@ import type {
   PrincipalStudent,
   PrincipalClassSession,
   PrincipalEnrollment,
-  PrincipalRefundRequest,
   UpdatePrincipalProfileRequest,
 } from "@/types/api/principal";
+import type { RefundRequestResponse } from "@/types/api/refund";
 import type { ClassSession } from "@/types/api/class";
 import type { EnrollmentStatus } from "@/types/api/common";
 import { formatDate, formatTime, formatTimeRange } from "@/utils/dateTime";
@@ -329,8 +329,8 @@ export function toPrincipalEnrollmentRequestVM(
   return {
     id: enrollment.id,
     studentId: enrollment.studentId,
-    studentName: enrollment.session.class.teacher.name, // 기본값, 실제로는 student에서 가져와야 함
-    studentPhoneNumber: undefined, // 기본값
+    studentName: enrollment.student.name,
+    studentPhoneNumber: enrollment.student.phoneNumber,
     status: enrollment.status,
     enrolledAt: enrollment.enrolledAt,
     reason: undefined, // 기본값
@@ -340,7 +340,7 @@ export function toPrincipalEnrollmentRequestVM(
     sessionEndTime: enrollment.session?.endTime,
     className: enrollment.session?.class?.className,
     classLevel: enrollment.session?.class?.level,
-    teacherName: enrollment.session?.class?.teacher?.name,
+    teacherName: enrollment.session?.class?.teacher?.name || "미지정",
     // UI 표시용 계산된 필드들
     displayEnrolledAt: formatDateDisplay(enrollment.enrolledAt),
     displaySessionDate: enrollment.session?.date
@@ -360,13 +360,13 @@ export function toPrincipalEnrollmentRequestVM(
 
 // PrincipalRefundRequest → PrincipalRefundRequestVM 변환
 export function toPrincipalRefundRequestVM(
-  refundRequest: PrincipalRefundRequest
+  refundRequest: RefundRequestResponse
 ): PrincipalRefundRequestVM {
   return {
     id: refundRequest.id,
     studentId: refundRequest.studentId,
-    studentName: refundRequest.sessionEnrollment.session.class.teacher.name, // 기본값, 실제로는 student에서 가져와야 함
-    studentPhoneNumber: undefined, // 기본값
+    studentName: refundRequest.student?.name || "알 수 없음",
+    studentPhoneNumber: refundRequest.student?.phoneNumber,
     reason: refundRequest.reason,
     detailedReason: undefined, // 기본값
     refundAmount: refundRequest.refundAmount,
@@ -379,9 +379,14 @@ export function toPrincipalRefundRequestVM(
     sessionDate: refundRequest.sessionEnrollment?.session?.date,
     sessionStartTime: refundRequest.sessionEnrollment?.session?.startTime,
     sessionEndTime: refundRequest.sessionEnrollment?.session?.endTime,
-    className: refundRequest.sessionEnrollment?.session?.class?.className,
-    classLevel: refundRequest.sessionEnrollment?.session?.class?.level,
-    teacherName: refundRequest.sessionEnrollment?.session?.class?.teacher?.name,
+    className:
+      refundRequest.sessionEnrollment?.session?.class?.className ||
+      "클래스명 없음",
+    classLevel:
+      refundRequest.sessionEnrollment?.session?.class?.level || "미지정",
+    teacherName:
+      refundRequest.sessionEnrollment?.session?.class?.teacher?.name ||
+      "미지정",
     // UI 표시용 계산된 필드들
     displayRequestedAt: formatDateDisplay(refundRequest.requestedAt),
     displayRefundAmount: `${refundRequest.refundAmount.toLocaleString()}원`,
@@ -503,7 +508,7 @@ export function toPrincipalRequestCardVM({
   onReject,
   isProcessing = false,
 }: {
-  request: PrincipalEnrollment | PrincipalRefundRequest;
+  request: PrincipalEnrollment | RefundRequestResponse;
   requestType: "enrollment" | "refund";
   onApprove: (id: number) => void;
   onReject: (id: number) => void;
@@ -512,7 +517,7 @@ export function toPrincipalRequestCardVM({
   const requestVM =
     requestType === "enrollment"
       ? toPrincipalEnrollmentRequestVM(request as PrincipalEnrollment)
-      : toPrincipalRefundRequestVM(request as PrincipalRefundRequest);
+      : toPrincipalRefundRequestVM(request as RefundRequestResponse);
 
   return {
     request: requestVM,
@@ -599,7 +604,7 @@ export function toPrincipalRequestDetailVM({
   showRejectionModal,
   selectedRequest,
 }: {
-  requests: (PrincipalEnrollment | PrincipalRefundRequest)[];
+  requests: (PrincipalEnrollment | RefundRequestResponse)[];
   selectedTab: "enrollment" | "refund";
   selectedSessionId: number | null;
   isLoading: boolean;
@@ -686,7 +691,7 @@ export function toPrincipalClassListForRequestsVM({
   error,
 }: {
   enrollments: PrincipalEnrollment[];
-  refundRequests: PrincipalRefundRequest[];
+  refundRequests: RefundRequestResponse[];
   selectedTab: "enrollment" | "refund";
   isLoading: boolean;
   error: string | null;
@@ -790,7 +795,7 @@ export function toPrincipalSessionListForRequestsVM({
   error,
 }: {
   enrollments: PrincipalEnrollment[];
-  refundRequests: PrincipalRefundRequest[];
+  refundRequests: RefundRequestResponse[];
   selectedTab: "enrollment" | "refund";
   selectedClassId: number | null;
   isLoading: boolean;

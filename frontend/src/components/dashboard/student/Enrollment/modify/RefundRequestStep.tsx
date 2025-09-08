@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { InfoBubble } from '@/components/common/InfoBubble';
 
-import { useRefund } from '@/hooks/student/useRefund';
+import { useStudentApi } from '@/hooks/student/useStudentApi';
 import { 
   validateCompleteRefundRequest, 
   getRefundReasonOptions,
@@ -44,7 +44,7 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
   const [saveAccount, setSaveAccount] = useState(false);
   const [refundReason, setRefundReason] = useState<RefundReason>(RefundReason.PERSONAL_SCHEDULE);
   const [detailedReason, setDetailedReason] = useState('');
-  const { createRefundRequest } = useRefund();
+  const { createRefundRequest } = useStudentApi();
 
   const statusSteps = [
     {
@@ -119,6 +119,11 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
   };
 
   const handleSubmit = async () => {
+    // 중복 제출 방지
+    if (isSubmitting) {
+      return;
+    }
+    
     // localStorage에서 기존 수강 신청 정보와 선택된 세션 정보 가져오기
     const existingEnrollmentsData = localStorage.getItem('existingEnrollments');
     const selectedSessionsData = localStorage.getItem('selectedSessions');
@@ -189,13 +194,22 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
       }
     }
 
+    
     setIsSubmitting(true);
     
     try {
       // 각 취소된 세션에 대해 환불 요청 생성
       const refundRequests = [];
+      const processedEnrollmentIds = new Set<number>(); // 중복 방지를 위한 Set
 
       for (const cancelledSession of cancelledSessions) {
+        // 이미 처리된 sessionEnrollmentId인지 확인
+        if (processedEnrollmentIds.has(cancelledSession.enrollment.id)) {
+          continue;
+        }
+        
+        // 처리된 sessionEnrollmentId로 표시
+        processedEnrollmentIds.add(cancelledSession.enrollment.id);
         // 실제 수강료 사용 (기본값 50000)
         const sessionPrice = parseInt(cancelledSession.class?.tuitionFee || '50000');
         
@@ -213,8 +227,7 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
           const response = await createRefundRequest(refundRequest);
           refundRequests.push(response);
         } catch (error) {
-          console.error('환불 요청 생성 실패:', error);
-          throw new Error(`세션 ${cancelledSession.sessionId}의 환불 요청 생성에 실패했습니다.`);
+          throw new Error(`세션 ${cancelledSession.id}의 환불 요청 생성에 실패했습니다.`, error as Error);
         }
       }
 
@@ -222,11 +235,10 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
       if (saveAccount) {
         localStorage.setItem('savedAccountInfo', JSON.stringify(accountInfo));
       }
-
+      
       toast.success(`${refundRequests.length}개 세션의 환불 신청이 완료되었습니다.`);
       onComplete();
     } catch (error) {
-      console.error('환불 신청 실패:', error);
       toast.error(error instanceof Error ? error.message : '환불 신청에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsSubmitting(false);

@@ -17,6 +17,16 @@ export interface StudentCalendarSessionVM extends SessionCore {
   canEnroll: boolean;
   statusColor: "green" | "blue" | "red" | "gray";
   capacityText: string; // "7/10명"
+  class?: {
+    id: number;
+    className: string;
+    level: string;
+    tuitionFee: string;
+    teacher?: {
+      id: number;
+      name: string;
+    };
+  };
 }
 
 // 수강중인 클래스 카드 ViewModel

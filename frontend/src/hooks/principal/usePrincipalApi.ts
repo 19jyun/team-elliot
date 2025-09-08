@@ -221,175 +221,211 @@ export function usePrincipalApi() {
   ]);
 
   // 업데이트/액션 래퍼들 (컴포넌트에서 API 직접 호출 금지 목적)
-  const updateProfile = async (data: UpdatePrincipalProfileRequest) => {
-    const response = await updatePrincipalProfile(data);
+  const updateProfile = useCallback(
+    async (data: UpdatePrincipalProfileRequest) => {
+      const response = await updatePrincipalProfile(data);
 
-    // 프로필 업데이트 후 데이터 다시 로드
-    await loadProfile();
+      // 프로필 업데이트 후 데이터 다시 로드
+      await loadProfile();
 
-    return response;
-  };
-  const updateProfilePhoto = async (photo: File) => {
+      return response;
+    },
+    [loadProfile]
+  );
+  const updateProfilePhoto = useCallback(async (photo: File) => {
     return updatePrincipalProfilePhoto(photo);
-  };
+  }, []);
 
   // 클래스 생성
-  const createClass = async (data: CreatePrincipalClassRequest) => {
+  const createClass = useCallback(async (data: CreatePrincipalClassRequest) => {
     return createPrincipalClass(data);
-  };
+  }, []);
 
   // 세션 컨텐츠 관리
-  const getSessionContents = async (sessionId: number) => {
+  const getSessionContents = useCallback(async (sessionId: number) => {
     return apiGetSessionContents(sessionId);
-  };
-  const addSessionContent = async (
-    sessionId: number,
-    data: CreateSessionContentRequest
-  ) => {
-    return apiAddSessionContent(sessionId, data);
-  };
-  const updateSessionContent = async (
-    sessionId: number,
-    contentId: number,
-    data: UpdateSessionContentRequest
-  ) => {
-    return apiUpdateSessionContent(sessionId, contentId, data);
-  };
-  const deleteSessionContent = async (sessionId: number, contentId: number) => {
-    return apiDeleteSessionContent(sessionId, contentId);
-  };
-  const reorderSessionContents = async (
-    sessionId: number,
-    orderedContentIds: number[]
-  ) => {
-    return apiReorderSessionContents(sessionId, {
-      contentIds: orderedContentIds,
-    });
-  };
+  }, []);
+  const addSessionContent = useCallback(
+    async (sessionId: number, data: CreateSessionContentRequest) => {
+      return apiAddSessionContent(sessionId, data);
+    },
+    []
+  );
+  const updateSessionContent = useCallback(
+    async (
+      sessionId: number,
+      contentId: number,
+      data: UpdateSessionContentRequest
+    ) => {
+      return apiUpdateSessionContent(sessionId, contentId, data);
+    },
+    []
+  );
+  const deleteSessionContent = useCallback(
+    async (sessionId: number, contentId: number) => {
+      return apiDeleteSessionContent(sessionId, contentId);
+    },
+    []
+  );
+  const reorderSessionContents = useCallback(
+    async (sessionId: number, orderedContentIds: number[]) => {
+      return apiReorderSessionContents(sessionId, {
+        contentIds: orderedContentIds,
+      });
+    },
+    []
+  );
 
   // 인원 관리
-  const removeTeacher = async (teacherId: number) => {
+  const removeTeacher = useCallback(async (teacherId: number) => {
     return removePrincipalTeacher(teacherId);
-  };
-  const removeStudent = async (studentId: number) => {
+  }, []);
+  const removeStudent = useCallback(async (studentId: number) => {
     return removePrincipalStudent(studentId);
-  };
-  const getStudentSessionHistory = async (studentId: number) => {
+  }, []);
+  const getStudentSessionHistory = useCallback(async (studentId: number) => {
     return getPrincipalStudentSessionHistory(studentId);
-  };
+  }, []);
 
   // 학원 정보 업데이트
-  const updateAcademy = async (data: UpdatePrincipalAcademyRequest) => {
-    const response = await updatePrincipalAcademy(data);
+  const updateAcademy = useCallback(
+    async (data: UpdatePrincipalAcademyRequest) => {
+      const response = await updatePrincipalAcademy(data);
 
-    // 학원 정보 업데이트 후 데이터 다시 로드
-    await loadAcademy();
+      // 학원 정보 업데이트 후 데이터 다시 로드
+      await loadAcademy();
 
-    return response;
-  };
+      return response;
+    },
+    [loadAcademy]
+  );
 
   // 수강신청 및 환불 요청 관리
-  const getAllEnrollments = async () => {
+  const getAllEnrollments = useCallback(async () => {
     return getPrincipalAllEnrollments();
-  };
+  }, []);
 
-  const getAllRefundRequests = async () => {
+  const getAllRefundRequests = useCallback(async () => {
     return getPrincipalAllRefundRequests();
-  };
+  }, []);
 
   // 발레 포즈 (Principal에서 사용)
-  const fetchBalletPoses = async (
-    difficulty?: PoseDifficulty
-  ): Promise<BalletPose[]> => {
-    const response = await getBalletPoses(difficulty);
-    return response.data || [];
-  };
-  const fetchBalletPose = async (id: number): Promise<BalletPose> => {
-    const response = await getBalletPose(id);
-    return response.data!;
-  };
+  const fetchBalletPoses = useCallback(
+    async (difficulty?: PoseDifficulty): Promise<BalletPose[]> => {
+      const response = await getBalletPoses(difficulty);
+      return response.data || [];
+    },
+    []
+  );
+  const fetchBalletPose = useCallback(
+    async (id: number): Promise<BalletPose> => {
+      const response = await getBalletPose(id);
+      return response.data!;
+    },
+    []
+  );
 
   // 헬퍼 함수들
-  const getClassById = (classId: number) => {
-    return classes.find((cls) => cls.id === classId);
-  };
+  const getClassById = useCallback(
+    (classId: number) => {
+      return classes.find((cls) => cls.id === classId);
+    },
+    [classes]
+  );
 
-  const getTeacherById = (teacherId: number) => {
-    return teachers.find((teacher) => teacher.id === teacherId);
-  };
+  const getTeacherById = useCallback(
+    (teacherId: number) => {
+      return teachers.find((teacher) => teacher.id === teacherId);
+    },
+    [teachers]
+  );
 
-  const getStudentById = (studentId: number) => {
-    return students.find((student) => student.id === studentId);
-  };
+  const getStudentById = useCallback(
+    (studentId: number) => {
+      return students.find((student) => student.id === studentId);
+    },
+    [students]
+  );
 
-  const getSessionsByClassId = (classId: number) => {
-    return sessions.filter((session) => session.classId === classId);
-  };
+  const getSessionsByClassId = useCallback(
+    (classId: number) => {
+      return sessions.filter((session) => session.classId === classId);
+    },
+    [sessions]
+  );
 
-  const getSessionsByDate = (date: Date) => {
-    return sessions.filter((session) => {
-      const sessionDate = new Date(session.date);
-      return sessionDate.toDateString() === date.toDateString();
-    });
-  };
+  const getSessionsByDate = useCallback(
+    (date: Date) => {
+      return sessions.filter((session) => {
+        const sessionDate = new Date(session.date);
+        return sessionDate.toDateString() === date.toDateString();
+      });
+    },
+    [sessions]
+  );
 
   // 수강신청 승인
-  const approveEnrollment = async (enrollmentId: number) => {
-    if (!isPrincipal) throw new Error("Principal 권한이 필요합니다.");
+  const approveEnrollment = useCallback(
+    async (enrollmentId: number) => {
+      if (!isPrincipal) throw new Error("Principal 권한이 필요합니다.");
 
-    try {
-      setError(null);
-      const response = await approvePrincipalEnrollment(enrollmentId);
-      return response.data;
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      const errorMessage =
-        error.response?.data?.message || "수강신청 승인 실패";
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    }
-  };
+      try {
+        setError(null);
+        const response = await approvePrincipalEnrollment(enrollmentId);
+        return response.data;
+      } catch (err: unknown) {
+        const error = err as { response?: { data?: { message?: string } } };
+        const errorMessage =
+          error.response?.data?.message || "수강신청 승인 실패";
+        setError(errorMessage);
+        throw new Error(errorMessage);
+      }
+    },
+    [isPrincipal]
+  );
 
   // 수강신청 거절
-  const rejectEnrollment = async (
-    enrollmentId: number,
-    reason: string,
-    detailedReason?: string
-  ) => {
-    if (!isPrincipal) throw new Error("Principal 권한이 필요합니다.");
+  const rejectEnrollment = useCallback(
+    async (enrollmentId: number, reason: string, detailedReason?: string) => {
+      if (!isPrincipal) throw new Error("Principal 권한이 필요합니다.");
 
-    try {
-      setError(null);
-      const response = await rejectPrincipalEnrollment(enrollmentId, {
-        reason,
-        detailedReason,
-      } as RejectEnrollmentRequest);
-      return response.data;
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      const errorMessage =
-        error.response?.data?.message || "수강신청 거절 실패";
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    }
-  };
+      try {
+        setError(null);
+        const response = await rejectPrincipalEnrollment(enrollmentId, {
+          reason,
+          detailedReason,
+        } as RejectEnrollmentRequest);
+        return response.data;
+      } catch (err: unknown) {
+        const error = err as { response?: { data?: { message?: string } } };
+        const errorMessage =
+          error.response?.data?.message || "수강신청 거절 실패";
+        setError(errorMessage);
+        throw new Error(errorMessage);
+      }
+    },
+    [isPrincipal]
+  );
 
   // 환불요청 승인
-  const approveRefund = async (refundId: number) => {
-    if (!isPrincipal) throw new Error("Principal 권한이 필요합니다.");
+  const approveRefund = useCallback(
+    async (refundId: number) => {
+      if (!isPrincipal) throw new Error("Principal 권한이 필요합니다.");
 
-    try {
-      setError(null);
-      const response = await approvePrincipalRefund(refundId);
-      return response.data;
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      const errorMessage =
-        error.response?.data?.message || "환불요청 승인 실패";
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    }
-  };
+      try {
+        setError(null);
+        const response = await approvePrincipalRefund(refundId);
+        return response.data;
+      } catch (err: unknown) {
+        const error = err as { response?: { data?: { message?: string } } };
+        const errorMessage =
+          error.response?.data?.message || "환불요청 승인 실패";
+        setError(errorMessage);
+        throw new Error(errorMessage);
+      }
+    },
+    [isPrincipal]
+  );
 
   // 환불요청 거절
   const rejectRefund = async (

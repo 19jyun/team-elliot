@@ -6,10 +6,9 @@ import Image from 'next/image';
 import { ArrowLeft } from 'lucide-react';
 
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
-import { useStudentContext } from '@/contexts/StudentContext';
-import { useTeacherContext } from '@/contexts/TeacherContext';
-import { usePrincipalContext } from '@/contexts/PrincipalContext';
-import { PrincipalPersonManagementState } from '@/contexts/PrincipalContext';
+import { useOptionalStudentContext } from '@/contexts/StudentContext';
+import { useOptionalTeacherContext } from '@/contexts/TeacherContext';
+import { useOptionalPrincipalContext, PrincipalPersonManagementState } from '@/contexts/PrincipalContext';
 
 export function CommonHeader() {
   const { data: session } = useSession();
@@ -18,9 +17,9 @@ export function CommonHeader() {
   const userRole = session?.user?.role || 'STUDENT';
   
   // 모든 Hook을 최상위에서 호출 (조건부 Hook 호출 문제 해결)
-  const studentContext = useStudentContext();
-  const teacherContext = useTeacherContext();
-  const principalContext = usePrincipalContext();
+  const studentContext = useOptionalStudentContext();
+  const teacherContext = useOptionalTeacherContext();
+  const principalContext = useOptionalPrincipalContext();
   
   // 조건부로 context 값 결정
   let navigationItems: { label: string; value: number }[] = [];
@@ -29,24 +28,20 @@ export function CommonHeader() {
   let principalPersonManagement: PrincipalPersonManagementState | null = null;
   let principalGoBack: (() => void) | null = null;
   
-  try {
-    if (userRole === 'STUDENT') {
-      navigationItems = studentContext.navigationItems;
-      activeTab = studentContext.activeTab;
-      handleTabChange = studentContext.handleTabChange;
-    } else if (userRole === 'TEACHER') {
-      navigationItems = teacherContext.navigationItems;
-      activeTab = teacherContext.activeTab;
-      handleTabChange = teacherContext.handleTabChange;
-    } else if (userRole === 'PRINCIPAL') {
-      navigationItems = principalContext.navigationItems;
-      activeTab = principalContext.activeTab;
-      handleTabChange = principalContext.handleTabChange;
-      principalPersonManagement = principalContext.personManagement;
-      principalGoBack = principalContext.goBack;
-    }
-  } catch {
-    // Context가 아직 준비되지 않은 경우 기본값 사용
+  if (userRole === 'STUDENT' && studentContext) {
+    navigationItems = studentContext.navigationItems;
+    activeTab = studentContext.activeTab;
+    handleTabChange = studentContext.handleTabChange;
+  } else if (userRole === 'TEACHER' && teacherContext) {
+    navigationItems = teacherContext.navigationItems;
+    activeTab = teacherContext.activeTab;
+    handleTabChange = teacherContext.handleTabChange;
+  } else if (userRole === 'PRINCIPAL' && principalContext) {
+    navigationItems = principalContext.navigationItems;
+    activeTab = principalContext.activeTab;
+    handleTabChange = principalContext.handleTabChange;
+    principalPersonManagement = principalContext.personManagement;
+    principalGoBack = principalContext.goBack;
   }
 
   // 뒤로가기 버튼이 표시되어야 하는지 확인

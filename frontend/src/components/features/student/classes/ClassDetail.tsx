@@ -7,7 +7,7 @@ import { ClassDetailsResponse } from '@/types/api/class';
 import { toast } from 'sonner';
 import cn from 'classnames';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
-import { TeacherProfileCard } from '@/components/common/TeacherProfileCard';
+import { TeacherProfileCardForStudent } from '@/components/features/student/classes/TeacherProfileCardForStudent';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
 import type { StudentEnrolledSessionVM, ClassDetailVM, ClassDetailDisplayVM } from '@/types/view/student';
 import { toClassDetailDisplayVM } from '@/lib/adapters/student';
@@ -161,11 +161,8 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
       {/* 선생님 프로필 카드 */}
       {displayVM.hasTeacher && displayVM.teacher && (
         <div className="mt-6">
-          <TeacherProfileCard 
+          <TeacherProfileCardForStudent 
             teacherId={displayVM.teacher.id} 
-            isEditable={false}
-            showHeader={false}
-            compact={true}
           />
         </div>
       )}

@@ -21,9 +21,8 @@ export default function TimePicker({ value, onChange, className = '' }: TimePick
       // 값이 없으면 기본값으로 설정하고 onChange 호출
       setHour(9);
       setMinute(0);
-      onChange('09:00');
     }
-  }, [value, onChange]);
+  }, [value]); 
 
   // 시간 변경 핸들러 - 디바운싱 적용
   const handleHourChange = useCallback((index: number) => {

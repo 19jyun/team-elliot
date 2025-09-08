@@ -2,11 +2,12 @@
 
 import React from 'react';
 import { toPrincipalRequestCardVM } from '@/lib/adapters/principal';
-import type { PrincipalEnrollment, PrincipalRefundRequest } from '@/types/api/principal';
+import type { PrincipalEnrollment } from '@/types/api/principal';
+import type { RefundRequestResponse } from '@/types/api/refund';
 import type { PrincipalRequestCardVM } from '@/types/view/principal';
 
 interface PrincipalRequestCardProps {
-  request: PrincipalEnrollment | PrincipalRefundRequest;
+  request: PrincipalEnrollment | RefundRequestResponse;
   requestType: 'enrollment' | 'refund';
   onApprove: (id: number) => void;
   onReject: (id: number) => void;
@@ -134,9 +135,9 @@ export function PrincipalRequestCard({
           ) : (
             // 환불 요청 정보
             <div className="text-sm text-stone-600">
-              <p><strong>환불 금액:</strong> {'displayRefundAmount' in requestCardVM.request ? requestCardVM.request.displayRefundAmount : `${(request as PrincipalRefundRequest).refundAmount?.toLocaleString()}원`}</p>
+              <p><strong>환불 금액:</strong> {'displayRefundAmount' in requestCardVM.request ? requestCardVM.request.displayRefundAmount : `${(request as RefundRequestResponse).refundAmount?.toLocaleString()}원`}</p>
               <p><strong>요청 사유:</strong> {requestCardVM.request.reason}</p>
-              <p><strong>요청일:</strong> {'displayRequestedAt' in requestCardVM.request ? requestCardVM.request.displayRequestedAt : formatDate((request as PrincipalRefundRequest).requestedAt)}</p>
+              <p><strong>요청일:</strong> {'displayRequestedAt' in requestCardVM.request ? requestCardVM.request.displayRequestedAt : formatDate((request as RefundRequestResponse).requestedAt)}</p>
               {'displaySessionDate' in requestCardVM.request && requestCardVM.request.displaySessionDate && (
                 <div className="mt-2 p-2 bg-white/50 rounded border border-stone-200">
                   <p className="font-medium text-stone-700 mb-1">세션 정보</p>

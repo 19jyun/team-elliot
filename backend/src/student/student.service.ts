@@ -941,4 +941,28 @@ export class StudentService {
 
     return sessionHistory;
   }
+
+  async getTeacherProfile(teacherId: number) {
+    const teacher = await this.prisma.teacher.findUnique({
+      where: { id: teacherId },
+      select: {
+        id: true,
+        name: true,
+        photoUrl: true,
+        phoneNumber: true,
+        introduction: true,
+        yearsOfExperience: true,
+        education: true,
+        specialties: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!teacher) {
+      throw new NotFoundException('Teacher not found');
+    }
+
+    return teacher;
+  }
 }

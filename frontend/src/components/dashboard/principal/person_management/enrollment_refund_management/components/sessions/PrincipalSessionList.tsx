@@ -7,7 +7,8 @@ import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from 'lucide-react';
 import { toPrincipalSessionListForRequestsVM } from '@/lib/adapters/principal';
-import type { PrincipalEnrollment, PrincipalRefundRequest } from '@/types/api/principal';
+import type { PrincipalEnrollment } from '@/types/api/principal';
+import type { RefundRequestResponse } from '@/types/api/refund';
 import type { PrincipalSessionListForRequestsVM } from '@/types/view/principal';
 
 export function PrincipalSessionList() {
@@ -29,7 +30,7 @@ export function PrincipalSessionList() {
   // ViewModel 생성
   const sessionListVM: PrincipalSessionListForRequestsVM = toPrincipalSessionListForRequestsVM({
     enrollments: (enrollments as unknown as PrincipalEnrollment[]) || [],
-    refundRequests: (refundRequests as unknown as PrincipalRefundRequest[]) || [],
+    refundRequests: refundRequests || [],
     selectedTab,
     selectedClassId,
     isLoading,

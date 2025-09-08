@@ -31,12 +31,14 @@ export const ClassCard: React.FC<ExtendedClassCardProps> = ({
   teacher,
   startTime,
   endTime,
+  bgColor,
   selected = false,
   onClick,
   onInfoClick,
   style,
 }) => {
-  const baseBg = levelBgColor[level as keyof typeof levelBgColor] || '#F4E7E7'
+  // bgColor가 제공되면 사용하고, 없으면 level 기반으로 결정
+  const baseBg = bgColor || levelBgColor[level as keyof typeof levelBgColor] || '#F4E7E7'
   const cardBg = selected ? '#573B30' : baseBg
   const textColor = selected ? 'text-white' : 'text-neutral-800'
   const subTextColor = selected ? 'text-white' : 'text-zinc-600'

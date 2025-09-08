@@ -82,8 +82,11 @@ export interface RefundRequestResponse {
   accountHolder?: string;
   sessionEnrollment: {
     session: {
+      id: number;
       class: {
+        id: number;
         className: string;
+        level: string;
         teacher: {
           name: string;
         };
@@ -92,9 +95,14 @@ export interface RefundRequestResponse {
       startTime: string;
       endTime: string;
     };
+    date: string;
+    startTime: string;
+    endTime: string;
   };
   student: {
+    id: number;
     name: string;
+    phoneNumber?: string;
   };
   processor?: {
     name: string;

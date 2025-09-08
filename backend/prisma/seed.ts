@@ -319,8 +319,8 @@ async function main() {
       classDetailId: classDetail.id,
       level: 'BEGINNER',
       status: 'OPEN',
-      startDate: new Date('2025-08-01'),
-      endDate: new Date('2025-10-31'),
+      startDate: new Date('2025-09-01'),
+      endDate: new Date('2025-12-31'),
       backgroundColor: 'orange-100',
     },
     {
@@ -337,8 +337,8 @@ async function main() {
       classDetailId: classDetail.id,
       level: 'ADVANCED',
       status: 'OPEN',
-      startDate: new Date('2025-08-01'),
-      endDate: new Date('2025-10-31'),
+      startDate: new Date('2025-09-01'),
+      endDate: new Date('2025-12-31'),
       backgroundColor: 'slate-300',
     },
     {
@@ -355,8 +355,8 @@ async function main() {
       classDetailId: classDetail.id,
       level: 'BEGINNER',
       status: 'OPEN',
-      startDate: new Date('2025-08-01'),
-      endDate: new Date('2025-10-31'),
+      startDate: new Date('2025-09-01'),
+      endDate: new Date('2025-12-31'),
       backgroundColor: 'rose-100',
     },
   ];
@@ -548,12 +548,12 @@ async function main() {
           sessionId: session.id,
           studentId: student.id,
           status: status,
-          enrolledAt: new Date(`2025-07-${20 + i}T10:00:00Z`),
+          enrolledAt: new Date(`2025-10-${10 + i}T10:00:00Z`),
           ...(status === 'REJECTED' && {
-            rejectedAt: new Date(`2025-07-${22 + i}T14:00:00Z`),
+            rejectedAt: new Date(`2025-10-${12 + i}T14:00:00Z`),
           }),
           ...(status === 'CANCELLED' && {
-            cancelledAt: new Date(`2025-07-${23 + i}T16:00:00Z`),
+            cancelledAt: new Date(`2025-10-${13 + i}T16:00:00Z`),
           }),
         },
       });
@@ -571,7 +571,7 @@ async function main() {
             amount: 150000,
             status: 'COMPLETED',
             method: 'CARD',
-            paidAt: new Date(`2025-07-${21 + i}T10:30:00Z`),
+            paidAt: new Date(`2025-10-${11 + i}T10:30:00Z`),
           },
         });
       }
@@ -585,7 +585,7 @@ async function main() {
             reason: '개인 사정으로 인한 수강 취소',
             refundAmount: 150000,
             status: 'PENDING',
-            requestedAt: new Date(`2025-08-${5 + i}T14:30:00Z`),
+            requestedAt: new Date(`2025-10-${15 + i}T14:30:00Z`),
             bankName: '신한은행',
             accountNumber: '110-123-456789',
             accountHolder: '이학생',
@@ -669,9 +669,9 @@ async function main() {
               sessionId: session.id,
               studentId: additionalStudent.id,
               status: status,
-              enrolledAt: new Date(`2025-07-${25 + i}T10:00:00Z`),
+              enrolledAt: new Date(`2025-10-${15 + i}T10:00:00Z`),
               ...(status === 'TEACHER_CANCELLED' && {
-                cancelledAt: new Date(`2025-07-${26 + i}T12:00:00Z`),
+                cancelledAt: new Date(`2025-10-${16 + i}T12:00:00Z`),
               }),
             },
           });
@@ -689,7 +689,7 @@ async function main() {
                 amount: 150000,
                 status: 'COMPLETED',
                 method: 'CARD',
-                paidAt: new Date(`2025-07-${24 + i}T10:30:00Z`),
+                paidAt: new Date(`2025-10-${14 + i}T10:30:00Z`),
               },
             });
           }
@@ -721,15 +721,15 @@ async function main() {
             reason: refundReasons[i % refundReasons.length],
             refundAmount: 150000,
             status: refundStatuses[i],
-            requestedAt: new Date(`2025-08-${10 + i}T14:30:00Z`),
+            requestedAt: new Date(`2025-10-${20 + i}T14:30:00Z`),
             ...(refundStatuses[i] === 'APPROVED' && {
-              processedAt: new Date(`2025-08-${11 + i}T10:00:00Z`),
+              processedAt: new Date(`2025-10-${21 + i}T10:00:00Z`),
               processReason: '환불 요청 승인',
               actualRefundAmount: 150000,
               processedBy: principalUser.id,
             }),
             ...(refundStatuses[i] === 'REJECTED' && {
-              processedAt: new Date(`2025-08-${11 + i}T10:00:00Z`),
+              processedAt: new Date(`2025-10-${21 + i}T10:00:00Z`),
               processReason: '수업 시작 후 환불 불가',
               processedBy: principalUser.id,
             }),

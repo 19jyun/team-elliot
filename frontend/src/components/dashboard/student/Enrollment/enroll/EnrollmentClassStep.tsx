@@ -278,7 +278,7 @@ export function EnrollmentClassStep() {
                   endTime={formatTime(classInfo.endTime)}
                   dayIndex={days.indexOf(classInfo.dayOfWeek)}
                   startHour={Number(formatTimeForCalendar(classInfo.startTime))}
-                  bgColor={classInfo.backgroundColor ? `bg-${classInfo.backgroundColor}` : 'bg-gray-100'}
+                  bgColor={classInfo.backgroundColor || '#F4E7E7'}
                   selected={selectedIds.includes(classInfo.id)}
                   onClick={() => handleSelect(classInfo.id)}
                   onInfoClick={() => handleClassInfoClick(classInfo.id)}

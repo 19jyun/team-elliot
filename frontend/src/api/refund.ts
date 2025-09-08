@@ -3,7 +3,6 @@ import type { ApiResponse } from "@/types/api";
 import type {
   CreateRefundRequestDto,
   CancelRefundRequestResponse,
-  CreateRefundRequestResponse,
   RefundRequestListResponse,
   RefundRequestResponse,
   RefundStatistics,
@@ -15,11 +14,8 @@ import type {
 // === 환불 요청 생성 ===
 export const createRefundRequest = (
   data: CreateRefundRequestDto
-): Promise<ApiResponse<CreateRefundRequestResponse>> => {
-  return post<ApiResponse<CreateRefundRequestResponse>>(
-    "/refunds/request",
-    data
-  );
+): Promise<ApiResponse<RefundRequestResponse>> => {
+  return post<ApiResponse<RefundRequestResponse>>("/refunds/request", data);
 };
 
 // === 환불 요청 취소 ===

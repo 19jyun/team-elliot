@@ -52,7 +52,7 @@ export default function Wheel(props: WheelProps) {
       perView: slidesPerView,
     },
     vertical: true,
-    initial: initIdx || 0,
+    initial: Math.max(0, Math.min(slides - 1, initIdx || 0)), // initIdx가 유효한 범위 내에 있는지 확인
     loop: loop,
     dragSpeed: (val) => {
       const height = size.current
@@ -97,14 +97,28 @@ export default function Wheel(props: WheelProps) {
 
   // slideValues를 useMemo로 최적화
   const slideValues = useMemo(() => {
-    if (!sliderState) return []
+    // sliderState가 완전히 초기화되지 않았거나 slides 배열이 없는 경우 빈 배열 반환
+    if (!sliderState || !sliderState.slides || !Array.isArray(sliderState.slides) || sliderState.slides.length === 0) {
+      return []
+    }
+    
     const offset = loop ? 1 / 2 - 1 / slidesPerView / 2 : 0
 
     const values = []
     for (let i = 0; i < slides; i++) {
-      const distance = sliderState
-        ? (sliderState.slides[i].distance - offset) * slidesPerView
-        : 0
+      // 방어적 프로그래밍: slides[i]가 존재하고 distance 프로퍼티가 있는지 확인
+      const slide = sliderState.slides[i]
+      if (!slide || typeof slide.distance === 'undefined') {
+        // slide가 없거나 distance가 없으면 기본값으로 처리
+        values.push({ 
+          transform: `rotateX(0deg) translateZ(${radius}px)`, 
+          value: setValue ? setValue(i, i) : i, 
+          isSelected: false 
+        })
+        continue
+      }
+
+      const distance = (slide.distance - offset) * slidesPerView
       const rotate =
         Math.abs(distance) > wheelSize / 2
           ? 180
@@ -124,6 +138,19 @@ export default function Wheel(props: WheelProps) {
     }
     return values
   }, [sliderState, loop, slidesPerView, slides, wheelSize, radius, setValue])
+
+  // sliderState가 완전히 초기화되지 않았으면 로딩 상태 표시
+  if (!sliderState || !sliderState.slides || !Array.isArray(sliderState.slides) || sliderState.slides.length === 0) {
+    return (
+      <div
+        className={"wheel keen-slider wheel--perspective-" + perspective}
+        ref={sliderRef}
+        style={{ minHeight: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      >
+        <div className="text-stone-500 text-sm">로딩 중...</div>
+      </div>
+    )
+  }
 
   return (
     <div

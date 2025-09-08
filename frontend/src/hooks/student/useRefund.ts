@@ -43,8 +43,8 @@ export const useRefund = () => {
 
         const response = await refundApi.createRefundRequest(data);
 
-        if (response.data && response.data.data && response.data.data.id) {
-          const refundData = response.data.data;
+        if (response.data && response.data && response.data) {
+          const refundData = response.data;
           const realCancellation: CancellationHistory = {
             id: refundData.id,
             sessionId: refundData.sessionEnrollmentId,
@@ -75,10 +75,7 @@ export const useRefund = () => {
           dispatch(
             replaceOptimisticCancellation({
               optimisticId: optimisticCancellation.id,
-              realCancellation: {
-                ...realCancellation,
-                isOptimistic: false,
-              },
+              realCancellation: realCancellation, // isOptimistic 제거, 실제 데이터만 사용
             })
           );
 

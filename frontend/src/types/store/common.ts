@@ -108,6 +108,7 @@ export interface RefundRequest {
       class: {
         id: number;
         className: string;
+        level: string;
         teacher: {
           name: string;
         };
@@ -118,7 +119,9 @@ export interface RefundRequest {
     endTime: string;
   };
   student: {
+    id: number;
     name: string;
+    phoneNumber?: string;
   };
   processor?: {
     name: string;

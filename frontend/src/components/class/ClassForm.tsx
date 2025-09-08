@@ -1,6 +1,3 @@
-
-import { useForm } from 'react-hook-form'
-
 interface ClassFormProps {
   onSubmit: (data: ClassFormData) => void
 }

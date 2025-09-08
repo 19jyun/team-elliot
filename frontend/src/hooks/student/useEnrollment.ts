@@ -58,8 +58,8 @@ export const useEnrollment = () => {
       const optimisticCalendarSessions: (Omit<StudentClass, "id"> & {
         id: string;
         isOptimistic: boolean;
-      })[] = selectedSessions.map((session, index) => ({
-        id: `temp_calendar_${Date.now()}_${index}`,
+      })[] = selectedSessions.map((session, _index) => ({
+        id: session.id.toString(), // 실제 세션 ID 사용
         name: session.class?.className || "수강신청 중...",
         teacherName: session.class?.teacher?.name || "선생님",
         dayOfWeek: "월", // TODO: API에서 받아와야 함
@@ -107,23 +107,20 @@ export const useEnrollment = () => {
           optimisticEnrollments.forEach((optimisticEnrollment, index) => {
             const enrolledSessionId = enrolledSessionIds[index];
             if (enrolledSessionId) {
-              // 실제 enrollment 객체 생성 (세션 ID를 기반으로)
+              // 실제 enrollment 객체 생성 (API 응답의 실제 세션 ID 사용)
               const realEnrollment: EnrollmentHistory = {
-                id: Date.now() + index, // 임시 ID
+                id: enrolledSessionId, // 실제 세션 ID 사용
                 sessionId: enrolledSessionId,
                 session: optimisticEnrollment.session,
                 enrolledAt: new Date().toISOString(),
-                status: "CONFIRMED",
+                status: "PENDING",
                 description: "수강신청 완료",
               };
 
               dispatch(
                 replaceOptimisticEnrollment({
                   optimisticId: optimisticEnrollment.id,
-                  realEnrollment: {
-                    ...realEnrollment,
-                    isOptimistic: false,
-                  },
+                  realEnrollment: realEnrollment, // isOptimistic 제거, 실제 데이터만 사용
                 })
               );
             }
@@ -169,7 +166,7 @@ export const useEnrollment = () => {
                 dispatch(
                   replaceOptimisticCalendarSession({
                     optimisticId: optimisticSession.id,
-                    realSession: realCalendarSession,
+                    realSession: realCalendarSession, // 실제 숫자 ID 포함된 세션 데이터
                   })
                 );
               }

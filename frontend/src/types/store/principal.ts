@@ -1,10 +1,11 @@
 // Principal 전용 Redux 타입들 (실시간 업데이트가 필요한 데이터만)
-import type { SessionEnrollment, RefundRequest } from "./common";
+import type { SessionEnrollment } from "./common";
+import type { RefundRequestResponse } from "@/types/api/refund";
 
 // Principal Redux 상태 (실시간 업데이트가 필요한 데이터만)
 export interface PrincipalData {
   enrollments: SessionEnrollment[];
-  refundRequests: RefundRequest[];
+  refundRequests: RefundRequestResponse[];
 }
 
 // Principal Redux 상태 타입

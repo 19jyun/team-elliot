@@ -236,4 +236,9 @@ export function usePrincipalContext() {
   const ctx = useContext(PrincipalContext);
   if (!ctx) throw new Error('usePrincipalContext must be used within a PrincipalProvider');
   return ctx;
+}
+
+export function useOptionalPrincipalContext() {
+  const ctx = useContext(PrincipalContext);
+  return ctx;
 } 

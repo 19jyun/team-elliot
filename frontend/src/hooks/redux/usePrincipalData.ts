@@ -1,6 +1,7 @@
 import { useAppSelector } from "@/store/hooks";
 import { useMemo, useCallback } from "react";
-import type { RefundRequest, SessionEnrollment } from "@/types/store/common";
+import type { SessionEnrollment } from "@/types/store/common";
+import type { RefundRequestResponse } from "@/types/api/refund";
 
 // Principal 실시간 데이터 훅 (Redux 기반)
 export function usePrincipalData() {
@@ -66,7 +67,7 @@ export function usePrincipalData() {
 
     // 세션별로 그룹화
     const sessionMap = new Map();
-    pendingRefunds.forEach((refund: RefundRequest) => {
+    pendingRefunds.forEach((refund: RefundRequestResponse) => {
       const sessionId =
         refund.sessionEnrollment?.session?.id ||
         refund.sessionEnrollment?.session?.class?.id ||
@@ -126,7 +127,7 @@ export function usePrincipalData() {
         return [];
       }
       return principalData.refundRequests.filter(
-        (refund: RefundRequest) =>
+        (refund: RefundRequestResponse) =>
           refund.sessionEnrollment?.session?.id === sessionId
       );
     },

@@ -13,9 +13,9 @@ import type {
   PrincipalStudent,
   PrincipalClassSession,
   PrincipalEnrollment,
-  PrincipalRefundRequest,
   UpdatePrincipalProfileRequest,
 } from "@/types/api/principal";
+import type { RefundRequestResponse } from "@/types/api/refund";
 
 // ============= 공통 ViewModel 베이스 =============
 
@@ -401,7 +401,7 @@ export interface PrincipalDateSessionModalPropsVM {
 
 // Principal 요청 상세 ViewModel
 export interface PrincipalRequestDetailVM {
-  requests: (PrincipalEnrollment | PrincipalRefundRequest)[];
+  requests: (PrincipalEnrollment | RefundRequestResponse)[];
   selectedTab: "enrollment" | "refund";
   selectedSessionId: number | null;
   isLoading: boolean;
@@ -455,7 +455,7 @@ export interface PrincipalClassData {
   id: number;
   name: string;
   pendingCount: number;
-  sessions: (PrincipalEnrollment | PrincipalRefundRequest)[];
+  sessions: (PrincipalEnrollment | RefundRequestResponse)[];
   teacherName: string;
   level: string;
 }
@@ -486,7 +486,7 @@ export interface PrincipalSessionData {
   maxStudents: number;
   pendingCount: number;
   enrollments?: PrincipalEnrollment[];
-  refundRequests?: PrincipalRefundRequest[];
+  refundRequests?: RefundRequestResponse[];
 }
 
 // Principal 학생 세션 히스토리 모달 ViewModel

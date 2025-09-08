@@ -6,6 +6,7 @@ import type {
   CancellationHistory,
   EnrollmentHistory,
   AvailableSessionForEnrollment,
+  TeacherProfileForStudentResponse,
 } from "@/types/api/student";
 import type {
   StudentCalendarSessionVM,
@@ -123,6 +124,16 @@ export function toStudentCalendarSessionVM(
     canEnroll: !session.isEnrolled && !isFull && !isPast,
     statusColor,
     capacityText: `${session.currentEnrollments}/${session.maxStudents}명`,
+    class: {
+      id: session.classId || 0,
+      className: session.className,
+      level: session.level || "BEGINNER",
+      tuitionFee: session.tuitionFee.toString(),
+      teacher: {
+        id: session.teacherId || 0,
+        name: session.teacherName,
+      },
+    },
   };
 }
 
@@ -294,6 +305,13 @@ export function toStudentCalendarRangeVM(range: {
   };
 }
 
+// 난이도별 색상 매핑 (ConnectedCalendar와 동일)
+const levelBgColor: Record<string, string> = {
+  BEGINNER: "#F4E7E7",
+  INTERMEDIATE: "#FBF4D8",
+  ADVANCED: "#CBDFE3",
+};
+
 // AvailableSessionForEnrollment[] → EnrollmentClassVM[] (수강신청용)
 export function toEnrollmentClassVMs(
   sessions: AvailableSessionForEnrollment[], // 실제 API 응답 구조에 맞춤
@@ -307,16 +325,20 @@ export function toEnrollmentClassVMs(
   sessions.forEach((session) => {
     const className = session.class.className;
     if (!classMap.has(className)) {
+      // 난이도에 따른 색상 결정
+      const level = session.class.level || "BEGINNER";
+      const backgroundColor = levelBgColor[level] || levelBgColor["BEGINNER"];
+
       classMap.set(className, {
-        id: session.id,
+        id: session.class.id,
         className: session.class.className,
-        level: "BEGINNER", // 기본값
+        level: level,
         tuitionFee: session.class.tuitionFee,
         teacher: { name: session.class.teacher.name || "선생님" },
         dayOfWeek: "MONDAY", // 기본값, 실제로는 첫 세션에서 계산
         startTime: session.startTime,
         endTime: session.endTime,
-        backgroundColor: undefined, // 기본값
+        backgroundColor: backgroundColor,
         sessionCount: 0,
         academyId,
         availableSessions: [],
@@ -622,5 +644,28 @@ export function toClassDetailDisplayVM(
     showModificationButton,
     isLoading,
     error,
+  };
+}
+
+// 백엔드 API 응답 → TeacherProfileResponse (학생용)
+export function toTeacherProfileForStudentVM(
+  apiResponse: TeacherProfileForStudentResponse
+): TeacherProfileResponse {
+  return {
+    id: apiResponse.id,
+    userId: 0, // 백엔드에서 제공하지 않음
+    name: apiResponse.name,
+    phoneNumber: apiResponse.phoneNumber,
+    introduction: apiResponse.introduction,
+    education: apiResponse.education,
+    specialties: apiResponse.specialties,
+    certifications: [], // 백엔드에서 제공하지 않음
+    yearsOfExperience: apiResponse.yearsOfExperience,
+    availableTimes: [], // 백엔드에서 제공하지 않음
+    photoUrl: apiResponse.photoUrl,
+    academyId: undefined,
+    academy: null,
+    createdAt: apiResponse.createdAt,
+    updatedAt: apiResponse.updatedAt,
   };
 }
