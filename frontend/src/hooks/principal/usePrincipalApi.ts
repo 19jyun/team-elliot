@@ -262,7 +262,9 @@ export function usePrincipalApi() {
     sessionId: number,
     orderedContentIds: number[]
   ) => {
-    return apiReorderSessionContents(sessionId, { orderedContentIds });
+    return apiReorderSessionContents(sessionId, {
+      contentIds: orderedContentIds,
+    });
   };
 
   // 인원 관리

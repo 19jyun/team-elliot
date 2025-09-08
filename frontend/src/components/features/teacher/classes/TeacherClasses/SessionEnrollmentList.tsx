@@ -6,7 +6,8 @@ import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'
 import { toast } from 'sonner'
 import { toSessionEnrollmentDisplayVM } from '@/lib/adapters/teacher'
 import { SessionEnrollmentDisplayVM } from '@/types/view/teacher'
-import { SessionEnrollment, TeacherSession } from '@/types/api/teacher'
+import { TeacherSession } from '@/types/api/teacher'
+import { TeacherSessionEnrollment } from '@/types/api/teacher'
 import { EnrollmentStatus } from '@/types/api/common'
 
 interface EnrolledStudentCardListProps {
@@ -61,7 +62,7 @@ const EnrolledStudentCardList: React.FC<EnrolledStudentCardListProps> = ({
 }
 
 interface SessionEnrollmentListProps {
-  sessionEnrollments: SessionEnrollment[]
+  sessionEnrollments: TeacherSessionEnrollment[]
   isLoading: boolean
   session: TeacherSession
 }

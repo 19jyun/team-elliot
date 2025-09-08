@@ -53,38 +53,95 @@ export const principalSlice = createSlice({
 
     // Socket 이벤트 액션들 (실시간 업데이트)
     updatePrincipalEnrollmentFromSocket: (state, action) => {
-      const { enrollmentId, status, data } =
-        action.payload as SocketEventData<"enrollment_status_changed">;
+      // 새로운 수강신청 요청 이벤트 처리
+      const payload =
+        action.payload as SocketEventData<"new_enrollment_request">;
+      const { enrollmentId, studentId, sessionId, timestamp } = payload;
+
+      // 새로운 수강신청 요청을 목록에 추가
       if (state.data?.enrollments && Array.isArray(state.data.enrollments)) {
-        const index = state.data.enrollments.findIndex(
+        const newEnrollment = {
+          id: enrollmentId,
+          studentId,
+          sessionId,
+          status: "PENDING",
+          enrolledAt: timestamp,
+          session: {
+            id: sessionId,
+            date: "", // 기본값
+            startTime: "", // 기본값
+            endTime: "", // 기본값
+            class: {
+              id: 0, // 기본값
+              className: "", // 기본값
+              teacher: {
+                name: "", // 기본값
+              },
+            },
+          },
+          student: {
+            id: studentId,
+            name: "", // 기본값
+          },
+        };
+
+        // 중복 체크 후 추가
+        const existingIndex = state.data.enrollments.findIndex(
           (e) => e.id === enrollmentId
         );
-        if (index !== -1) {
-          state.data.enrollments[index] = {
-            ...state.data.enrollments[index],
-            status,
-            ...data,
-          };
+        if (existingIndex === -1) {
+          state.data.enrollments.unshift(newEnrollment);
         }
       }
     },
 
     updatePrincipalRefundRequestFromSocket: (state, action) => {
-      const { refundId, status, data } =
-        action.payload as SocketEventData<"refund_request_status_changed">;
+      // 새로운 환불 요청 이벤트 처리
+      const payload = action.payload as SocketEventData<"new_refund_request">;
+      const { refundId, studentId, sessionId, timestamp } = payload;
+
+      // 새로운 환불 요청을 목록에 추가
       if (
         state.data?.refundRequests &&
         Array.isArray(state.data.refundRequests)
       ) {
-        const index = state.data.refundRequests.findIndex(
+        const newRefundRequest = {
+          id: refundId,
+          sessionEnrollmentId: 0, // 기본값
+          studentId,
+          reason: "", // 기본값
+          refundAmount: 0, // 기본값
+          status: "PENDING",
+          requestedAt: timestamp,
+          sessionEnrollment: {
+            session: {
+              id: sessionId,
+              date: "", // 기본값
+              startTime: "", // 기본값
+              endTime: "", // 기본값
+              class: {
+                id: 0, // 기본값
+                className: "", // 기본값
+                teacher: {
+                  name: "", // 기본값
+                },
+              },
+            },
+            date: "", // 기본값
+            startTime: "", // 기본값
+            endTime: "", // 기본값
+          },
+          student: {
+            name: "", // 기본값
+          },
+        };
+
+        // 중복 체크 후 추가
+        const existingIndex = state.data.refundRequests.findIndex(
           (r) => r.id === refundId
         );
-        if (index !== -1) {
-          state.data.refundRequests[index] = {
-            ...state.data.refundRequests[index],
-            status,
-            ...data,
-          };
+        if (existingIndex === -1) {
+          state.data.refundRequests.unshift(newRefundRequest);
         }
       }
     },

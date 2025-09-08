@@ -1,7 +1,18 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { ProgressBarItem } from '@/app/(auth)/signup/ProgressBarItem';
+const ProgressBarItem = ({ current, total }: { current: number; total: number }) => (
+  <div className="flex gap-2">
+    {Array.from({ length: total }, (_, i) => (
+      <div
+        key={i}
+        className={`w-2 h-2 rounded-full ${
+          i < current ? 'bg-blue-500' : 'bg-gray-300'
+        }`}
+      />
+    ))}
+  </div>
+);
 import { InputField } from '@/components/auth/InputField';
 import { Button } from '@/components/auth/Button';
 import { toast } from 'sonner';
@@ -32,14 +43,14 @@ export function PersonalInfoStep() {
         <InputField
           label="이름"
           value={signup.personalInfo.name}
-          onChange={(value: string) => setPersonalInfo({ ...signup.personalInfo, name: value })}
+          onChange={(e) => setPersonalInfo({ ...signup.personalInfo, name: e.target.value })}
           placeholder="이름을 입력하세요"
         />
         
         <InputField
           label="전화번호"
           value={signup.personalInfo.phoneNumber}
-          onChange={(value: string) => setPersonalInfo({ ...signup.personalInfo, phoneNumber: value })}
+          onChange={(e) => setPersonalInfo({ ...signup.personalInfo, phoneNumber: e.target.value })}
           placeholder="전화번호를 입력하세요"
         />
       </div>

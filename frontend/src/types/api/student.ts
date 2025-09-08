@@ -1,11 +1,12 @@
 import type {
   DayOfWeek,
   EnrollmentStatus,
-  RefundStatus,
+  RefundStatusType,
   ClassSessionBase,
 } from "./common";
 import type { Class } from "./class";
-import type { ClassSession as Session } from "./class-session";
+import type { ClassSession as Session } from "./class";
+import type { GetAcademiesResponse, GetMyAcademiesResponse } from "./academy";
 
 export interface StudentClass {
   id: number;
@@ -29,15 +30,9 @@ export interface MyClassesResponse {
 
 export type ClassDetailResponse = StudentClass;
 
-export interface EnrollClassResponse {
-  success: boolean;
-  message: string;
-}
+// EnrollClassResponse는 class.ts에서 정의됨
 
-export interface UnenrollClassResponse {
-  success: boolean;
-  message: string;
-}
+// UnenrollClassResponse는 class.ts에서 정의됨
 
 // 학생 개인 정보 타입
 export interface StudentProfile {
@@ -109,7 +104,7 @@ export interface CancellationHistory {
   sessionDate: string;
   sessionTime: string;
   refundAmount: number;
-  status: RefundStatus; // 공통 타입 사용
+  status: RefundStatusType; // 공통 타입 사용
   reason: string;
   detailedReason?: string;
   requestedAt: string;
@@ -168,39 +163,36 @@ export interface StudentLeaveAcademyResponse {
   message: string;
 }
 
-// 학원 목록 조회 응답 타입
-export interface GetAcademiesResponse {
-  academies: Array<{
-    id: number;
-    name: string;
-    description?: string;
-    address?: string;
-    phoneNumber?: string;
-  }>;
-}
-
-// 내 학원 목록 조회 응답 타입
-export type GetMyAcademiesResponse = Array<{
-  id: number;
-  name: string;
-  description?: string;
-  address?: string;
-  phoneNumber?: string;
-  joinedAt: string;
-}>;
-
 // 수강 가능한 세션 조회 응답 타입
 export interface AvailableSessionForEnrollment {
   id: number;
+  classId: number;
   date: string;
   startTime: string;
   endTime: string;
-  className: string;
-  teacherName: string;
   maxStudents: number;
-  currentEnrollments: number;
-  tuitionFee: number;
-  isEnrolled: boolean;
+  currentStudents: number;
+  isEnrollable: boolean;
+  isFull: boolean;
+  isPastStartTime: boolean;
+  isAlreadyEnrolled: boolean;
+  studentEnrollmentStatus?: string;
+  createdAt: string;
+  updatedAt: string;
+  class: {
+    id: number;
+    className: string;
+    level: string;
+    tuitionFee: string;
+    teacher: {
+      id: number;
+      name: string;
+    };
+    academy: {
+      id: number;
+      name: string;
+    };
+  };
 }
 
 export type GetStudentAvailableSessionsForEnrollmentResponse =
@@ -221,42 +213,7 @@ export interface StudentBatchEnrollSessionsResponse {
   }>;
 }
 
-export interface ClassSessionForModification {
-  id: number;
-  date: string;
-  startTime: string;
-  endTime: string;
-  className: string;
-  teacherName: string;
-  isEnrolled: boolean;
-  enrollmentId?: number;
-  enrollmentStatus?: EnrollmentStatus; // 공통 타입 사용
-  // 백엔드에서 추가하는 속성들
-  class: {
-    id: number;
-    className: string;
-    tuitionFee: string;
-    teacher: {
-      id: number;
-      name: string;
-    };
-  };
-  isSelectable: boolean;
-  canBeCancelled: boolean;
-  isModifiable: boolean;
-  isPastStartTime: boolean;
-  isFull: boolean;
-  isAlreadyEnrolled: boolean;
-  isEnrollable: boolean;
-}
-
-export interface GetClassSessionsForModificationResponse {
-  sessions: ClassSessionForModification[];
-  calendarRange: {
-    startDate: string;
-    endDate: string;
-  } | null;
-}
+// ClassSessionForModification과 GetClassSessionsForModificationResponse는 class.ts에서 정의됨
 
 export interface StudentBatchModifyEnrollmentsRequest {
   cancellations: number[];
@@ -287,10 +244,13 @@ export interface ClassSessionForEnrollment extends ClassSessionBase {
   enrollmentStatus?: EnrollmentStatus; // 공통 타입 사용
 }
 
-export type GetClassSessionsForEnrollmentResponse = ClassSessionForEnrollment[];
+// GetClassSessionsForEnrollmentResponse는 class.ts에서 정의됨
 
 // 선생님용: 수강생을 학원에서 제거
 export interface RemoveStudentFromAcademyResponse {
   success: boolean;
   message: string;
 }
+
+// Re-export from academy
+export type { GetAcademiesResponse, GetMyAcademiesResponse };

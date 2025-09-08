@@ -40,7 +40,7 @@ export default function StudentDashboard() {
       startTime: session.startTime,
       endTime: session.endTime,
       className: session.class?.className || '클래스명 없음',
-      teacherName: session.teacherName || '선생님 정보 없음',
+      teacherName: session.class?.teacher?.name || '선생님 정보 없음',
       maxStudents: session.maxStudents || 0,
       currentEnrollments: session.currentStudents || 0,
       tuitionFee: parseInt(session.class?.tuitionFee || '50000'),

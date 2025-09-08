@@ -3,8 +3,6 @@ import type { ApiResponse } from "@/types/api";
 import {
   MyClassesResponse,
   ClassDetailResponse,
-  EnrollClassResponse,
-  UnenrollClassResponse,
   StudentProfile,
   UpdateStudentProfileRequest,
   EnrollmentHistoryResponse,
@@ -19,12 +17,16 @@ import {
   GetStudentAvailableSessionsForEnrollmentResponse,
   StudentBatchEnrollSessionsRequest,
   StudentBatchEnrollSessionsResponse,
-  GetClassSessionsForModificationResponse,
   StudentBatchModifyEnrollmentsRequest,
   StudentBatchModifyEnrollmentsResponse,
-  GetClassSessionsForEnrollmentResponse,
   RemoveStudentFromAcademyResponse,
 } from "../types/api/student";
+import {
+  GetClassSessionsForModificationResponse,
+  EnrollClassResponse,
+  GetClassSessionsForEnrollmentResponse,
+  UnenrollClassResponse,
+} from "../types/api/class";
 
 // === 기본 Student API ===
 

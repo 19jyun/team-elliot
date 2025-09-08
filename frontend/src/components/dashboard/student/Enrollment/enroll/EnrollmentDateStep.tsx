@@ -56,7 +56,7 @@ export function EnrollmentDateStep() {
       isFull: session.isFull,
       isPastStartTime: session.isPastStartTime,
       isAlreadyEnrolled: session.isAlreadyEnrolled,
-      studentEnrollmentStatus: session.studentEnrollmentStatus,
+      studentEnrollmentStatus: null, // 수강신청 단계에서는 아직 수강신청하지 않은 상태
       createdAt: session.createdAt,
       updatedAt: session.updatedAt,
       class: {

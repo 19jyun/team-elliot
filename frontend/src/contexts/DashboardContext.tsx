@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { ClassesWithSessionsByMonthResponse } from '@/types/api/class';
+import { EnrollmentStatus } from '@/types/api/common';
 
 export interface NavigationItem {
   label: string;
@@ -28,7 +29,7 @@ export interface EnrollmentState {
     isFull: boolean;
     isPastStartTime: boolean;
     isAlreadyEnrolled: boolean;
-    studentEnrollmentStatus: string | null;
+    studentEnrollmentStatus: EnrollmentStatus | null;
   }[];
   selectedClassIds: number[];
   selectedAcademyId: number | null;
@@ -112,7 +113,7 @@ interface DashboardContextType {
     isFull: boolean;
     isPastStartTime: boolean;
     isAlreadyEnrolled: boolean;
-    studentEnrollmentStatus: string | null;
+    studentEnrollmentStatus: EnrollmentStatus | null;
   }[]) => void;
   setSelectedClassIds: (classIds: number[]) => void;
   setSelectedAcademyId: (academyId: number | null) => void;
@@ -525,7 +526,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     isFull: boolean;
     isPastStartTime: boolean;
     isAlreadyEnrolled: boolean;
-    studentEnrollmentStatus: string | null;
+    studentEnrollmentStatus: EnrollmentStatus | null;
   }[]) => {
     setState(prev => ({
       ...prev,

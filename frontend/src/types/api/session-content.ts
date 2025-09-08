@@ -1,4 +1,8 @@
 import { BalletPose } from "./ballet-pose";
+import type {
+  CreateSessionContentRequest,
+  CreateSessionContentResponse,
+} from "./principal";
 
 export interface SessionContent {
   id: number;
@@ -14,11 +18,7 @@ export interface SessionContentResponse {
   data: SessionContent[];
 }
 
-export interface CreateSessionContentRequest {
-  poseId: number;
-  order?: number;
-  notes?: string;
-}
+export type { CreateSessionContentRequest };
 
 export interface UpdateSessionContentRequest {
   poseId?: number;
@@ -34,8 +34,8 @@ export interface ReorderSessionContentsRequest {
 // 세션별 컨텐츠 목록 조회 응답 타입
 export type GetSessionContentsResponse = SessionContent[];
 
-// 세션 컨텐츠 생성 응답 타입
-export type CreateSessionContentResponse = SessionContent;
+// CreateSessionContentResponse는 principal.ts에서 import됨
+export type { CreateSessionContentResponse };
 
 // 세션 컨텐츠 수정 응답 타입
 export type UpdateSessionContentResponse = SessionContent;

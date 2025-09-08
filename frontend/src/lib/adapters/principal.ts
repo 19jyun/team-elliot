@@ -12,6 +12,7 @@ import type {
   UpdatePrincipalProfileRequest,
 } from "@/types/api/principal";
 import type { ClassSession } from "@/types/api/class";
+import type { EnrollmentStatus } from "@/types/api/common";
 import { formatDate, formatTime, formatTimeRange } from "@/utils/dateTime";
 import type {
   PrincipalCalendarSessionVM,
@@ -149,7 +150,7 @@ export function toClassSessionForCalendar(
       id: enrollment.id,
       sessionId: session.id,
       studentId: enrollment.studentId,
-      status: enrollment.status as string, // 타입 호환성을 위해 string으로 캐스팅
+      status: enrollment.status as EnrollmentStatus, // EnrollmentStatus로 캐스팅
       enrolledAt: enrollment.enrolledAt,
     })),
   };
@@ -676,9 +677,7 @@ export function toPrincipalPersonalInfoManagementVM({
     phoneDisplayValue: profile?.phoneNumber || "전화번호가 없습니다.",
     academyDisplayValue: profile?.academy?.name || "소속 학원이 없습니다.",
   };
-}
-
-// Principal 클래스 목록 ViewModel 생성 (수강신청/환불 관리용)
+} // Principal 클래스 목록 ViewModel 생성 (수강신청/환불 관리용)
 export function toPrincipalClassListForRequestsVM({
   enrollments,
   refundRequests,

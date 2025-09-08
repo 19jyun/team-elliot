@@ -9,6 +9,7 @@ import { PrincipalRejectionFormModal } from '../modals/PrincipalRejectionFormMod
 import { toast } from 'sonner';
 import { useAppDispatch } from '@/store/hooks';
 import { updatePrincipalEnrollment, updatePrincipalRefundRequest } from '@/store/slices/principalSlice';
+import { extractErrorMessage } from '@/types/api/error';
 import { toPrincipalRequestDetailVM } from '@/lib/adapters/principal';
 import type { PrincipalEnrollment, PrincipalRefundRequest } from '@/types/api/principal';
 import type { PrincipalRequestDetailVM } from '@/types/view/principal';
@@ -77,7 +78,7 @@ export function PrincipalRequestDetail() {
         dispatch(updatePrincipalRefundRequest(data));
       }
     } catch (error: unknown) {
-      toast.error('승인 처리 중 오류가 발생했습니다.');
+      toast.error(extractErrorMessage(error, '승인 처리 중 오류가 발생했습니다.'));
       console.error('Approval error:', error);
     } finally {
       setIsProcessing(false);
@@ -112,7 +113,7 @@ export function PrincipalRequestDetail() {
       setShowRejectionModal(false);
       setSelectedRequest(null);
     } catch (error: unknown) {
-      toast.error('거절 처리 중 오류가 발생했습니다.');
+      toast.error(extractErrorMessage(error, '거절 처리 중 오류가 발생했습니다.'));
       console.error('Rejection error:', error);
     } finally {
       setIsProcessing(false);

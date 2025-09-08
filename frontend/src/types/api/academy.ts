@@ -1,5 +1,6 @@
 // Academy 관련 API 타입들
 import type { Academy } from "./common";
+import type { LeaveAcademyResponse } from "./teacher";
 
 // 학원 생성 요청 타입
 export interface CreateAcademyRequest {
@@ -35,11 +36,6 @@ export interface LeaveAcademyRequest {
   academyId: number;
 }
 
-// 학원 탈퇴 응답 타입
-export interface LeaveAcademyResponse {
-  message: string;
-}
-
 // 내가 가입한 학원 목록 조회 응답 타입
 export type GetMyAcademiesResponse = Academy[];
 
@@ -47,3 +43,6 @@ export type GetMyAcademiesResponse = Academy[];
 export interface DeleteAcademyResponse {
   message: string;
 }
+
+// Re-export from teacher
+export type { LeaveAcademyResponse };

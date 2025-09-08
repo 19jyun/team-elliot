@@ -8,6 +8,7 @@ import {
 } from "@/store/slices/studentSlice";
 import { refundApi } from "@/api/refund";
 import type { CancellationHistory } from "@/types/api/student";
+import { extractErrorMessage } from "@/types/api/error";
 import type { CreateRefundRequestDto } from "@/types/api/refund";
 
 export const useRefund = () => {
@@ -42,8 +43,8 @@ export const useRefund = () => {
 
         const response = await refundApi.createRefundRequest(data);
 
-        if (response.data && response.data.id) {
-          const refundData = response.data;
+        if (response.data && response.data.data && response.data.data.id) {
+          const refundData = response.data.data;
           const realCancellation: CancellationHistory = {
             id: refundData.id,
             sessionId: refundData.sessionEnrollmentId,
@@ -93,11 +94,7 @@ export const useRefund = () => {
         // 5. 실패 시 낙관적 업데이트 롤백
         dispatch(removeOptimisticCancellation(optimisticCancellation.id));
 
-        const errorMessage =
-          error.response?.data?.message ||
-          error.message ||
-          "환불 요청에 실패했습니다.";
-        toast.error(errorMessage);
+        toast.error(extractErrorMessage(error, "환불 요청에 실패했습니다."));
         throw error;
       }
     },
@@ -116,11 +113,7 @@ export const useRefund = () => {
         throw new Error("환불 요청 취소에 실패했습니다.");
       }
     } catch (error: unknown) {
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        "환불 요청 취소에 실패했습니다.";
-      toast.error(errorMessage);
+      toast.error(extractErrorMessage(error, "환불 요청 취소에 실패했습니다."));
       throw error;
     }
   }, []);

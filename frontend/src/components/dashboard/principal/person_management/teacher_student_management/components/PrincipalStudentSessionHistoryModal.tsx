@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { format } from 'date-fns';
+import { extractErrorMessage } from '@/types/api/error';
 
 import { SlideUpModal } from '@/components/common/SlideUpModal';
 import { toPrincipalStudentSessionHistoryModalVM } from '@/lib/adapters/principal';
@@ -39,11 +40,9 @@ export function PrincipalStudentSessionHistoryModal({ student, onClose }: Princi
         // 백엔드 인터셉터에 의해 응답이 { success, data, timestamp, path } 구조로 래핑됨
         setHistory((response.data as unknown as PrincipalStudentSessionHistoryItem[]) || []);
       } catch (error: unknown) {
-        const errorMessage = error && typeof error === 'object' && 'response' in error 
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message 
-          : '수강생 현황 조회에 실패했습니다.';
-        setError(errorMessage || '수강생 현황 조회에 실패했습니다.');
-        toast.error(errorMessage || '수강생 현황 조회에 실패했습니다.');
+        const errorMessage = extractErrorMessage(error, '수강생 현황 조회에 실패했습니다.');
+        setError(errorMessage);
+        toast.error(errorMessage);
       } finally {
         setIsLoading(false);
       }

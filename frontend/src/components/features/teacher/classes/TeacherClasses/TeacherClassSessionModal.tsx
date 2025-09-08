@@ -7,7 +7,7 @@ import { TeacherClassDetail } from './TeacherClassDetail'
 import { SessionEnrollmentList } from './SessionEnrollmentList'
 import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'
 
-import { TeacherClassesWithSessionsResponse, TeacherSession, SessionEnrollment } from '@/types/api/teacher'
+import { TeacherClassesWithSessionsResponse, TeacherSession, TeacherSessionEnrollment } from '@/types/api/teacher'
 
 type ClassData = TeacherClassesWithSessionsResponse['classes'][0]
 
@@ -29,7 +29,7 @@ export function TeacherClassSessionModal({
   const [activeTab, setActiveTab] = useState<TabType>('sessions')
   const [selectedSession, setSelectedSession] = useState<TeacherSession | null>(null)
   const [isTransitioning, setIsTransitioning] = useState(false)
-  const [sessionEnrollments, setSessionEnrollments] = useState<SessionEnrollment[]>([])
+  const [sessionEnrollments, setSessionEnrollments] = useState<TeacherSessionEnrollment[]>([])
   const [isLoadingEnrollments, setIsLoadingEnrollments] = useState(false)
 
   const { loadSessionEnrollments } = useTeacherApi()

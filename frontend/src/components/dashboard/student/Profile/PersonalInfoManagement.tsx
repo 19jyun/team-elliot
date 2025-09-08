@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { User, Phone, Calendar, Edit, Save, X } from 'lucide-react';
 import { CloseCircleIcon } from '@/components/icons';
 import { toast } from 'sonner';
-import { UpdateProfileRequest } from '@/types/api/student';
+import { UpdateStudentProfileRequest } from '@/types/api/student';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
 import { useApiError } from '@/hooks/useApiError';
 import { validateProfileData } from '@/utils/validation';
@@ -18,7 +18,7 @@ export function PersonalInfoManagement() {
   const { userProfile, isLoading, error, loadUserProfile, updateUserProfile } = useStudentApi();
   const { handleApiError, fieldErrors, clearErrors } = useApiError();
   const [isEditing, setIsEditing] = useState(false);
-  const [editedInfo, setEditedInfo] = useState<UpdateProfileRequest>({});
+  const [editedInfo, setEditedInfo] = useState<UpdateStudentProfileRequest>({});
   const [isSaving, setIsSaving] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -105,7 +105,7 @@ export function PersonalInfoManagement() {
   }, [editedInfo.phoneNumber, userProfile, isEditing]);
 
   // 입력 필드 변경 시 에러 초기화 (새로 타이핑할 때만)
-  const [previousInputs, setPreviousInputs] = useState<UpdateProfileRequest>({});
+  const [previousInputs, setPreviousInputs] = useState<UpdateStudentProfileRequest>({});
   
   useEffect(() => {
     // 각 필드별로 이전 값과 현재 값을 비교하여 새로 타이핑된 경우에만 에러 제거
@@ -247,7 +247,7 @@ export function PersonalInfoManagement() {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  const handleInputChange = (field: keyof UpdateProfileRequest, value: string) => {
+  const handleInputChange = (field: keyof UpdateStudentProfileRequest, value: string) => {
     setEditedInfo(prev => ({
       ...prev,
       [field]: value,

@@ -316,7 +316,7 @@ export function AcademyManagement() {
                     academy={{
                       ...academy,
                       code: '',
-                      createdAt: academy.joinedAt,
+                      createdAt: academy.joinedAt || academy.createdAt,
                     }}
                     variant="student"
                     showActionButton={true}

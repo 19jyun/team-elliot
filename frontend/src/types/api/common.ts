@@ -20,7 +20,7 @@ export type EnrollmentStatus =
   | "REFUND_REQUESTED";
 
 // 환불 상태 타입
-export type RefundStatus = "REFUND_REQUESTED" | "APPROVED" | "REJECTED";
+export type RefundStatusType = "REFUND_REQUESTED" | "APPROVED" | "REJECTED";
 
 // ===== 재사용 가능한 공통 도메인 베이스 =====
 
@@ -75,4 +75,5 @@ export interface Academy extends AcademySummary {
   website?: string;
   createdAt: string;
   updatedAt: string;
+  joinedAt?: string; // 학생이 학원에 가입한 날짜 (학생용 API에서만 제공)
 }

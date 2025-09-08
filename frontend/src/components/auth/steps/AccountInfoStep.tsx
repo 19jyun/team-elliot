@@ -1,10 +1,22 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { ProgressBarItem } from '@/app/(auth)/signup/ProgressBarItem';
 import { InputField } from '@/components/auth/InputField';
 import { Button } from '@/components/auth/Button';
 import { toast } from 'sonner';
+
+const ProgressBarItem = ({ current, total }: { current: number; total: number }) => (
+  <div className="flex gap-2">
+    {Array.from({ length: total }, (_, i) => (
+      <div
+        key={i}
+        className={`w-2 h-2 rounded-full ${
+          i < current ? 'bg-blue-500' : 'bg-gray-300'
+        }`}
+      />
+    ))}
+  </div>
+);
 
 export function AccountInfoStep() {
   const { signup, setAccountInfo, setSignupStep } = useAuth();
@@ -43,7 +55,7 @@ export function AccountInfoStep() {
         <InputField
           label="아이디"
           value={signup.accountInfo.userId}
-          onChange={(value: string) => setAccountInfo({ ...signup.accountInfo, userId: value })}
+          onChange={(e) => setAccountInfo({ ...signup.accountInfo, userId: e.target.value })}
           placeholder="아이디를 입력하세요"
         />
         
@@ -51,7 +63,7 @@ export function AccountInfoStep() {
           label="비밀번호"
           type="password"
           value={signup.accountInfo.password}
-          onChange={(value: string) => setAccountInfo({ ...signup.accountInfo, password: value })}
+          onChange={(e) => setAccountInfo({ ...signup.accountInfo, password: e.target.value })}
           placeholder="비밀번호를 입력하세요"
         />
         
@@ -59,7 +71,7 @@ export function AccountInfoStep() {
           label="비밀번호 확인"
           type="password"
           value={signup.accountInfo.confirmPassword}
-          onChange={(value: string) => setAccountInfo({ ...signup.accountInfo, confirmPassword: value })}
+          onChange={(e) => setAccountInfo({ ...signup.accountInfo, confirmPassword: e.target.value })}
           placeholder="비밀번호를 다시 입력하세요"
         />
       </div>

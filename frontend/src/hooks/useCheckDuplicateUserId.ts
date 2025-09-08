@@ -11,10 +11,12 @@ export function useCheckDuplicateUserId() {
     setError(null);
 
     try {
-      const response: unknown = await checkDuplicateUserIdApi(userId);
+      const response = await checkDuplicateUserIdApi(userId);
 
       // apiClient 인터셉터에 의해 래핑된 응답에서 data.available에 접근
-      const available = response.data?.available ?? false;
+      const available =
+        (response as { data?: { available?: boolean } }).data?.available ??
+        false;
       setIsDuplicate(!available);
       setLoading(false);
       return available;

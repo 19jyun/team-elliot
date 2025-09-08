@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { TabProps } from '@/types'
+import { TabProps } from '@/app/(dashboard)/types'
 
 export const Tab: React.FC<TabProps> = ({ label, isActive }) => {
   return (

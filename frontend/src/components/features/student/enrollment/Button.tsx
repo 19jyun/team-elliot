@@ -1,6 +1,13 @@
 import * as React from 'react'
-import { ButtonProps } from './types'
 import cn from 'classnames'
+
+interface ButtonProps {
+  text: string;
+  disabled?: boolean;
+  onClick?: () => void;
+  className?: string;
+  isScrolledToBottom?: boolean;
+}
 
 export const Button: React.FC<ButtonProps> = ({
   text,

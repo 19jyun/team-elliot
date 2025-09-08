@@ -2,13 +2,15 @@ import type {
   DayOfWeek,
   EnrollmentStatus,
   ClassBase,
-  ClassSessionBase,
   TeacherRef,
   SessionCore,
   Academy,
   AcademySummary,
 } from "./common";
-import type { SessionContent } from "./session-content";
+import type { SessionEnrollment } from "./class";
+
+// SessionEnrollment을 re-export
+export type { SessionEnrollment };
 
 // === Teacher Profile 관련 타입들 ===
 
@@ -114,7 +116,7 @@ export interface TeacherClassWithSessions extends ClassBase {
   currentStudents: number;
   description?: string;
   backgroundColor?: string;
-  classSessions: ClassSession[]; // required로 변경
+  classSessions: unknown[]; // ClassSession은 class.ts에서 정의됨
 }
 
 // 백엔드 getTeacherClassesWithSessions 응답 구조에 맞춰 수정
@@ -129,16 +131,7 @@ export interface TeacherClassesWithSessionsResponse {
 
 // === 세션 관련 타입들 ===
 
-export interface ClassSession extends ClassSessionBase {
-  status: "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
-  classId: number;
-  currentStudents: number;
-  maxStudents: number;
-  createdAt: string;
-  updatedAt: string;
-  enrollments?: SessionEnrollment[];
-  contents?: SessionContent[];
-}
+// ClassSession은 class.ts에서 정의됨
 
 export interface TeacherSession extends SessionCore {
   class: {
@@ -164,12 +157,9 @@ export interface ClassEnrollment {
   };
 }
 
-export interface SessionEnrollment {
-  id: number;
-  studentId: number;
-  sessionId: number;
-  status: EnrollmentStatus;
-  enrolledAt: string;
+// SessionEnrollment은 class.ts에서 import됨
+// Teacher/Principal용 확장된 SessionEnrollment 타입
+export interface TeacherSessionEnrollment extends SessionEnrollment {
   student: {
     id: number;
     name: string;
@@ -202,7 +192,7 @@ export interface SessionEnrollmentsResponse {
       teacher: TeacherRef;
     };
   };
-  enrollments: SessionEnrollment[];
+  enrollments: TeacherSessionEnrollment[];
   totalCount: number;
   statusCounts: {
     pending: number;
@@ -219,7 +209,7 @@ export interface UpdateEnrollmentStatusRequest {
   reason?: string;
 }
 
-export type UpdateEnrollmentStatusResponse = SessionEnrollment;
+export type UpdateEnrollmentStatusResponse = TeacherSessionEnrollment;
 
 export interface BatchUpdateEnrollmentStatusRequest {
   enrollmentIds: number[];
@@ -269,9 +259,9 @@ export interface TeacherDataResponse {
   academy: TeacherDataAcademy | null;
   principal: Principal | null;
   classes: TeacherClassesWithSessionsResponse;
-  sessions: ClassSession[];
+  sessions: unknown[]; // ClassSession은 class.ts에서 정의됨
   enrollments: Array<
-    SessionEnrollment & {
+    TeacherSessionEnrollment & {
       session: {
         id: number;
         date: string;

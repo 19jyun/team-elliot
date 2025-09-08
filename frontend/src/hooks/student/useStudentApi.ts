@@ -91,12 +91,13 @@ export function useStudentApi() {
         }
       >();
       sessions.forEach((session: AvailableSessionForEnrollment) => {
-        const className = session.className;
+        const className = session.class.className;
         if (!classMap.has(className)) {
           classMap.set(className, {
             ...session,
             availableSessions: sessions.filter(
-              (s: AvailableSessionForEnrollment) => s.className === className
+              (s: AvailableSessionForEnrollment) =>
+                s.class.className === className
             ),
           });
         }

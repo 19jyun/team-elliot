@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { getMyAcademy, leaveAcademy, requestJoinAcademy } from "@/api/teacher";
-import { Academy } from "@/types/api/teacher";
+import { Academy } from "@/types/api/common";
+import { extractErrorMessage } from "@/types/api/error";
 
 export function useAcademyManagement() {
   const [currentAcademy, setCurrentAcademy] = useState<Academy | null>(null);
@@ -22,7 +23,7 @@ export function useAcademyManagement() {
     try {
       setIsLoading(true);
       const academy = await getMyAcademy();
-      setCurrentAcademy(academy.data);
+      setCurrentAcademy(academy.data || null);
     } catch (error) {
       console.error("학원 정보 로드 실패:", error);
       toast.error("학원 정보를 불러오는데 실패했습니다.");
@@ -58,9 +59,7 @@ export function useAcademyManagement() {
       toast.success("학원 가입 요청이 완료되었습니다.");
     } catch (error: unknown) {
       console.error("학원 가입 요청 실패:", error);
-      toast.error(
-        error.response?.data?.message || "학원 가입 요청에 실패했습니다."
-      );
+      toast.error(extractErrorMessage(error, "학원 가입 요청에 실패했습니다."));
     } finally {
       setIsJoining(false);
     }
@@ -81,9 +80,7 @@ export function useAcademyManagement() {
         await performJoinAcademyRequest(pendingJoinCode);
       } catch (error: unknown) {
         console.error("학원 변경 실패:", error);
-        toast.error(
-          error.response?.data?.message || "학원 변경에 실패했습니다."
-        );
+        toast.error(extractErrorMessage(error, "학원 변경에 실패했습니다."));
       }
       return;
     }
@@ -95,7 +92,7 @@ export function useAcademyManagement() {
       toast.success("학원에서 탈퇴되었습니다.");
     } catch (error: unknown) {
       console.error("학원 탈퇴 실패:", error);
-      toast.error(error.response?.data?.message || "학원 탈퇴에 실패했습니다.");
+      toast.error(extractErrorMessage(error, "학원 탈퇴에 실패했습니다."));
     }
   };
 

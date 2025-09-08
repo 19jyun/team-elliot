@@ -7,6 +7,7 @@ import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { useEffect } from 'react';
+import { PrincipalTeacher } from '@/types/api/principal';
 
 export default function PrincipalTeacherManagementSection() {
   // API 기반 데이터 관리
@@ -99,7 +100,7 @@ export default function PrincipalTeacherManagementSection() {
         <CardContent>
           <div className="space-y-3">
             {teachers && teachers.length > 0 ? (
-              teachers.map((teacher: unknown) => (
+              teachers.map((teacher: PrincipalTeacher) => (
                 <div key={teacher.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-3">
                     <div>

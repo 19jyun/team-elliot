@@ -1,14 +1,11 @@
 'use client'
 
 import React from 'react'
+import { TeacherSessionEnrollment } from '@/types/api/teacher'
 
 interface AttendanceTabProps {
   sessionId: number
-  enrollments: Array<{
-    id: number
-    status?: string
-    student?: { name?: string; phoneNumber?: string }
-  }>
+  enrollments: TeacherSessionEnrollment[]
   isLoading?: boolean
 }
 
@@ -36,9 +33,9 @@ export function AttendanceTab({ enrollments, isLoading = false }: AttendanceTabP
         >
           <div className="flex-1 overflow-hidden">
             <div className="font-medium text-stone-700 truncate">
-              {enrollment.student?.name || '수강생'}
+              {enrollment.student.name || '수강생'}
             </div>
-            {enrollment.student?.phoneNumber && (
+            {enrollment.student.phoneNumber && (
               <div className="text-sm text-stone-500 truncate">
                 {enrollment.student.phoneNumber}
               </div>

@@ -7,6 +7,7 @@ import {
   setLoading,
   setError,
 } from "@/store/slices/principalSlice";
+import { extractErrorMessage } from "@/types/api/error";
 import {
   getPrincipalAllEnrollments,
   getPrincipalAllRefundRequests,
@@ -62,8 +63,10 @@ export function usePrincipalInitialization() {
       } catch (error: unknown) {
         console.error("❌ Principal 실시간 데이터 초기화 실패:", error);
 
-        const errorMessage =
-          error.response?.data?.message || "실시간 데이터 로딩에 실패했습니다.";
+        const errorMessage = extractErrorMessage(
+          error,
+          "실시간 데이터 로딩에 실패했습니다."
+        );
         dispatch(setError(errorMessage));
 
         toast.error("Principal 실시간 데이터 로딩 실패", {

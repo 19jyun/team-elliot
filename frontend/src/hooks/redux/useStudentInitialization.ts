@@ -7,6 +7,7 @@ import {
   setLoading,
   setError,
 } from "@/store/slices/studentSlice";
+import { extractErrorMessage } from "@/types/api/error";
 import {
   getMyClasses,
   getMyProfile,
@@ -72,10 +73,10 @@ export function useStudentInitialization() {
       } catch (error: unknown) {
         console.error("❌ Student 데이터 초기화 실패:", error);
 
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : "데이터 로딩에 실패했습니다.";
+        const errorMessage = extractErrorMessage(
+          error,
+          "데이터 로딩에 실패했습니다."
+        );
         dispatch(setError(errorMessage));
 
         toast.error("Student 데이터 로딩 실패", {

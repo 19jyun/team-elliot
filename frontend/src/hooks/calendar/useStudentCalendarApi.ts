@@ -2,7 +2,7 @@ import { useMemo, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/store/index";
-import type { ClassSession as Session } from "@/types/api/class-session";
+import type { ClassSession as Session } from "@/types/api/class";
 
 // Student Calendar API 훅 - Redux store에서 데이터 가져오기
 export function useStudentCalendarApi() {

@@ -99,7 +99,6 @@ export const RefundPolicy: React.FC<RefundPolicyProps> = ({ isOpen, onClose }) =
           <div className="flex justify-center px-5 py-2 w-full">
             <CheckboxAgreement
               text="신규회원 필수 안내를 확인했어요"
-              iconSrc="https://cdn.builder.io/api/v1/image/assets/TEMP/66313034980cffa3f625feffeeea01d71c26e87d2cf3d99975ffeefe94e017d6"
               onChange={handleCheckboxChange}
             />
           </div>

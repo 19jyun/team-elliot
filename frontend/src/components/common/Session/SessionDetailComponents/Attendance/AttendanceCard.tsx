@@ -1,19 +1,22 @@
 import React from 'react';
-import { SessionEnrollment } from '@/types/api/teacher';
+import { TeacherSessionEnrollment } from '@/types/api/teacher';
 
 interface AttendanceCardProps {
-  enrollment: SessionEnrollment;
+  enrollment: TeacherSessionEnrollment;
   onAttendanceChange: (enrollmentId: number, status: 'ATTENDED' | 'ABSENT') => void;
   isUpdating: boolean;
 }
 
 export function AttendanceCard({ enrollment, onAttendanceChange, isUpdating }: AttendanceCardProps) {
-  const isAttended = enrollment.status === 'ATTENDED';
-  const isAbsent = enrollment.status === 'ABSENT';
+  // 출석체크 상태는 별도로 관리 (EnrollmentStatus와는 다른 개념)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const attendanceStatus = (enrollment as any).attendanceStatus || 'PENDING';
+  const isAttended = attendanceStatus === 'ATTENDED';
+  const isAbsent = attendanceStatus === 'ABSENT';
   
-  // 출석체크 가능한 상태인지 확인
-  const canCheckAttendance = (status: string) => {
-    return status === 'CONFIRMED' || status === 'ATTENDED' || status === 'ABSENT';
+  // 출석체크 가능한 상태인지 확인 (EnrollmentStatus가 CONFIRMED인 경우만)
+  const canCheckAttendance = (enrollmentStatus: string) => {
+    return enrollmentStatus === 'CONFIRMED';
   };
 
   return (
@@ -27,7 +30,7 @@ export function AttendanceCard({ enrollment, onAttendanceChange, isUpdating }: A
       </div>
       
       {/* 출석/결석 버튼 */}
-      {canCheckAttendance(enrollment.status) && (
+      {canCheckAttendance(enrollment.status as string) && (
         <div className="flex items-center gap-2">
           {/* 출석 버튼 (체크 아이콘) */}
           <button
@@ -64,12 +67,12 @@ export function AttendanceCard({ enrollment, onAttendanceChange, isUpdating }: A
       )}
       
       {/* 출석체크 불가능한 경우 상태 표시 */}
-      {!canCheckAttendance(enrollment.status) && (
+      {!canCheckAttendance(enrollment.status as string) && (
         <div className="flex items-center">
           <span className="px-2 py-1 text-xs rounded bg-gray-100 text-gray-600">
             {enrollment.status === 'PENDING' ? '대기' : 
-             enrollment.status === 'CANCELLED' ? '취소' : 
-             enrollment.status === 'COMPLETED' ? '완료' : enrollment.status}
+             enrollment.status === 'REJECTED' ? '거절' : 
+             enrollment.status === 'REFUND_REQUESTED' ? '환불요청' : enrollment.status}
           </span>
         </div>
       )}

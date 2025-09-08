@@ -3,6 +3,8 @@ import { useSession } from "next-auth/react";
 import { getPrincipalAllSessions } from "@/api/principal";
 import { getClassSessionsForEnrollment as getClassSessions } from "@/api/student";
 import type { ClassSession } from "@/types/api/class";
+import { extractErrorMessage } from "@/types/api/error";
+import { toClassSessionForCalendar } from "@/lib/adapters/principal";
 
 // 캘린더용 API 훅
 export function useCalendarApi() {
@@ -23,9 +25,9 @@ export function useCalendarApi() {
       setIsLoading(true);
       setError(null);
       const data = await getPrincipalAllSessions();
-      setSessions(data.data);
+      setSessions((data.data || []).map(toClassSessionForCalendar));
     } catch (err: unknown) {
-      setError(err.response?.data?.message || "세션 로드 실패");
+      setError(extractErrorMessage(err, "세션 로드 실패"));
     } finally {
       setIsLoading(false);
     }
@@ -37,9 +39,9 @@ export function useCalendarApi() {
       setIsLoading(true);
       setError(null);
       const data = await getClassSessions(classId);
-      setSessions(data);
+      setSessions(data.data?.sessions || []);
     } catch (err: unknown) {
-      setError(err.response?.data?.message || "클래스 세션 로드 실패");
+      setError(extractErrorMessage(err, "클래스 세션 로드 실패"));
     } finally {
       setIsLoading(false);
     }

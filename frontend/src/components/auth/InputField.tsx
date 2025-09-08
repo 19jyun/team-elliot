@@ -1,7 +1,22 @@
 import * as React from 'react'
-import { InputFieldProps } from './types'
 import { cn } from '@/lib/utils'
 import { Visibility, VisibilityOff } from '@mui/icons-material'
+
+interface InputFieldProps {
+  label: string
+  icon?: string
+  type?: string
+  id?: string
+  value: string
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  required?: boolean
+  onIconClick?: () => void
+  showPassword?: boolean
+  error?: boolean
+  errorMessage?: string
+  onClear?: () => void
+  placeholder?: string
+}
 
 export const InputField: React.FC<InputFieldProps> = ({
   label,
@@ -16,6 +31,7 @@ export const InputField: React.FC<InputFieldProps> = ({
   error = false,
   errorMessage,
   onClear,
+  placeholder,
 }) => {
   return (
     <div className="relative">
@@ -57,6 +73,7 @@ export const InputField: React.FC<InputFieldProps> = ({
           value={value}
           onChange={onChange}
           required={required}
+          placeholder={placeholder}
           className={cn(
             "ml-4 w-full bg-transparent border-none outline-none font-['Pretendard_Variable'] text-base font-medium leading-[140%] tracking-[-0.16px]",
             error ? 'text-red-500 placeholder-red-300' : 'text-[#595959]',

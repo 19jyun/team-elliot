@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
+import { extractErrorMessage } from "@/types/api/error";
 import { ErrorHandler } from "@/lib/errorHandler";
 import { AppError, ErrorType } from "@/types/api";
 
@@ -410,7 +411,10 @@ export function useApiError(): UseApiErrorReturn {
         const appError: AppError = {
           type: ErrorType.SYSTEM,
           code: "UNKNOWN_ERROR",
-          message: error?.message || "알 수 없는 오류가 발생했습니다.",
+          message: extractErrorMessage(
+            error,
+            "알 수 없는 오류가 발생했습니다."
+          ),
           recoverable: true,
         };
         handleError(appError, options);

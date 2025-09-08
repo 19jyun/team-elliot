@@ -9,6 +9,7 @@ import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { useStudentContext } from '@/contexts/StudentContext';
 import { useTeacherContext } from '@/contexts/TeacherContext';
 import { usePrincipalContext } from '@/contexts/PrincipalContext';
+import { PrincipalPersonManagementState } from '@/contexts/PrincipalContext';
 
 export function CommonHeader() {
   const { data: session } = useSession();
@@ -25,7 +26,7 @@ export function CommonHeader() {
   let navigationItems: { label: string; value: number }[] = [];
   let activeTab = 0;
   let handleTabChange = (_tab: number) => {};
-  let principalPersonManagement: unknown = null;
+  let principalPersonManagement: PrincipalPersonManagementState | null = null;
   let principalGoBack: (() => void) | null = null;
   
   try {

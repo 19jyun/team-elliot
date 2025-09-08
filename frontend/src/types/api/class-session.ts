@@ -1,5 +1,7 @@
 // Class-session 관련 API 타입들
-import type { EnrollmentStatus } from "./common";
+// import type { EnrollmentStatus } from "./common"; // 사용하지 않음
+import type { ClassSession, SessionEnrollment } from "./class";
+import { UpdateEnrollmentStatusResponse } from "./teacher";
 
 // 수강 신청 상태 enum
 export enum SessionEnrollmentStatus {
@@ -46,35 +48,7 @@ export interface DeleteClassSessionResponse {
   message: string;
 }
 
-// 수강 신청 상태 업데이트 요청 타입
-export interface UpdateEnrollmentStatusRequest {
-  status: SessionEnrollmentStatus;
-  reason?: string;
-}
-
-// 수강 신청 상태 업데이트 응답 타입
-export interface UpdateEnrollmentStatusResponse {
-  id: number;
-  sessionId: number;
-  studentId: number;
-  status: SessionEnrollmentStatus;
-  reason?: string;
-  enrolledAt: string;
-  updatedAt: string;
-}
-
-// 배치 수강 신청 상태 업데이트 요청 타입
-export interface BatchUpdateEnrollmentStatusRequest {
-  enrollmentIds: number[];
-  status: SessionEnrollmentStatus;
-  reason?: string;
-}
-
-// 배치 수강 신청 상태 업데이트 응답 타입
-export interface BatchUpdateEnrollmentStatusResponse {
-  success: number;
-  total: number;
-}
+// UpdateEnrollmentStatusRequest와 UpdateEnrollmentStatusResponse는 teacher.ts에서 정의됨
 
 // 출석 체크 요청 타입
 export interface CheckAttendanceRequest {
@@ -107,23 +81,6 @@ export interface EnrollSessionResponse {
   };
 }
 
-// 여러 세션 일괄 수강 신청 요청 타입
-export interface BatchEnrollSessionsRequest {
-  sessionIds: number[];
-}
-
-// 여러 세션 일괄 수강 신청 응답 타입
-export interface BatchEnrollSessionsResponse {
-  message: string;
-  enrollments: Array<{
-    id: number;
-    sessionId: number;
-    studentId: number;
-    status: SessionEnrollmentStatus;
-    enrolledAt: string;
-  }>;
-}
-
 // 수강 취소 응답 타입
 export interface CancelEnrollmentResponse {
   message: string;
@@ -145,36 +102,6 @@ export interface EnrollmentFilters {
   endDate?: Date;
 }
 
-// 수강 신청 정보 타입
-export interface SessionEnrollment {
-  id: number;
-  sessionId: number;
-  studentId: number;
-  status: SessionEnrollmentStatus;
-  reason?: string;
-  enrolledAt: string;
-  updatedAt: string;
-  session: {
-    id: number;
-    date: string;
-    startTime: string;
-    endTime: string;
-    class: {
-      id: number;
-      className: string;
-      teacher: {
-        id: number;
-        name: string;
-      };
-    };
-  };
-  student: {
-    id: number;
-    name: string;
-    phoneNumber?: string;
-  };
-}
-
 // 선생님의 수강 신청 목록 조회 응답 타입
 export type GetTeacherEnrollmentsResponse = SessionEnrollment[];
 
@@ -184,83 +111,12 @@ export type GetStudentEnrollmentsResponse = SessionEnrollment[];
 // 특정 세션의 수강생 목록 조회 응답 타입
 export type GetSessionEnrollmentsResponse = SessionEnrollment[];
 
-// 클래스별 세션 목록 조회 응답 타입
-export interface ClassSession {
-  id: number;
-  classId: number;
-  date: string;
-  startTime: string;
-  endTime: string;
-  status: string;
-  currentStudents: number;
-  maxStudents: number;
-  isEnrollable?: boolean;
-  isFull?: boolean;
-  isPastStartTime?: boolean;
-  isAlreadyEnrolled?: boolean;
-  studentEnrollmentStatus?: EnrollmentStatus | null;
-
-  // 클래스 정보 (백엔드 API 응답에 포함됨)
-  class?: {
-    id: number;
-    className: string;
-    level: string;
-    tuitionFee: string;
-    teacher?: {
-      id: number;
-      name: string;
-    };
-  };
-
-  // 선생님 이름 (백엔드 API 응답에 포함됨)
-  teacherName?: string;
-}
-
-export type GetClassSessionsResponse = ClassSession[];
-
-// 수강 변경용 클래스 세션 목록 조회 응답 타입
-export interface ClassSessionForModification extends ClassSession {
-  isSelectable: boolean;
-  canBeCancelled: boolean;
-  isModifiable: boolean;
-}
-
-export type GetClassSessionsForModificationResponse =
-  ClassSessionForModification[];
-
 // 선택된 클래스들의 모든 세션 조회 응답 타입
 export interface ClassSessionsForEnrollment {
   sessions: ClassSession[];
   calendarRange?: {
     startDate: string;
     endDate: string;
-  };
-}
-
-export type GetClassSessionsForEnrollmentResponse =
-  ClassSessionsForEnrollment[];
-
-// 학생의 수강 가능한 모든 세션 조회 응답 타입
-export type GetStudentAvailableSessionsForEnrollmentResponse = ClassSession[];
-
-// 수강 변경 요청 타입
-export interface ChangeEnrollmentRequest {
-  newSessionId: number;
-  reason?: string;
-}
-
-// 수강 변경 응답 타입
-export interface ChangeEnrollmentResponse {
-  message: string;
-  cancelledEnrollment: {
-    id: number;
-    status: SessionEnrollmentStatus;
-    cancelledAt: string;
-  };
-  newEnrollment: {
-    id: number;
-    status: SessionEnrollmentStatus;
-    enrolledAt: string;
   };
 }
 
@@ -284,17 +140,5 @@ export interface StudentClassEnrollment {
 
 export type GetStudentClassEnrollmentsResponse = StudentClassEnrollment[];
 
-// 배치 수강 변경/취소 처리 요청 타입
-export interface BatchModifyEnrollmentsRequest {
-  cancellations: number[];
-  newEnrollments: number[];
-  reason?: string;
-}
-
-// 배치 수강 변경/취소 처리 응답 타입
-export interface BatchModifyEnrollmentsResponse {
-  success: boolean;
-  cancelledCount: number;
-  enrolledCount: number;
-  message: string;
-}
+// Re-export from class
+export type { ClassSession };

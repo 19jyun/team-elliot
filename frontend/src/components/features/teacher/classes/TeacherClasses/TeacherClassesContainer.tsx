@@ -9,6 +9,33 @@ import { ClassSessionModal } from '@/components/common/ClassContainer/ClassSessi
 import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'
 import { toTeacherClassListVM, toTeacherClassSessionModalVM } from '@/lib/adapters/teacher'
 import type { TeacherClassListVM, TeacherClassSessionModalVM, TeacherClassCardVM } from '@/types/view/teacher'
+import { Class } from '@/types/api/class'
+import { DayOfWeek } from '@/types/api/common'
+
+// TeacherClassCardVM을 Class 타입으로 변환하는 함수
+function toClassFromTeacherClassCardVM(classCardVM: TeacherClassCardVM): Class {
+  return {
+    id: classCardVM.id,
+    className: classCardVM.className,
+    classCode: '', // TeacherClassCardVM에는 없으므로 기본값
+    description: classCardVM.description || '', // TeacherClassCardVM에는 없으므로 기본값
+    maxStudents: classCardVM.maxStudents,
+    currentStudents: classCardVM.currentStudents,
+    tuitionFee: classCardVM.tuitionFee,
+    teacherId: 0, // TeacherClassCardVM에는 없으므로 기본값
+    academyId: 0, // TeacherClassCardVM에는 없으므로 기본값
+    dayOfWeek: classCardVM.dayOfWeek as DayOfWeek,
+    startTime: classCardVM.startTime,
+    endTime: classCardVM.endTime,
+    level: classCardVM.level,
+    status: 'ACTIVE', // 기본값
+    startDate: '', // TeacherClassCardVM에는 없으므로 기본값
+    endDate: '', // TeacherClassCardVM에는 없으므로 기본값
+    backgroundColor: '#f3f4f6', // 기본값
+    teacher: { id: 0, name: '', photoUrl: '' }, // 기본값
+    academy: { id: 0, name: '' }, // 기본값
+  };
+}
 
 export function TeacherClassesContainer() {
   const router = useRouter()
@@ -103,12 +130,14 @@ export function TeacherClassesContainer() {
         />
       </main>
 
-      <ClassSessionModal
-        isOpen={classSessionModalVM.isOpen}
-        selectedClass={classSessionModalVM.selectedClass}
-        onClose={classSessionModalVM.onClose}
-        role="teacher"
-      />
+      {classSessionModalVM.selectedClass && (
+        <ClassSessionModal
+          isOpen={classSessionModalVM.isOpen}
+          selectedClass={toClassFromTeacherClassCardVM(classSessionModalVM.selectedClass)}
+          onClose={classSessionModalVM.onClose}
+          role="teacher"
+        />
+      )}
     </div>
   )
 } 

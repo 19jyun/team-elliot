@@ -305,14 +305,14 @@ export function toEnrollmentClassVMs(
   const classMap = new Map<string, EnrollmentClassVM>();
 
   sessions.forEach((session) => {
-    const className = session.className;
+    const className = session.class.className;
     if (!classMap.has(className)) {
       classMap.set(className, {
         id: session.id,
-        className: session.className,
+        className: session.class.className,
         level: "BEGINNER", // 기본값
-        tuitionFee: session.tuitionFee,
-        teacher: { name: session.teacherName || "선생님" },
+        tuitionFee: session.class.tuitionFee,
+        teacher: { name: session.class.teacher.name || "선생님" },
         dayOfWeek: "MONDAY", // 기본값, 실제로는 첫 세션에서 계산
         startTime: session.startTime,
         endTime: session.endTime,

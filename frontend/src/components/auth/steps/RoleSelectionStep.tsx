@@ -1,7 +1,18 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { ProgressBarItem } from '@/app/(auth)/signup/ProgressBarItem';
+const ProgressBarItem = ({ current, total }: { current: number; total: number }) => (
+  <div className="flex gap-2">
+    {Array.from({ length: total }, (_, i) => (
+      <div
+        key={i}
+        className={`w-2 h-2 rounded-full ${
+          i < current ? 'bg-blue-500' : 'bg-gray-300'
+        }`}
+      />
+    ))}
+  </div>
+);
 
 export function RoleSelectionStep() {
   const { signup, setRole, setSignupStep } = useAuth();

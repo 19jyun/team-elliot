@@ -52,6 +52,7 @@ export interface SocketEvents {
   // 환불 요청 거절 (원장/선생님 → 수강생)
   refund_rejected: {
     refundId: number;
+    sessionId?: number;
     timestamp: string;
   };
 }

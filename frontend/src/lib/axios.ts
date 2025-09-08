@@ -41,7 +41,12 @@ export const clearSessionCache = () => {
 axiosInstance.interceptors.request.use(
   async (config) => {
     const session = await getCachedSession();
-    if (session?.accessToken) {
+    if (
+      session &&
+      typeof session === "object" &&
+      "accessToken" in session &&
+      typeof session.accessToken === "string"
+    ) {
       config.headers.Authorization = `Bearer ${session.accessToken}`;
     }
     return config;

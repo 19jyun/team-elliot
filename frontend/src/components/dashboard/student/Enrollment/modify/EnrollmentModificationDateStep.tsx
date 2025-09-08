@@ -8,7 +8,7 @@ import { StatusStep } from '@/components/features/student/enrollment/month/Statu
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
 import { useEnrollmentCalculation } from '@/hooks/useEnrollmentCalculation'
 import { useStudentApi } from '@/hooks/student/useStudentApi'
-import type { ClassSessionForModification } from '@/types/api/student'
+import type { ClassSessionForModification } from '@/types/api/class'
 import type { ClassSession } from '@/types/api/class'
 import type { EnrollmentModificationDateStepVM } from '@/types/view/student'
 
@@ -244,8 +244,21 @@ export function EnrollmentModificationDateStep({
       localStorage.setItem('selectedSessions', JSON.stringify(selectedSessions));
       localStorage.setItem('selectedClasses', JSON.stringify(selectedClasses));
       
-      // Context에도 저장
-      setSelectedSessions(selectedSessions);
+      // Context에도 저장 (타입 변환)
+      const convertedSessions = selectedSessions.map(session => ({
+        id: session.id,
+        date: session.date,
+        startTime: session.startTime,
+        endTime: session.endTime,
+        currentStudents: 0, // 수강 변경에서는 현재 학생 수 정보가 없으므로 기본값
+        maxStudents: 10, // 수강 변경에서는 최대 학생 수 정보가 없으므로 기본값
+        isEnrollable: session.isEnrollable || false,
+        isFull: session.isFull,
+        isPastStartTime: session.isPastStartTime,
+        isAlreadyEnrolled: session.isAlreadyEnrolled,
+        studentEnrollmentStatus: session.studentEnrollmentStatus || null,
+      }));
+      setSelectedSessions(convertedSessions);
       
       // 실제 수강료 계산
       const actualSessionPrice = modificationSessions.length > 0 

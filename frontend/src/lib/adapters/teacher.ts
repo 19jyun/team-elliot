@@ -3,7 +3,7 @@
 import type {
   TeacherClass,
   TeacherSession,
-  SessionEnrollment,
+  TeacherSessionEnrollment,
 } from "@/types/api/teacher";
 import type { ClassSession } from "@/types/api/class";
 import type {
@@ -88,21 +88,51 @@ export function toTeacherClassDetailVM(
       tuitionFee: formatCurrency(Number(classData.tuitionFee)),
       description: classData.description,
     },
-    editData: editData || {
-      description: classData.description || "",
-      locationName: "",
-      mapImageUrl: "",
-      requiredItems: [],
-      curriculum: [],
+    editData: {
+      description:
+        editData &&
+        typeof editData === "object" &&
+        "description" in editData &&
+        typeof editData.description === "string"
+          ? editData.description
+          : classData.description || "",
+      locationName:
+        editData &&
+        typeof editData === "object" &&
+        "locationName" in editData &&
+        typeof editData.locationName === "string"
+          ? editData.locationName
+          : "",
+      mapImageUrl:
+        editData &&
+        typeof editData === "object" &&
+        "mapImageUrl" in editData &&
+        typeof editData.mapImageUrl === "string"
+          ? editData.mapImageUrl
+          : "",
+      requiredItems:
+        editData &&
+        typeof editData === "object" &&
+        "requiredItems" in editData &&
+        Array.isArray(editData.requiredItems)
+          ? editData.requiredItems
+          : [],
+      curriculum:
+        editData &&
+        typeof editData === "object" &&
+        "curriculum" in editData &&
+        Array.isArray(editData.curriculum)
+          ? editData.curriculum
+          : [],
     },
   };
 }
 
 // ============= 세션 관련 어댑터 함수들 =============
 
-// SessionEnrollment → SessionEnrollmentDisplayVM 변환
+// TeacherSessionEnrollment → SessionEnrollmentDisplayVM 변환
 export function toSessionEnrollmentDisplayVM(
-  enrollment: SessionEnrollment
+  enrollment: TeacherSessionEnrollment
 ): SessionEnrollmentDisplayVM {
   return {
     ...enrollment,

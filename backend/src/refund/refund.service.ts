@@ -667,7 +667,11 @@ export class RefundService {
       });
 
       if (student) {
-        this.socketGateway.notifyRefundRejected(result.id, student.userRefId);
+        this.socketGateway.notifyRefundRejected(
+          result.id,
+          student.userRefId,
+          result.sessionEnrollment.sessionId,
+        );
       }
     } catch (e) {
       console.warn('Socket notifyRefundRejected failed:', e);
@@ -1127,6 +1131,7 @@ export class RefundService {
         this.socketGateway.notifyRefundRejected(
           result.updatedRefundRequest.id,
           student.userRefId,
+          result.updatedEnrollment.sessionId,
         );
       }
     } catch (e) {

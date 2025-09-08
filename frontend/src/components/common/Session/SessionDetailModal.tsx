@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
-import { SessionEnrollmentsResponse, SessionEnrollment } from '@/types/api/teacher'
+import { SessionEnrollmentsResponse } from '@/types/api/teacher'
+import { TeacherSessionEnrollment } from '@/types/api/teacher'
 import { AttendanceTab } from '@/components/common/Session/SessionDetailComponents/Attendance/AttendanceTab'
 import { SessionContentTab } from '@/components/common/Session/SessionDetailComponents/Pose/SessionContentTab'
 import { PoseSelectionModal } from '@/components/common/Session/SessionDetailComponents/Pose/PoseSelectionModal'
@@ -260,7 +261,7 @@ export function SessionDetailModal({
                           수강생 목록
                         </h4>
                         <div className="space-y-3">
-                          {enrollmentData.enrollments?.map((enrollment: SessionEnrollment) => (
+                          {enrollmentData.enrollments?.map((enrollment: TeacherSessionEnrollment) => (
                             <div
                               key={enrollment.id}
                               className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg"

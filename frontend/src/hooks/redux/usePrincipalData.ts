@@ -69,8 +69,7 @@ export function usePrincipalData() {
     pendingRefunds.forEach((refund: RefundRequest) => {
       const sessionId =
         refund.sessionEnrollment?.session?.id ||
-        refund.sessionId ||
-        refund.classId ||
+        refund.sessionEnrollment?.session?.class?.id ||
         0;
       if (!sessionMap.has(sessionId)) {
         const sessionInfo = {

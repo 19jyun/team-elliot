@@ -11,13 +11,7 @@ export {
 } from "./commonSlice";
 
 // 역할별 slice들
-export {
-  default as teacherReducer,
-  setTeacherRealTimeData,
-  updateTeacherEnrollment,
-  updateTeacherEnrollmentFromSocket,
-  clearTeacherData,
-} from "./teacherSlice";
+// teacherSlice는 불필요하다고 판단해서 삭제
 
 export {
   default as principalReducer,
@@ -34,5 +28,3 @@ export {
   setStudentData,
   clearStudentData,
 } from "./studentSlice";
-
-// ADMIN slice 제거됨

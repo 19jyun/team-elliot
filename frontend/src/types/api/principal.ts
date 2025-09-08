@@ -5,6 +5,14 @@ import type {
   ClassSessionBase,
   TeacherRef,
 } from "./common";
+import type {
+  DeleteSessionContentResponse,
+  ReorderSessionContentsRequest,
+  ReorderSessionContentsResponse,
+  SessionContentResponse,
+  UpdateSessionContentRequest,
+  UpdateSessionContentResponse,
+} from "./session-content";
 
 // Principal의 학원 정보
 export interface PrincipalAcademy {
@@ -212,7 +220,7 @@ export interface PrincipalRefundRequest {
 }
 
 // 세션 컨텐츠 관련 응답 타입들
-export interface SessionContentResponse {
+export interface PrincipalSessionContentResponse {
   id: number;
   sessionId: number;
   poseId: number;
@@ -237,27 +245,15 @@ export interface CreateSessionContentResponse {
   createdAt: string;
 }
 
-export interface UpdateSessionContentResponse {
-  id: number;
-  sessionId: number;
-  poseId: number;
-  order: number;
-  notes?: string;
-  updatedAt: string;
-}
-
-export interface DeleteSessionContentResponse {
-  message: string;
-}
-
-export interface ReorderSessionContentsRequest {
-  orderedContentIds: number[];
-}
-
-export interface ReorderSessionContentsResponse {
-  message: string;
-  contents: SessionContentResponse[];
-}
+// Re-export from session-content
+export type {
+  DeleteSessionContentResponse,
+  ReorderSessionContentsRequest,
+  ReorderSessionContentsResponse,
+  SessionContentResponse,
+  UpdateSessionContentRequest,
+  UpdateSessionContentResponse,
+};
 
 // 수강 신청/환불 신청 관련 타입들
 export interface SessionWithPendingRequests {
@@ -400,12 +396,6 @@ export interface CreatePrincipalClassRequest {
 
 export interface CreateSessionContentRequest {
   poseId: number;
-  order?: number;
-  notes?: string;
-}
-
-export interface UpdateSessionContentRequest {
-  poseId?: number;
   order?: number;
   notes?: string;
 }

@@ -1,9 +1,6 @@
-import type { PaymentStatus as CommonPaymentStatus } from "./common";
+import type { PaymentStatus } from "./common";
 
 // Payment 관련 API 타입들
-
-// 결제 상태 enum (공통 타입과 일치)
-export type PaymentStatus = CommonPaymentStatus;
 
 // 결제 방법 enum
 export enum PaymentMethod {
@@ -77,3 +74,6 @@ export type UpdatePaymentResponse = PaymentResponse;
 export interface DeletePaymentResponse {
   message: string;
 }
+
+// Re-export from common
+export type { PaymentStatus };

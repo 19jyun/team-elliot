@@ -40,7 +40,17 @@ export class ErrorHandler {
       };
     }
 
-    if (error.code === "ECONNABORTED" || error.message?.includes("timeout")) {
+    if (
+      (error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "ECONNABORTED") ||
+      (error &&
+        typeof error === "object" &&
+        "message" in error &&
+        typeof error.message === "string" &&
+        error.message.includes("timeout"))
+    ) {
       return {
         type: ErrorType.NETWORK,
         code: "REQUEST_TIMEOUT",
@@ -214,9 +224,24 @@ export class ErrorHandler {
 
     return ((details as Record<string, unknown>).fieldErrors as unknown[]).map(
       (fieldError: unknown) => ({
-        field: fieldError.field,
-        message: fieldError.message,
-        value: fieldError.value,
+        field:
+          fieldError &&
+          typeof fieldError === "object" &&
+          "field" in fieldError &&
+          typeof fieldError.field === "string"
+            ? fieldError.field
+            : "",
+        message:
+          fieldError &&
+          typeof fieldError === "object" &&
+          "message" in fieldError &&
+          typeof fieldError.message === "string"
+            ? fieldError.message
+            : "",
+        value:
+          fieldError && typeof fieldError === "object" && "value" in fieldError
+            ? fieldError.value
+            : undefined,
       })
     );
   }
