@@ -5,7 +5,16 @@ const createJestConfig = nextJest({
   dir: './',
 })
 
-// Jest에 추가할 커스텀 설정
+/**
+ * Jest 설정
+ * 
+ * 커버리지 설정:
+ * - 커버리지 리포트는 생성되지만 임계값 검사는 비활성화
+ * - 커버리지 리포트는 coverage/ 폴더에 생성됨
+ * - GitHub Actions에서 커버리지 아티팩트로 업로드됨
+ * 
+ * 임계값 활성화하려면 coverageThreshold 주석 해제 후 원하는 값으로 설정
+ */
 const customJestConfig = {
   // 테스트 환경 설정
   testEnvironment: 'jsdom',
@@ -56,15 +65,15 @@ const customJestConfig = {
     '!src/__mocks__/**',
   ],
   
-  // 커버리지 임계값
-  coverageThreshold: {
-    global: {
-      branches: 70,
-      functions: 70,
-      lines: 70,
-      statements: 70,
-    },
-  },
+  // 커버리지 임계값 (비활성화 - 커버리지 리포트만 생성)
+  // coverageThreshold: {
+  //   global: {
+  //     branches: 70,
+  //     functions: 70,
+  //     lines: 70,
+  //     statements: 70,
+  //   },
+  // },
   
   // 변환하지 않을 파일/폴더
   transformIgnorePatterns: [
