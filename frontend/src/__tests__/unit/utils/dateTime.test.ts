@@ -8,30 +8,31 @@ import {
 describe("dateTime utils", () => {
   describe("formatTime", () => {
     it("should format time in 24-hour format by default", () => {
-      const date = new Date("2024-01-15T14:30:00");
+      const date = new Date("2024-01-15T14:30:00+09:00");
       const result = formatTime(date);
       expect(result).toBe("14:30");
     });
 
     it("should format time in 12-hour format when hour12 is true", () => {
-      const date = new Date("2024-01-15T14:30:00");
+      const date = new Date("2024-01-15T14:30:00+09:00");
       const result = formatTime(date, { hour12: true });
       expect(result).toBe("오후 02:30");
     });
 
     it("should include seconds when showSeconds is true", () => {
-      const date = new Date("2024-01-15T14:30:45");
+      const date = new Date("2024-01-15T14:30:45+09:00");
       const result = formatTime(date, { showSeconds: true });
       expect(result).toBe("14:30:45");
     });
 
     it("should handle string input", () => {
-      const result = formatTime("2024-01-15T14:30:00");
+      const result = formatTime("2024-01-15T14:30:00+09:00");
       expect(result).toBe("14:30");
     });
 
     it("should handle midnight correctly", () => {
-      const date = new Date("2024-01-15T00:00:00");
+      // 한국 시간대를 명시적으로 설정하여 테스트
+      const date = new Date("2024-01-15T00:00:00+09:00");
       const result = formatTime(date);
       expect(result).toBe("00:00");
     });
@@ -76,15 +77,15 @@ describe("dateTime utils", () => {
 
   describe("formatTimeRange", () => {
     it("should format time range correctly", () => {
-      const startTime = new Date("2024-01-15T14:30:00");
-      const endTime = new Date("2024-01-15T16:00:00");
+      const startTime = new Date("2024-01-15T14:30:00+09:00");
+      const endTime = new Date("2024-01-15T16:00:00+09:00");
       const result = formatTimeRange(startTime, endTime);
       expect(result).toBe("14:30-16:00");
     });
 
     it("should format time range with 12-hour format", () => {
-      const startTime = new Date("2024-01-15T14:30:00");
-      const endTime = new Date("2024-01-15T16:00:00");
+      const startTime = new Date("2024-01-15T14:30:00+09:00");
+      const endTime = new Date("2024-01-15T16:00:00+09:00");
       const result = formatTimeRange(startTime, endTime, { hour12: true });
       expect(result).toBe("오후 02:30-오후 04:00");
     });
