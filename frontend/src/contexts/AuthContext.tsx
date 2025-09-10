@@ -3,13 +3,13 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
 // 인증 모드 타입
-export type AuthMode = 'login' | 'signup';
+type AuthMode = 'login' | 'signup';
 
 // 회원가입 단계 타입
-export type SignupStep = 'role-selection' | 'personal-info' | 'account-info' | 'terms';
+type SignupStep = 'role-selection' | 'personal-info' | 'account-info' | 'terms';
 
 // 회원가입 상태 인터페이스
-export interface SignupState {
+interface SignupState {
   currentStep: SignupStep;
   role: 'STUDENT' | 'TEACHER' | null;
   personalInfo: {
@@ -30,7 +30,7 @@ export interface SignupState {
 }
 
 // 로그인 상태 인터페이스
-export interface LoginState {
+interface LoginState {
   userId: string;
   password: string;
 }

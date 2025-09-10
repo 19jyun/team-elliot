@@ -1,6 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import type { PrincipalState } from "@/types/store/principal";
 import type { SocketEventData } from "@/types/socket";
+import { RefundStatus } from "@/types/api/refund";
 
 const initialState: PrincipalState = {
   data: {
@@ -11,7 +12,7 @@ const initialState: PrincipalState = {
   error: null,
 };
 
-export const principalSlice = createSlice({
+const principalSlice = createSlice({
   name: "principal",
   initialState,
   reducers: {
@@ -64,7 +65,7 @@ export const principalSlice = createSlice({
           id: enrollmentId,
           studentId,
           sessionId,
-          status: "PENDING",
+          status: RefundStatus.PENDING,
           enrolledAt: timestamp,
           session: {
             id: sessionId,
@@ -111,7 +112,7 @@ export const principalSlice = createSlice({
           studentId,
           reason: "", // 기본값
           refundAmount: 0, // 기본값
-          status: "PENDING",
+          status: RefundStatus.PENDING,
           requestedAt: timestamp,
           sessionEnrollment: {
             session: {
@@ -122,6 +123,7 @@ export const principalSlice = createSlice({
               class: {
                 id: 0, // 기본값
                 className: "", // 기본값
+                level: "BEGINNER", // 기본값
                 teacher: {
                   name: "", // 기본값
                 },
@@ -132,6 +134,7 @@ export const principalSlice = createSlice({
             endTime: "", // 기본값
           },
           student: {
+            id: studentId,
             name: "", // 기본값
           },
         };
@@ -172,9 +175,6 @@ export const {
   setError,
   updatePrincipalEnrollment,
   updatePrincipalRefundRequest,
-  updatePrincipalEnrollmentFromSocket,
-  updatePrincipalRefundRequestFromSocket,
-  clearPrincipalData,
 } = principalSlice.actions;
 
 export default principalSlice.reducer;

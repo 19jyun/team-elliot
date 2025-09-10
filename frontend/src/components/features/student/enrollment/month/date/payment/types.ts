@@ -29,6 +29,3 @@ export interface PrincipalPaymentInfo {
   totalAmount: number;
   sessions: SelectedSession[];
 }
-
-// 기존 TeacherPaymentInfo를 PrincipalPaymentInfo로 alias
-export type TeacherPaymentInfo = PrincipalPaymentInfo;

@@ -4,17 +4,17 @@ import React, { createContext, useContext, useState, useCallback, ReactNode } fr
 import { ClassesWithSessionsByMonthResponse } from '@/types/api/class';
 import { EnrollmentStatus } from '@/types/api/common';
 
-export interface NavigationItem {
+interface NavigationItem {
   label: string;
   href: string;
   index: number;
 }
 
 // 수강신청 단계 타입
-export type EnrollmentStep = 'main' | 'academy-selection' | 'class-selection' | 'date-selection' | 'payment' | 'complete' | 'refund-request' | 'refund-complete';
+type EnrollmentStep = 'main' | 'academy-selection' | 'class-selection' | 'date-selection' | 'payment' | 'complete' | 'refund-request' | 'refund-complete';
 
 // 수강신청 상태 인터페이스
-export interface EnrollmentState {
+interface EnrollmentState {
   currentStep: EnrollmentStep;
   selectedMonth: number | null;
   selectedClasses: ClassesWithSessionsByMonthResponse[];
@@ -37,10 +37,10 @@ export interface EnrollmentState {
 }
 
 // 강의 개설 단계 타입
-export type CreateClassStep = 'info' | 'teacher' | 'schedule' | 'content' | 'complete';
+type CreateClassStep = 'info' | 'teacher' | 'schedule' | 'content' | 'complete';
 
 // 강의 개설 상태 인터페이스
-export interface CreateClassState {
+interface CreateClassState {
   currentStep: CreateClassStep;
   classFormData: {
     name: string;
@@ -62,7 +62,7 @@ export interface CreateClassState {
 }
 
 // 포커스 상태 타입
-export type FocusType = 'dashboard' | 'modal' | 'subpage' | 'overlay';
+type FocusType = 'dashboard' | 'modal' | 'subpage' | 'overlay';
 
 interface DashboardState {
   activeTab: number;

@@ -9,12 +9,11 @@ import type {
 } from "./common";
 import type { SessionEnrollment } from "./class";
 
-// SessionEnrollment을 re-export
-export type { SessionEnrollment };
+// SessionEnrollment을 re-export;
 
 // === Teacher Profile 관련 타입들 ===
 
-export interface TeacherProfile {
+interface TeacherProfile {
   id: number;
   userId: number;
   name: string;
@@ -106,7 +105,7 @@ export interface TeacherClass extends ClassBase {
 
 export type TeacherClassesResponse = TeacherClass[];
 
-export interface TeacherClassWithSessions extends ClassBase {
+interface TeacherClassWithSessions extends ClassBase {
   dayOfWeek: DayOfWeek;
   startTime: string;
   endTime: string;
@@ -145,11 +144,9 @@ export interface TeacherSession extends SessionCore {
   confirmedCount: number;
 }
 
-export type TeacherSessionsResponse = TeacherSession[];
-
 // === 수강신청 관련 타입들 ===
 
-export interface ClassEnrollment {
+interface ClassEnrollment {
   id: number;
   student: {
     id: number;
@@ -224,7 +221,7 @@ export interface BatchUpdateEnrollmentStatusResponse {
 
 // === Principal 관련 타입들 ===
 
-export interface Principal {
+interface Principal {
   id: number;
   userId: string;
   name: string;
@@ -243,7 +240,7 @@ export interface Principal {
 // === TeacherData 초기화용 API Response ===
 
 // 백엔드 getTeacherData에서 반환하는 Academy 타입 (include로 많은 관계 포함)
-export interface TeacherDataAcademy extends Academy {
+interface TeacherDataAcademy extends Academy {
   principal?: Principal;
   teachers?: TeacherProfile[];
   classes?: TeacherClassWithSessions[];
@@ -279,7 +276,6 @@ export interface TeacherDataResponse {
 
 export type TeacherProfileResponse = TeacherProfile;
 export type UpdateProfileRequest = UpdateTeacherProfileRequest;
-export type UpdateProfileResponse = UpdateTeacherProfileResponse;
 
 // === 클래스 상세 정보 수정 관련 타입들 ===
 

@@ -1,5 +1,5 @@
 // 사용자 역할 타입
-export type UserRole = "STUDENT" | "TEACHER" | "PRINCIPAL";
+type UserRole = "STUDENT" | "TEACHER" | "PRINCIPAL";
 
 export interface LoginRequest {
   userId: string;

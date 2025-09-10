@@ -3,7 +3,6 @@ import type { LevelType } from "@/types/api/common";
 
 // 탭 타입들
 export type TabType = "class" | "session";
-export type ClassSessionTabType = "sessions" | "class-detail";
 
 // API 에러 타입
 export interface ApiError {
@@ -13,22 +12,6 @@ export interface ApiError {
       message?: string;
     };
   };
-}
-
-// 모달 Props 공통 타입들
-export interface BaseModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-export interface ConfirmModalProps extends BaseModalProps {
-  onConfirm: () => void;
-}
-
-// 컴포넌트 Props 공통 타입들
-export interface BaseComponentProps {
-  className?: string;
-  onClick?: () => void;
 }
 
 // 브라운 테마 색상 정의

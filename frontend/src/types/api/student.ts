@@ -84,7 +84,7 @@ export interface EnrollmentHistory {
 }
 
 // 거절 사유 타입
-export interface RejectionDetail {
+interface RejectionDetail {
   id: number;
   reason: string;
   detailedReason?: string;
@@ -125,7 +125,7 @@ export type CancellationHistoryResponse = CancellationHistory[];
 // === 새로 추가된 타입들 ===
 
 // 세션별 입금 정보 조회 응답 타입 (백엔드 응답 구조에 맞춰 수정)
-export interface SessionPaymentInfo {
+interface SessionPaymentInfo {
   sessionId: number;
   className: string;
   sessionDate: string;

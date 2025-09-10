@@ -8,7 +8,7 @@ const initialState: CommonState = {
   lastUpdated: null,
 };
 
-export const commonSlice = createSlice({
+const commonSlice = createSlice({
   name: "common",
   initialState,
   reducers: {
@@ -35,11 +35,11 @@ export const commonSlice = createSlice({
 });
 
 export const {
-  setUser,
-  setLoading,
-  setError,
-  setLastUpdated,
-  clearCommonData,
+  
+  
+  
+  
+  
 } = commonSlice.actions;
 
 export default commonSlice.reducer;

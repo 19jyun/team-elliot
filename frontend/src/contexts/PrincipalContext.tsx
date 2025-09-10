@@ -1,14 +1,14 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { useDashboardNavigation } from './DashboardContext';
 
-export const principalNavigationItems = [
+const principalNavigationItems = [
   { label: '강의 관리', value: 0 },
   { label: '수강생/강사 관리', value: 1 },
   { label: '학원 관리', value: 2 },
   { label: '나의 정보', value: 3 },
 ];
 
-export interface PrincipalCreateClassState {
+interface PrincipalCreateClassState {
   currentStep: 'info' | 'teacher' | 'schedule' | 'content' | 'complete';
   classFormData: {
     name: string;
@@ -29,7 +29,7 @@ export interface PrincipalCreateClassState {
 }
 
 // Principal 인원 관리 단계 타입
-export type PrincipalPersonManagementStep = 'class-list' | 'session-list' | 'request-detail';
+type PrincipalPersonManagementStep = 'class-list' | 'session-list' | 'request-detail';
 
 // Principal 인원 관리 상태 인터페이스
 export interface PrincipalPersonManagementState {

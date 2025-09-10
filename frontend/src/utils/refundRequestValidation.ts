@@ -1,10 +1,10 @@
 // 백엔드 RefundRequestDto와 동일한 validation 규칙들
-export interface ValidationError {
+interface ValidationError {
   field: string;
   message: string;
 }
 
-export interface ValidationResult {
+interface ValidationResult {
   isValid: boolean;
   errors: ValidationError[];
 }
@@ -19,7 +19,7 @@ export enum RefundReason {
 }
 
 // 환불 사유 validation
-export const validateRefundReason = (reason: string): ValidationResult => {
+const validateRefundReason = (reason: string): ValidationResult => {
   const errors: ValidationError[] = [];
 
   if (!reason) {
@@ -39,7 +39,7 @@ export const validateRefundReason = (reason: string): ValidationResult => {
 };
 
 // 세션 수강 신청 ID validation
-export const validateSessionEnrollmentId = (id: number): ValidationResult => {
+const validateSessionEnrollmentId = (id: number): ValidationResult => {
   const errors: ValidationError[] = [];
 
   if (!id) {
@@ -61,7 +61,7 @@ export const validateSessionEnrollmentId = (id: number): ValidationResult => {
 };
 
 // 상세 사유 validation (선택사항, 500자 이하)
-export const validateDetailedReason = (
+const validateDetailedReason = (
   detailedReason: string
 ): ValidationResult => {
   const errors: ValidationError[] = [];
@@ -87,7 +87,7 @@ export const validateDetailedReason = (
 };
 
 // 환불 요청 금액 validation
-export const validateRefundAmount = (amount: number): ValidationResult => {
+const validateRefundAmount = (amount: number): ValidationResult => {
   const errors: ValidationError[] = [];
 
   if (amount === undefined || amount === null) {
@@ -114,7 +114,7 @@ export const validateRefundAmount = (amount: number): ValidationResult => {
 };
 
 // 은행명 validation (선택사항, 한글/영문/공백만, 50자 이하)
-export const validateBankName = (bankName: string): ValidationResult => {
+const validateBankName = (bankName: string): ValidationResult => {
   const errors: ValidationError[] = [];
 
   if (!bankName) return { isValid: true, errors: [] };
@@ -143,7 +143,7 @@ export const validateBankName = (bankName: string): ValidationResult => {
 };
 
 // 계좌번호 validation (선택사항, 숫자/하이픈만, 20자 이하)
-export const validateAccountNumber = (
+const validateAccountNumber = (
   accountNumber: string
 ): ValidationResult => {
   const errors: ValidationError[] = [];
@@ -174,7 +174,7 @@ export const validateAccountNumber = (
 };
 
 // 예금주 validation (선택사항, 한글/영문/공백만, 50자 이하)
-export const validateAccountHolder = (
+const validateAccountHolder = (
   accountHolder: string
 ): ValidationResult => {
   const errors: ValidationError[] = [];
@@ -205,7 +205,7 @@ export const validateAccountHolder = (
 };
 
 // 환불 요청 데이터 전체 validation
-export const validateRefundRequestData = (data: {
+const validateRefundRequestData = (data: {
   sessionEnrollmentId?: number;
   reason?: string;
   detailedReason?: string;
@@ -251,7 +251,7 @@ export const validateRefundRequestData = (data: {
 };
 
 // 환불 사유에 따른 상세 사유 필수 여부 validation
-export const validateDetailedReasonRequired = (
+const validateDetailedReasonRequired = (
   reason: string,
   detailedReason: string
 ): ValidationResult => {
@@ -271,7 +271,7 @@ export const validateDetailedReasonRequired = (
 };
 
 // 은행 정보 일관성 validation (은행명, 계좌번호, 예금주 중 하나라도 있으면 모두 필수)
-export const validateBankInfoConsistency = (data: {
+const validateBankInfoConsistency = (data: {
   bankName?: string;
   accountNumber?: string;
   accountHolder?: string;
@@ -345,7 +345,7 @@ export const validateCompleteRefundRequest = (data: {
 };
 
 // 환불 사유 텍스트 변환 함수
-export const getRefundReasonText = (reason: RefundReason): string => {
+const getRefundReasonText = (reason: RefundReason): string => {
   const reasonTexts = {
     [RefundReason.PERSONAL_SCHEDULE]: "개인 일정",
     [RefundReason.HEALTH_ISSUE]: "건강 문제",

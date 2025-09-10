@@ -35,17 +35,3 @@ export function getDifficultyText(difficulty: string): string {
   };
   return textMap[difficulty] || difficulty;
 }
-
-/**
- * 난이도 타입 정의
- */
-export type DifficultyType = "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
-
-/**
- * 난이도 상수
- */
-export const DIFFICULTY = {
-  BEGINNER: "BEGINNER",
-  INTERMEDIATE: "INTERMEDIATE",
-  ADVANCED: "ADVANCED",
-} as const;

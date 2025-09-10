@@ -2,9 +2,6 @@
 
 import type {
   PrincipalProfile,
-  PrincipalAcademy,
-  PrincipalClass,
-  PrincipalTeacher,
   PrincipalStudent,
   PrincipalClassSession,
   PrincipalEnrollment,
@@ -13,19 +10,10 @@ import type {
 import type { RefundRequestResponse } from "@/types/api/refund";
 import type { ClassSession } from "@/types/api/class";
 import type { EnrollmentStatus } from "@/types/api/common";
-import { formatDate, formatTime, formatTimeRange } from "@/utils/dateTime";
+import { formatDate, formatTime } from "@/utils/dateTime";
 import type {
-  PrincipalCalendarSessionVM,
-  PrincipalClassCardVM,
-  PrincipalClassListVM,
-  PrincipalTeacherCardVM,
-  PrincipalTeacherListVM,
   PrincipalStudentCardVM,
   PrincipalStudentListVM,
-  PrincipalSessionDetailModalVM,
-  PrincipalClassSessionModalVM,
-  PrincipalAcademyVM,
-  PrincipalProfileVM,
   PrincipalEnrollmentRequestVM,
   PrincipalRefundRequestVM,
   PrincipalRequestDetailVM,
@@ -36,13 +24,7 @@ import type {
   PrincipalSessionData,
   PrincipalStudentSessionHistoryModalVM,
   PrincipalStudentSessionHistoryItem,
-  PrincipalDashboardStatsVM,
-  PrincipalRejectionFormModalVM,
-  PrincipalDateSessionModalVM,
   PrincipalRequestCardVM,
-  PrincipalProfileCardVM,
-  PrincipalSessionDetailModalPropsVM,
-  PrincipalDateSessionModalPropsVM,
 } from "@/types/view/principal";
 
 // ============= 공통 유틸리티 함수들 =============
@@ -65,29 +47,6 @@ const formatTimeDisplay = (timeString: string): string => {
   }
 };
 
-// 시간 범위 포맷팅
-const formatTimeRangeDisplay = (startTime: string, endTime: string): string => {
-  try {
-    return formatTimeRange(startTime, endTime);
-  } catch {
-    return `${startTime} - ${endTime}`;
-  }
-};
-
-// 레벨별 색상 (Principal 전용)
-const getPrincipalLevelColor = (level: string): string => {
-  switch (level) {
-    case "BEGINNER":
-      return "bg-green-100 text-green-800";
-    case "INTERMEDIATE":
-      return "bg-yellow-100 text-yellow-800";
-    case "ADVANCED":
-      return "bg-red-100 text-red-800";
-    default:
-      return "bg-gray-100 text-gray-800";
-  }
-};
-
 // 상태별 색상 (Principal 전용)
 const getPrincipalStatusColor = (status: string): string => {
   switch (status) {
@@ -105,21 +64,6 @@ const getPrincipalStatusColor = (status: string): string => {
 };
 
 // ============= 캘린더 관련 어댑터 함수들 =============
-
-// PrincipalClassSession → PrincipalCalendarSessionVM 변환
-export function toPrincipalCalendarSessionVM(
-  session: PrincipalClassSession
-): PrincipalCalendarSessionVM {
-  return {
-    ...session,
-    displayDate: formatDateDisplay(session.date),
-    displayTime: formatTimeRangeDisplay(session.startTime, session.endTime),
-    displayCapacity: `${session.currentStudents} / ${session.maxStudents}명`,
-    levelColor: getPrincipalLevelColor("BEGINNER"), // 기본값, 실제로는 class에서 가져와야 함
-    isFull: session.currentStudents >= session.maxStudents,
-    canManage: true, // Principal은 항상 관리 가능
-  };
-}
 
 // Principal calendarSessions → ClassSession 변환 (CalendarProvider용)
 export function toClassSessionForCalendar(
@@ -158,79 +102,12 @@ export function toClassSessionForCalendar(
 
 // ============= 클래스 관련 어댑터 함수들 =============
 
-// PrincipalClass → PrincipalClassCardVM 변환
-export function toPrincipalClassCardVM(
-  classData: PrincipalClass
-): PrincipalClassCardVM {
-  return {
-    ...classData,
-    displaySchedule: `${classData.dayOfWeek} ${formatTimeRangeDisplay(
-      classData.startTime,
-      classData.endTime
-    )}`,
-    displayCapacity: `${classData.maxStudents}명`,
-    levelColor: getPrincipalLevelColor(classData.level),
-    isRegistrationOpen: classData.status === "ACTIVE",
-    canManage: true, // Principal은 항상 관리 가능
-  };
-}
-
-// PrincipalClass[] → PrincipalClassListVM 변환
-export function toPrincipalClassListVM(
-  classes: PrincipalClass[],
-  isLoading: boolean = false,
-  error: string | null = null
-): PrincipalClassListVM {
-  const classCardVMs = classes.map(toPrincipalClassCardVM);
-  const activeCount = classCardVMs.filter((c) => c.isRegistrationOpen).length;
-  const inactiveCount = classCardVMs.length - activeCount;
-
-  return {
-    classes: classCardVMs,
-    totalCount: classes.length,
-    activeCount,
-    inactiveCount,
-    isLoading,
-    error,
-  };
-}
-
 // ============= 선생님 관련 어댑터 함수들 =============
-
-// PrincipalTeacher → PrincipalTeacherCardVM 변환
-export function toPrincipalTeacherCardVM(
-  teacher: PrincipalTeacher
-): PrincipalTeacherCardVM {
-  return {
-    ...teacher,
-    displayJoinedAt: formatDateDisplay(new Date().toISOString()), // 기본값, 실제로는 joinedAt에서 가져와야 함
-    displayExperience: "경력 정보 없음", // 기본값, 실제로는 yearsOfExperience에서 가져와야 함
-    statusColor: getPrincipalStatusColor("ACTIVE"), // 기본값
-    canManage: true, // Principal은 항상 관리 가능
-  };
-}
-
-// PrincipalTeacher[] → PrincipalTeacherListVM 변환
-export function toPrincipalTeacherListVM(
-  teachers: PrincipalTeacher[],
-  isLoading: boolean = false,
-  error: string | null = null
-): PrincipalTeacherListVM {
-  const teacherCardVMs = teachers.map(toPrincipalTeacherCardVM);
-
-  return {
-    teachers: teacherCardVMs,
-    totalCount: teachers.length,
-    activeCount: teachers.length, // 기본값, 실제로는 상태에 따라 계산해야 함
-    isLoading,
-    error,
-  };
-}
 
 // ============= 수강생 관련 어댑터 함수들 =============
 
 // PrincipalStudent → PrincipalStudentCardVM 변환
-export function toPrincipalStudentCardVM(
+function toPrincipalStudentCardVM(
   student: PrincipalStudent
 ): PrincipalStudentCardVM {
   return {
@@ -261,69 +138,12 @@ export function toPrincipalStudentListVM(
 
 // ============= 세션 상세 관련 어댑터 함수들 =============
 
-// Principal 세션 상세 모달 ViewModel 생성
-export function toPrincipalSessionDetailModalVM({
-  isOpen,
-  session,
-  onClose,
-}: {
-  isOpen: boolean;
-  session: PrincipalClassSession | null;
-  onClose: () => void;
-}): PrincipalSessionDetailModalVM {
-  return {
-    isOpen,
-    session: session ? toPrincipalCalendarSessionVM(session) : null,
-    onClose,
-  };
-}
-
-// Principal 클래스 세션 모달 ViewModel 생성
-export function toPrincipalClassSessionModalVM({
-  isOpen,
-  selectedClass,
-  onClose,
-}: {
-  isOpen: boolean;
-  selectedClass: PrincipalClass | null;
-  onClose: () => void;
-}): PrincipalClassSessionModalVM {
-  return {
-    isOpen,
-    selectedClass: selectedClass ? toPrincipalClassCardVM(selectedClass) : null,
-    onClose,
-  };
-}
-
 // ============= 학원 관리 관련 어댑터 함수들 =============
-
-// PrincipalAcademy → PrincipalAcademyVM 변환
-export function toPrincipalAcademyVM(
-  academy: PrincipalAcademy
-): PrincipalAcademyVM {
-  return {
-    ...academy,
-    displayCreatedAt: formatDateDisplay(academy.createdAt),
-    displayUpdatedAt: formatDateDisplay(academy.updatedAt),
-    canEdit: true, // Principal은 항상 편집 가능
-  };
-}
-
-// PrincipalProfile → PrincipalProfileVM 변환
-export function toPrincipalProfileVM(
-  profile: PrincipalProfile
-): PrincipalProfileVM {
-  return {
-    ...profile,
-    displayJoinedAt: formatDateDisplay(profile.createdAt),
-    canEdit: true, // Principal은 항상 편집 가능
-  };
-}
 
 // ============= 수강신청/환불 관리 관련 어댑터 함수들 =============
 
 // PrincipalEnrollment → PrincipalEnrollmentRequestVM 변환
-export function toPrincipalEnrollmentRequestVM(
+function toPrincipalEnrollmentRequestVM(
   enrollment: PrincipalEnrollment
 ): PrincipalEnrollmentRequestVM {
   return {
@@ -359,7 +179,7 @@ export function toPrincipalEnrollmentRequestVM(
 }
 
 // PrincipalRefundRequest → PrincipalRefundRequestVM 변환
-export function toPrincipalRefundRequestVM(
+function toPrincipalRefundRequestVM(
   refundRequest: RefundRequestResponse
 ): PrincipalRefundRequestVM {
   return {
@@ -410,93 +230,7 @@ export function toPrincipalRefundRequestVM(
 
 // ============= 대시보드 관련 어댑터 함수들 =============
 
-// Principal 대시보드 통계 ViewModel 생성
-export function toPrincipalDashboardStatsVM({
-  totalClasses,
-  totalTeachers,
-  totalStudents,
-  totalSessions,
-  activeClasses,
-  pendingEnrollments,
-  pendingRefunds,
-}: {
-  totalClasses: number;
-  totalTeachers: number;
-  totalStudents: number;
-  totalSessions: number;
-  activeClasses: number;
-  pendingEnrollments: number;
-  pendingRefunds: number;
-}): PrincipalDashboardStatsVM {
-  return {
-    totalClasses,
-    totalTeachers,
-    totalStudents,
-    totalSessions,
-    activeClasses,
-    pendingEnrollments,
-    pendingRefunds,
-    displayStats: {
-      classes: `${totalClasses}개`,
-      teachers: `${totalTeachers}명`,
-      students: `${totalStudents}명`,
-      sessions: `${totalSessions}개`,
-    },
-    statusColors: {
-      active: "bg-green-100 text-green-800",
-      pending: "bg-yellow-100 text-yellow-800",
-      completed: "bg-blue-100 text-blue-800",
-    },
-  };
-}
-
 // ============= 모달 관련 어댑터 함수들 =============
-
-// Principal 거절 폼 모달 ViewModel 생성
-export function toPrincipalRejectionFormModalVM({
-  isOpen,
-  requestType,
-  requestId,
-  onClose,
-  onSubmit,
-}: {
-  isOpen: boolean;
-  requestType: "enrollment" | "refund";
-  requestId: number;
-  onClose: () => void;
-  onSubmit: (reason: string, detailedReason?: string) => void;
-}): PrincipalRejectionFormModalVM {
-  return {
-    isOpen,
-    requestType,
-    requestId,
-    onClose,
-    onSubmit,
-  };
-}
-
-// Principal 날짜 세션 모달 ViewModel 생성
-export function toPrincipalDateSessionModalVM({
-  isOpen,
-  selectedDate,
-  sessions,
-  onClose,
-  onSessionClick,
-}: {
-  isOpen: boolean;
-  selectedDate: Date | null;
-  sessions: PrincipalClassSession[];
-  onClose: () => void;
-  onSessionClick: (session: PrincipalCalendarSessionVM) => void;
-}): PrincipalDateSessionModalVM {
-  return {
-    isOpen,
-    selectedDate,
-    sessions: sessions.map(toPrincipalCalendarSessionVM),
-    onClose,
-    onSessionClick,
-  };
-}
 
 // ============= 추가 어답터 함수들 =============
 
@@ -525,71 +259,6 @@ export function toPrincipalRequestCardVM({
     onApprove,
     onReject,
     isProcessing,
-  };
-}
-
-// Principal 프로필 카드 Props ViewModel 생성
-export function toPrincipalProfileCardVM({
-  principalId,
-  isEditable = true,
-  onSave,
-  onCancel,
-  showHeader = true,
-  compact = false,
-}: {
-  principalId?: number;
-  isEditable?: boolean;
-  onSave?: () => void;
-  onCancel?: () => void;
-  showHeader?: boolean;
-  compact?: boolean;
-}): PrincipalProfileCardVM {
-  return {
-    principalId,
-    isEditable,
-    onSave,
-    onCancel,
-    showHeader,
-    compact,
-  };
-}
-
-// Principal 세션 상세 모달 Props ViewModel 생성
-export function toPrincipalSessionDetailModalPropsVM({
-  isOpen,
-  sessionId,
-  onClose,
-}: {
-  isOpen: boolean;
-  sessionId: number | null;
-  onClose: () => void;
-}): PrincipalSessionDetailModalPropsVM {
-  return {
-    isOpen,
-    sessionId,
-    onClose,
-    role: "principal",
-  };
-}
-
-// Principal 날짜 세션 모달 Props ViewModel 생성
-export function toPrincipalDateSessionModalPropsVM({
-  isOpen,
-  selectedDate,
-  onClose,
-  onSessionClick,
-}: {
-  isOpen: boolean;
-  selectedDate: Date | null;
-  onClose: () => void;
-  onSessionClick: (session: PrincipalCalendarSessionVM) => void;
-}): PrincipalDateSessionModalPropsVM {
-  return {
-    isOpen,
-    selectedDate,
-    onClose,
-    onSessionClick,
-    role: "principal",
   };
 }
 

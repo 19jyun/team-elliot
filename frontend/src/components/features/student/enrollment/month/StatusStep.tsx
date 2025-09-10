@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { StatusStepIcon } from '@/components/icons'
+import Image from 'next/image'
 
 interface StatusStepProps {
   icon: string
@@ -9,29 +9,30 @@ interface StatusStepProps {
 }
 
 export const StatusStep: React.FC<StatusStepProps> = ({
-  icon: _icon, // 사용하지 않는 매개변수는 언더스코어로 표시
+  icon,
   label,
   isActive = false,
   isCompleted = false,
 }) => {
-  // 아이콘 상태 결정
-  let iconState: 'completed' | 'active' | 'inactive' | 'payment-completed' = 'inactive';
-  
-  if (label === '결제하기' && isCompleted) {
-    iconState = 'payment-completed';
-  } else if (isCompleted) {
-    iconState = 'completed';
+  // 아이콘 경로 분기 (Principal Dashboard와 동일한 로직)
+  let iconSrc = icon;
+  if (isCompleted) {
+    iconSrc = '/icons/CourseRegistrationsStatusSteps1.svg'; // 완료(갈색 체크)
   } else if (isActive) {
-    iconState = 'active';
+    iconSrc = '/icons/CourseRegistrationsStatusSteps2.svg'; // 진행중(갈색 테두리)
+  } else {
+    iconSrc = '/icons/CourseRegistrationsStatusSteps2.svg'; // 비활성(회색 테두리)
   }
-
+  
   return (
     <div className="flex flex-col flex-1 items-center">
-      <StatusStepIcon
-        state={iconState}
-        className="object-contain w-8 aspect-square"
+      <Image
+        loading="lazy"
+        src={iconSrc}
+        alt={`${label} 단계 아이콘`}
         width={32}
         height={32}
+        className="object-contain w-8 aspect-square"
       />
       <div
         className={`mt-1.5 ${isCompleted || isActive ? 'text-stone-700' : 'text-stone-300'}`}

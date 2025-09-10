@@ -9,9 +9,6 @@ export type DayOfWeek =
   | "SATURDAY"
   | "SUNDAY";
 
-// 결제 상태 타입
-export type PaymentStatus = "PENDING" | "PAID" | "REFUNDED";
-
 // 수강신청 상태 타입
 export type EnrollmentStatus =
   | "PENDING"

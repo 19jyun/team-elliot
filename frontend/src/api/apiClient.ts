@@ -139,14 +139,15 @@ const put = <T = unknown, D = unknown>(
  * @param config Axios 설정 (선택사항)
  * @returns Promise<T> - 응답 데이터
  */
-const patch = <T = unknown, D = unknown>(
-  url: string,
-  data?: D,
-  config?: AxiosRequestConfig
-): Promise<T> =>
-  apiClient
-    .patch<T>(url, data, config)
-    .then((res: AxiosResponse<T>) => res.data);
+// const patch = <T = unknown, D = unknown>(
+//   url: string,
+//   data?: D,
+//   config?: AxiosRequestConfig
+// ): Promise<T> =>
+//   apiClient
+//     .patch<T>(url, data, config)
+//     .then((res: AxiosResponse<T>) => res.data);
+// 미사용되기 때문에 일단 주석처리
 
 /**
  * DELETE 요청 - 데이터 삭제
@@ -160,4 +161,4 @@ const del = <T = unknown>(
 ): Promise<T> =>
   apiClient.delete<T>(url, config).then((res: AxiosResponse<T>) => res.data);
 
-export { apiClient, get, post, put, patch, del };
+export { get, post, put, del };

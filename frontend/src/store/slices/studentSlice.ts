@@ -18,7 +18,7 @@ const initialState: StudentState = {
   error: null,
 };
 
-export const studentSlice = createSlice({
+const studentSlice = createSlice({
   name: "student",
   initialState,
   reducers: {
@@ -402,14 +402,14 @@ export const {
   setError,
   updateStudentEnrollmentHistory,
   updateStudentCancellationHistory,
-  setCalendarSessions,
-  setCalendarRange,
-  addCalendarSession,
+  
+  
+  
   updateCalendarSession,
   removeCalendarSession,
-  updateStudentEnrollment,
-  updateStudentCancellation,
-  clearStudentData,
+  
+  
+  
   addOptimisticEnrollment,
   replaceOptimisticEnrollment,
   removeOptimisticEnrollment,
@@ -419,10 +419,10 @@ export const {
   addOptimisticCalendarSession,
   replaceOptimisticCalendarSession,
   removeOptimisticCalendarSession,
-  updateStudentEnrollmentFromSocket,
-  updateStudentCancellationFromSocket,
-  updateSessionInfoFromSocket,
-  addNewSessionFromSocket,
+  
+  
+  
+  
 } = studentSlice.actions;
 
 export default studentSlice.reducer;

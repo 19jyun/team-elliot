@@ -88,19 +88,6 @@ export function formatTimeRange(
  * @param options - 포맷팅 옵션
  * @returns 포맷팅된 날짜+시간 문자열
  */
-export function formatDateTime(
-  date: string | Date,
-  time: string | Date,
-  options: {
-    includeYear?: boolean;
-    includeWeekday?: boolean;
-    hour12?: boolean;
-  } = {}
-): string {
-  const formattedDate = formatDate(date, options);
-  const formattedTime = formatTime(time, { hour12: options.hour12 });
-  return `${formattedDate} ${formattedTime}`;
-}
 
 /**
  * MM월 DD일 형식으로 날짜를 포맷팅합니다.
@@ -128,31 +115,4 @@ export function formatDayOfWeek(dayOfWeek: string): string {
     SUNDAY: "일요일",
   };
   return dayMap[dayOfWeek] || dayOfWeek;
-}
-
-/**
- * 현재 시간과 비교하여 과거/미래를 판단합니다.
- * @param date - 비교할 날짜
- * @returns true면 과거, false면 미래
- */
-export function isPastDate(date: string | Date): boolean {
-  const targetDate = typeof date === "string" ? new Date(date) : date;
-  return targetDate < new Date();
-}
-
-/**
- * 두 날짜가 같은 날인지 확인합니다.
- * @param date1 - 첫 번째 날짜
- * @param date2 - 두 번째 날짜
- * @returns 같은 날이면 true
- */
-export function isSameDay(date1: string | Date, date2: string | Date): boolean {
-  const d1 = typeof date1 === "string" ? new Date(date1) : date1;
-  const d2 = typeof date2 === "string" ? new Date(date2) : date2;
-
-  return (
-    d1.getFullYear() === d2.getFullYear() &&
-    d1.getMonth() === d2.getMonth() &&
-    d1.getDate() === d2.getDate()
-  );
 }

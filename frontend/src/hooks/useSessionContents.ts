@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "@/lib/axios";
 import {
   CreateSessionContentRequest,
-  UpdateSessionContentRequest,
   ReorderSessionContentsRequest,
 } from "@/types/api/session-content";
 import { toast } from "sonner";
@@ -41,34 +40,6 @@ export const useAddSessionContent = (sessionId: number) => {
     onError: (error) => {
       console.error("세션 내용 추가 실패:", error);
       toast.error("세션 내용 추가에 실패했습니다.");
-    },
-  });
-};
-
-// 세션 내용 수정
-export const useUpdateSessionContent = (sessionId: number) => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      contentId,
-      data,
-    }: {
-      contentId: number;
-      data: UpdateSessionContentRequest;
-    }) =>
-      axios
-        .patch(`/class-sessions/${sessionId}/contents/${contentId}`, data)
-        .then((r) => r.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["session-contents", sessionId],
-      });
-      toast.success("세션 내용이 수정되었습니다.");
-    },
-    onError: (error) => {
-      console.error("세션 내용 수정 실패:", error);
-      toast.error("세션 내용 수정에 실패했습니다.");
     },
   });
 };

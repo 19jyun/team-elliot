@@ -1,8 +1,7 @@
-import { get, post, del, put } from "./apiClient";
+import { get, post, put } from "./apiClient";
 import type { ApiResponse } from "@/types/api";
 import {
   MyClassesResponse,
-  ClassDetailResponse,
   StudentProfile,
   UpdateStudentProfileRequest,
   EnrollmentHistoryResponse,
@@ -12,42 +11,20 @@ import {
   StudentJoinAcademyResponse,
   StudentLeaveAcademyRequest,
   StudentLeaveAcademyResponse,
-  GetAcademiesResponse,
   GetMyAcademiesResponse,
   GetStudentAvailableSessionsForEnrollmentResponse,
   StudentBatchEnrollSessionsRequest,
   StudentBatchEnrollSessionsResponse,
   StudentBatchModifyEnrollmentsRequest,
   StudentBatchModifyEnrollmentsResponse,
-  RemoveStudentFromAcademyResponse,
   TeacherProfileForStudentResponse,
 } from "../types/api/student";
-import {
-  GetClassSessionsForModificationResponse,
-  EnrollClassResponse,
-  GetClassSessionsForEnrollmentResponse,
-  UnenrollClassResponse,
-} from "../types/api/class";
+import { GetClassSessionsForModificationResponse } from "../types/api/class";
 
 // === 기본 Student API ===
 
 export const getMyClasses = (): Promise<ApiResponse<MyClassesResponse>> =>
   get<ApiResponse<MyClassesResponse>>("/student/classes");
-
-export const getClassDetail = (
-  id: number
-): Promise<ApiResponse<ClassDetailResponse>> =>
-  get<ApiResponse<ClassDetailResponse>>(`/student/classes/${id}`);
-
-export const enrollClass = (
-  id: number
-): Promise<ApiResponse<EnrollClassResponse>> =>
-  post<ApiResponse<EnrollClassResponse>>(`/student/classes/${id}/enroll`);
-
-export const unenrollClass = (
-  id: number
-): Promise<ApiResponse<UnenrollClassResponse>> =>
-  del<ApiResponse<UnenrollClassResponse>>(`/student/classes/${id}/enroll`);
 
 // 개인 정보 조회
 export const getMyProfile = (): Promise<ApiResponse<StudentProfile>> => {
@@ -97,9 +74,6 @@ export const getSessionPaymentInfo = (
 
 // === 학생 전용: 학원 관련 ===
 
-export const getAcademies = (): Promise<ApiResponse<GetAcademiesResponse>> =>
-  get<ApiResponse<GetAcademiesResponse>>("/academy");
-
 export const joinAcademy = (
   data: StudentJoinAcademyRequest
 ): Promise<ApiResponse<StudentJoinAcademyResponse>> =>
@@ -145,21 +119,4 @@ export const batchModifyEnrollments = (
   post<ApiResponse<StudentBatchModifyEnrollmentsResponse>>(
     "/class-sessions/batch-modify",
     data
-  );
-
-// 캘린더/클래스 상세에서 사용하는 클래스별 세션 조회 (학생용)
-export const getClassSessionsForEnrollment = (
-  classId: number
-): Promise<ApiResponse<GetClassSessionsForEnrollmentResponse>> =>
-  get<ApiResponse<GetClassSessionsForEnrollmentResponse>>(
-    `/class-sessions/class/${classId}`
-  );
-
-// === 선생님용: 수강생을 학원에서 제거 ===
-
-export const removeStudentFromAcademy = (
-  studentId: number
-): Promise<ApiResponse<RemoveStudentFromAcademyResponse>> =>
-  del<ApiResponse<RemoveStudentFromAcademyResponse>>(
-    `/student/academy/students/${studentId}`
   );

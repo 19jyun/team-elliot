@@ -11,25 +11,12 @@ import type {
 import type {
   StudentCalendarSessionVM,
   EnrolledClassVM,
-  StudentSessionVM,
   ClassDataVM,
-  SessionDataVM,
   StudentCalendarRangeVM,
   EnrollmentClassVM,
   StudentCancellationHistoryVM,
   StudentEnrollmentHistoryVM,
   StudentEnrollmentCardStatus,
-  StudentSessionDetailModalVM,
-  LeaveAcademyModalVM,
-  ClassSessionModalVM,
-  EnrolledClassCardVM,
-  SessionCardVM,
-  EnrollmentModificationDateStepVM,
-  EnrollmentPaymentStepVM,
-  BankInfoVM,
-  PrincipalPaymentBoxVM,
-  ModificationSessionVM,
-  StudentEnrolledSessionVM,
   TeacherProfileDisplayVM,
   SessionContentDisplayVM,
   SessionDetailDisplayVM,
@@ -39,66 +26,7 @@ import type { TeacherProfileResponse } from "@/types/api/teacher";
 import type { SessionContent } from "@/types/api/session-content";
 import type { ClassDetailsResponse } from "@/types/api/class";
 import { getDifficultyColor, getDifficultyText } from "@/utils/difficulty";
-import {
-  formatTimeRange,
-  formatDateDisplay,
-  formatDayOfWeek,
-} from "@/utils/dateTime";
-
-// 숫자 포매팅 (천 단위 콤마)
-function formatCurrency(amount: number): string {
-  return `${amount.toLocaleString()}원`;
-}
-
-// 세션 상태 결정
-function getSessionStatus(session: ClassSessionForEnrollment): {
-  status: StudentSessionVM["status"];
-  statusText: string;
-  statusColor: StudentSessionVM["statusColor"];
-  canEnroll: boolean;
-  canCancel: boolean;
-} {
-  const isPast = new Date(session.date + " " + session.startTime) < new Date();
-  const isFull = session.currentEnrollments >= session.maxStudents;
-
-  if (isPast) {
-    return {
-      status: "past",
-      statusText: "종료",
-      statusColor: "gray",
-      canEnroll: false,
-      canCancel: false,
-    };
-  }
-
-  if (session.isEnrolled) {
-    return {
-      status: "enrolled",
-      statusText: "수강중",
-      statusColor: "green",
-      canEnroll: false,
-      canCancel: true,
-    };
-  }
-
-  if (isFull) {
-    return {
-      status: "full",
-      statusText: "마감",
-      statusColor: "red",
-      canEnroll: false,
-      canCancel: false,
-    };
-  }
-
-  return {
-    status: "available",
-    statusText: "신청가능",
-    statusColor: "blue",
-    canEnroll: true,
-    canCancel: false,
-  };
-}
+import { formatTimeRange, formatDayOfWeek } from "@/utils/dateTime";
 
 // ClassSessionForEnrollment → StudentCalendarSessionVM
 export function toStudentCalendarSessionVM(
@@ -137,29 +65,6 @@ export function toStudentCalendarSessionVM(
   };
 }
 
-// ClassSessionForEnrollment → StudentSessionVM
-export function toStudentSessionVM(
-  session: ClassSessionForEnrollment
-): StudentSessionVM {
-  const statusInfo = getSessionStatus(session);
-
-  return {
-    id: session.id,
-    date: session.date,
-    startTime: session.startTime,
-    endTime: session.endTime,
-    title: session.className,
-    teacher: session.teacherName,
-    datetime: `${formatDateDisplay(session.date)} ${formatTimeRange(
-      session.startTime,
-      session.endTime
-    )}`,
-    timeDisplay: formatTimeRange(session.startTime, session.endTime),
-    ...statusInfo,
-    capacityText: `${session.currentEnrollments}/${session.maxStudents}명`,
-  };
-}
-
 // StudentClass → ClassDataVM (ClassSessionModal용)
 export function toClassDataVM(studentClass: StudentClass): ClassDataVM {
   return {
@@ -171,31 +76,6 @@ export function toClassDataVM(studentClass: StudentClass): ClassDataVM {
       id: 0, // StudentClass에는 teacher.id가 없으므로 기본값
       name: studentClass.teacherName,
     },
-  };
-}
-
-// ClassSessionForEnrollment → SessionDataVM (SessionDetailModal용)
-export function toSessionDataVM(
-  session: ClassSessionForEnrollment
-): SessionDataVM {
-  return {
-    id: session.id,
-    date: session.date,
-    startTime: session.startTime,
-    endTime: session.endTime,
-    class: {
-      id: session.id, // 임시로 session.id 사용
-      className: session.className,
-      level: "BEGINNER", // 기본값 (API에 없음)
-      tuitionFee: formatCurrency(session.tuitionFee),
-      teacher: {
-        id: 0, // 기본값 (API에 없음)
-        name: session.teacherName,
-      },
-    },
-    isEnrolled: session.isEnrolled,
-    canEnroll:
-      !session.isEnrolled && session.currentEnrollments < session.maxStudents,
   };
 }
 
@@ -245,7 +125,7 @@ export function toEnrolledClassVMs(
 }
 
 // CancellationHistory → StudentCancellationHistoryVM
-export function toStudentCancellationHistoryVM(
+function toStudentCancellationHistoryVM(
   cancellation: CancellationHistory
 ): StudentCancellationHistoryVM {
   return {
@@ -271,7 +151,7 @@ export function toStudentCancellationHistoryVMs(
 }
 
 // EnrollmentHistory → StudentEnrollmentHistoryVM
-export function toStudentEnrollmentHistoryVM(
+function toStudentEnrollmentHistoryVM(
   enrollment: EnrollmentHistory
 ): StudentEnrollmentHistoryVM {
   return {
@@ -360,159 +240,6 @@ export function toEnrollmentClassVMs(
 
 // ============= Props ViewModel 어댑터들 =============
 
-// Modal Props 어댑터들
-export function toStudentSessionDetailModalVM(props: {
-  isOpen: boolean;
-  session: StudentEnrolledSessionVM | null;
-  onClose: () => void;
-  onlyDetail?: boolean;
-}): StudentSessionDetailModalVM {
-  return {
-    isOpen: props.isOpen,
-    session: props.session,
-    onClose: props.onClose,
-    onlyDetail: props.onlyDetail,
-  };
-}
-
-export function toLeaveAcademyModalVM(props: {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-  academyName: string;
-}): LeaveAcademyModalVM {
-  return {
-    isOpen: props.isOpen,
-    onClose: props.onClose,
-    onConfirm: props.onConfirm,
-    academyName: props.academyName,
-  };
-}
-
-export function toClassSessionModalVM(props: {
-  isOpen: boolean;
-  onClose: () => void;
-  classData: ClassDataVM | null;
-  classSessions: StudentEnrolledSessionVM[];
-}): ClassSessionModalVM {
-  return {
-    isOpen: props.isOpen,
-    onClose: props.onClose,
-    classData: props.classData,
-    classSessions: props.classSessions,
-  };
-}
-
-// Component Props 어댑터들
-export function toEnrolledClassCardVM(
-  enrolledClass: EnrolledClassVM,
-  onClick?: () => void
-): EnrolledClassCardVM {
-  return {
-    ...enrolledClass,
-    onClick,
-  };
-}
-
-export function toSessionCardVM(
-  session: StudentEnrolledSessionVM,
-  callbacks?: {
-    onEnroll?: () => void;
-    onCancel?: () => void;
-    onClick?: () => void;
-  }
-): SessionCardVM {
-  // 세션 상태에 따른 표시 텍스트와 색상 결정
-  const getSessionDisplayInfo = (status: string) => {
-    switch (status) {
-      case "CONFIRMED":
-        return {
-          statusText: "수강중",
-          statusColor: "green" as const,
-          status: "enrolled" as const,
-        };
-      case "PENDING":
-        return {
-          statusText: "승인대기",
-          statusColor: "blue" as const,
-          status: "available" as const,
-        };
-      default:
-        return {
-          statusText: "상태불명",
-          statusColor: "gray" as const,
-          status: "past" as const,
-        };
-    }
-  };
-
-  const displayInfo = getSessionDisplayInfo(session.enrollment_status);
-
-  return {
-    sessionId: session.session_id,
-    title: session.class.className,
-    teacher: session.class.className, // 임시로 클래스명 사용
-    datetime: `${session.date} ${session.startTime}-${session.endTime}`,
-    status: displayInfo.status,
-    statusText: displayInfo.statusText,
-    statusColor: displayInfo.statusColor,
-    onEnroll: callbacks?.onEnroll,
-    onCancel: callbacks?.onCancel,
-    onClick: callbacks?.onClick,
-  };
-}
-
-// Step Props 어댑터들
-export function toEnrollmentModificationDateStepVM(props: {
-  classId: number;
-  existingEnrollments: ModificationSessionVM[];
-  month?: number | null;
-  onComplete: (selectedDates: string[], sessionPrice?: number) => void;
-}): EnrollmentModificationDateStepVM {
-  return {
-    classId: props.classId,
-    existingEnrollments: props.existingEnrollments,
-    month: props.month,
-    onComplete: props.onComplete,
-  };
-}
-
-export function toEnrollmentPaymentStepVM(props: {
-  onComplete?: () => void;
-}): EnrollmentPaymentStepVM {
-  return {
-    onComplete: props.onComplete,
-  };
-}
-
-// Payment Props 어댑터들
-export function toBankInfoVM(bankInfo: {
-  bankName: string;
-  accountNumber: string;
-  accountHolder: string;
-}): BankInfoVM {
-  return {
-    bankName: bankInfo.bankName,
-    accountNumber: bankInfo.accountNumber,
-    accountHolder: bankInfo.accountHolder,
-  };
-}
-
-export function toPrincipalPaymentBoxVM(props: {
-  principal: {
-    name: string;
-    bankName: string;
-    accountNumber: string;
-    accountHolder: string;
-  };
-  amount: number;
-}): PrincipalPaymentBoxVM {
-  return {
-    principal: props.principal,
-    amount: props.amount,
-  };
-}
-
 // ============= TeacherProfileCardForStudent 어댑터 =============
 
 export function toTeacherProfileDisplayVM(
@@ -564,7 +291,7 @@ export function toTeacherProfileDisplayVM(
 
 // ============= SessionDetailTab 어댑터 =============
 
-export function toSessionContentDisplayVM(
+function toSessionContentDisplayVM(
   content: SessionContent
 ): SessionContentDisplayVM {
   return {

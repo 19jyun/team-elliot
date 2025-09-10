@@ -12,14 +12,14 @@ import type {
 } from "@/types/api/refund";
 
 // === 환불 요청 생성 ===
-export const createRefundRequest = (
+const createRefundRequest = (
   data: CreateRefundRequestDto
 ): Promise<ApiResponse<RefundRequestResponse>> => {
   return post<ApiResponse<RefundRequestResponse>>("/refunds/request", data);
 };
 
 // === 환불 요청 취소 ===
-export const cancelRefundRequest = (
+const cancelRefundRequest = (
   refundRequestId: number
 ): Promise<ApiResponse<CancelRefundRequestResponse>> => {
   return del<ApiResponse<CancelRefundRequestResponse>>(
@@ -28,7 +28,7 @@ export const cancelRefundRequest = (
 };
 
 // === 학생 전용 환불 요청 목록 ===
-export const getStudentRefundRequests = (
+const getStudentRefundRequests = (
   params?: GetRefundRequestsParams
 ): Promise<ApiResponse<RefundRequestListResponse>> => {
   return get<ApiResponse<RefundRequestListResponse>>("/refunds/student", {
@@ -37,7 +37,7 @@ export const getStudentRefundRequests = (
 };
 
 // === 원장 전용 전체 환불 요청 목록 ===
-export const getAllRefundRequests = (
+const getAllRefundRequests = (
   params?: GetRefundRequestsParams
 ): Promise<ApiResponse<RefundRequestListResponse>> => {
   return get<ApiResponse<RefundRequestListResponse>>("/refunds/all", {
@@ -46,14 +46,14 @@ export const getAllRefundRequests = (
 };
 
 // === 환불 요청 상세 조회 ===
-export const getRefundRequest = (
+const getRefundRequest = (
   refundRequestId: number
 ): Promise<ApiResponse<RefundRequestResponse>> => {
   return get<ApiResponse<RefundRequestResponse>>(`/refunds/${refundRequestId}`);
 };
 
 // === 환불 통계 조회 ===
-export const getRefundStatistics = (
+const getRefundStatistics = (
   startDate?: string,
   endDate?: string
 ): Promise<ApiResponse<RefundStatistics>> => {
@@ -64,7 +64,7 @@ export const getRefundStatistics = (
 };
 
 // === 환불 요청 처리 ===
-export const processRefundRequest = (
+const processRefundRequest = (
   data: ProcessRefundRequestDto
 ): Promise<ApiResponse<ProcessRefundRequestResponse>> => {
   return put<ApiResponse<ProcessRefundRequestResponse>>(

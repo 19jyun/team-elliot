@@ -1,7 +1,7 @@
 // Principal 전용 ViewModel 타입들
 
 // Base ViewModel 인터페이스
-export interface BaseVM {
+interface BaseVM {
   isLoading: boolean;
   error: string | null;
 }
@@ -171,28 +171,6 @@ export interface PrincipalRefundRequestVM {
   canReject: boolean;
 }
 
-// Principal 세션별 요청 목록 ViewModel
-export interface PrincipalSessionWithRequestsVM {
-  id: number;
-  date: string;
-  startTime: string;
-  endTime: string;
-  class: {
-    id: number;
-    className: string;
-    teacher: {
-      id: number;
-      name: string;
-    };
-  };
-  pendingCount: number;
-  // UI 표시용 계산된 필드들
-  displayDate: string;
-  displayTime: string;
-  displayPendingCount: string;
-  canManage: boolean;
-}
-
 // ============= 대시보드 관련 ViewModel들 =============
 
 // Principal 대시보드 통계 ViewModel
@@ -218,114 +196,11 @@ export interface PrincipalDashboardStatsVM {
   };
 }
 
-// Principal 대시보드 메인 ViewModel
-export interface PrincipalDashboardVM extends BaseVM {
-  profile: PrincipalProfileVM | null;
-  academy: PrincipalAcademyVM | null;
-  stats: PrincipalDashboardStatsVM;
-  recentSessions: PrincipalCalendarSessionVM[];
-  recentRequests: PrincipalSessionWithRequestsVM[];
-}
-
 // ============= 클래스 생성 관련 ViewModel들 =============
-
-// Principal 클래스 생성 폼 ViewModel
-export interface PrincipalCreateClassFormVM {
-  name: string;
-  description: string;
-  level: string;
-  maxStudents: number;
-  price: number;
-  content: string;
-  schedule: {
-    startDate: string;
-    endDate: string;
-    days: string[];
-    startTime: string;
-    endTime: string;
-  };
-  selectedTeacherId: number | null;
-  // UI 표시용 계산된 필드들
-  isValid: boolean;
-  validationErrors: string[];
-  canSubmit: boolean;
-}
-
-// Principal 클래스 생성 단계 ViewModel
-export interface PrincipalCreateClassStepVM {
-  currentStep: "info" | "schedule" | "teacher" | "content" | "complete";
-  totalSteps: number;
-  canGoNext: boolean;
-  canGoBack: boolean;
-  stepTitle: string;
-  stepDescription: string;
-}
 
 // ============= 프로필 관리 관련 ViewModel들 =============
 
-// Principal 프로필 편집 ViewModel
-export interface PrincipalProfileEditVM {
-  isEditing: boolean;
-  formData: {
-    name: string;
-    phoneNumber: string;
-    introduction: string;
-    education: string[];
-    certifications: string[];
-  };
-  // UI 표시용 계산된 필드들
-  hasChanges: boolean;
-  canSave: boolean;
-  validationErrors: string[];
-}
-
-// Principal 은행 정보 ViewModel
-export interface PrincipalBankInfoVM {
-  bankName: string;
-  accountNumber: string;
-  accountHolder: string;
-  // UI 표시용 계산된 필드들
-  displayAccountNumber: string;
-  canEdit: boolean;
-}
-
 // ============= 수강생 관리 관련 ViewModel들 =============
-
-// Principal 수강생 세션 히스토리 ViewModel
-export interface PrincipalStudentSessionHistoryVM {
-  studentId: number;
-  studentName: string;
-  sessions: Array<{
-    id: number;
-    date: string;
-    startTime: string;
-    endTime: string;
-    status: string;
-    class: {
-      id: number;
-      className: string;
-      teacher: {
-        id: number;
-        name: string;
-      };
-    };
-    enrollmentStatus: string;
-    enrolledAt: string;
-    // UI 표시용 계산된 필드들
-    displayDate: string;
-    displayTime: string;
-    statusColor: string;
-  }>;
-  // UI 표시용 계산된 필드들
-  totalSessions: number;
-  completedSessions: number;
-  pendingSessions: number;
-  displayStats: {
-    total: string;
-    completed: string;
-    pending: string;
-  };
-}
 
 // ============= 모달 관련 ViewModel들 =============
 
@@ -366,20 +241,6 @@ export interface PrincipalProfileCardVM {
   onCancel?: () => void;
   showHeader?: boolean;
   compact?: boolean;
-}
-
-// Principal 클래스 생성 컨테이너 ViewModel (CreateClassContainer용)
-export interface PrincipalCreateClassContainerVM {
-  currentStep: "info" | "schedule" | "teacher" | "content" | "complete";
-  onStepChange: (step: string) => void;
-}
-
-// Principal 수강신청/환불 관리 컨테이너 ViewModel (EnrollmentRefundManagementContainer용)
-export interface PrincipalEnrollmentRefundContainerVM {
-  currentStep: "class-list" | "session-list" | "request-detail";
-  selectedSessionId: number | null;
-  onStepChange: (step: string) => void;
-  onSessionSelect: (sessionId: number) => void;
 }
 
 // Principal 세션 상세 모달 Props ViewModel (SessionDetailModal용)

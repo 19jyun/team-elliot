@@ -29,14 +29,6 @@ export interface StudentCalendarSessionVM extends SessionCore {
   };
 }
 
-// 수강중인 클래스 카드 ViewModel
-export interface StudentClassCardVM extends ClassBase {
-  teacherName: string;
-  schedule: string; // "월요일 10:00-11:00"
-  sessionCount: number;
-  nextSessionDate?: string; // "다음 수업: 1월 15일"
-}
-
 // 수강중인 클래스 리스트 Props용
 export interface EnrolledClassVM extends Omit<ClassBase, "className"> {
   name: string; // 기존 코드 호환성을 위해 유지
@@ -114,14 +106,6 @@ export interface EnrollmentClassVM extends ClassBase {
 }
 
 // Profile 관련 ViewModel들
-export interface StudentAcademyVM {
-  id: number;
-  name: string;
-  address?: string;
-  description?: string;
-  principalName?: string;
-  phoneNumber?: string;
-}
 
 export interface StudentEnrollmentHistoryVM {
   id: number;
@@ -191,25 +175,6 @@ export interface ModificationSessionVM extends SessionCore {
   };
 }
 
-export interface ModificationExistingEnrollmentVM {
-  id: number;
-  status: string;
-  enrolledAt: string;
-  description?: string;
-  refundRejection?: {
-    id: number;
-    reason: string;
-    detailedReason?: string;
-    rejectedAt: string;
-    rejector: TeacherRef;
-  };
-  session: SessionCore & {
-    class: ClassRef & {
-      teacherName: string;
-    };
-  };
-}
-
 // ============= UI Props ViewModel들 =============
 
 // Modal Props ViewModels
@@ -256,11 +221,6 @@ export interface SessionCardVM {
   onEnroll?: () => void;
   onCancel?: () => void;
   onClick?: () => void;
-}
-
-export interface SessionCardListVM {
-  sessions: SessionCardVM[];
-  onSessionClick?: (sessionId: number) => void;
 }
 
 export interface TeacherProfileCardForStudentVM {
@@ -361,101 +321,9 @@ export interface EnrollmentPaymentStepVM {
   onComplete?: () => void;
 }
 
-export interface EnrollmentModificationPaymentStepVM {
-  onComplete?: () => void;
-}
-
-export interface RefundRequestStepVM {
-  refundAmount: number;
-  onComplete?: () => void;
-}
-
-export interface RefundCompleteStepVM {
-  isModification?: boolean;
-}
-
-export interface EnrollmentSubPageRendererVM {
-  page: string;
-}
-
 // Payment Props ViewModels
 export interface BankInfoVM {
   bankName: string;
   accountNumber: string;
   accountHolder: string;
-}
-
-export interface ClassFeeListVM {
-  classes: Array<{
-    id: number;
-    name: string;
-    fee: number;
-    sessions: number;
-  }>;
-}
-
-export interface TotalAmountVM {
-  amount: number;
-  currency?: string;
-}
-
-export interface PaymentToastVM {
-  isVisible: boolean;
-  message: string;
-  type: "success" | "error" | "info";
-}
-
-export interface PaymentConfirmFooterVM {
-  onConfirm: () => void;
-  onCancel: () => void;
-  isLoading?: boolean;
-}
-
-export interface PrincipalPaymentBoxVM {
-  principal: {
-    name: string;
-    bankName: string;
-    accountNumber: string;
-    accountHolder: string;
-  };
-  amount: number;
-}
-
-export interface TeacherPaymentBoxVM {
-  teacher: {
-    name: string;
-    bankName: string;
-    accountNumber: string;
-    accountHolder: string;
-  };
-  amount: number;
-}
-
-// Other Props ViewModels
-export interface DateSelectFooterVM {
-  selectedCount: number;
-  onNext: () => void;
-  onCancel: () => void;
-}
-
-export interface StatusStepVM {
-  steps: Array<{
-    icon: string;
-    label: string;
-    isActive?: boolean;
-    isCompleted?: boolean;
-  }>;
-  currentStep: number;
-}
-
-export interface RefundPolicyVM {
-  isOpen: boolean;
-  onClose: () => void;
-  onAgree: () => void;
-}
-
-// 선생님용: 수강생을 학원에서 제거
-export interface RemoveStudentFromAcademyResponse {
-  success: boolean;
-  message: string;
 }

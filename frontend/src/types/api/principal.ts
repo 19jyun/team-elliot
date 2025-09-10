@@ -1,10 +1,5 @@
 // Principal 전용 API 타입들
-import type {
-  DayOfWeek,
-  ClassBase,
-  ClassSessionBase,
-  TeacherRef,
-} from "./common";
+import type { DayOfWeek, ClassBase, TeacherRef } from "./common";
 import type {
   DeleteSessionContentResponse,
   ReorderSessionContentsRequest,
@@ -26,11 +21,6 @@ export interface PrincipalAcademy {
   website?: string;
   createdAt: string;
   updatedAt: string;
-}
-
-// Principal의 학원 세션 정보 (캘린더용)
-export interface PrincipalSession extends ClassSessionBase {
-  classId: number; // ClassSessionBase의 optional classId를 required로 오버라이드
 }
 
 // Principal의 학원 클래스 정보
@@ -77,7 +67,7 @@ export interface PrincipalClassSession {
 }
 
 // Principal 세션 수강신청 정보 (백엔드 응답 구조에 맞춤)
-export interface PrincipalSessionEnrollment {
+interface PrincipalSessionEnrollment {
   id: number;
   studentId: number;
   sessionId: number;
@@ -192,7 +182,7 @@ export interface PrincipalEnrollment {
 }
 
 // Principal 환불 요청 정보
-export interface PrincipalRefundRequest {
+interface PrincipalRefundRequest {
   id: number;
   studentId: number;
   sessionId: number;
@@ -226,23 +216,6 @@ export interface PrincipalRefundRequest {
     date: string;
     startTime: string;
     endTime: string;
-  };
-}
-
-// 세션 컨텐츠 관련 응답 타입들
-export interface PrincipalSessionContentResponse {
-  id: number;
-  sessionId: number;
-  poseId: number;
-  order: number;
-  notes?: string;
-  createdAt: string;
-  pose: {
-    id: number;
-    name: string;
-    imageUrl?: string;
-    description: string;
-    difficulty: string;
   };
 }
 

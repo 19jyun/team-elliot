@@ -1,6 +1,6 @@
 import * as React from 'react'
 
-export interface ClassCardProps {
+interface ClassCardProps {
   level: string
   className: string
   teacher: string
@@ -13,7 +13,7 @@ export interface ClassCardProps {
   style?: React.CSSProperties
 }
 
-export interface ExtendedClassCardProps extends ClassCardProps {
+interface ExtendedClassCardProps extends ClassCardProps {
   selected?: boolean
   onClick?: () => void
   onInfoClick?: () => void

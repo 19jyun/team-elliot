@@ -97,28 +97,3 @@ export const disconnectSocket = () => {
 export const getSocket = (): Socket | null => {
   return socket;
 };
-
-// 연결 상태 확인
-export const isSocketConnected = (): boolean => {
-  return socket?.connected || false;
-};
-
-// 연결 상태 구독
-export const onSocketStateChange = (callback: (connected: boolean) => void) => {
-  if (!socket) return;
-
-  const handleConnect = () => callback(true);
-  const handleDisconnect = () => callback(false);
-
-  socket.on("connect", handleConnect);
-  socket.on("disconnect", handleDisconnect);
-
-  // 초기 상태 전달
-  callback(socket.connected);
-
-  // 클린업 함수 반환
-  return () => {
-    socket?.off("connect", handleConnect);
-    socket?.off("disconnect", handleDisconnect);
-  };
-};

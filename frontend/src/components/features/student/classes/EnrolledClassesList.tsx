@@ -2,7 +2,7 @@ import type { EnrolledClassVM } from '@/types/view/student'
 import Image from 'next/image'
 import { EnrolledClassCard } from './EnrolledClassCard'
 
-export interface EnrolledClassesListProps {
+interface EnrolledClassesListProps {
   classes: EnrolledClassVM[]
   onClassClick?: (classData: EnrolledClassVM) => void
   emptyMessage?: string

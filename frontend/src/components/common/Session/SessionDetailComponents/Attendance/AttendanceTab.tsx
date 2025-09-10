@@ -50,6 +50,5 @@ export function AttendanceTab({ enrollments, isLoading = false }: AttendanceTabP
   )
 }
 
-export default AttendanceTab
 
 

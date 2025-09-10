@@ -12,17 +12,6 @@ export interface ApiResponse<T = unknown> {
   path?: string;
 }
 
-// 로그인 응답 타입
-export interface LoginResponse {
-  access_token: string;
-  user: {
-    id: number;
-    userId: string;
-    name: string;
-    role: string;
-  };
-}
-
 // 에러 타입 정의
 export enum ErrorType {
   AUTHENTICATION = "AUTHENTICATION",

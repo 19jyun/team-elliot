@@ -1,55 +1,13 @@
 // 공통으로 사용되는 Redux 타입들
 
 // 사용자 관련 타입
-export interface User {
+interface User {
   id: number;
   userId: string;
   name: string;
   email: string;
   role: "STUDENT" | "TEACHER" | "PRINCIPAL";
   phoneNumber?: string;
-}
-
-// 학원 관련 타입
-export interface Academy {
-  id: number;
-  name: string;
-  phoneNumber: string;
-  address: string;
-  description: string;
-  code: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// 클래스 관련 타입
-export interface Class {
-  id: number;
-  className: string;
-  classCode: string;
-  description: string;
-  maxStudents: number;
-  currentStudents: number;
-  tuitionFee: number;
-  teacherId: number;
-  academyId: number;
-  dayOfWeek: string;
-  startTime: string;
-  endTime: string;
-  level: string;
-  status: string;
-  startDate: string;
-  endDate: string;
-  backgroundColor: string;
-  teacher: {
-    id: number;
-    name: string;
-    photoUrl: string;
-  };
-  academy: {
-    id: number;
-    name: string;
-  };
 }
 
 // 수강신청 관련 타입
@@ -82,7 +40,7 @@ export interface SessionEnrollment {
 }
 
 // 환불 요청 관련 타입
-export interface RefundRequest {
+interface RefundRequest {
   id: number;
   sessionEnrollmentId: number;
   studentId: number;
@@ -126,22 +84,6 @@ export interface RefundRequest {
   processor?: {
     name: string;
   };
-}
-
-export interface Teacher {
-  id: number;
-  name: string;
-  email: string;
-  phoneNumber: string;
-  introduction?: string;
-  photoUrl?: string;
-}
-
-export interface Student {
-  id: number;
-  name: string;
-  email: string;
-  phoneNumber: string;
 }
 
 // 공통 상태 타입

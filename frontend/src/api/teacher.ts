@@ -4,19 +4,13 @@ import {
   TeacherProfileResponse,
   UpdateTeacherProfileRequest,
   UpdateTeacherProfileResponse,
-  TeacherClassesResponse,
   TeacherClassesWithSessionsResponse,
   SessionEnrollmentsResponse,
   UpdateEnrollmentStatusRequest,
   UpdateEnrollmentStatusResponse,
-  BatchUpdateEnrollmentStatusRequest,
-  BatchUpdateEnrollmentStatusResponse,
   RequestJoinAcademyRequest,
   RequestJoinAcademyResponse,
-  ChangeAcademyRequest,
-  ChangeAcademyResponse,
   LeaveAcademyResponse,
-  TeacherDataResponse,
   UpdateClassDetailsRequest,
   UpdateClassDetailsResponse,
 } from "@/types/api/teacher";
@@ -56,19 +50,7 @@ export const updateTeacherProfilePhoto = (
   );
 };
 
-// === Teacher 데이터 초기화 API ===
-
-export const getTeacherData = (): Promise<ApiResponse<TeacherDataResponse>> => {
-  return get<ApiResponse<TeacherDataResponse>>("/teachers/me/data");
-};
-
 // === 클래스 관련 API ===
-
-export const getMyClasses = (): Promise<
-  ApiResponse<TeacherClassesResponse>
-> => {
-  return get<ApiResponse<TeacherClassesResponse>>("/teachers/me/classes");
-};
 
 export const getTeacherClassesWithSessions = (): Promise<
   ApiResponse<TeacherClassesWithSessionsResponse>
@@ -108,15 +90,6 @@ export const updateEnrollmentStatus = (
   );
 };
 
-export const batchUpdateEnrollmentStatus = (
-  data: BatchUpdateEnrollmentStatusRequest
-): Promise<ApiResponse<BatchUpdateEnrollmentStatusResponse>> => {
-  return put<ApiResponse<BatchUpdateEnrollmentStatusResponse>>(
-    "/class-sessions/enrollments/batch-status",
-    data
-  );
-};
-
 // === 학원 관련 API ===
 
 export const requestJoinAcademy = (
@@ -130,15 +103,6 @@ export const requestJoinAcademy = (
 
 export const getMyAcademy = (): Promise<ApiResponse<Academy | null>> => {
   return get<ApiResponse<Academy | null>>("/teachers/me/academy");
-};
-
-export const changeAcademy = (
-  data: ChangeAcademyRequest
-): Promise<ApiResponse<ChangeAcademyResponse>> => {
-  return post<ApiResponse<ChangeAcademyResponse>>(
-    "/teachers/me/change-academy",
-    data
-  );
 };
 
 export const leaveAcademy = (): Promise<ApiResponse<LeaveAcademyResponse>> => {

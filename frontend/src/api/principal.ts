@@ -1,7 +1,6 @@
 import { get, post, put, del } from "./apiClient";
 import type { ApiResponse } from "@/types/api";
 import {
-  PrincipalDataResponse,
   GetPrincipalAcademyResponse,
   GetPrincipalAllSessionsResponse,
   GetPrincipalAllClassesResponse,
@@ -16,9 +15,6 @@ import {
   DeleteSessionContentResponse,
   ReorderSessionContentsRequest,
   ReorderSessionContentsResponse,
-  SessionWithPendingRequests,
-  EnrollmentRequest,
-  RefundRequest,
   ApproveEnrollmentResponse,
   RejectEnrollmentRequest,
   RejectEnrollmentResponse,
@@ -34,13 +30,6 @@ import { CreateClassResponse } from "../types/api/class";
 import { GetSessionEnrollmentsResponse } from "../types/api/class-session";
 import { SessionEnrollmentsResponse } from "../types/api/teacher";
 import { GetRefundRequestsResponse } from "../types/api/refund";
-
-// PrincipalData 전체 초기화 (Redux용)
-export const getPrincipalData = (): Promise<
-  ApiResponse<PrincipalDataResponse>
-> => {
-  return get<ApiResponse<PrincipalDataResponse>>("/principal/me/data");
-};
 
 // Principal 전용 API 함수들
 
@@ -213,27 +202,6 @@ export const updatePrincipalProfilePhoto = (
   );
 };
 
-// === Principal 수강 신청/환불 신청 관리 API ===
-
-// 1. Principal의 세션별 요청 목록 조회
-export const getPrincipalSessionsWithPendingRequests = (
-  requestType: "enrollment" | "refund"
-): Promise<ApiResponse<SessionWithPendingRequests[]>> => {
-  return get<ApiResponse<SessionWithPendingRequests[]>>(
-    `/principal/sessions-with-${requestType}-requests`
-  );
-};
-
-// 2. 특정 세션의 요청 목록 조회
-export const getPrincipalSessionRequests = (
-  sessionId: number,
-  requestType: "enrollment" | "refund"
-): Promise<ApiResponse<EnrollmentRequest[] | RefundRequest[]>> => {
-  return get<ApiResponse<EnrollmentRequest[] | RefundRequest[]>>(
-    `/principal/sessions/${sessionId}/${requestType}-requests`
-  );
-};
-
 // 3. 수강 신청 승인
 export const approvePrincipalEnrollment = (
   enrollmentId: number
@@ -271,26 +239,6 @@ export const rejectPrincipalRefund = (
   return put<ApiResponse<RejectRefundResponse>>(
     `/principal/refunds/${refundId}/reject`,
     data
-  );
-};
-
-// === Principal 선생님/수강생 관리 API ===
-
-// 1. Principal의 학원 소속 선생님 목록 조회 (기존 API 활용)
-export const getPrincipalAcademyTeachers = (): Promise<
-  ApiResponse<GetPrincipalAllTeachersResponse>
-> => {
-  return get<ApiResponse<GetPrincipalAllTeachersResponse>>(
-    "/principal/teachers"
-  );
-};
-
-// 2. Principal의 학원 소속 수강생 목록 조회 (기존 API 활용)
-export const getPrincipalAcademyStudents = (): Promise<
-  ApiResponse<GetPrincipalAllStudentsResponse>
-> => {
-  return get<ApiResponse<GetPrincipalAllStudentsResponse>>(
-    "/principal/students"
   );
 };
 

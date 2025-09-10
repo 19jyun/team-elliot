@@ -144,6 +144,5 @@ export function TeacherProfileCardForStudent({ teacherId }: TeacherProfileCardFo
   )
 }
 
-export default TeacherProfileCardForStudent
 
 

@@ -68,24 +68,6 @@ export interface ClassDetailsResponse extends Class {
   };
 }
 
-export type AllClassesResponse = Class[];
-
-export interface CreateClassRequest {
-  className: string;
-  description: string;
-  maxStudents: number;
-  tuitionFee: number;
-  teacherId: number;
-  academyId: number;
-  dayOfWeek: DayOfWeek; // string → DayOfWeek로 변경
-  level: string;
-  startDate: string;
-  endDate: string;
-  startTime: string;
-  endTime: string;
-  backgroundColor?: string;
-}
-
 export interface CreateClassResponse {
   id: number;
   className: string;
@@ -109,40 +91,14 @@ export interface CreateClassResponse {
   message: string;
 }
 
-export type UpdateClassRequest = Partial<Omit<Class, "id">>;
-export type UpdateClassResponse = Class;
-
-export interface EnrollClassRequest {
-  studentId: number;
-}
-
 export interface EnrollClassResponse {
   success: boolean;
   message: string;
 }
 
-export interface UnenrollClassRequest {
-  studentId: number;
-}
-
 export interface UnenrollClassResponse {
   success: boolean;
   message: string;
-}
-
-export interface ClassesByMonthResponse {
-  id: number;
-  className: string;
-  teacher: {
-    id: number;
-    name: string;
-    photoUrl: string;
-  };
-  dayOfWeek: DayOfWeek; // string → DayOfWeek로 변경
-  startTime: string;
-  endTime: string;
-  level: string;
-  backgroundColor: string;
 }
 
 export interface ClassesWithSessionsByMonthResponse {
@@ -174,13 +130,6 @@ export interface ClassesWithSessionsByMonthResponse {
   }[];
 }
 
-// ClassSession 관련 타입들
-export interface GetClassSessionsRequest {
-  classId: number;
-}
-
-export type GetClassSessionsResponse = ClassSession[];
-
 // 새로운 enrollment/modification 모드용 응답 타입
 export interface GetClassSessionsForEnrollmentResponse {
   sessions: ClassSession[];
@@ -205,52 +154,6 @@ export interface GetClassSessionsForModificationResponse {
     startDate: string;
     endDate: string;
   } | null;
-}
-
-export interface BatchEnrollSessionsRequest {
-  sessionIds: number[];
-}
-
-export interface BatchEnrollSessionsResponse {
-  success: number;
-  total: number;
-  enrollments: SessionEnrollment[];
-}
-
-// 수강 변경/취소 관련 타입들
-export interface StudentClassEnrollmentsResponse {
-  classId: number;
-  className: string;
-  sessions: Array<{
-    id: number;
-    date: string;
-    startTime: string;
-    endTime: string;
-    enrollment?: {
-      id: number;
-      status: EnrollmentStatus; // 공통 타입 사용
-      enrolledAt: string;
-      cancelledAt?: string;
-    };
-  }>;
-}
-
-export interface ChangeEnrollmentRequest {
-  newSessionId: number;
-  reason?: string;
-}
-
-export interface BatchModifyEnrollmentsRequest {
-  cancellations: number[];
-  newEnrollments: number[];
-  reason?: string;
-}
-
-export interface BatchModifyEnrollmentsResponse {
-  success: boolean;
-  cancelledCount: number;
-  enrolledCount: number;
-  message: string;
 }
 
 // ============= 확장된 세션 타입들 =============

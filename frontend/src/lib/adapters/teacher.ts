@@ -1,16 +1,9 @@
 // Teacher API DTO → ViewModel 어댑터 함수들
 
-import type {
-  TeacherClass,
-  TeacherSession,
-  TeacherSessionEnrollment,
-} from "@/types/api/teacher";
+import type { TeacherClass, TeacherSession } from "@/types/api/teacher";
 import type { ClassSession } from "@/types/api/class";
 import type {
   BaseVM,
-  TeacherClassDetailVM,
-  TeacherSessionCardVM,
-  SessionEnrollmentDisplayVM,
   TeacherCalendarSessionVM,
   TeacherClassListVM,
   TeacherClassCardVM,
@@ -22,8 +15,6 @@ import {
   getDayOfWeekText,
   getLevelText,
   getLevelColor,
-  getStatusText,
-  getStatusColor,
 } from "@/utils/formatting";
 import { formatTime } from "@/utils/dateTime";
 
@@ -49,104 +40,6 @@ function createBaseVM(
     isReady: !isLoading && !error,
   };
 }
-
-// ============= 클래스 관련 어댑터 함수들 =============
-
-// TeacherSession → TeacherSessionCardVM 변환
-export function toTeacherSessionCardVM(
-  session: TeacherSession
-): TeacherSessionCardVM {
-  return {
-    ...session,
-    displayDate: formatDate(session.date),
-    displayTime: `${formatTime(session.startTime)} - ${formatTime(
-      session.endTime
-    )}`,
-    displayCapacity: `${session.enrollmentCount} / ${session.class.maxStudents}명`,
-    levelColor: getLevelColor(session.class.level),
-    isFull: session.enrollmentCount >= session.class.maxStudents,
-  };
-}
-
-// TeacherClassDetailVM 생성
-export function toTeacherClassDetailVM(
-  classData: TeacherClass,
-  isEditing: boolean = false,
-  editData?: unknown
-): TeacherClassDetailVM {
-  return {
-    ...createBaseVM(),
-    isEditing,
-    displayData: {
-      className: classData.className,
-      levelText: getLevelText(classData.level),
-      dayOfWeekText: getDayOfWeekText(classData.dayOfWeek),
-      timeRange: `${formatTime(classData.startTime)} - ${formatTime(
-        classData.endTime
-      )}`,
-      studentCount: `${classData.currentStudents} / ${classData.maxStudents}명`,
-      tuitionFee: formatCurrency(Number(classData.tuitionFee)),
-      description: classData.description,
-    },
-    editData: {
-      description:
-        editData &&
-        typeof editData === "object" &&
-        "description" in editData &&
-        typeof editData.description === "string"
-          ? editData.description
-          : classData.description || "",
-      locationName:
-        editData &&
-        typeof editData === "object" &&
-        "locationName" in editData &&
-        typeof editData.locationName === "string"
-          ? editData.locationName
-          : "",
-      mapImageUrl:
-        editData &&
-        typeof editData === "object" &&
-        "mapImageUrl" in editData &&
-        typeof editData.mapImageUrl === "string"
-          ? editData.mapImageUrl
-          : "",
-      requiredItems:
-        editData &&
-        typeof editData === "object" &&
-        "requiredItems" in editData &&
-        Array.isArray(editData.requiredItems)
-          ? editData.requiredItems
-          : [],
-      curriculum:
-        editData &&
-        typeof editData === "object" &&
-        "curriculum" in editData &&
-        Array.isArray(editData.curriculum)
-          ? editData.curriculum
-          : [],
-    },
-  };
-}
-
-// ============= 세션 관련 어댑터 함수들 =============
-
-// TeacherSessionEnrollment → SessionEnrollmentDisplayVM 변환
-export function toSessionEnrollmentDisplayVM(
-  enrollment: TeacherSessionEnrollment
-): SessionEnrollmentDisplayVM {
-  return {
-    ...enrollment,
-    displayStatus: getStatusText(enrollment.status),
-    statusColor: getStatusColor(enrollment.status),
-    displayEnrolledAt: formatDate(enrollment.enrolledAt),
-    hasPayment: !!enrollment.payment,
-    hasRefundRequests: !!(
-      enrollment.refundRequests && enrollment.refundRequests.length > 0
-    ),
-  };
-}
-
-// ============= 대시보드 관련 어댑터 함수들 =============
 
 // TeacherSession → TeacherCalendarSessionVM 변환
 export function toTeacherCalendarSessionVM(
@@ -195,9 +88,7 @@ export function toClassSessionForCalendar(
 }
 
 // TeacherClass → TeacherClassCardVM 변환
-export function toTeacherClassCardVM(
-  classData: TeacherClass
-): TeacherClassCardVM {
+function toTeacherClassCardVM(classData: TeacherClass): TeacherClassCardVM {
   return {
     id: classData.id,
     className: classData.className,

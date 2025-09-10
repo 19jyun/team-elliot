@@ -8,7 +8,7 @@ import type {
   ClientEventData,
 } from "@/types/socket";
 
-export function useSocket() {
+function useSocket() {
   const { data: session, status } = useSession();
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -137,10 +137,4 @@ export function useSocketEvent<T extends SocketEventName>(
       if (cleanup) cleanup();
     };
   }, [event, callback, on]);
-}
-
-// Socket 연결 상태만 필요한 경우
-export function useSocketConnection() {
-  const { isConnected, isConnecting } = useSocket();
-  return { isConnected, isConnecting };
 }
