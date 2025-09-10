@@ -81,29 +81,6 @@ jobs:
           path: frontend/coverage/
           retention-days: 7
 
-  build:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18"
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        working-directory: ./frontend
-        run: npm ci
-
-      - name: Build application
-        working-directory: ./frontend
-        run: npm run build
-
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -150,7 +127,7 @@ jobs:
           retention-days: 30
 
   deploy-staging:
-    needs: [test, build, security]
+    needs: [test, security]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'pull_request'
 
@@ -168,7 +145,7 @@ jobs:
           # Example: Vercel preview deployment
 
   deploy-production:
-    needs: [test, build, security]
+    needs: [test, security]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 

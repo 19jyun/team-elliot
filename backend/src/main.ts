@@ -29,8 +29,25 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
+  // CORS 설정 - 여러 origin 허용
+  const allowedOrigins = [
+    'http://localhost:3000', // 로컬 개발
+    'https://team-elliot-git-main-junghun-yuns-projects.vercel.app',
+    'https://team-elliot-eight.vercel.app',
+    'https://team-elliot-pvv8c9z07-junghun-yuns-projects.vercel.app',
+    process.env.FRONTEND_URL, // 환경변수로 설정된 URL
+  ].filter(Boolean); // undefined 값 제거
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (origin, callback) => {
+      // origin이 없거나 허용된 origin 목록에 있는 경우 허용
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.log('CORS blocked origin:', origin);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     credentials: true,
   });

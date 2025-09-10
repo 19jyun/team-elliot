@@ -13,7 +13,13 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @WebSocketGateway({
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: [
+      'http://localhost:3000', // 로컬 개발
+      'https://team-elliot-git-main-junghun-yuns-projects.vercel.app',
+      'https://team-elliot-eight.vercel.app',
+      'https://team-elliot-pvv8c9z07-junghun-yuns-projects.vercel.app',
+      process.env.FRONTEND_URL, // 환경변수로 설정된 URL
+    ].filter(Boolean),
     credentials: true,
   },
   namespace: '/',
