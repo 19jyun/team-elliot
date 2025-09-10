@@ -1,3 +1,6 @@
+// 사용자 역할 타입
+type UserRole = "STUDENT" | "TEACHER" | "PRINCIPAL";
+
 export interface LoginRequest {
   userId: string;
   password: string;
@@ -10,8 +13,7 @@ export interface LoginResponse {
     id: number;
     userId: string;
     name: string;
-    role: string;
-    [key: string]: any;
+    role: UserRole;
   };
 }
 
@@ -20,8 +22,7 @@ export interface SignupRequest {
   password: string;
   name: string;
   phoneNumber: string;
-  role: string;
-  [key: string]: any;
+  role: UserRole;
 }
 
 export interface SignupResponse {
@@ -31,8 +32,7 @@ export interface SignupResponse {
     id: number;
     userId: string;
     name: string;
-    role: string;
-    [key: string]: any;
+    role: UserRole;
   };
 }
 

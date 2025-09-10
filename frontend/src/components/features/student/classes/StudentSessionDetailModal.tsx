@@ -6,42 +6,28 @@ import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { ClassDetail } from '@/components/features/student/classes/ClassDetail'
 import { SessionDetailTab } from '@/components/features/student/classes/SessionDetailTab'
 import { useStudentApi } from '@/hooks/student/useStudentApi'
-
-interface StudentSessionDetailModalProps {
-  isOpen: boolean
-  session: any
-  onClose: () => void
-  onlyDetail?: boolean // 세션 상세 정보만 표시할지 여부
-}
-
-type TabType = 'class' | 'session'
-
-// 브라운 테마 색상 정의
-const brownTheme = {
-  primary: '[#ac9592]',
-  secondary: '[#9a8582]', 
-  light: '[#ac9592]',
-  border: '[#9a8582]',
-  hover: '[#8a7572]'
-}
+import type { StudentSessionDetailModalVM, StudentEnrolledSessionVM } from '@/types/view/student'
+import type { TabType } from '@/types/ui/common'
+import { brownTheme } from '@/types/ui/common'
 
 export function StudentSessionDetailModal({ 
   isOpen, 
   session, 
   onClose,
   onlyDetail = false 
-}: StudentSessionDetailModalProps) {
+}: StudentSessionDetailModalVM) {
   const { isLoading } = useStudentApi();
-  const [classDetails, setClassDetails] = useState<any>(null)
+  const [classDetails, setClassDetails] = useState<StudentEnrolledSessionVM['class'] | null>(null)
   const [activeTab, setActiveTab] = useState<TabType>('class')
+  
+  // session.session_id는 이제 항상 실제 숫자 ID
+  const actualSessionId = session?.session_id || 0;
 
   // 모든 useEffect를 조건부 return 이전에 호출
   useEffect(() => {
     if (isOpen && session?.class) {
-      // session에서 직접 클래스 정보 가져오기
-      setClassDetails(session.class);
+      setClassDetails(session.class)
     } else {
-      // 모달이 닫히거나 session이 없을 때 상태 초기화
       setClassDetails(null)
       setActiveTab('class')
     }
@@ -86,7 +72,7 @@ export function StudentSessionDetailModal({
     <SlideUpModal
       isOpen={isOpen}
       onClose={onClose}
-      title={`${session?.class?.className} - ${formatTime(session?.startTime)}`}
+      title={`${session.class.className} - ${formatTime(session.startTime)}`}
       contentClassName="pb-6"
     >
       {/* Navigation Bar - onlyDetail이 false일 때만 표시 */}
@@ -113,7 +99,7 @@ export function StudentSessionDetailModal({
         {onlyDetail ? (
           // onlyDetail이 true일 때: 세션 상세 정보만 표시
           <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-            <SessionDetailTab sessionId={session.id} />
+            <SessionDetailTab sessionId={actualSessionId} />
           </div>
         ) : (
           // onlyDetail이 false일 때: 기존 탭 구조 유지
@@ -148,7 +134,7 @@ export function StudentSessionDetailModal({
             {/* 세션 상세 정보 탭 */}
             <div className="w-1/2 flex-shrink-0 px-1">
               <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                <SessionDetailTab sessionId={session.id} />
+                <SessionDetailTab sessionId={actualSessionId} />
               </div>
             </div>
           </motion.div>

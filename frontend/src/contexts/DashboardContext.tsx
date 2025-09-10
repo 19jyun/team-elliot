@@ -1,34 +1,46 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { useSession } from 'next-auth/react';
+import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { ClassesWithSessionsByMonthResponse } from '@/types/api/class';
+import { EnrollmentStatus } from '@/types/api/common';
 
-export interface NavigationItem {
+interface NavigationItem {
   label: string;
   href: string;
   index: number;
 }
 
 // 수강신청 단계 타입
-export type EnrollmentStep = 'main' | 'academy-selection' | 'class-selection' | 'date-selection' | 'payment' | 'complete' | 'refund-request' | 'refund-complete';
+type EnrollmentStep = 'main' | 'academy-selection' | 'class-selection' | 'date-selection' | 'payment' | 'complete' | 'refund-request' | 'refund-complete';
 
 // 수강신청 상태 인터페이스
-export interface EnrollmentState {
+interface EnrollmentState {
   currentStep: EnrollmentStep;
   selectedMonth: number | null;
-  selectedClasses: any[];
-  selectedSessions: any[];
+  selectedClasses: ClassesWithSessionsByMonthResponse[];
+  selectedSessions: {
+    id: number;
+    date: string;
+    startTime: string;
+    endTime: string;
+    currentStudents: number;
+    maxStudents: number;
+    isEnrollable: boolean;
+    isFull: boolean;
+    isPastStartTime: boolean;
+    isAlreadyEnrolled: boolean;
+    studentEnrollmentStatus: EnrollmentStatus | null;
+  }[];
   selectedClassIds: number[];
   selectedAcademyId: number | null;
   selectedClassesWithSessions: ClassesWithSessionsByMonthResponse[];
 }
 
 // 강의 개설 단계 타입
-export type CreateClassStep = 'info' | 'teacher' | 'schedule' | 'content' | 'complete';
+type CreateClassStep = 'info' | 'teacher' | 'schedule' | 'content' | 'complete';
 
 // 강의 개설 상태 인터페이스
-export interface CreateClassState {
+interface CreateClassState {
   currentStep: CreateClassStep;
   classFormData: {
     name: string;
@@ -50,7 +62,7 @@ export interface CreateClassState {
 }
 
 // 포커스 상태 타입
-export type FocusType = 'dashboard' | 'modal' | 'subpage' | 'overlay';
+type FocusType = 'dashboard' | 'modal' | 'subpage' | 'overlay';
 
 interface DashboardState {
   activeTab: number;
@@ -89,15 +101,43 @@ interface DashboardContextType {
   // 수강신청 관련 메서드들
   setEnrollmentStep: (step: EnrollmentStep) => void;
   setSelectedMonth: (month: number) => void;
-  setSelectedClasses: (classes: any[]) => void;
-  setSelectedSessions: (sessions: any[]) => void;
+  setSelectedClasses: (classes: ClassesWithSessionsByMonthResponse[]) => void;
+  setSelectedSessions: (sessions: {
+    id: number;
+    date: string;
+    startTime: string;
+    endTime: string;
+    currentStudents: number;
+    maxStudents: number;
+    isEnrollable: boolean;
+    isFull: boolean;
+    isPastStartTime: boolean;
+    isAlreadyEnrolled: boolean;
+    studentEnrollmentStatus: EnrollmentStatus | null;
+  }[]) => void;
   setSelectedClassIds: (classIds: number[]) => void;
   setSelectedAcademyId: (academyId: number | null) => void;
   setSelectedClassesWithSessions: (classes: ClassesWithSessionsByMonthResponse[]) => void;
   resetEnrollment: () => void;
   // 수업 생성 관련 메서드들
   setCreateClassStep: (step: CreateClassStep) => void;
-  setClassFormData: (data: any) => void;
+  setClassFormData: (data: Partial<{
+    name: string;
+    description: string;
+    level: string;
+    maxStudents: number;
+    price: number;
+    academyId?: number;
+    schedule: {
+      days: string[];
+      startTime: string;
+      endTime: string;
+      startDate?: string;
+      endDate?: string;
+    };
+    teacherId?: number;
+    content?: string;
+  }>) => void;
   setSelectedTeacherId: (teacherId: number | null) => void;
   resetCreateClass: () => void;
 }
@@ -105,7 +145,7 @@ interface DashboardContextType {
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
 
 export function DashboardProvider({ children }: { children: ReactNode }) {
-  const { data: session } = useSession();
+
   const [state, setState] = useState<DashboardState>({
     activeTab: 0,
     isTransitioning: false,
@@ -144,28 +184,12 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   // 사용자 역할에 따른 네비게이션 아이템 정의
   const getNavigationItems = useCallback((): NavigationItem[] => {
-    if (!session?.user) return [];
-
-    const userRole = session.user.role || 'STUDENT';
-
-    switch (userRole) {
-      case 'STUDENT':
-        return [
-          { label: '클래스 정보', href: '/dashboard/student', index: 0 },
-          { label: '수강신청', href: '/dashboard/student/enroll', index: 1 },
-          { label: '나의 정보', href: '/dashboard/student/profile', index: 2 },
-        ];
-      case 'TEACHER':
-        return [
-          { label: '내 수업', href: '/dashboard/teacher', index: 0 },
-          { label: '수업 관리', href: '/dashboard/teacher/class_management', index: 1 },
-          { label: '나의 정보', href: '/dashboard/teacher/profile', index: 2 },
-        ];
-      // ADMIN 제거됨
-      default:
-        return [];
-    }
-  }, [session?.user]);
+    return [
+      { label: '클래스 정보', href: '/dashboard', index: 0 },
+      { label: '수강신청', href: '/dashboard', index: 1 },
+      { label: '나의 정보', href: '/dashboard', index: 2 },
+    ];
+  }, []);
 
   // 포커스 설정
   const setFocus = useCallback((focus: FocusType) => {
@@ -480,7 +504,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // 선택된 클래스들 설정
-  const setSelectedClasses = useCallback((classes: any[]) => {
+  const setSelectedClasses = useCallback((classes: ClassesWithSessionsByMonthResponse[]) => {
     setState(prev => ({
       ...prev,
       enrollment: {
@@ -491,7 +515,19 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // 선택된 세션들 설정
-  const setSelectedSessions = useCallback((sessions: any[]) => {
+  const setSelectedSessions = useCallback((sessions: {
+    id: number;
+    date: string;
+    startTime: string;
+    endTime: string;
+    currentStudents: number;
+    maxStudents: number;
+    isEnrollable: boolean;
+    isFull: boolean;
+    isPastStartTime: boolean;
+    isAlreadyEnrolled: boolean;
+    studentEnrollmentStatus: EnrollmentStatus | null;
+  }[]) => {
     setState(prev => ({
       ...prev,
       enrollment: {

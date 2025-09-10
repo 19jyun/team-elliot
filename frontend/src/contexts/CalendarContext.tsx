@@ -5,7 +5,7 @@ import { ClassSession } from '@/types/api/class';
 
 export type CalendarMode = 'enrollment' | 'modification' | 'student-view' | 'teacher-view';
 
-export interface SessionDisplayInfo {
+interface SessionDisplayInfo {
   isSelectable: boolean;
   isSelected: boolean;
   displayText: string;
@@ -14,7 +14,7 @@ export interface SessionDisplayInfo {
   borderColor: string;
 }
 
-export interface CalendarContextType {
+interface CalendarContextType {
   mode: CalendarMode;
   sessions: ClassSession[];
   selectedSessionIds: Set<number>;

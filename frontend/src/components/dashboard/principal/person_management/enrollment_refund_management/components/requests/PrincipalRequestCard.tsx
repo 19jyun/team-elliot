@@ -1,10 +1,13 @@
 'use client';
 
 import React from 'react';
-import { parseFromUTCISO } from '@/lib/timeUtils';
+import { toPrincipalRequestCardVM } from '@/lib/adapters/principal';
+import type { PrincipalEnrollment } from '@/types/api/principal';
+import type { RefundRequestResponse } from '@/types/api/refund';
+import type { PrincipalRequestCardVM } from '@/types/view/principal';
 
 interface PrincipalRequestCardProps {
-  request: any;
+  request: PrincipalEnrollment | RefundRequestResponse;
   requestType: 'enrollment' | 'refund';
   onApprove: (id: number) => void;
   onReject: (id: number) => void;
@@ -18,6 +21,14 @@ export function PrincipalRequestCard({
   onReject, 
   isProcessing = false 
 }: PrincipalRequestCardProps) {
+  // ViewModel 생성
+  const requestCardVM: PrincipalRequestCardVM = toPrincipalRequestCardVM({
+    request,
+    requestType,
+    onApprove,
+    onReject,
+    isProcessing,
+  });
   const formatDate = (dateString: string) => {
     if (!dateString || dateString === 'Invalid Date') {
       return '날짜 없음';
@@ -32,30 +43,11 @@ export function PrincipalRequestCard({
         month: 'long',
         day: 'numeric',
       });
-    } catch (error) {
+    } catch {
       return '날짜 없음';
     }
   };
 
-  const formatTime = (timeString: string) => {
-    if (!timeString || timeString === 'Invalid Date') {
-      return '시간 없음';
-    }
-    try {
-      // UTC ISO 문자열을 한국 시간으로 변환
-      const koreanTime = parseFromUTCISO(timeString);
-      if (isNaN(koreanTime.getTime())) {
-        return '시간 없음';
-      }
-      return koreanTime.toLocaleTimeString('ko-KR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      });
-    } catch (error) {
-      return '시간 없음';
-    }
-  };
 
   const getLevelColor = (level: string) => {
     const levelColors: Record<string, string> = {
@@ -80,7 +72,11 @@ export function PrincipalRequestCard({
       style={{ 
         background: isCompleted 
           ? '#f5f5f4' 
-          : getLevelColor(request.session?.class?.level || 'BEGINNER') 
+          : getLevelColor(
+              'classLevel' in requestCardVM.request 
+                ? requestCardVM.request.classLevel || 'BEGINNER'
+                : 'BEGINNER'
+            )
       }}
     >
       {/* 학생 정보 */}
@@ -88,25 +84,16 @@ export function PrincipalRequestCard({
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-stone-200 rounded-full flex items-center justify-center">
             <span className="text-sm font-medium text-stone-600">
-              {requestType === 'enrollment' 
-                ? request.student?.name?.charAt(0) || '?'
-                : request.sessionEnrollment?.student?.name?.charAt(0) || '?'
-              }
+              {requestCardVM.request.studentName?.charAt(0) || '?'}
             </span>
           </div>
           <div>
             <h3 className="font-medium text-stone-700">
-              {requestType === 'enrollment' 
-                ? request.student?.name || '알 수 없음'
-                : request.sessionEnrollment?.student?.name || '알 수 없음'
-              }
+              {requestCardVM.request.studentName || '알 수 없음'}
             </h3>
             {!isCompleted && (
               <p className="text-sm text-stone-500">
-                {requestType === 'enrollment' 
-                  ? request.student?.phoneNumber || '연락처 없음'
-                  : request.sessionEnrollment?.student?.phoneNumber || '연락처 없음'
-                }
+                {requestCardVM.request.studentPhoneNumber || '연락처 없음'}
               </p>
             )}
           </div>
@@ -135,35 +122,35 @@ export function PrincipalRequestCard({
           {requestType === 'enrollment' ? (
             // 수강 신청 정보
             <div className="text-sm text-stone-600">
-              <p><strong>신청일:</strong> {formatDate(request.enrolledAt)}</p>
+              <p><strong>신청일:</strong> {'displayEnrolledAt' in requestCardVM.request ? requestCardVM.request.displayEnrolledAt : formatDate((request as PrincipalEnrollment).enrolledAt)}</p>
               <p><strong>상태:</strong> {request.status}</p>
-              {request.session && (
+              {'displaySessionDate' in requestCardVM.request && requestCardVM.request.displaySessionDate && (
                 <div className="mt-2 p-2 bg-white/50 rounded border border-stone-200">
                   <p className="font-medium text-stone-700 mb-1">세션 정보</p>
-                  <p><strong>날짜:</strong> {formatDate(request.session.date)}</p>
-                  <p><strong>시간:</strong> {formatTime(request.session.startTime)} - {formatTime(request.session.endTime)}</p>
+                  <p><strong>날짜:</strong> {requestCardVM.request.displaySessionDate}</p>
+                  <p><strong>시간:</strong> {requestCardVM.request.displaySessionTime}</p>
                 </div>
               )}
             </div>
           ) : (
             // 환불 요청 정보
             <div className="text-sm text-stone-600">
-              <p><strong>환불 금액:</strong> {request.refundAmount?.toLocaleString()}원</p>
-              <p><strong>요청 사유:</strong> {request.reason}</p>
-              <p><strong>요청일:</strong> {formatDate(request.requestedAt)}</p>
-              {request.sessionEnrollment?.session && (
+              <p><strong>환불 금액:</strong> {'displayRefundAmount' in requestCardVM.request ? requestCardVM.request.displayRefundAmount : `${(request as RefundRequestResponse).refundAmount?.toLocaleString()}원`}</p>
+              <p><strong>요청 사유:</strong> {requestCardVM.request.reason}</p>
+              <p><strong>요청일:</strong> {'displayRequestedAt' in requestCardVM.request ? requestCardVM.request.displayRequestedAt : formatDate((request as RefundRequestResponse).requestedAt)}</p>
+              {'displaySessionDate' in requestCardVM.request && requestCardVM.request.displaySessionDate && (
                 <div className="mt-2 p-2 bg-white/50 rounded border border-stone-200">
                   <p className="font-medium text-stone-700 mb-1">세션 정보</p>
-                  <p><strong>날짜:</strong> {formatDate(request.sessionEnrollment.session.date)}</p>
-                  <p><strong>시간:</strong> {formatTime(request.sessionEnrollment.session.startTime)} - {formatTime(request.sessionEnrollment.session.endTime)}</p>
+                  <p><strong>날짜:</strong> {requestCardVM.request.displaySessionDate}</p>
+                  <p><strong>시간:</strong> {requestCardVM.request.displaySessionTime}</p>
                 </div>
               )}
-              {request.bankName && (
+              {requestType === 'refund' && 'bankName' in requestCardVM.request && requestCardVM.request.bankName && (
                 <div className="mt-2 p-2 bg-white/50 rounded border border-stone-200">
                   <p className="font-medium text-stone-700 mb-1">환불 계좌</p>
-                  <p><strong>은행:</strong> {request.bankName}</p>
-                  <p><strong>계좌번호:</strong> {request.accountNumber}</p>
-                  <p><strong>예금주:</strong> {request.accountHolder}</p>
+                  <p><strong>은행:</strong> {requestCardVM.request.bankName}</p>
+                  <p><strong>계좌번호:</strong> {requestCardVM.request.accountNumber}</p>
+                  <p><strong>예금주:</strong> {requestCardVM.request.accountHolder}</p>
                 </div>
               )}
             </div>
@@ -177,22 +164,22 @@ export function PrincipalRequestCard({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onApprove(request.id);
+              requestCardVM.onApprove(requestCardVM.request.id);
             }}
-            disabled={isProcessing}
+            disabled={requestCardVM.isProcessing}
             className="flex-1 px-3 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors"
           >
-            {isProcessing ? '처리중...' : '승인'}
+            {requestCardVM.isProcessing ? '처리중...' : '승인'}
           </button>
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onReject(request.id);
+              requestCardVM.onReject(requestCardVM.request.id);
             }}
-            disabled={isProcessing}
+            disabled={requestCardVM.isProcessing}
             className="flex-1 px-3 py-2 text-sm font-medium text-destructive border border-destructive bg-white hover:bg-destructive hover:text-white disabled:bg-gray-300 disabled:border-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed rounded-lg transition-colors"
           >
-            {isProcessing ? '처리중...' : '거절'}
+            {requestCardVM.isProcessing ? '처리중...' : '거절'}
           </button>
         </div>
       )}

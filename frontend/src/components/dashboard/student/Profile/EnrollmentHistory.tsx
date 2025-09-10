@@ -2,18 +2,23 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Calendar, Clock, BookOpen, CheckCircle, XCircle, AlertCircle, Clock as ClockIcon } from 'lucide-react';
-import { toast } from 'sonner';
+
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { useStudentData } from '@/hooks/redux/useStudentData';
+import { toStudentEnrollmentHistoryVMs } from '@/lib/adapters/student';
+import type { StudentEnrollmentHistoryVM } from '@/types/view/student';
 
 export function EnrollmentHistory() {
   const { pushFocus, popFocus } = useDashboardNavigation();
   const { enrollmentHistory, isLoading, error } = useStudentData();
   const [selectedFilter, setSelectedFilter] = useState<string>('ALL');
+
+  // API 응답을 뷰모델로 변환
+  const enrollmentHistoryVMs: StudentEnrollmentHistoryVM[] = toStudentEnrollmentHistoryVMs(enrollmentHistory);
 
   useEffect(() => {
     pushFocus('subpage');
@@ -93,26 +98,21 @@ export function EnrollmentHistory() {
   };
 
   // API 응답에서 상태 정보 추출
-  const getEnrollmentStatus = (log: any): string => {
+  const getEnrollmentStatus = (log: StudentEnrollmentHistoryVM): string => {
     return log.status;
   };
 
   // API 응답에서 클래스명 추출
-  const getClassName = (log: any): string => {
+  const getClassName = (log: StudentEnrollmentHistoryVM): string => {
     return log.session.class.className;
   };
 
   // API 응답에서 세션 날짜 추출
-  const getSessionDate = (log: any): string => {
+  const getSessionDate = (log: StudentEnrollmentHistoryVM): string => {
     return log.session.date;
   };
 
-  // API 응답에서 세션 ID 추출
-  const getSessionId = (log: any): number => {
-    return log.id;
-  };
-
-  const filteredLogs = enrollmentHistory.filter(log => {
+  const filteredLogs = enrollmentHistoryVMs.filter(log => {
     if (selectedFilter === 'ALL') return true;
     const status = getEnrollmentStatus(log);
     return status === selectedFilter;
@@ -187,24 +187,13 @@ export function EnrollmentHistory() {
                   const status = getEnrollmentStatus(log);
                   const className = getClassName(log);
                   const sessionDate = getSessionDate(log);
-                  const sessionId = getSessionId(log);
                   
                   return (
                     <Card 
                       key={log.id} 
-                      className={`hover:shadow-md transition-shadow ${
-                        (log as any).isOptimistic ? 'opacity-60 bg-blue-50' : ''
-                      }`}
+                      className="hover:shadow-md transition-shadow"
                     >
                       <CardContent className="p-4">
-                        {(log as any).isOptimistic && (
-                          <div className="mb-3 p-2 bg-blue-100 border border-blue-200 rounded-md">
-                            <div className="flex items-center gap-2">
-                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
-                              <span className="text-sm text-blue-700 font-medium">처리 중...</span>
-                            </div>
-                          </div>
-                        )}
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-3">

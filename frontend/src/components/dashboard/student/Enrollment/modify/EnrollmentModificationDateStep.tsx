@@ -8,25 +8,19 @@ import { StatusStep } from '@/components/features/student/enrollment/month/Statu
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
 import { useEnrollmentCalculation } from '@/hooks/useEnrollmentCalculation'
 import { useStudentApi } from '@/hooks/student/useStudentApi'
-import { ClassSessionForModification } from '@/types/api/class'
-
-interface EnrollmentModificationDateStepProps {
-  classId: number;
-  existingEnrollments: any[];
-  month?: number | null;
-  onComplete: (selectedDates: string[], sessionPrice?: number) => void;
-}
+import type { ClassSessionForModification } from '@/types/api/class'
+import type { ClassSession } from '@/types/api/class'
+import type { EnrollmentModificationDateStepVM } from '@/types/view/student'
 
 export function EnrollmentModificationDateStep({ 
   classId, 
   existingEnrollments, 
-  month, 
   onComplete 
-}: EnrollmentModificationDateStepProps) {
+}: EnrollmentModificationDateStepVM) {
   const { setSelectedSessions } = useDashboardNavigation()
   const { loadModificationSessions } = useStudentApi();
   const [selectedCount, setSelectedCount] = useState(0);
-  const [selectedClasses, setSelectedClasses] = useState<any[]>([]);
+  const [selectedClasses, setSelectedClasses] = useState<Array<{ id: number; sessions: ClassSessionForModification[] }>>([]);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [modificationSessions, setModificationSessions] = useState<ClassSessionForModification[]>([]);
   const [calendarRange, setCalendarRange] = useState<{startDate: string, endDate: string} | null>(null);
@@ -39,37 +33,43 @@ export function EnrollmentModificationDateStep({
       setIsLoadingSessions(true);
       try {
         const response = await loadModificationSessions(classId);
-        setModificationSessions(response.sessions);
-        setCalendarRange(response.calendarRange);
+        if (response) {
+          setModificationSessions(response.sessions);
+          setCalendarRange(response.calendarRange);
+        }
         
         const preSelectedSessionIds = new Set<number>();
         
         if (existingEnrollments && existingEnrollments.length > 0) {
           const activeEnrollmentDates = existingEnrollments
-            .filter((enrollment: any) => {
+            .filter((enrollment) => {
               return enrollment.enrollment &&
                 (enrollment.enrollment.status === "CONFIRMED" ||
                   enrollment.enrollment.status === "PENDING" ||
                   enrollment.enrollment.status === "REFUND_REJECTED_CONFIRMED");
             })
-            .map((enrollment: any) => {
+            .map((enrollment) => {
               return new Date(enrollment.date).toISOString().split("T")[0];
             });
-          
+
+          if (response) {
+            response.sessions.forEach((session: ClassSessionForModification) => {
+              const sessionDate = new Date(session.date).toISOString().split("T")[0];
+              
+              if (activeEnrollmentDates.includes(sessionDate)) {
+                preSelectedSessionIds.add(session.id);
+              }
+            });
+          }
+        }
+        
+        if (response) {
           response.sessions.forEach((session: ClassSessionForModification) => {
-            const sessionDate = new Date(session.date).toISOString().split("T")[0];
-            
-            if (activeEnrollmentDates.includes(sessionDate)) {
+            if (session.canBeCancelled && !preSelectedSessionIds.has(session.id)) {
               preSelectedSessionIds.add(session.id);
             }
           });
         }
-        
-        response.sessions.forEach((session: ClassSessionForModification) => {
-          if (session.canBeCancelled && !preSelectedSessionIds.has(session.id)) {
-            preSelectedSessionIds.add(session.id);
-          }
-        });
         setSelectedSessionIds(preSelectedSessionIds);
       } catch (error) {
         console.error('수강 변경용 세션 데이터 로드 실패:', error);
@@ -120,7 +120,7 @@ export function EnrollmentModificationDateStep({
   // 선택된 날짜들을 배열로 변환
   React.useEffect(() => {
     const dates = selectedClasses.flatMap(classInfo => 
-      classInfo.sessions?.map((session: any) => 
+      classInfo.sessions?.map((session: ClassSessionForModification) => 
         new Date(session.date).toISOString().split('T')[0]
       ) || []
     );
@@ -142,7 +142,7 @@ export function EnrollmentModificationDateStep({
     
     // 기존에 신청된 세션들 (활성 상태)
     const originalEnrolledSessions = existingEnrollments.filter(
-      (enrollment: any) =>
+      (enrollment) =>
         enrollment.enrollment &&
         (enrollment.enrollment.status === "CONFIRMED" ||
           enrollment.enrollment.status === "PENDING" ||
@@ -151,7 +151,7 @@ export function EnrollmentModificationDateStep({
 
     // 기존 신청 세션의 날짜들
     const originalDates = originalEnrolledSessions.map(
-      (enrollment: any) => new Date(enrollment.date).toISOString().split("T")[0]
+      (enrollment) => new Date(enrollment.date).toISOString().split("T")[0]
     );
 
     // 새로 추가될 세션 수 (기존에 없던 세션들)
@@ -212,7 +212,7 @@ export function EnrollmentModificationDateStep({
       
       // 기존에 신청된 세션들 (활성 상태)
       const originalEnrolledSessions = existingEnrollments?.filter(
-        (enrollment: any) =>
+        (enrollment) =>
           enrollment.enrollment &&
           (enrollment.enrollment.status === "CONFIRMED" ||
             enrollment.enrollment.status === "PENDING" ||
@@ -221,7 +221,7 @@ export function EnrollmentModificationDateStep({
 
       // 기존 신청 세션의 날짜들
       const originalDates = originalEnrolledSessions.map(
-        (enrollment: any) => new Date(enrollment.date).toISOString().split("T")[0]
+        (enrollment) => new Date(enrollment.date).toISOString().split("T")[0]
       );
 
       // 새로 추가된 세션 수 (기존에 신청되지 않은 세션들)
@@ -244,8 +244,21 @@ export function EnrollmentModificationDateStep({
       localStorage.setItem('selectedSessions', JSON.stringify(selectedSessions));
       localStorage.setItem('selectedClasses', JSON.stringify(selectedClasses));
       
-      // Context에도 저장
-      setSelectedSessions(selectedSessions);
+      // Context에도 저장 (타입 변환)
+      const convertedSessions = selectedSessions.map(session => ({
+        id: session.id,
+        date: session.date,
+        startTime: session.startTime,
+        endTime: session.endTime,
+        currentStudents: 0, // 수강 변경에서는 현재 학생 수 정보가 없으므로 기본값
+        maxStudents: 10, // 수강 변경에서는 최대 학생 수 정보가 없으므로 기본값
+        isEnrollable: session.isEnrollable || false,
+        isFull: session.isFull,
+        isPastStartTime: session.isPastStartTime,
+        isAlreadyEnrolled: session.isAlreadyEnrolled,
+        studentEnrollmentStatus: session.studentEnrollmentStatus || null,
+      }));
+      setSelectedSessions(convertedSessions);
       
       // 실제 수강료 계산
       const actualSessionPrice = modificationSessions.length > 0 
@@ -282,7 +295,7 @@ export function EnrollmentModificationDateStep({
           <div className="h-full">
             <CalendarProvider
               mode="modification"
-              sessions={modificationSessions}
+              sessions={modificationSessions as unknown as ClassSession[]}
               selectedSessionIds={selectedSessionIds}
               onSessionSelect={handleSessionSelect}
               calendarRange={calendarRange ? {

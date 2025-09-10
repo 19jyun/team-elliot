@@ -1,5 +1,6 @@
 import * as React from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface MenuLink {
   label: string
@@ -25,10 +26,12 @@ export function MenuLinks({ links }: MenuLinksProps) {
               type="button"
             >
               <div className="self-stretch my-auto">{link.label}</div>
-              <img
+              <Image
                 loading="lazy"
                 src={link.icon}
                 alt=""
+                width={24}
+                height={24}
                 className="object-contain shrink-0 self-stretch my-auto w-6 aspect-square"
               />
             </button>
@@ -44,10 +47,12 @@ export function MenuLinks({ links }: MenuLinksProps) {
           tabIndex={0}
         >
           <div className="self-stretch my-auto">{link.label}</div>
-          <img
+          <Image
             loading="lazy"
             src={link.icon}
             alt=""
+            width={24}
+            height={24}
             className="object-contain shrink-0 self-stretch my-auto w-6 aspect-square"
           />
         </Link>

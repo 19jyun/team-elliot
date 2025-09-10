@@ -1,7 +1,7 @@
 'use client';
 
 import React, { ReactNode, useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 
 interface ScrollableContentContainerProps {
@@ -104,7 +104,7 @@ export function ScrollableContentContainer({
       container.removeEventListener('touchmove', handleTouchMove);
       container.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [activeTab, onTabChange, isDashboardFocused]);
+  }, [activeTab, onTabChange, isDashboardFocused, children]);
 
   return (
     <div className="relative w-full overflow-hidden">

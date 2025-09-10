@@ -1,23 +1,21 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
+import { toast } from "sonner";
 import { useAppDispatch } from "@/store/hooks";
 import {
-  setCalendarSessions,
-  setCalendarRange,
+  addOptimisticCancellation,
+  replaceOptimisticCancellation,
+  removeOptimisticCancellation,
 } from "@/store/slices/studentSlice";
+
 import {
-  getMyClasses,
   getEnrollmentHistory,
   getMyProfile,
   updateMyProfile,
   getSessionPaymentInfo,
   getCancellationHistory,
+  getTeacherProfile,
 } from "@/api/student";
-import {
-  getAcademies,
-  getMyAcademies,
-  joinAcademy,
-  leaveAcademy,
-} from "@/api/student";
+import { getMyAcademies, joinAcademy, leaveAcademy } from "@/api/student";
 import {
   getStudentAvailableSessionsForEnrollment,
   batchEnrollSessions,
@@ -27,26 +25,51 @@ import {
 import { refundApi } from "@/api/refund";
 import type {
   CreateRefundRequestDto,
-  CreateRefundRequestResponse,
+  RefundRequestResponse,
 } from "@/types/api/refund";
-import type { ClassDetailsResponse } from "@/types/api/class";
+import type { CancellationHistory } from "@/types/api/student";
+import { extractErrorMessage } from "@/types/api/error";
+
 import { getClassDetails as getClassDetailsApi } from "@/api/class";
 import { useApiError } from "@/hooks/useApiError";
+import type {
+  StudentProfile,
+  AvailableSessionForEnrollment,
+  ClassSessionForEnrollment,
+  EnrollmentHistory,
+  UpdateStudentProfileRequest,
+  GetMyAcademiesResponse,
+  StudentBatchEnrollSessionsRequest,
+  GetStudentAvailableSessionsForEnrollmentResponse,
+} from "@/types/api/student";
 
 // Student 대시보드에서 사용할 API 훅
 export function useStudentApi() {
+  const {} = useApiError();
   const dispatch = useAppDispatch();
-  const { handleApiError } = useApiError();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, _setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sessionClasses, setSessionClasses] = useState<any[]>([]);
-  const [academies, setAcademies] = useState<any[]>([]);
-  const [availableClasses, setAvailableClasses] = useState<any[]>([]);
-  const [availableSessions, setAvailableSessions] = useState<any[]>([]);
-  const [enrollmentHistory, setEnrollmentHistory] = useState<any[]>([]);
-  const [cancellationHistory, setCancellationHistory] = useState<any[]>([]);
-  const [userProfile, setUserProfile] = useState<any>(null);
-  const [calendarRange, setCalendarRange] = useState<{
+
+  // 중복 요청 방지를 위한 Set
+  const pendingRequests = useRef<Set<string>>(new Set());
+  const [sessionClasses, _setSessionClasses] = useState<
+    ClassSessionForEnrollment[]
+  >([]);
+  const [academies, setAcademies] = useState<GetMyAcademiesResponse>([]);
+  const [availableClasses, setAvailableClasses] = useState<
+    AvailableSessionForEnrollment[]
+  >([]);
+  const [availableSessions, setAvailableSessions] = useState<
+    AvailableSessionForEnrollment[]
+  >([]);
+  const [enrollmentHistory, setEnrollmentHistory] = useState<
+    EnrollmentHistory[]
+  >([]);
+  const [cancellationHistory, setCancellationHistory] = useState<
+    CancellationHistory[]
+  >([]);
+  const [userProfile, setUserProfile] = useState<StudentProfile | null>(null);
+  const [calendarRange, _setCalendarRange] = useState<{
     startDate: Date;
     endDate: Date;
   } | null>(null);
@@ -71,22 +94,28 @@ export function useStudentApi() {
         academyId
       );
 
-      // API 응답에서 세션 데이터 추출 (response.data.sessions)
-      const sessions = response.data?.sessions || [];
+      // API 응답 구조: { sessions: [...], calendarRange: {...} }
+      const responseData =
+        response.data as GetStudentAvailableSessionsForEnrollmentResponse;
+      const sessions = responseData?.sessions || [];
 
       // 세션에서 클래스 정보를 추출하여 중복 제거
-      const classMap = new Map<number, any>();
-      sessions.forEach((session: any) => {
-        if (session.class) {
-          const classId = session.class.id;
-          if (!classMap.has(classId)) {
-            classMap.set(classId, {
-              ...session.class,
-              availableSessions: sessions.filter(
-                (s: any) => s.classId === classId
-              ),
-            });
-          }
+      const classMap = new Map<
+        string,
+        AvailableSessionForEnrollment & {
+          availableSessions: AvailableSessionForEnrollment[];
+        }
+      >();
+      sessions.forEach((session: AvailableSessionForEnrollment) => {
+        const className = session.class.className;
+        if (!classMap.has(className)) {
+          classMap.set(className, {
+            ...session,
+            availableSessions: sessions.filter(
+              (s: AvailableSessionForEnrollment) =>
+                s.class.className === className
+            ),
+          });
         }
       });
 
@@ -109,8 +138,12 @@ export function useStudentApi() {
     try {
       if (!academyId) return;
 
-      const data = await getStudentAvailableSessionsForEnrollment(academyId);
-      const sessions = data.sessions || [];
+      const response = await getStudentAvailableSessionsForEnrollment(
+        academyId
+      );
+      const responseData =
+        response.data as GetStudentAvailableSessionsForEnrollmentResponse;
+      const sessions = responseData?.sessions || [];
 
       setAvailableSessions(sessions);
     } catch (err) {
@@ -126,7 +159,8 @@ export function useStudentApi() {
   // 배치 수강 신청 함수 (기존 로직 유지, 새로운 useEnrollment hook 사용 권장)
   const enrollSessions = useCallback(async (sessionIds: number[]) => {
     try {
-      const result = await batchEnrollSessions(sessionIds);
+      const requestData: StudentBatchEnrollSessionsRequest = { sessionIds };
+      const result = await batchEnrollSessions(requestData);
       return result;
     } catch (err) {
       console.error("배치 수강 신청 실패:", err);
@@ -212,21 +246,127 @@ export function useStudentApi() {
 
   // 환불 요청 생성 (학생용) (기존 로직 유지, 새로운 useRefund hook 사용 권장)
   const createRefundRequest = useCallback(
-    async (
-      data: CreateRefundRequestDto
-    ): Promise<CreateRefundRequestResponse> => {
+    async (data: CreateRefundRequestDto): Promise<RefundRequestResponse> => {
+      // 중복 요청 방지를 위한 고유 키 생성
+      const requestKey = `refund_${data.sessionEnrollmentId}`;
+
+      // 이미 진행 중인 요청이 있는지 확인
+      if (pendingRequests.current.has(requestKey)) {
+        throw new Error("이미 환불 요청이 진행 중입니다.");
+      }
+
+      // 요청 시작 표시
+      pendingRequests.current.add(requestKey);
+
+      // 낙관적 업데이트를 위한 임시 환불 요청 생성
+      const optimisticCancellation: Omit<CancellationHistory, "id"> & {
+        id: string;
+        isOptimistic: boolean;
+      } = {
+        id: `temp_${Date.now()}`,
+        sessionId: data.sessionEnrollmentId,
+        className: "환불 요청 중...",
+        teacherName: "선생님",
+        sessionDate: new Date().toISOString().split("T")[0],
+        sessionTime: "09:00-10:00",
+        refundAmount: data.refundAmount || 0,
+        status: "REFUND_REQUESTED" as const,
+        reason: data.reason,
+        detailedReason: data.detailedReason,
+        requestedAt: new Date().toISOString(),
+        isOptimistic: true,
+      };
+
       try {
+        // 1. 낙관적 업데이트 (즉시 UI에 반영)
+        dispatch(addOptimisticCancellation(optimisticCancellation));
+
+        toast.success("환불 요청을 처리하고 있습니다...", {
+          description: "잠시만 기다려주세요.",
+        });
+
+        // 2. API 호출
         const res = await refundApi.createRefundRequest(data);
-        return res;
+
+        if (res.data && res.data.id) {
+          // 3. 실제 데이터로 교체
+          const refundData = res.data; // ResponseInterceptor가 래핑한 data
+
+          const realCancellation: CancellationHistory = {
+            id: refundData.id,
+            sessionId: refundData.sessionEnrollmentId,
+            className:
+              refundData.sessionEnrollment?.session?.class?.className ||
+              "클래스명",
+            teacherName:
+              refundData.sessionEnrollment?.session?.class?.teacher?.name ||
+              "선생님",
+            sessionDate:
+              refundData.sessionEnrollment?.session?.date ||
+              new Date().toISOString().split("T")[0],
+            sessionTime: `${
+              refundData.sessionEnrollment?.session?.startTime || "09:00"
+            }-${refundData.sessionEnrollment?.session?.endTime || "10:00"}`,
+            refundAmount: refundData.refundAmount,
+            status: refundData.status as
+              | "REFUND_REQUESTED"
+              | "APPROVED"
+              | "REJECTED",
+            reason: refundData.reason,
+            detailedReason: refundData.detailedReason,
+            requestedAt: refundData.requestedAt,
+            processedAt: refundData.processedAt,
+            cancelledAt: refundData.cancelledAt,
+          };
+
+          dispatch(
+            replaceOptimisticCancellation({
+              optimisticId: optimisticCancellation.id,
+              realCancellation: realCancellation, // isOptimistic 제거, 실제 데이터만 사용
+            })
+          );
+
+          toast.success("환불 요청이 완료되었습니다!", {
+            description: "승인 대기 중입니다.",
+          });
+
+          // 요청 완료 시 pendingRequests에서 제거
+          pendingRequests.current.delete(requestKey);
+
+          return res.data;
+        } else {
+          throw new Error("환불 요청 처리에 실패했습니다.");
+        }
       } catch (err) {
-        console.error("환불 요청 생성 실패:", err);
-        setError(
-          err instanceof Error ? err.message : "환불 요청 생성에 실패했습니다."
+        console.error("❌ [환불 요청] 에러 발생:", err);
+        console.error("❌ [환불 요청] 에러 타입:", typeof err);
+        console.error(
+          "❌ [환불 요청] 에러 메시지:",
+          err instanceof Error ? err.message : String(err)
         );
+        console.error(
+          "❌ [환불 요청] 에러 스택:",
+          err instanceof Error ? err.stack : "No stack trace"
+        );
+
+        // 4. 실패 시 낙관적 업데이트 롤백
+        console.log("🔄 [환불 요청] 낙관적 업데이트 롤백 시작");
+        dispatch(removeOptimisticCancellation(optimisticCancellation.id));
+        console.log("✅ [환불 요청] 낙관적 업데이트 롤백 완료");
+
+        // 에러 발생 시에도 pendingRequests에서 제거
+        pendingRequests.current.delete(requestKey);
+
+        const errorMessage =
+          err instanceof Error ? err.message : "환불 요청 생성에 실패했습니다.";
+
+        setError(errorMessage);
+
+        toast.error(extractErrorMessage(err, "환불 요청에 실패했습니다."));
         throw err;
       }
     },
-    []
+    [dispatch]
   );
 
   // 사용자 프로필 로드 함수
@@ -247,9 +387,9 @@ export function useStudentApi() {
 
   // 사용자 프로필 업데이트 함수 (변경된 필드만 전송, 날짜 ISO 포맷 변환)
   const updateUserProfile = useCallback(
-    async (profileData: any) => {
+    async (profileData: UpdateStudentProfileRequest) => {
       try {
-        const sanitized: Record<string, any> = {};
+        const sanitized: Record<string, unknown> = {};
         Object.entries(profileData || {}).forEach(([key, value]) => {
           if (value === "" || value === undefined || value === null) return;
 
@@ -340,34 +480,50 @@ export function useStudentApi() {
     return response.data;
   }, []);
 
+  // 선생님 프로필 조회 (학생용)
+  const getTeacherProfileForStudent = useCallback(async (teacherId: number) => {
+    try {
+      const response = await getTeacherProfile(teacherId);
+      return response.data;
+    } catch (err) {
+      console.error("선생님 프로필 조회 실패:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "선생님 프로필을 불러오는데 실패했습니다."
+      );
+      throw err;
+    }
+  }, []);
+
   // 캘린더용 세션 데이터 변환 (ConnectedCalendar에서 사용)
   const convertedSessions = useMemo(() => {
     if (!sessionClasses || sessionClasses.length === 0) {
       return [];
     }
 
-    return sessionClasses.map((session: any) => ({
+    return sessionClasses.map((session: ClassSessionForEnrollment) => ({
       id: session.id,
-      classId: session.classId || session.id,
+      classId: session.id, // classId가 없으므로 id 사용
       date: session.date,
       startTime: session.startTime,
       endTime: session.endTime,
-      currentStudents: session.currentStudents || 0,
+      currentStudents: session.currentEnrollments || 0,
       maxStudents: session.maxStudents || 0,
       isEnrollable: false, // student-view에서는 선택 불가
-      isFull: session.currentStudents >= session.maxStudents,
+      isFull: session.currentEnrollments >= session.maxStudents,
       isPastStartTime:
         new Date(session.date + " " + session.startTime) < new Date(),
       isAlreadyEnrolled: true, // 이미 수강 중인 세션
       studentEnrollmentStatus: "CONFIRMED",
       class: {
-        id: session.class?.id || session.classId || session.id,
-        className: session.class?.className || "클래스",
-        level: session.class?.level || "BEGINNER",
-        tuitionFee: session.class?.tuitionFee?.toString() || "50000",
+        id: session.id,
+        className: session.className || "클래스",
+        level: "BEGINNER", // 기본값 사용
+        tuitionFee: session.tuitionFee?.toString() || "50000",
         teacher: {
-          id: session.class?.teacher?.id || 0,
-          name: session.class?.teacher?.name || "선생님",
+          id: 0, // 기본값 사용
+          name: session.teacherName || "선생님",
         },
       },
     }));
@@ -456,5 +612,8 @@ export function useStudentApi() {
 
     // 클래스 상세
     getClassDetails,
+
+    // 선생님 프로필
+    getTeacherProfileForStudent,
   };
 }

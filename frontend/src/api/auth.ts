@@ -2,22 +2,24 @@ import { post } from "./apiClient";
 import { clearApiClientSessionCache } from "./apiClient";
 import { clearSessionCache } from "@/lib/axios";
 import {
-  LoginRequest,
-  LoginResponse,
-  SignupRequest,
-  SignupResponse,
+  // LoginRequest,
+  // LoginResponse,
+  // SignupRequest,
+  // SignupResponse,
   LogoutResponse,
-  WithdrawalRequest,
-  WithdrawalResponse,
+  // WithdrawalRequest,
+  // WithdrawalResponse,
   CheckUserIdRequest,
   CheckUserIdResponse,
 } from "../types/api/auth";
 
-export const login = (data: LoginRequest): Promise<LoginResponse> =>
-  post<LoginResponse>("/auth/login", data);
+// const _login = (data: LoginRequest): Promise<LoginResponse> =>
+//   post<LoginResponse>("/auth/login", data);
 
-export const signup = (data: SignupRequest): Promise<SignupResponse> =>
-  post<SignupResponse>("/auth/signup", data);
+// const _signup = (data: SignupRequest): Promise<SignupResponse> =>
+//   post<SignupResponse>("/auth/signup", data);
+
+// 미사용 메서드들 주석처리
 
 export const logout = async (): Promise<LogoutResponse> => {
   // 세션 캐시 클리어
@@ -28,10 +30,8 @@ export const logout = async (): Promise<LogoutResponse> => {
   return post<LogoutResponse>("/auth/logout");
 };
 
-export const withdrawal = (
-  data: WithdrawalRequest
-): Promise<WithdrawalResponse> =>
-  post<WithdrawalResponse>("/auth/withdrawal", data);
+// const _withdrawal = (data: WithdrawalRequest): Promise<WithdrawalResponse> =>
+//   post<WithdrawalResponse>("/auth/withdrawal", data);
 
 export const checkDuplicateUserId = (
   userId: string

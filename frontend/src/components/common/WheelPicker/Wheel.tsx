@@ -17,32 +17,43 @@ interface WheelProps {
 }
 
 export default function Wheel(props: WheelProps) {
-  const perspective = props.perspective || "center"
+  const { 
+    perspective: perspectiveProp = "center",
+    length,
+    loop,
+    setValue,
+    width,
+    label,
+    onChange,
+    initIdx
+  } = props
+  
+  const perspective = perspectiveProp
   const wheelSize = 20
-  const slides = props.length
+  const slides = length
   const slideDegree = 360 / wheelSize
-  const slidesPerView = props.loop ? 9 : 1
+  const slidesPerView = loop ? 9 : 1
   const [sliderState, setSliderState] = React.useState<TrackDetails | null>(
     null
   )
   const size = useRef(0)
-  const onChangeRef = useRef(props.onChange)
+  const onChangeRef = useRef(onChange)
   const lastIndexRef = useRef<number | null>(null)
 
   // onChange ref 업데이트
   React.useEffect(() => {
-    onChangeRef.current = props.onChange
-  }, [props.onChange])
+    onChangeRef.current = onChange
+  }, [onChange])
 
   const options = useRef<KeenSliderOptions>({
     slides: {
       number: slides,
-      origin: props.loop ? "center" : "auto",
+      origin: loop ? "center" : "auto",
       perView: slidesPerView,
     },
     vertical: true,
-    initial: props.initIdx || 0,
-    loop: props.loop,
+    initial: Math.max(0, Math.min(slides - 1, initIdx || 0)), // initIdx가 유효한 범위 내에 있는지 확인
+    loop: loop,
     dragSpeed: (val) => {
       const height = size.current
       return (
@@ -61,7 +72,7 @@ export default function Wheel(props: WheelProps) {
     detailsChanged: (s) => {
       setSliderState(s.track.details)
     },
-    rubberband: !props.loop,
+    rubberband: !loop,
     mode: "free-snap",
   })
 
@@ -75,25 +86,39 @@ export default function Wheel(props: WheelProps) {
   // 현재 선택된 값이 변경될 때만 onChange 호출 (중복 호출 방지)
   React.useEffect(() => {
     if (sliderState && onChangeRef.current) {
-      const currentIndex = sliderState.abs % props.length;
+      const currentIndex = sliderState.abs % length;
       // 이전 인덱스와 다를 때만 호출
       if (lastIndexRef.current !== currentIndex) {
         lastIndexRef.current = currentIndex;
         onChangeRef.current(currentIndex);
       }
     }
-  }, [sliderState?.abs, props.length])
+  }, [sliderState, length])
 
   // slideValues를 useMemo로 최적화
   const slideValues = useMemo(() => {
-    if (!sliderState) return []
-    const offset = props.loop ? 1 / 2 - 1 / slidesPerView / 2 : 0
+    // sliderState가 완전히 초기화되지 않았거나 slides 배열이 없는 경우 빈 배열 반환
+    if (!sliderState || !sliderState.slides || !Array.isArray(sliderState.slides) || sliderState.slides.length === 0) {
+      return []
+    }
+    
+    const offset = loop ? 1 / 2 - 1 / slidesPerView / 2 : 0
 
     const values = []
     for (let i = 0; i < slides; i++) {
-      const distance = sliderState
-        ? (sliderState.slides[i].distance - offset) * slidesPerView
-        : 0
+      // 방어적 프로그래밍: slides[i]가 존재하고 distance 프로퍼티가 있는지 확인
+      const slide = sliderState.slides[i]
+      if (!slide || typeof slide.distance === 'undefined') {
+        // slide가 없거나 distance가 없으면 기본값으로 처리
+        values.push({ 
+          transform: `rotateX(0deg) translateZ(${radius}px)`, 
+          value: setValue ? setValue(i, i) : i, 
+          isSelected: false 
+        })
+        continue
+      }
+
+      const distance = (slide.distance - offset) * slidesPerView
       const rotate =
         Math.abs(distance) > wheelSize / 2
           ? 180
@@ -102,8 +127,8 @@ export default function Wheel(props: WheelProps) {
       // 스타일 객체를 인라인으로 생성하지 않고 문자열로 최적화
       const transform = `rotateX(${rotate}deg) translateZ(${radius}px)`
       
-      const value = props.setValue
-        ? props.setValue(i, sliderState.abs + Math.round(distance))
+      const value = setValue
+        ? setValue(i, sliderState.abs + Math.round(distance))
         : i
       
       // 선택된 슬라이드인지 확인 (중앙에 가까운 슬라이드)
@@ -112,7 +137,20 @@ export default function Wheel(props: WheelProps) {
       values.push({ transform, value, isSelected })
     }
     return values
-  }, [sliderState, props.loop, slidesPerView, slides, wheelSize, radius, props.setValue])
+  }, [sliderState, loop, slidesPerView, slides, wheelSize, radius, setValue])
+
+  // sliderState가 완전히 초기화되지 않았으면 로딩 상태 표시
+  if (!sliderState || !sliderState.slides || !Array.isArray(sliderState.slides) || sliderState.slides.length === 0) {
+    return (
+      <div
+        className={"wheel keen-slider wheel--perspective-" + perspective}
+        ref={sliderRef}
+        style={{ minHeight: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      >
+        <div className="text-stone-500 text-sm">로딩 중...</div>
+      </div>
+    )
+  }
 
   return (
     <div
@@ -127,7 +165,7 @@ export default function Wheel(props: WheelProps) {
         }}
       />
       <div className="wheel__inner">
-        <div className="wheel__slides" style={{ width: props.width + "px" }}>
+        <div className="wheel__slides" style={{ width: width + "px" }}>
           {slideValues.map(({ transform, value, isSelected }, idx) => (
             <div 
               className={`wheel__slide ${isSelected ? 'selected' : ''}`} 
@@ -141,7 +179,7 @@ export default function Wheel(props: WheelProps) {
             </div>
           ))}
         </div>
-        {props.label && (
+        {label && (
           <div
             className="wheel__label"
             style={{

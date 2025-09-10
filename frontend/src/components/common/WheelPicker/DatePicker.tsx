@@ -41,15 +41,13 @@ export default function DatePicker({ value, onChange, className = '' }: DatePick
       setMonth(m || today.month);
       setDay(d || today.day);
     } else {
-      // 값이 없으면 오늘로 설정하고 onChange 호출
+      // 값이 없으면 오늘로 설정
       setYear(today.year);
       setMonth(today.month);
       setDay(today.day);
-      // 초기값을 onChange로 전달
-      const initialDate = `${today.year}-${today.month.toString().padStart(2, '0')}-${today.day.toString().padStart(2, '0')}`;
-      onChange(initialDate);
+      // 초기값 설정 시에는 onChange를 호출하지 않음 (무한 루프 방지)
     }
-  }, [value, today, onChange]);
+  }, [value, today]); // onChange 의존성 제거
 
   // 해당 월의 마지막 날 계산
   const getDaysInMonth = useCallback((year: number, month: number) => {
@@ -138,16 +136,16 @@ export default function DatePicker({ value, onChange, className = '' }: DatePick
   }, [year, month, day, today, oneYearLater, updateDate, getDaysInMonth]);
 
   // 포맷팅 함수들
-  const formatYear = useCallback((relative: number, absolute: number) => {
+  const formatYear = useCallback((relative: number) => {
     const yearValue = today.year + relative;
     return yearValue.toString();
   }, [today.year]);
 
-  const formatMonth = useCallback((relative: number, absolute: number) => {
+  const formatMonth = useCallback((relative: number) => {
     return (relative + 1).toString().padStart(2, '0');
   }, []);
 
-  const formatDay = useCallback((relative: number, absolute: number) => {
+  const formatDay = useCallback((relative: number) => {
     return (relative + 1).toString().padStart(2, '0');
   }, []);
 

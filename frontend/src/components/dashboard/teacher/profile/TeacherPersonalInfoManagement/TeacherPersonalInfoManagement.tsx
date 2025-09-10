@@ -7,6 +7,7 @@ import { PhoneInput } from '@/components/ui/phone-input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { User, Phone, Building, Edit, Save, X } from 'lucide-react';
+import { CloseCircleIcon } from '@/components/icons';
 import { toast } from 'sonner';
 import { UpdateProfileRequest } from '@/types/api/teacher';
 import { useTeacherApi } from '@/hooks/teacher/useTeacherApi';
@@ -30,7 +31,7 @@ export function TeacherPersonalInfoManagement() {
   const [isLoading, setIsLoading] = useState(false);
 
   // API 기반 데이터 관리
-  const { profile, academy, loadProfile, loadAcademy, error, isTeacher, updateProfile } = useTeacherApi();
+  const { profile, academy, loadProfile, loadAcademy, isTeacher, updateProfile } = useTeacherApi();
   const { handleApiError, fieldErrors, clearErrors } = useApiError();
 
   // 컴포넌트 마운트 시 프로필 로드
@@ -39,7 +40,7 @@ export function TeacherPersonalInfoManagement() {
       loadProfile();
       loadAcademy();
     }
-  }, [isTeacher]);
+  }, [isTeacher, profile, loadProfile, loadAcademy]);
 
   // profile 데이터가 로드되면 editedInfo 업데이트 (편집 모드가 아닐 때만)
   useEffect(() => {
@@ -199,14 +200,6 @@ export function TeacherPersonalInfoManagement() {
     setIsTimerRunning(false);
     setVerificationCode(''); // 인증번호 입력 필드 초기화
     toast.success('전화번호 인증이 완료되었습니다.');
-  };
-
-  const handleCancelVerification = () => {
-    setIsPhoneVerificationRequired(false);
-    setIsPhoneVerified(false);
-    setIsTimerRunning(false);
-    setTimeLeft(180);
-    setVerificationCode('');
   };
 
   const handleClearVerificationCode = () => {
@@ -393,11 +386,9 @@ export function TeacherPersonalInfoManagement() {
                               onClick={handleClearVerificationCode}
                               className="p-1 hover:bg-gray-100 rounded"
                             >
-                              <img 
-                                src="/icons/close-circle.svg" 
-                                alt="인증번호 지우기" 
-                                width="16" 
-                                height="16"
+                              <CloseCircleIcon 
+                                width={16} 
+                                height={16}
                               />
                             </button>
                             <div className="text-sm font-mono" style={{ color: '#573B30', fontFamily: 'Pretendard Variable' }}>

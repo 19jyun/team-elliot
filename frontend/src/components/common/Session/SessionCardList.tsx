@@ -2,10 +2,11 @@
 
 import React from 'react'
 import { SessionCard } from './SessionCard'
+import type { ClassSessionWithCounts } from '@/types/api/class'
 
 interface SessionCardListProps {
-  sessions: any[]
-  onSessionClick: (session: any) => void
+  sessions: ClassSessionWithCounts[]
+  onSessionClick: (session: ClassSessionWithCounts) => void
   role: 'student' | 'teacher' | 'principal'
 }
 

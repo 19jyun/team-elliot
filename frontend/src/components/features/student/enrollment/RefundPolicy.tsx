@@ -3,6 +3,7 @@ import { PolicySection } from './PolicySection'
 import { CheckboxAgreement } from './CheckboxAgreement'
 import { Button } from './Button'
 import { policyData } from './data'
+import type { PolicySectionData } from '@/types/ui/common'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 
@@ -12,7 +13,7 @@ interface RefundPolicyProps {
   onAgree?: () => void
 }
 
-export const RefundPolicy: React.FC<RefundPolicyProps> = ({ isOpen, onClose, onAgree }) => {
+export const RefundPolicy: React.FC<RefundPolicyProps> = ({ isOpen, onClose }) => {
   const [isBottom, setIsBottom] = React.useState(false)
   const [isChecked, setIsChecked] = React.useState(false)
   const contentRef = React.useRef<HTMLDivElement>(null)
@@ -82,7 +83,7 @@ export const RefundPolicy: React.FC<RefundPolicyProps> = ({ isOpen, onClose, onA
             }}
           >
             <div className="flex flex-col w-full text-base tracking-normal text-neutral-800">
-              {policyData.sections.map((section, index) => (
+              {policyData.sections.map((section: PolicySectionData, index: number) => (
                 <PolicySection
                   key={index}
                   title={section.title}
@@ -98,7 +99,6 @@ export const RefundPolicy: React.FC<RefundPolicyProps> = ({ isOpen, onClose, onA
           <div className="flex justify-center px-5 py-2 w-full">
             <CheckboxAgreement
               text="신규회원 필수 안내를 확인했어요"
-              iconSrc="https://cdn.builder.io/api/v1/image/assets/TEMP/66313034980cffa3f625feffeeea01d71c26e87d2cf3d99975ffeefe94e017d6"
               onChange={handleCheckboxChange}
             />
           </div>

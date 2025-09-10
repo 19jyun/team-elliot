@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { classId: string } }
+  { params }: { params: Promise<{ classId: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -12,7 +12,8 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const classId = parseInt(params.classId);
+    const resolvedParams = await params;
+    const classId = parseInt(resolvedParams.classId);
     if (isNaN(classId)) {
       return NextResponse.json({ error: "Invalid class ID" }, { status: 400 });
     }

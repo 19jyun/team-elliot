@@ -1,10 +1,11 @@
 import { createSlice } from "@reduxjs/toolkit";
-import type { StudentState, StudentData } from "@/types/store/student";
-import type { SocketEventData } from "@/types/socket";
+import type { StudentState } from "@/types/store/student";
 import type {
   EnrollmentHistory,
   CancellationHistory,
 } from "@/types/api/student";
+import type { ClassSession } from "@/types/api/class";
+import type { SocketEventData } from "@/types/socket";
 
 const initialState: StudentState = {
   data: {
@@ -17,7 +18,7 @@ const initialState: StudentState = {
   error: null,
 };
 
-export const studentSlice = createSlice({
+const studentSlice = createSlice({
   name: "student",
   initialState,
   reducers: {
@@ -98,7 +99,7 @@ export const studentSlice = createSlice({
     updateCalendarSession: (state, action) => {
       if (state.data?.calendarSessions) {
         const index = state.data.calendarSessions.findIndex(
-          (s) => s.id === action.payload.id
+          (s: ClassSession) => s.id === action.payload.id
         );
         if (index !== -1) {
           state.data.calendarSessions[index] = action.payload;
@@ -110,7 +111,7 @@ export const studentSlice = createSlice({
     removeCalendarSession: (state, action) => {
       if (state.data?.calendarSessions) {
         state.data.calendarSessions = state.data.calendarSessions.filter(
-          (s) => s.id !== action.payload
+          (s: ClassSession) => s.id !== action.payload
         );
       }
     },
@@ -230,7 +231,7 @@ export const studentSlice = createSlice({
 
         // 기존 optimistic session 제거
         const optimisticIndex = state.data.calendarSessions.findIndex(
-          (s) => s.id === optimisticId
+          (s: ClassSession) => s.id === optimisticId
         );
         if (optimisticIndex !== -1) {
           state.data.calendarSessions.splice(optimisticIndex, 1);
@@ -238,7 +239,7 @@ export const studentSlice = createSlice({
 
         // 동일한 id를 가진 기존 session이 있는지 확인하고 제거
         const existingIndex = state.data.calendarSessions.findIndex(
-          (s) => s.id === realSession.id
+          (s: ClassSession) => s.id === realSession.id
         );
         if (existingIndex !== -1) {
           state.data.calendarSessions.splice(existingIndex, 1);
@@ -256,143 +257,111 @@ export const studentSlice = createSlice({
       if (state.data?.calendarSessions) {
         const optimisticId = action.payload;
         state.data.calendarSessions = state.data.calendarSessions.filter(
-          (s) => s.id !== optimisticId
+          (s: ClassSession) => s.id !== optimisticId
         );
       }
     },
 
     updateStudentEnrollmentFromSocket: (state, action) => {
-      const { enrollmentId, status, data } =
-        action.payload as SocketEventData<"enrollment_status_changed">;
+      // 수강신청 승인/거절 이벤트 처리
+      const payload = action.payload as SocketEventData<
+        "enrollment_accepted" | "enrollment_rejected"
+      >;
+      const { enrollmentId, sessionId } = payload;
       if (state.data?.enrollmentHistory) {
         const index = state.data.enrollmentHistory.findIndex(
           (e) => e.id === enrollmentId
         );
         if (index !== -1) {
+          // 이벤트 타입에 따라 상태 결정
+          const newStatus = action.type.includes("accepted")
+            ? "CONFIRMED"
+            : "REJECTED";
+
           state.data.enrollmentHistory[index] = {
             ...state.data.enrollmentHistory[index],
-            status,
-            ...data,
+            status: newStatus,
           };
         }
       }
 
       // 캘린더 세션 업데이트
-      if (state.data?.calendarSessions) {
-        // enrollmentId를 통해 해당 enrollment의 sessionId 찾기
-        const enrollment = state.data.enrollmentHistory?.find(
-          (e) => e.id === enrollmentId
+      if (state.data?.calendarSessions && sessionId) {
+        const sessionIndex = state.data.calendarSessions.findIndex(
+          (s: ClassSession) => s.id === sessionId || s.classId === sessionId
         );
-        const sessionId = enrollment?.sessionId || data?.sessionId;
 
-        if (sessionId) {
-          // 정확한 sessionId 매칭 시도
-          let sessionIndex = state.data.calendarSessions.findIndex(
-            (s) => s.id === sessionId || s.classId === sessionId
-          );
-
-          // 낙관적 업데이트된 세션도 처리 (임시 ID 패턴 확인)
-          if (sessionIndex === -1) {
-            sessionIndex = state.data.calendarSessions.findIndex(
-              (s) =>
-                s.isOptimistic &&
-                (s.classId === sessionId || s.id === sessionId)
-            );
-          }
-
-          if (sessionIndex !== -1) {
-            // enrollment 상태에 따라 캘린더 세션 상태 업데이트
-            if (status === "CONFIRMED") {
-              state.data.calendarSessions[sessionIndex] = {
-                ...state.data.calendarSessions[sessionIndex],
-                isAlreadyEnrolled: true,
-                studentEnrollmentStatus: "CONFIRMED",
-              };
-            } else if (status === "REJECTED") {
-              // 거절된 경우 캘린더에서 제거 (낙관적 업데이트 포함)
-              state.data.calendarSessions.splice(sessionIndex, 1);
-            }
+        if (sessionIndex !== -1) {
+          // 이벤트 타입에 따라 캘린더 세션 상태 업데이트
+          if (action.type.includes("accepted")) {
+            // 승인된 경우
+            state.data.calendarSessions[sessionIndex] = {
+              ...state.data.calendarSessions[sessionIndex],
+              isAlreadyEnrolled: true,
+              studentEnrollmentStatus: "CONFIRMED",
+            };
+          } else if (action.type.includes("rejected")) {
+            // 거절된 경우 캘린더에서 제거
+            state.data.calendarSessions.splice(sessionIndex, 1);
           }
         }
       }
     },
 
     updateStudentCancellationFromSocket: (state, action) => {
-      const { refundId, status, data } =
-        action.payload as SocketEventData<"refund_request_status_changed">;
+      // 환불 승인/거절 이벤트 처리
+      const payload = action.payload as SocketEventData<
+        "refund_accepted" | "refund_rejected"
+      >;
+      const { refundId, sessionId } = payload;
 
-      console.log("🔄 환불 요청 소켓 이벤트 수신:", { refundId, status, data });
+      console.log("🔄 환불 요청 소켓 이벤트 수신:", { refundId, sessionId });
 
       if (state.data?.cancellationHistory) {
         const index = state.data.cancellationHistory.findIndex(
           (c) => c.id === refundId
         );
         if (index !== -1) {
+          // 이벤트 타입에 따라 상태 결정
+          const newStatus = action.type.includes("accepted")
+            ? "APPROVED"
+            : "REJECTED";
+
           state.data.cancellationHistory[index] = {
             ...state.data.cancellationHistory[index],
-            status,
-            ...data,
+            status: newStatus,
           };
         }
       }
 
       // 캘린더 세션 업데이트 (환불 승인 시 세션 제거)
-      if (status === "APPROVED" && state.data?.calendarSessions) {
-        // refundId를 통해 해당 환불 요청의 sessionId 찾기
-        const cancellation = state.data.cancellationHistory?.find(
-          (c) => c.id === refundId
-        );
-        const sessionId = cancellation?.sessionId || data?.sessionId;
-
+      if (
+        action.type.includes("accepted") &&
+        state.data?.calendarSessions &&
+        sessionId
+      ) {
         console.log("🔍 환불 승인 캘린더 세션 업데이트 시도:", {
           refundId,
           sessionId,
           totalSessions: state.data.calendarSessions.length,
         });
 
-        if (sessionId) {
-          // 정확한 sessionId 매칭 시도
-          let sessionIndex = state.data.calendarSessions.findIndex(
-            (s) => s.id === sessionId || s.classId === sessionId
-          );
+        const sessionIndex = state.data.calendarSessions.findIndex(
+          (s: ClassSession) => s.id === sessionId || s.classId === sessionId
+        );
 
-          // 낙관적 업데이트된 세션도 처리 (임시 ID 패턴 확인)
-          if (sessionIndex === -1) {
-            sessionIndex = state.data.calendarSessions.findIndex(
-              (s) =>
-                s.isOptimistic &&
-                (s.classId === sessionId || s.id === sessionId)
-            );
-          }
+        console.log("🎯 환불 세션 매칭 결과:", { sessionIndex, sessionId });
 
-          console.log("🎯 환불 세션 매칭 결과:", { sessionIndex, sessionId });
-
-          if (sessionIndex !== -1) {
-            console.log("✅ 환불 승인: 캘린더에서 세션 제거");
-            // 환불이 승인된 경우 캘린더에서 세션 제거 (낙관적 업데이트 포함)
-            state.data.calendarSessions.splice(sessionIndex, 1);
-          } else {
-            console.warn("⚠️ 환불 승인: 매칭되는 세션을 찾을 수 없음:", {
-              sessionId,
-            });
-          }
+        if (sessionIndex !== -1) {
+          console.log("✅ 환불 승인: 캘린더에서 세션 제거");
+          // 환불이 승인된 경우 캘린더에서 세션 제거
+          state.data.calendarSessions.splice(sessionIndex, 1);
         } else {
-          console.warn("⚠️ 환불 승인: sessionId를 찾을 수 없음:", {
-            refundId,
-            data,
+          console.warn("⚠️ 환불 승인: 매칭되는 세션을 찾을 수 없음:", {
+            sessionId,
           });
         }
       }
-    },
-
-    // 15. 세션 가용성 변경 (캘린더용)
-    updateAvailableSessionFromSocket: (state, action) => {
-      // 캘린더 관련 업데이트 로직 (추후 구현)
-    },
-
-    // 16. 클래스 가용성 변경 (캘린더용)
-    updateAvailableClassFromSocket: (state, action) => {
-      // 캘린더 관련 업데이트 로직 (추후 구현)
     },
 
     // 17. 세션 정보 업데이트 (캘린더용)
@@ -400,7 +369,7 @@ export const studentSlice = createSlice({
       const { sessionId, updates } = action.payload;
       if (state.data?.calendarSessions) {
         const sessionIndex = state.data.calendarSessions.findIndex(
-          (s) => s.id === sessionId
+          (s: ClassSession) => s.id === sessionId
         );
         if (sessionIndex !== -1) {
           state.data.calendarSessions[sessionIndex] = {
@@ -417,7 +386,7 @@ export const studentSlice = createSlice({
       if (state.data?.calendarSessions) {
         // 중복 체크
         const existingIndex = state.data.calendarSessions.findIndex(
-          (s) => s.id === newSession.id
+          (s: ClassSession) => s.id === newSession.id
         );
         if (existingIndex === -1) {
           state.data.calendarSessions.push(newSession);
@@ -433,14 +402,14 @@ export const {
   setError,
   updateStudentEnrollmentHistory,
   updateStudentCancellationHistory,
-  setCalendarSessions,
-  setCalendarRange,
-  addCalendarSession,
+  
+  
+  
   updateCalendarSession,
   removeCalendarSession,
-  updateStudentEnrollment,
-  updateStudentCancellation,
-  clearStudentData,
+  
+  
+  
   addOptimisticEnrollment,
   replaceOptimisticEnrollment,
   removeOptimisticEnrollment,
@@ -450,12 +419,10 @@ export const {
   addOptimisticCalendarSession,
   replaceOptimisticCalendarSession,
   removeOptimisticCalendarSession,
-  updateStudentEnrollmentFromSocket,
-  updateStudentCancellationFromSocket,
-  updateAvailableSessionFromSocket,
-  updateAvailableClassFromSocket,
-  updateSessionInfoFromSocket,
-  addNewSessionFromSocket,
+  
+  
+  
+  
 } = studentSlice.actions;
 
 export default studentSlice.reducer;

@@ -7,6 +7,7 @@ import {
   setLoading,
   setError,
 } from "@/store/slices/principalSlice";
+import { extractErrorMessage } from "@/types/api/error";
 import {
   getPrincipalAllEnrollments,
   getPrincipalAllRefundRequests,
@@ -47,6 +48,12 @@ export function usePrincipalInitialization() {
         // 디버깅: 환불 요청 데이터 확인
         console.log("환불 요청 API 응답:", refundRequests);
         console.log("환불 요청 개수:", refundRequests?.length || 0);
+        if (refundRequests && refundRequests.length > 0) {
+          console.log(
+            "첫 번째 환불 요청 구조:",
+            JSON.stringify(refundRequests[0], null, 2)
+          );
+        }
 
         // Redux 상태 업데이트 (실시간 데이터만)
         dispatch(
@@ -59,11 +66,13 @@ export function usePrincipalInitialization() {
         toast.success("Principal 실시간 데이터가 로드되었습니다.", {
           id: "principal-init",
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("❌ Principal 실시간 데이터 초기화 실패:", error);
 
-        const errorMessage =
-          error.response?.data?.message || "실시간 데이터 로딩에 실패했습니다.";
+        const errorMessage = extractErrorMessage(
+          error,
+          "실시간 데이터 로딩에 실패했습니다."
+        );
         dispatch(setError(errorMessage));
 
         toast.error("Principal 실시간 데이터 로딩 실패", {

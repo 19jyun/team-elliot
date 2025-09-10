@@ -3,14 +3,13 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Users, Trash2 } from 'lucide-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { useEffect } from 'react';
+import { PrincipalTeacher } from '@/types/api/principal';
 
 export default function PrincipalTeacherManagementSection() {
-  const queryClient = useQueryClient();
-
   // API 기반 데이터 관리
   const { teachers, loadTeachers, isLoading, error, removeTeacher } = usePrincipalApi();
 
@@ -27,8 +26,11 @@ export default function PrincipalTeacherManagementSection() {
       loadTeachers();
       toast.success('선생님이 학원에서 제거되었습니다.');
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || '선생님 제거에 실패했습니다.');
+    onError: (error: unknown) => {
+      const errorMessage = error && typeof error === 'object' && 'response' in error 
+        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message 
+        : '선생님 제거에 실패했습니다.';
+      toast.error(errorMessage || '선생님 제거에 실패했습니다.');
     },
   });
 
@@ -98,7 +100,7 @@ export default function PrincipalTeacherManagementSection() {
         <CardContent>
           <div className="space-y-3">
             {teachers && teachers.length > 0 ? (
-              teachers.map((teacher: any) => (
+              teachers.map((teacher: PrincipalTeacher) => (
                 <div key={teacher.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-3">
                     <div>

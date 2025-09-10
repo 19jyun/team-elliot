@@ -1,18 +1,21 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession, signOut } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi'
 import { useApiError } from '@/hooks/useApiError'
 import { ClassList } from '@/components/common/ClassContainer/ClassList'
-import { CommonClassData } from '@/components/common/ClassContainer/ClassCard'
 import { ClassSessionModal } from '@/components/common/ClassContainer/ClassSessionModal'
+import { Class } from '@/types/api/class'
+import { CommonClassData } from '@/components/common/ClassContainer/ClassCard'
+import { DayOfWeek } from '@/types/api/common'
+import { toClassSessionForCalendar } from '@/lib/adapters/principal'
 
 export const PrincipalClassesContainer = () => {
   const router = useRouter()
-  const { data: session, status } = useSession({
+  const { status } = useSession({
     required: true,
     onUnauthenticated() {
       router.push('/auth')
@@ -20,7 +23,7 @@ export const PrincipalClassesContainer = () => {
   })
 
   // 클래스 선택 상태
-  const [selectedClass, setSelectedClass] = useState<any>(null)
+  const [selectedClass, setSelectedClass] = useState<Class | null>(null)
   const [isClassSessionModalOpen, setIsClassSessionModalOpen] = useState(false)
 
   // API 기반 데이터 관리
@@ -33,7 +36,7 @@ export const PrincipalClassesContainer = () => {
       loadClasses();
       loadSessions();
     }
-  }, []);
+  }, [isPrincipal, loadClasses, loadSessions]);
 
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {
@@ -66,8 +69,30 @@ export const PrincipalClassesContainer = () => {
   }
 
   // 클래스 클릭 핸들러
-  const handleClassClick = (classData: any) => {
-    setSelectedClass(classData)
+  const handleClassClick = (classData: CommonClassData) => {
+    // CommonClassData를 Class 타입으로 변환
+    const classObj: Class = {
+      id: classData.id,
+      className: classData.className,
+      classCode: '', // CommonClassData에는 없으므로 기본값
+      description: '', // CommonClassData에는 없으므로 기본값
+      maxStudents: 0, // CommonClassData에는 없으므로 기본값
+      currentStudents: 0, // CommonClassData에는 없으므로 기본값
+      tuitionFee: 0, // CommonClassData에는 없으므로 기본값
+      teacherId: classData.teacher?.id || 0,
+      academyId: 0, // CommonClassData에는 없으므로 기본값
+      dayOfWeek: classData.dayOfWeek as DayOfWeek,
+      startTime: classData.startTime,
+      endTime: classData.endTime,
+      level: classData.level,
+      status: 'ACTIVE', // 기본값
+      startDate: classData.startDate,
+      endDate: classData.endDate,
+      backgroundColor: '#f3f4f6', // 기본값
+      teacher: classData.teacher ? { ...classData.teacher, photoUrl: '' } : { id: 0, name: '', photoUrl: '' },
+      academy: { id: 0, name: '' }, // 기본값
+    }
+    setSelectedClass(classObj)
     setIsClassSessionModalOpen(true)
   }
 
@@ -96,13 +121,15 @@ export const PrincipalClassesContainer = () => {
       </div>
 
       {/* Class Session Modal */}
-      <ClassSessionModal
-        isOpen={isClassSessionModalOpen}
-        selectedClass={selectedClass}
-        sessions={sessions || []}
-        onClose={closeClassSessionModal}
-        role="principal"
-      />
+      {selectedClass && (
+        <ClassSessionModal
+          isOpen={isClassSessionModalOpen}
+          selectedClass={selectedClass}
+          sessions={(sessions || []).map(toClassSessionForCalendar)}
+          onClose={closeClassSessionModal}
+          role="principal"
+        />
+      )}
     </div>
   )
 }

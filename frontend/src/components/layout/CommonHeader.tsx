@@ -1,50 +1,47 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { usePathname, useRouter } from 'next/navigation';
+
 import Image from 'next/image';
 import { ArrowLeft } from 'lucide-react';
-import { useEffect } from 'react';
+
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
-import { useStudentContext, studentNavigationItems } from '@/contexts/StudentContext';
-import { useTeacherContext, teacherNavigationItems } from '@/contexts/TeacherContext';
-import { usePrincipalContext, principalNavigationItems } from '@/contexts/PrincipalContext';
+import { useOptionalStudentContext } from '@/contexts/StudentContext';
+import { useOptionalTeacherContext } from '@/contexts/TeacherContext';
+import { useOptionalPrincipalContext, PrincipalPersonManagementState } from '@/contexts/PrincipalContext';
 
 export function CommonHeader() {
   const { data: session } = useSession();
-  const pathname = usePathname();
-  const router = useRouter();
-  const { subPage, goBack } = useDashboardNavigation();
 
-  // 역할별 네비게이션 정보
-  let navigationItems: { label: string; value: number }[] = [];
-  let activeTab = 0;
-  let handleTabChange = (tab: number) => {};
-  let principalPersonManagement: any = null;
-  let principalGoBack: (() => void) | null = null;
+  const { subPage, goBack } = useDashboardNavigation();
   const userRole = session?.user?.role || 'STUDENT';
   
-  try {
-    if (userRole === 'STUDENT') {
-      const ctx = useStudentContext();
-      navigationItems = ctx.navigationItems;
-      activeTab = ctx.activeTab;
-      handleTabChange = ctx.handleTabChange;
-    } else if (userRole === 'TEACHER') {
-      const ctx = useTeacherContext();
-      navigationItems = ctx.navigationItems;
-      activeTab = ctx.activeTab;
-      handleTabChange = ctx.handleTabChange;
-    } else if (userRole === 'PRINCIPAL') {
-      const ctx = usePrincipalContext();
-      navigationItems = ctx.navigationItems;
-      activeTab = ctx.activeTab;
-      handleTabChange = ctx.handleTabChange;
-      principalPersonManagement = ctx.personManagement;
-      principalGoBack = ctx.goBack;
-    }
-  } catch (error) {
-    // Context가 아직 준비되지 않은 경우 기본값 사용
+  // 모든 Hook을 최상위에서 호출 (조건부 Hook 호출 문제 해결)
+  const studentContext = useOptionalStudentContext();
+  const teacherContext = useOptionalTeacherContext();
+  const principalContext = useOptionalPrincipalContext();
+  
+  // 조건부로 context 값 결정
+  let navigationItems: { label: string; value: number }[] = [];
+  let activeTab = 0;
+  let handleTabChange = (_tab: number) => {};
+  let principalPersonManagement: PrincipalPersonManagementState | null = null;
+  let principalGoBack: (() => void) | null = null;
+  
+  if (userRole === 'STUDENT' && studentContext) {
+    navigationItems = studentContext.navigationItems;
+    activeTab = studentContext.activeTab;
+    handleTabChange = studentContext.handleTabChange;
+  } else if (userRole === 'TEACHER' && teacherContext) {
+    navigationItems = teacherContext.navigationItems;
+    activeTab = teacherContext.activeTab;
+    handleTabChange = teacherContext.handleTabChange;
+  } else if (userRole === 'PRINCIPAL' && principalContext) {
+    navigationItems = principalContext.navigationItems;
+    activeTab = principalContext.activeTab;
+    handleTabChange = principalContext.handleTabChange;
+    principalPersonManagement = principalContext.personManagement;
+    principalGoBack = principalContext.goBack;
   }
 
   // 뒤로가기 버튼이 표시되어야 하는지 확인
@@ -69,20 +66,6 @@ export function CommonHeader() {
     
     // 기본 뒤로가기 (DashboardContext)
     goBack();
-  };
-
-  // 기본 대시보드 페이지인지 확인
-  const isDefaultDashboard = () => {
-    if (!session?.user) return false;
-    
-    const userRole = session.user.role || 'STUDENT';
-    const defaultPaths = {
-      STUDENT: '/dashboard/student',
-      TEACHER: '/dashboard/teacher',
-      PRINCIPAL: '/dashboard/principal',
-    } as const;
-    
-    return pathname === defaultPaths[userRole as keyof typeof defaultPaths] || pathname === '/dashboard';
   };
 
   return (

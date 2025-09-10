@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
+import { extractErrorMessage } from "@/types/api/error";
 import { ErrorHandler } from "@/lib/errorHandler";
 import { AppError, ErrorType } from "@/types/api";
 
@@ -9,7 +10,7 @@ interface UseApiErrorReturn {
   clearErrors: () => void;
   handleError: (error: AppError) => void;
   handleApiError: (
-    error: any,
+    error: unknown,
     options?: { disableToast?: boolean; disableConsole?: boolean }
   ) => void;
 }
@@ -42,7 +43,7 @@ export function useApiError(): UseApiErrorReturn {
     ) => {
       const userMessage = ErrorHandler.getUserFriendlyMessage(error);
       const disableToast = options?.disableToast || false;
-      const disableConsole = options?.disableConsole || false;
+      const _disableConsole = options?.disableConsole || false;
 
       switch (error.type) {
         case ErrorType.AUTHENTICATION:
@@ -389,12 +390,12 @@ export function useApiError(): UseApiErrorReturn {
           break;
       }
     },
-    []
+    [clearErrorAfterDelay]
   );
 
   const handleApiError = useCallback(
     (
-      error: any,
+      error: unknown,
       options?: { disableToast?: boolean; disableConsole?: boolean }
     ) => {
       // 콘솔 출력 제어
@@ -410,7 +411,10 @@ export function useApiError(): UseApiErrorReturn {
         const appError: AppError = {
           type: ErrorType.SYSTEM,
           code: "UNKNOWN_ERROR",
-          message: error?.message || "알 수 없는 오류가 발생했습니다.",
+          message: extractErrorMessage(
+            error,
+            "알 수 없는 오류가 발생했습니다."
+          ),
           recoverable: true,
         };
         handleError(appError, options);

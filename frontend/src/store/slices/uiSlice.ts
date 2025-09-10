@@ -32,7 +32,7 @@ const initialState: UIState = {
   theme: "light",
 };
 
-export const uiSlice = createSlice({
+const uiSlice = createSlice({
   name: "ui",
   initialState,
   reducers: {
@@ -81,13 +81,13 @@ export const uiSlice = createSlice({
 });
 
 export const {
-  setGlobalLoading,
-  setModalOpen,
-  addNotification,
-  removeNotification,
-  clearNotifications,
-  setSidebarOpen,
-  setTheme,
+  
+  
+  
+  
+  
+  
+  
 } = uiSlice.actions;
 
 export default uiSlice.reducer;

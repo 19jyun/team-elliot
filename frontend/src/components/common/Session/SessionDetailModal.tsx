@@ -1,9 +1,10 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { SessionEnrollmentsResponse } from '@/types/api/teacher'
+import { TeacherSessionEnrollment } from '@/types/api/teacher'
 import { AttendanceTab } from '@/components/common/Session/SessionDetailComponents/Attendance/AttendanceTab'
 import { SessionContentTab } from '@/components/common/Session/SessionDetailComponents/Pose/SessionContentTab'
 import { PoseSelectionModal } from '@/components/common/Session/SessionDetailComponents/Pose/PoseSelectionModal'
@@ -51,45 +52,29 @@ export function SessionDetailModal({
   const { 
     sessions: principalSessions,
     loadSessions: loadPrincipalSessions,
-    isLoading: principalLoading,
-    error: principalError,
     loadSessionEnrollments: loadPrincipalSessionEnrollments
   } = principalApi;
 
   const {
     sessions: teacherSessions,
     loadSessions: loadTeacherSessions,
-    isLoading: teacherLoading,
-    error: teacherError,
     loadSessionEnrollments: loadTeacherSessionEnrollments
   } = teacherApi;
 
   // 현재 역할에 맞는 데이터 선택
   const currentSessions = role === 'teacher' ? teacherSessions : principalSessions;
-  const currentLoading = role === 'teacher' ? teacherLoading : principalLoading;
-  const currentError = role === 'teacher' ? teacherError : principalError;
 
   // 세션 정보를 API에서 가져오기
   const session = useMemo(() => {
     if (!sessionId || !currentSessions) return null;
-    const result = currentSessions.find((s: any) => s.id === sessionId);
+    const result = currentSessions.find((s: { id: number }) => s.id === sessionId);
     return result;
   }, [sessionId, currentSessions]);
 
   // Teacher와 Principal은 동일한 권한을 가짐
   const canManageSessions = role === 'teacher' || role === 'principal'
 
-  // 세션 수강생 정보 로드 (API 호출)
-  useEffect(() => {
-    if (isOpen && sessionId && canManageSessions) {
-      loadSessionEnrollments()
-    } else {
-      setEnrollmentData(null)
-      setIsLoading(false)
-    }
-  }, [isOpen, sessionId, canManageSessions])
-
-  const loadSessionEnrollments = async () => {
+  const loadSessionEnrollments = useCallback(async () => {
     try {
       setIsLoading(true)
       // 역할에 따라 다른 API 호출
@@ -101,13 +86,23 @@ export function SessionDetailModal({
       } else {
         throw new Error('지원하지 않는 역할입니다.')
       }
-      setEnrollmentData(data)
+      setEnrollmentData(data || null)
     } catch (error) {
       console.error('세션 수강생 정보 로드 실패:', error)
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [role, sessionId, loadPrincipalSessionEnrollments, loadTeacherSessionEnrollments])
+
+  // 세션 수강생 정보 로드 (API 호출)
+  useEffect(() => {
+    if (isOpen && sessionId && canManageSessions) {
+      loadSessionEnrollments()
+    } else {
+      setEnrollmentData(null)
+      setIsLoading(false)
+    }
+  }, [isOpen, sessionId, canManageSessions, loadSessionEnrollments])
 
   // 세션 데이터 로드
   useEffect(() => {
@@ -118,7 +113,7 @@ export function SessionDetailModal({
         loadPrincipalSessions();
       }
     }
-  }, [isOpen, sessionId, role])
+  }, [isOpen, sessionId, role, loadTeacherSessions, loadPrincipalSessions])
 
   useEffect(() => {
     if (isOpen && sessionId) {
@@ -202,7 +197,7 @@ export function SessionDetailModal({
       <SlideUpModal
         isOpen={isOpen}
         onClose={onClose}
-        title={`${session?.class?.className} - ${formatTime(session?.startTime)}`}
+        title={`${'class' in session ? session.class?.className : '클래스'} - ${formatTime(session?.startTime)}`}
         contentClassName="pb-6"
       >
         {/* Navigation Bar - showNavigation이 true일 때만 표시 */}
@@ -266,7 +261,7 @@ export function SessionDetailModal({
                           수강생 목록
                         </h4>
                         <div className="space-y-3">
-                          {enrollmentData.enrollments?.map((enrollment: any) => (
+                          {enrollmentData.enrollments?.map((enrollment: TeacherSessionEnrollment) => (
                             <div
                               key={enrollment.id}
                               className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg"
@@ -278,11 +273,6 @@ export function SessionDetailModal({
                                 {enrollment.student.phoneNumber && (
                                   <div className="text-sm text-stone-500">
                                     {enrollment.student.phoneNumber}
-                                  </div>
-                                )}
-                                {enrollment.student.level && (
-                                  <div className="text-xs text-stone-400">
-                                    레벨: {enrollment.student.level}
                                   </div>
                                 )}
                               </div>
@@ -312,7 +302,7 @@ export function SessionDetailModal({
                           <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
                               <span className="text-stone-600">클래스명:</span>
-                              <span className="text-stone-700">{session.class?.className}</span>
+                              <span className="text-stone-700">{'class' in session ? session.class?.className : '클래스'}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-stone-600">날짜:</span>

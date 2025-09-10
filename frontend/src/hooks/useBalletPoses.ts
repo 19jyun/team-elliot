@@ -11,14 +11,3 @@ export const useBalletPoses = (difficulty?: PoseDifficulty) => {
     staleTime: 5 * 60 * 1000, // 5분
   });
 };
-
-// 발레 자세 상세 조회
-export const useBalletPose = (id: number) => {
-  const { fetchBalletPose } = usePrincipalApi();
-  return useQuery({
-    queryKey: ["ballet-pose", id],
-    queryFn: () => fetchBalletPose(id),
-    enabled: !!id,
-    staleTime: 5 * 60 * 1000, // 5분
-  });
-};

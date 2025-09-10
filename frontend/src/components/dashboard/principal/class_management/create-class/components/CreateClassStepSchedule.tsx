@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { StatusStep } from './StatusStep';
 import { toast } from 'sonner';
@@ -18,10 +18,8 @@ const DAYS_OF_WEEK = [
   { value: 'SUNDAY', label: '일요일' },
 ];
 
-
-
 export function CreateClassStepSchedule() {
-  const { createClass, setClassFormData, setCreateClassStep, goBack } = useDashboardNavigation();
+  const { createClass, setClassFormData, setCreateClassStep } = useDashboardNavigation();
   const { classFormData } = createClass;
 
   const [formData, setFormData] = useState({
@@ -34,28 +32,6 @@ export function CreateClassStepSchedule() {
 
   const [showTimePicker, setShowTimePicker] = useState<'start' | 'end' | null>(null);
   const [showDatePicker, setShowDatePicker] = useState<'start' | 'end' | null>(null);
-
-  const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  // 시간 선택 핸들러
-  const handleTimeSelect = (time: string, type: 'start' | 'end') => {
-    if (type === 'start') {
-      setFormData(prev => ({ ...prev, startTime: time }));
-    } else {
-      setFormData(prev => ({ ...prev, endTime: time }));
-    }
-  };
-
-  // 날짜 선택 핸들러
-  const handleDateSelect = (date: string, type: 'start' | 'end') => {
-    if (type === 'start') {
-      setFormData(prev => ({ ...prev, startDate: date }));
-    } else {
-      setFormData(prev => ({ ...prev, endDate: date }));
-    }
-  };
 
   const handleDayToggle = (day: string) => {
     setFormData(prev => ({

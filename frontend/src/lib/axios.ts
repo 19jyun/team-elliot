@@ -7,7 +7,7 @@ const axiosInstance = axios.create({
 });
 
 // 세션 캐싱을 위한 변수
-let cachedSession: any = null;
+let cachedSession: unknown = null;
 let sessionCacheTime = 0;
 const SESSION_CACHE_DURATION = 5 * 60 * 1000; // 5분
 
@@ -41,7 +41,12 @@ export const clearSessionCache = () => {
 axiosInstance.interceptors.request.use(
   async (config) => {
     const session = await getCachedSession();
-    if (session?.accessToken) {
+    if (
+      session &&
+      typeof session === "object" &&
+      "accessToken" in session &&
+      typeof session.accessToken === "string"
+    ) {
       config.headers.Authorization = `Bearer ${session.accessToken}`;
     }
     return config;

@@ -82,7 +82,6 @@ export class RefundService {
       });
     }
 
-    // 권한 확인 (자신의 수강 신청만 환불 요청 가능)
     if (sessionEnrollment.studentId !== studentId) {
       throw new ForbiddenException({
         code: 'INSUFFICIENT_PERMISSIONS',
@@ -120,6 +119,7 @@ export class RefundService {
     // 수업이 이미 시작되었는지 확인
     const now = new Date();
     const sessionStartTime = new Date(sessionEnrollment.session.startTime);
+
     if (now >= sessionStartTime) {
       throw new BadRequestException({
         code: 'SESSION_ALREADY_STARTED',
@@ -174,7 +174,7 @@ export class RefundService {
       }),
     ]);
 
-    console.log('환불 요청 생성 완료:', {
+    console.log('✅ [환불 요청] 환불 요청 생성 완료:', {
       refundRequestId: refundRequest.id,
       enrollmentId: updatedEnrollment.id,
       enrollmentStatus: updatedEnrollment.status,
@@ -667,7 +667,11 @@ export class RefundService {
       });
 
       if (student) {
-        this.socketGateway.notifyRefundRejected(result.id, student.userRefId);
+        this.socketGateway.notifyRefundRejected(
+          result.id,
+          student.userRefId,
+          result.sessionEnrollment.sessionId,
+        );
       }
     } catch (e) {
       console.warn('Socket notifyRefundRejected failed:', e);
@@ -698,20 +702,26 @@ export class RefundService {
         },
       },
       include: {
+        student: {
+          select: {
+            id: true,
+            name: true,
+            phoneNumber: true,
+          },
+        },
         sessionEnrollment: {
           include: {
-            student: {
-              select: {
-                name: true,
-                phoneNumber: true,
-              },
-            },
             session: {
-              include: {
+              select: {
+                id: true,
+                date: true,
+                startTime: true,
+                endTime: true,
                 class: {
                   select: {
                     id: true,
                     className: true,
+                    level: true,
                     teacher: {
                       select: {
                         name: true,
@@ -1127,6 +1137,7 @@ export class RefundService {
         this.socketGateway.notifyRefundRejected(
           result.updatedRefundRequest.id,
           student.userRefId,
+          result.updatedEnrollment.sessionId,
         );
       }
     } catch (e) {

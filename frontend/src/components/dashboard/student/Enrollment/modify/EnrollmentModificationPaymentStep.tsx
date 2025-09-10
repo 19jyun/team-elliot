@@ -7,6 +7,7 @@ import { PaymentConfirmFooter } from '@/components/features/student/enrollment/m
 import { SelectedSession, PrincipalPaymentInfo } from '@/components/features/student/enrollment/month/date/payment/types';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
+import type { ModificationSessionVM } from '@/types/view/student';
 
 interface EnrollmentModificationPaymentStepProps {
   additionalAmount?: number;
@@ -15,14 +16,12 @@ interface EnrollmentModificationPaymentStepProps {
 }
 
 export function EnrollmentModificationPaymentStep({ 
-  additionalAmount = 0, 
-  newSessionsCount = 0,
   onComplete
 }: EnrollmentModificationPaymentStepProps) {
-  const { enrollment, setEnrollmentStep, goBack } = useDashboardNavigation();
+  const { enrollment, setEnrollmentStep } = useDashboardNavigation();
   const { selectedSessions: contextSessions } = enrollment;
   const { modifyEnrollments } = useStudentApi();
-  const [selectedSessions, setSelectedSessions] = useState<SelectedSession[]>([]);
+  const [_selectedSessions, setSelectedSessions] = useState<SelectedSession[]>([]);
   const [principalPayment, setPrincipalPayment] = useState<PrincipalPaymentInfo | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -175,7 +174,7 @@ export function EnrollmentModificationPaymentStep({
 
       // 기존에 신청된 세션들 (활성 상태)
       const originalEnrolledSessions = existingEnrollments.filter(
-        (enrollment: any) =>
+        (enrollment: ModificationSessionVM) =>
           enrollment.enrollment &&
           (enrollment.enrollment.status === "CONFIRMED" ||
             enrollment.enrollment.status === "PENDING" ||
@@ -184,32 +183,30 @@ export function EnrollmentModificationPaymentStep({
 
       // 기존 신청 세션의 날짜들
       const originalDates = originalEnrolledSessions.map(
-        (enrollment: any) => new Date(enrollment.date).toISOString().split("T")[0]
+        (enrollment: ModificationSessionVM) => new Date(enrollment.date).toISOString().split("T")[0]
       );
 
       // 선택된 세션의 날짜들
       const selectedDates = selectedSessions.map(
-        (session: any) => new Date(session.date).toISOString().split("T")[0]
+        (session: ModificationSessionVM) => new Date(session.date).toISOString().split("T")[0]
       );
 
-  
-      
 
       // 취소할 세션들의 enrollment ID
       const cancellations = originalEnrolledSessions
-        .filter((enrollment: any) => {
+        .filter((enrollment: ModificationSessionVM) => {
           const enrollmentDate = new Date(enrollment.date).toISOString().split("T")[0];
           return !selectedDates.includes(enrollmentDate);
         })
-        .map((enrollment: any) => enrollment.enrollment.id);
+        .map((enrollment: ModificationSessionVM) => enrollment.enrollment?.id);
 
       // 새로 신청할 세션들의 session ID
       const newEnrollments = selectedSessions
-        .filter((session: any) => {
+        .filter((session: ModificationSessionVM) => {
           const sessionDate = new Date(session.date).toISOString().split("T")[0];
           return !originalDates.includes(sessionDate);
         })
-        .map((session: any) => session.id);
+        .map((session: ModificationSessionVM) => session.id);
 
       console.log('수강 변경 요청 데이터:', {
         cancellations,
@@ -218,7 +215,7 @@ export function EnrollmentModificationPaymentStep({
       });
 
       // batchModifyEnrollments API 호출
-      const result = await modifyEnrollments({
+      await modifyEnrollments({
         cancellations,
         newEnrollments,
         reason: '수강 변경'

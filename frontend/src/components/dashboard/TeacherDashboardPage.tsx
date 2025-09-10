@@ -14,16 +14,12 @@ import { DashboardContainer } from './DashboardContainer';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { useTeacherInitialization } from '@/hooks/redux/useTeacherInitialization';
 import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSocketListener';
-import { SocketStatus } from '@/components/common/Socket/SocketStatus';
+
 
 function TeacherDashboardContent() {
   const { activeTab, handleTabChange } = useTeacherContext();
   const { subPage, clearSubPage, isTransitioning } = useDashboardNavigation();
-
-  // Teacher 데이터 초기화
-  useTeacherInitialization();
 
   // SubPage 렌더링 함수
   const renderSubPage = () => {
@@ -59,7 +55,6 @@ function TeacherDashboardContent() {
           activeTab={activeTab}
           onTabChange={handleTabChange}
           isTransitioning={isTransitioning}
-          subPage={subPage}
         >
           {tabPages}
         </DashboardContainer>

@@ -37,10 +37,17 @@ export class RefundController {
     @Body() dto: RefundRequestDto,
     @CurrentUser() user: any,
   ) {
-    // JWT sub (User.id)를 통해 Student의 ID를 가져오기
-    const student = await this.refundService.findStudentByUserId(user.userId);
-
-    return this.refundService.createRefundRequest(dto, student.id);
+    try {
+      // JWT sub (User.id)를 통해 Student의 ID를 가져오기
+      const student = await this.refundService.findStudentByUserId(user.userId);
+      const result = await this.refundService.createRefundRequest(
+        dto,
+        student.id,
+      );
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   /**

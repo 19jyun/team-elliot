@@ -1,30 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-// 역할 분리: 타입은 로컬 정의 또는 적절한 타입에서 가져오기
-type Academy = { id: number; name: string };
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Plus, MapPin, Phone, Calendar, Users, Building2, AlertTriangle, X } from 'lucide-react';
+import { Plus, Users, Building2, AlertTriangle, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
-import { ExpandableText } from '@/components/common';
 import { AcademyCard } from '@/components/common/AcademyCard';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
 import { useApiError } from '@/hooks/useApiError';
+import type { LeaveAcademyModalVM } from '@/types/view/student';
 
-interface LeaveAcademyModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-  academyName: string;
-}
-
-function LeaveAcademyModal({ isOpen, onClose, onConfirm, academyName }: LeaveAcademyModalProps) {
+function LeaveAcademyModal({ isOpen, onClose, onConfirm, academyName }: LeaveAcademyModalVM) {
   const { pushFocus, popFocus } = useDashboardNavigation();
 
   useEffect(() => {
@@ -69,7 +58,7 @@ function LeaveAcademyModal({ isOpen, onClose, onConfirm, academyName }: LeaveAca
         {/* 내용 */}
         <div className="p-6">
           <p className="text-gray-700 mb-4">
-            <span className="font-semibold text-red-600">"{academyName}"</span> 학원에서 탈퇴하시겠습니까?
+            <span className="font-semibold text-red-600">{academyName}</span> 학원에서 탈퇴하시겠습니까?
           </p>
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
             <div className="flex items-start gap-3">
@@ -115,12 +104,12 @@ export function AcademyManagement() {
   // 기존 useApiError 훅 사용 (이미 완성도가 높음)
   const { handleApiError, fieldErrors, clearErrors } = useApiError();
 
-  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+
   const [joinAcademyCode, setJoinAcademyCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
   const [leaveAcademyId, setLeaveAcademyId] = useState<number | null>(null);
   const [leaveAcademyName, setLeaveAcademyName] = useState<string>('');
-  const [isLeaving, setIsLeaving] = useState(false);
+  const [_isLeaving, setIsLeaving] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
 
   useEffect(() => {
@@ -239,13 +228,7 @@ export function AcademyManagement() {
     setLeaveAcademyName('');
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
+
 
   return (
     <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px] py-5 relative">
@@ -327,10 +310,14 @@ export function AcademyManagement() {
               </div>
             ) : (
               <div className="space-y-4 max-h-96 overflow-y-auto">
-                {academies.map((academy: any) => (
+                {academies.map((academy) => (
                   <AcademyCard
                     key={academy.id}
-                    academy={academy}
+                    academy={{
+                      ...academy,
+                      code: '',
+                      createdAt: academy.joinedAt || academy.createdAt,
+                    }}
                     variant="student"
                     showActionButton={true}
                     actionText="탈퇴하기"

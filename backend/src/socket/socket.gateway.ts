@@ -189,12 +189,17 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   // 환불 요청 거절 알림
-  notifyRefundRejected(refundId: number, studentUserRefId: number) {
+  notifyRefundRejected(
+    refundId: number,
+    studentUserRefId: number,
+    sessionId?: number,
+  ) {
     console.log(`📢 환불 요청 거절 알림: ${refundId}`);
 
     // 해당 학생에게 알림
     this.server.to(`user:${studentUserRefId}`).emit('refund_rejected', {
       refundId,
+      sessionId,
       timestamp: new Date().toISOString(),
     });
   }

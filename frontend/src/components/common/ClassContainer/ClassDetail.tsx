@@ -1,15 +1,15 @@
 'use client'
 
 import React from 'react'
+import type { Class } from '@/types/api/class'
 
 interface ClassDetailProps {
   classId: number
-  classData: any
+  classData: Class
   role: 'teacher' | 'principal'
 }
 
 export const ClassDetail: React.FC<ClassDetailProps> = ({
-  classId,
   classData,
   role
 }) => {
@@ -102,7 +102,11 @@ export const ClassDetail: React.FC<ClassDetailProps> = ({
             </div>
             <div className="flex justify-between">
               <span className="text-stone-600">현재 인원:</span>
-              <span className="font-medium">{classData.currentStudents ? classData.currentStudents : 0}명</span>
+              <span className="font-medium">{classData.currentStudents || 0}명</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-stone-600">수강료:</span>
+              <span className="font-medium">{typeof classData.tuitionFee === 'string' ? classData.tuitionFee : classData.tuitionFee.toLocaleString()}원</span>
             </div>
             {classData.teacher && (
               <div className="flex justify-between">

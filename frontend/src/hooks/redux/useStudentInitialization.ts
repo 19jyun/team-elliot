@@ -7,14 +7,13 @@ import {
   setLoading,
   setError,
 } from "@/store/slices/studentSlice";
+import { extractErrorMessage } from "@/types/api/error";
 import {
   getMyClasses,
   getMyProfile,
   getEnrollmentHistory,
   getCancellationHistory,
 } from "@/api/student";
-import { getMyAcademies } from "@/api/student";
-import { getStudentAvailableSessionsForEnrollment } from "@/api/student";
 import { toast } from "sonner";
 
 export function useStudentInitialization() {
@@ -44,7 +43,7 @@ export function useStudentInitialization() {
         const myClasses = await getMyClasses();
 
         // 2. 개인 정보
-        const myProfile = await getMyProfile();
+        await getMyProfile();
 
         // 3. 수강 신청/결제 내역
         const enrollmentHistoryResponse = await getEnrollmentHistory();
@@ -71,11 +70,13 @@ export function useStudentInitialization() {
         toast.success("Student 대시보드가 로드되었습니다.", {
           id: "student-init",
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("❌ Student 데이터 초기화 실패:", error);
 
-        const errorMessage =
-          error.response?.data?.message || "데이터 로딩에 실패했습니다.";
+        const errorMessage = extractErrorMessage(
+          error,
+          "데이터 로딩에 실패했습니다."
+        );
         dispatch(setError(errorMessage));
 
         toast.error("Student 데이터 로딩 실패", {

@@ -6,12 +6,13 @@ import { ko } from 'date-fns/locale'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { SessionCardList } from '@/components/common/Session/SessionCardList'
 import { useRoleCalendarApi } from '@/hooks/calendar/useRoleCalendarApi'
+import type { ClassSession, ClassSessionWithCounts } from '@/types/api/class'
 
 interface DateSessionModalProps {
   isOpen: boolean
   selectedDate: Date | null
   onClose: () => void
-  onSessionClick: (session: any) => void
+  onSessionClick: (session: ClassSession) => void
   role: 'student' | 'teacher' | 'principal'
 }
 
@@ -37,7 +38,14 @@ export function DateSessionModal({
   const sessions = useMemo(() => {
     if (!selectedDate) return [];
     const result = getSessionsByDate(selectedDate);
-    return result;
+    // ClassSessionWithCounts로 변환 (enrollmentCount, confirmedCount 기본값 설정)
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    return result.map((session) => ({
+      ...session,
+      enrollmentCount: (session as any).enrollmentCount || 0,
+      confirmedCount: (session as any).confirmedCount || 0,
+    })) as ClassSessionWithCounts[];
+    /* eslint-enable @typescript-eslint/no-explicit-any */
   }, [selectedDate, getSessionsByDate]);
 
   const formatDate = (date: Date) => {

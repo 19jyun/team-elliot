@@ -157,7 +157,7 @@ describe('TeacherService', () => {
         specialties: null,
         certifications: null,
         yearsOfExperience: null,
-        availableTimes: null,
+        availableTimes: [],
         academy: null,
         createdAt: new Date(),
         updatedAt: new Date(),

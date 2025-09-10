@@ -3,20 +3,14 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
-import { useTeacherInitialization } from '@/hooks/redux/useTeacherInitialization'
-import { usePrincipalInitialization } from '@/hooks/redux/usePrincipalInitialization'
 
 interface AppInitializerProps {
   children: React.ReactNode
 }
 
 export function AppInitializer({ children }: AppInitializerProps) {
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const router = useRouter()
-  
-  // 역할별 초기화 (항상 호출하되, 내부에서 역할에 따라 처리)
-  const teacherInit = useTeacherInitialization()
-  const principalInit = usePrincipalInitialization()
 
   // 인증되지 않은 사용자는 로그인 페이지로 리다이렉트
   useEffect(() => {

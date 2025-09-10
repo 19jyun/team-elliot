@@ -1,17 +1,17 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { useDashboardNavigation } from './DashboardContext';
 
-export const studentNavigationItems = [
+const studentNavigationItems = [
   { label: '클래스 정보', value: 0 },
   { label: '수강신청', value: 1 },
   { label: '나의 정보', value: 2 },
 ];
 
-export interface StudentEnrollmentState {
+interface StudentEnrollmentState {
   currentStep: 'main' | 'class-selection' | 'date-selection' | 'payment' | 'complete';
   selectedMonth: number | null;
-  selectedClasses: any[];
-  selectedSessions: any[];
+  selectedClasses: unknown[];
+  selectedSessions: unknown[];
   selectedClassIds: number[];
 }
 
@@ -67,5 +67,10 @@ export function StudentProvider({ children }: { children: ReactNode }) {
 export function useStudentContext() {
   const ctx = useContext(StudentContext);
   if (!ctx) throw new Error('useStudentContext must be used within a StudentProvider');
+  return ctx;
+}
+
+export function useOptionalStudentContext() {
+  const ctx = useContext(StudentContext);
   return ctx;
 }

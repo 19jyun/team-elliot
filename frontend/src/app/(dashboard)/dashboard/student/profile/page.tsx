@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 
-import { StatusBar } from '@/components/ui/StatusBar'
+
 import { MenuLinks } from '@/components/navigation/MenuLinks'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'

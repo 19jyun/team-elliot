@@ -4,36 +4,10 @@ import React, { useState, useEffect } from 'react'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { SessionCardList } from './SessionCardList'
 import { ClassDetail } from './ClassDetail'
+import type { ClassDataVM, StudentEnrolledSessionVM } from '@/types/view/student'
 
-interface Session {
-  id: number
-  classId: number
-  date: string
-  startTime: string
-  endTime: string
-  class: {
-    id: number
-    className: string
-    level?: string
-  }
-  session_id: number
-  enrollment_status: string
-  enrollment_id: number
-}
-
-// API 응답 타입과 호환되도록 any 타입도 허용
-type SessionData = Session | any
-
-interface ClassData {
-  id: number
-  className: string
-  dayOfWeek: string
-  startTime: string
-  teacher: {
-    id: number
-    name: string
-  }
-}
+type SessionData = StudentEnrolledSessionVM
+type ClassData = ClassDataVM
 
 type TabType = 'sessions' | 'class-detail'
 
@@ -65,7 +39,7 @@ export function ClassSessionModal({
 
   if (!isOpen || !selectedClass) return null
 
-  const filteredSessions = sessions.filter((session: any) => session.class.id === selectedClass.id)
+  const filteredSessions = sessions.filter((session) => session.class.id === selectedClass.id)
 
   const handleTabChange = (newTab: TabType) => {
     if (newTab === activeTab || isTransitioning) return
@@ -79,7 +53,7 @@ export function ClassSessionModal({
     }, 300)
   }
 
-  const handleSessionClick = (session: any) => {
+  const handleSessionClick = (session: SessionData) => {
     // onSessionClick prop이 있으면 호출, 없으면 기본 동작 (클래스 정보 탭으로 전환)
     if (onSessionClick) {
       onSessionClick(session)

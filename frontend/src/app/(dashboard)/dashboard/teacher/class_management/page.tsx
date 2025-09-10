@@ -4,9 +4,9 @@ import * as React from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
-import { useDashboardNavigation } from '@/contexts/DashboardContext'
+
 import { getMyAcademy } from '@/api/teacher'
-import { toast } from 'sonner'
+
 
 // 수업 관리 카드 컴포넌트
 const ClassManagementCard: React.FC<{
@@ -36,27 +36,38 @@ const ClassManagementCard: React.FC<{
         {description}
       </div>
     </div>
-    <img
-      loading="lazy"
-      src="https://cdn.builder.io/api/v1/image/assets/TEMP/1f7fc23429841d7be71eef4a524441a0723472cbcc37e1d51e9a8dccc0d60f49?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f"
-      alt="Arrow indicator"
-      className="object-contain shrink-0 self-stretch my-auto w-4 aspect-square"
-    />
+    <div className="shrink-0 self-stretch my-auto w-4 aspect-square flex items-center justify-center">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="text-gray-600"
+      >
+        <path
+          d="M9 18L15 12L9 6"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
   </div>
 )
 
 export default function TeacherClassManagementPage() {
   const router = useRouter()
-  const { data: session, status } = useSession({
+  const { status } = useSession({
     required: true,
     onUnauthenticated() {
       router.push('/auth')
     },
   })
-  const { navigateToSubPage } = useDashboardNavigation()
 
   // 선생님의 학원 정보 조회
-  const { data: myAcademy, isLoading: isAcademyLoading } = useQuery({
+  const { isLoading: isAcademyLoading } = useQuery({
     queryKey: ['teacher-academy'],
     queryFn: getMyAcademy,
     enabled: status === 'authenticated',

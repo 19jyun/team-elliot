@@ -1,9 +1,12 @@
 import * as React from 'react'
-import { CheckboxAgreementProps } from './types'
+
+interface CheckboxAgreementProps {
+  text: string;
+  onChange?: (checked: boolean) => void;
+}
 
 export const CheckboxAgreement: React.FC<CheckboxAgreementProps> = ({
   text,
-  iconSrc,
   onChange,
 }) => {
   const [checked, setChecked] = React.useState(false)

@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { toast } from 'sonner';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
@@ -8,13 +8,10 @@ import { PrincipalPaymentBox } from '@/components/features/student/enrollment/mo
 import { PaymentConfirmFooter } from '@/components/features/student/enrollment/month/date/payment/PaymentConfirmFooter';
 import { SelectedSession, PrincipalPaymentInfo } from '@/components/features/student/enrollment/month/date/payment/types';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
-
-interface EnrollmentPaymentStepProps {
-  onComplete?: () => void;
-}
+import type { EnrollmentPaymentStepVM } from '@/types/view/student';
 
 // 새로운 수강신청 플로우 전용 결제 페이지
-export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps) {
+export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
   const { enrollment, setEnrollmentStep } = useDashboardNavigation();
   const { selectedSessions: contextSessions } = enrollment;
   const { loadSessionPaymentInfo } = useStudentApi();
@@ -53,12 +50,20 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
   ]
 
   // 세션별 결제 정보 로드 - 원장 기준으로 통합
-  const loadPaymentInfoForSessions = async (sessions: SelectedSession[]) => {
+  const loadPaymentInfoForSessions = useCallback(async (sessions: SelectedSession[]) => {
     setIsLoadingPaymentInfo(true);
     
     try {
-      let principalInfo: any = null;
-      const classFees: any[] = [];
+      let principalInfo: {
+        bankName: string;
+        accountNumber: string;
+        accountHolder: string;
+      } | null = null;
+      const classFees: Array<{
+        name: string;
+        count: number;
+        price: number;
+      }> = [];
       let totalAmount = 0;
       
              // 각 세션별로 결제 정보를 가져옴
@@ -103,7 +108,7 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
           }
           
           const className = session.class?.className || '클래스';
-          const sessionFee = Number((session.class as any)?.tuitionFee) || 0;
+          const sessionFee = Number(session.class?.tuitionFee) || 0;
           
           const existingFee = classFees.find(fee => fee.name === className);
           if (existingFee) {
@@ -140,7 +145,7 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
     } finally {
       setIsLoadingPaymentInfo(false);
     }
-  };
+  }, [loadSessionPaymentInfo]);
 
   useEffect(() => {
 
@@ -181,7 +186,7 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
     } else {
       console.warn('🔍 세션 데이터가 없습니다!');
     }
-  }, [contextSessions, loadSessionPaymentInfo, setEnrollmentStep]);
+  }, [contextSessions, loadSessionPaymentInfo, setEnrollmentStep, loadPaymentInfoForSessions]);
 
   // 복사 버튼 클릭 시 toast
   const handleCopy = () => {
@@ -200,7 +205,7 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepProps
       
       // 백엔드에 세션별 수강 신청 요청 (낙관적 업데이트 포함)
       // 실제 세션 데이터를 전달하여 정확한 낙관적 업데이트 수행
-      const result = await enrollSessions(sessionIds, selectedSessions);
+      await enrollSessions(sessionIds, selectedSessions);
       
       // 성공 시 완료 페이지로 이동
       setEnrollmentStep('complete');

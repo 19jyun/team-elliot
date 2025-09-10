@@ -4,7 +4,6 @@ import * as React from 'react'
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { Box } from '@mui/material'
 import Image from 'next/image'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -147,8 +146,7 @@ export function SignupPersonalPage() {
     name: '',
     phoneNumber: '',
   })
-  const [isLoading, setIsLoading] = useState(false)
-  const [verificationSent, setVerificationSent] = useState(false)
+  const [, setVerificationSent] = useState(false)
   const [errors, setErrors] = useState({
     name: '',
     phoneNumber: '',

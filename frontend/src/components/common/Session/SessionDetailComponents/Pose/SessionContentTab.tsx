@@ -27,10 +27,9 @@ interface SessionContentTabProps {
 }
 
 // 드래그 가능한 아이템 컴포넌트
-function SortableItem({ content, index, isEditMode, onDeleteClick }: {
+function SortableItem({ content, index, onDeleteClick }: {
   content: SessionContent;
   index: number;
-  isEditMode: boolean;
   onDeleteClick: (id: number) => void;
 }) {
   const {
@@ -96,7 +95,6 @@ export function SessionContentTab({ sessionId, onAddPoseClick }: SessionContentT
   
   // 최종 상태만 관리 (삭제 + 순서 변경이 모두 반영된 상태)
   const [finalContents, setFinalContents] = useState<SessionContent[]>([]);
-  // 편집 모드 상태
   const [isEditMode, setIsEditMode] = useState(false);
   
   // 변경사항이 있는지 확인 (원본과 최종 상태 비교) - useMemo로 최적화
@@ -177,8 +175,8 @@ export function SessionContentTab({ sessionId, onAddPoseClick }: SessionContentT
 
       // 1. 삭제된 항목들을 찾아서 개별 삭제
       const deletedContentIds = contents
-        .filter(content => !finalContents.some(final => final.id === content.id))
-        .map(content => content.id);
+        .filter((content: SessionContent) => !finalContents.some(final => final.id === content.id))
+        .map((content: SessionContent) => content.id);
 
 
       // 삭제된 항목들을 개별적으로 삭제
@@ -251,7 +249,6 @@ export function SessionContentTab({ sessionId, onAddPoseClick }: SessionContentT
                   key={content.id}
                   content={content}
                   index={index}
-                  isEditMode={isEditMode}
                   onDeleteClick={handleDelete}
                 />
               ))}

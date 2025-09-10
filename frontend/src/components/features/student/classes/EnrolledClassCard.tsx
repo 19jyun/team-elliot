@@ -1,26 +1,10 @@
 import * as React from 'react'
 import Image from 'next/image'
-import { StudentClass } from '@/types/api/student'
+import type { EnrolledClassCardVM } from '@/types/view/student'
+import type { LevelType } from '@/types/api/common'
+import { levelBgColor, levelBadgeText } from '@/types/ui/common'
 
-export interface EnrolledClassCardProps extends StudentClass {
-  onClick?: () => void
-}
-
-type LevelType = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
-
-const levelBgColor: Record<LevelType, string> = {
-  BEGINNER: '#F4E7E7',
-  INTERMEDIATE: '#FBF4D8',
-  ADVANCED: '#CBDFE3',
-}
-
-const levelBadgeText: Record<LevelType, string> = {
-  BEGINNER: '비기너',
-  INTERMEDIATE: '초급',
-  ADVANCED: '고급',
-}
-
-export const EnrolledClassCard: React.FC<EnrolledClassCardProps> = (props) => {
+export const EnrolledClassCard: React.FC<EnrolledClassCardVM> = (props) => {
   const {
     className,
     name,

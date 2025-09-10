@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useDashboardNavigation, EnrollmentStep } from '@/contexts/DashboardContext';
+import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { EnrollmentAcademyStep } from './EnrollmentAcademyStep';
 import { EnrollmentClassStep } from './EnrollmentClassStep';
 import { EnrollmentDateStep } from './EnrollmentDateStep';

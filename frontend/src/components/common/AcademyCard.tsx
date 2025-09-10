@@ -32,7 +32,7 @@ interface AcademyCardProps {
 
 export function AcademyCard({ 
   academy, 
-  variant = 'teacher',
+
   onAction,
   actionText,
   actionVariant = 'outline',

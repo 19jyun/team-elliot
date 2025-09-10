@@ -8,7 +8,7 @@ import { StatusStep } from '@/components/features/student/enrollment/month/Statu
 import { useStudentApi } from '@/hooks/student/useStudentApi';
 
 export function EnrollmentAcademyStep() {
-  const { enrollment, setEnrollmentStep, setSelectedAcademyId: setContextSelectedAcademyId, goBack, navigateToSubPage } = useDashboardNavigation();
+  const { setEnrollmentStep, setSelectedAcademyId: setContextSelectedAcademyId, goBack } = useDashboardNavigation();
   const { status } = useSession({
     required: true,
     onUnauthenticated() {

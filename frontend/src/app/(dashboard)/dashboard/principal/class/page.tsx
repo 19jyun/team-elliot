@@ -9,18 +9,10 @@ import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessi
 import { SessionDetailModal } from '@/components/common/Session/SessionDetailModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
-import { ClassSession } from '@/types/api/class'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
-
-// Type for extended session
-type ExtendedSession = {
-  accessToken?: string
-  user: {
-    id: string
-    role: string
-    accessToken?: string
-  } & { name?: string | null | undefined; email?: string | null | undefined; image?: string | null | undefined }
-}
+import { toClassSessionForCalendar } from '@/lib/adapters/principal'
+import type { PrincipalClassSession } from '@/types/api/principal'
+import type { ClassSession } from '@/types/api/class'
 
 // 강의 개설 카드 컴포넌트
 const CreateClassCard: React.FC<{
@@ -50,12 +42,24 @@ const CreateClassCard: React.FC<{
         {description}
       </div>
     </div>
-    <img
-      loading="lazy"
-      src="https://cdn.builder.io/api/v1/image/assets/TEMP/1f7fc23429841d7be71eef4a524441a0723472cbcc37e1d51e9a8dccc0d60f49?placeholderIfAbsent=true&apiKey=1a4d049d8fe54d8aa58f4ebfa539d65f"
-      alt="Arrow indicator"
-      className="object-contain shrink-0 self-stretch my-auto w-4 aspect-square"
-    />
+    <div className="shrink-0 self-stretch my-auto w-4 aspect-square flex items-center justify-center">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="text-gray-600"
+      >
+        <path
+          d="M9 18L15 12L9 6"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
   </div>
 )
 
@@ -78,13 +82,13 @@ export default function PrincipalClassPage() {
   const [isDateModalOpen, setIsDateModalOpen] = useState(false)
   
   // 세션 상세 모달 상태 추가
-  const [selectedSession, setSelectedSession] = useState<any>(null)
+  const [selectedSession, setSelectedSession] = useState<PrincipalClassSession | null>(null)
   const [isSessionDetailModalOpen, setIsSessionDetailModalOpen] = useState(false)
 
   // 초기 데이터 로드
   useEffect(() => {
     loadSessions();
-  }, []);
+  }, [loadSessions]);
 
   // 백엔드에서 받은 캘린더 범위 사용 (새로운 정책 적용)
   const calendarRange = useMemo(() => {
@@ -107,7 +111,10 @@ export default function PrincipalClassPage() {
 
   // 에러 처리
   if (error) {
-    if ((error as any)?.response?.status === 401) {
+    const errorResponse = error && typeof error === 'object' && 'response' in error 
+      ? (error as { response?: { status?: number } })
+      : null;
+    if (errorResponse?.response?.status === 401) {
       signOut({ redirect: true, callbackUrl: '/auth' });
       return null;
     }
@@ -138,8 +145,10 @@ export default function PrincipalClassPage() {
   }
 
   // 세션 클릭 핸들러 추가
-  const handleSessionClick = (session: any) => {
-    setSelectedSession(session)
+  const handleSessionClick = (session: ClassSession) => {
+    // ClassSession을 PrincipalClassSession으로 변환하여 저장
+    const principalSession = calendarSessions.find(s => s.id === session.id) as PrincipalClassSession
+    setSelectedSession(principalSession)
     setIsSessionDetailModalOpen(true)
   }
 
@@ -197,7 +206,7 @@ export default function PrincipalClassPage() {
         <div className="flex flex-col w-full bg-white text-stone-700" style={{ height: 'calc(100vh - 450px)' }}>
           <CalendarProvider
             mode="teacher-view"
-            sessions={calendarSessions}
+            sessions={calendarSessions.map(toClassSessionForCalendar)}
             selectedSessionIds={new Set()}
             onSessionSelect={() => {}} // principal-view에서는 선택 기능 없음
             onDateClick={handleDateClick}
@@ -231,7 +240,7 @@ export default function PrincipalClassPage() {
       {/* Session Detail Modal - API 방식 */}
       <SessionDetailModal
         isOpen={isSessionDetailModalOpen}
-        sessionId={selectedSession?.id}
+        sessionId={selectedSession?.id || null}
         onClose={closeSessionDetailModal}
         role="principal"
       />

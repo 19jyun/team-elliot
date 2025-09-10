@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useDashboardNavigation } from '@/contexts/DashboardContext';
+import { CompleteIcon } from '@/components/icons';
 
 interface RefundCompleteStepProps {
   refundAmount: number;
@@ -9,7 +10,7 @@ interface RefundCompleteStepProps {
   isModification?: boolean;
 }
 
-export function RefundCompleteStep({ refundAmount, cancelledSessionsCount, isModification }: RefundCompleteStepProps) {
+export function RefundCompleteStep({ isModification }: RefundCompleteStepProps) {
   const { resetEnrollment, clearSubPage } = useDashboardNavigation();
 
   const handleConfirm = () => {
@@ -51,7 +52,7 @@ export function RefundCompleteStep({ refundAmount, cancelledSessionsCount, isMod
         <div className="flex flex-col items-center gap-6 w-full max-w-md">
           {/* 완료 아이콘 */}
           <div className="w-24 h-24 flex items-center justify-center">
-            <img src="/icons/complete.svg" alt="완료" className="w-full h-full" />
+            <CompleteIcon className="w-full h-full" />
           </div>
 
           {/* 완료 메시지 */}

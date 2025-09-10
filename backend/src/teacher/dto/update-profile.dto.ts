@@ -65,5 +65,10 @@ export class UpdateProfileDto {
   yearsOfExperience?: number;
 
   @IsOptional()
-  availableTimes?: any;
+  @IsArray({ message: '가능한 시간은 배열이어야 합니다.' })
+  @IsString({
+    each: true,
+    message: '가능한 시간 항목은 모두 문자열이어야 합니다.',
+  })
+  availableTimes?: string[];
 }

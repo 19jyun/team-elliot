@@ -1,16 +1,16 @@
 // 백엔드 DTO와 동일한 validation 규칙들
-export interface ValidationError {
+interface ValidationError {
   field: string;
   message: string;
 }
 
-export interface ValidationResult {
+interface ValidationResult {
   isValid: boolean;
   errors: ValidationError[];
 }
 
 // 이름 validation (한글, 영문, 공백만 허용, 2-50자)
-export const validateName = (name: string): ValidationResult => {
+const validateName = (name: string): ValidationResult => {
   const errors: ValidationError[] = [];
 
   if (!name) return { isValid: true, errors: [] };
@@ -37,7 +37,7 @@ export const validateName = (name: string): ValidationResult => {
 };
 
 // 전화번호 validation (01X-XXXX-XXXX 형식, 11자리)
-export const validatePhoneNumber = (phoneNumber: string): ValidationResult => {
+const validatePhoneNumber = (phoneNumber: string): ValidationResult => {
   const errors: ValidationError[] = [];
 
   if (!phoneNumber) return { isValid: true, errors: [] };
@@ -56,7 +56,7 @@ export const validatePhoneNumber = (phoneNumber: string): ValidationResult => {
 };
 
 // 비상연락처 validation (01X-XXXX-XXXX 형식, 11자리)
-export const validateEmergencyContact = (
+const validateEmergencyContact = (
   emergencyContact: string
 ): ValidationResult => {
   const errors: ValidationError[] = [];
@@ -77,7 +77,7 @@ export const validateEmergencyContact = (
 };
 
 // 생년월일 validation (유효한 날짜 형식)
-export const validateBirthDate = (birthDate: string): ValidationResult => {
+const validateBirthDate = (birthDate: string): ValidationResult => {
   const errors: ValidationError[] = [];
 
   if (!birthDate) return { isValid: true, errors: [] };
@@ -97,7 +97,7 @@ export const validateBirthDate = (birthDate: string): ValidationResult => {
 };
 
 // 특이사항 validation (500자 이하)
-export const validateNotes = (notes: string): ValidationResult => {
+const validateNotes = (notes: string): ValidationResult => {
   const errors: ValidationError[] = [];
 
   if (!notes) return { isValid: true, errors: [] };
@@ -116,7 +116,7 @@ export const validateNotes = (notes: string): ValidationResult => {
 };
 
 // 레벨 validation (한글, 영문, 공백만 허용, 20자 이하)
-export const validateLevel = (level: string): ValidationResult => {
+const validateLevel = (level: string): ValidationResult => {
   const errors: ValidationError[] = [];
 
   if (!level) return { isValid: true, errors: [] };
@@ -176,7 +176,7 @@ export const validateProfileData = (data: {
 };
 
 // Teacher용 validation 함수들
-export const validateTeacherName = (name: string): ValidationResult => {
+const validateTeacherName = (name: string): ValidationResult => {
   const errors: ValidationError[] = [];
 
   if (!name) return { isValid: true, errors: [] };
@@ -202,7 +202,7 @@ export const validateTeacherName = (name: string): ValidationResult => {
   };
 };
 
-export const validateTeacherPhoneNumber = (
+const validateTeacherPhoneNumber = (
   phoneNumber: string
 ): ValidationResult => {
   const errors: ValidationError[] = [];
@@ -222,7 +222,7 @@ export const validateTeacherPhoneNumber = (
   };
 };
 
-export const validateTeacherIntroduction = (
+const validateTeacherIntroduction = (
   introduction: string
 ): ValidationResult => {
   const errors: ValidationError[] = [];
@@ -242,7 +242,7 @@ export const validateTeacherIntroduction = (
   };
 };
 
-export const validateTeacherEducation = (
+const validateTeacherEducation = (
   education: string[]
 ): ValidationResult => {
   const errors: ValidationError[] = [];
@@ -265,7 +265,7 @@ export const validateTeacherEducation = (
   };
 };
 
-export const validateTeacherSpecialties = (
+const validateTeacherSpecialties = (
   specialties: string[]
 ): ValidationResult => {
   const errors: ValidationError[] = [];
@@ -288,7 +288,7 @@ export const validateTeacherSpecialties = (
   };
 };
 
-export const validateTeacherCertifications = (
+const validateTeacherCertifications = (
   certifications: string[]
 ): ValidationResult => {
   const errors: ValidationError[] = [];
@@ -311,7 +311,7 @@ export const validateTeacherCertifications = (
   };
 };
 
-export const validateTeacherYearsOfExperience = (
+const validateTeacherYearsOfExperience = (
   years: number | undefined
 ): ValidationResult => {
   const errors: ValidationError[] = [];
@@ -341,7 +341,7 @@ export const validateTeacherProfileData = (data: {
   specialties?: string[];
   certifications?: string[];
   yearsOfExperience?: number;
-  availableTimes?: any;
+  availableTimes?: string[];
 }): ValidationResult => {
   const allErrors: ValidationError[] = [];
 
@@ -380,7 +380,7 @@ export const validateTeacherProfileData = (data: {
 };
 
 // Principal용 validation 함수들
-export const validatePrincipalName = (name: string): ValidationResult => {
+const validatePrincipalName = (name: string): ValidationResult => {
   const errors: ValidationError[] = [];
 
   if (!name) return { isValid: true, errors: [] };
@@ -406,7 +406,7 @@ export const validatePrincipalName = (name: string): ValidationResult => {
   };
 };
 
-export const validatePrincipalPhoneNumber = (
+const validatePrincipalPhoneNumber = (
   phoneNumber: string
 ): ValidationResult => {
   const errors: ValidationError[] = [];
@@ -426,7 +426,7 @@ export const validatePrincipalPhoneNumber = (
   };
 };
 
-export const validatePrincipalIntroduction = (
+const validatePrincipalIntroduction = (
   introduction: string
 ): ValidationResult => {
   const errors: ValidationError[] = [];
@@ -446,7 +446,7 @@ export const validatePrincipalIntroduction = (
   };
 };
 
-export const validatePrincipalEducation = (
+const validatePrincipalEducation = (
   education: string[]
 ): ValidationResult => {
   const errors: ValidationError[] = [];
@@ -469,7 +469,7 @@ export const validatePrincipalEducation = (
   };
 };
 
-export const validatePrincipalCertifications = (
+const validatePrincipalCertifications = (
   certifications: string[]
 ): ValidationResult => {
   const errors: ValidationError[] = [];

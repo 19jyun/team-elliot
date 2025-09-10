@@ -1,6 +1,6 @@
 import * as React from 'react'
 
-export interface ClassCardProps {
+interface ClassCardProps {
   level: string
   className: string
   teacher: string
@@ -13,7 +13,7 @@ export interface ClassCardProps {
   style?: React.CSSProperties
 }
 
-export interface ExtendedClassCardProps extends ClassCardProps {
+interface ExtendedClassCardProps extends ClassCardProps {
   selected?: boolean
   onClick?: () => void
   onInfoClick?: () => void
@@ -31,26 +31,22 @@ export const ClassCard: React.FC<ExtendedClassCardProps> = ({
   teacher,
   startTime,
   endTime,
-  dayIndex,
-  startHour,
   bgColor,
-  containerWidth,
   selected = false,
   onClick,
   onInfoClick,
   style,
 }) => {
-  const baseBg = levelBgColor[level as keyof typeof levelBgColor] || '#F4E7E7'
+  // bgColor가 제공되면 사용하고, 없으면 level 기반으로 결정
+  const baseBg = bgColor || levelBgColor[level as keyof typeof levelBgColor] || '#F4E7E7'
   const cardBg = selected ? '#573B30' : baseBg
   const textColor = selected ? 'text-white' : 'text-neutral-800'
   const subTextColor = selected ? 'text-white' : 'text-zinc-600'
   const infoBtnText = selected ? 'text-[#573B30]' : 'text-zinc-600'
 
-  const dayWidth = `calc((${containerWidth} - 25px) / 7)`
-
-  const leftPosition = `calc(25px + (${dayIndex} * ${dayWidth}))`
-
-  const topPosition = `${(startHour - 4) * 105}px`
+  // const dayWidth = `calc((${containerWidth} - 25px) / 7)`
+  // const leftPosition = `calc(25px + (${dayIndex} * ${dayWidth}))`
+  // const topPosition = `${(startHour - 4) * 105}px`
 
   return (
     <div
@@ -93,7 +89,9 @@ export const ClassCard: React.FC<ExtendedClassCardProps> = ({
         aria-label={`${level} 정보보기`}
         onClick={e => {
           e.stopPropagation();
-          onInfoClick && onInfoClick();
+          if (onInfoClick) {
+            onInfoClick();
+          }
         }}
       >
         정보보기

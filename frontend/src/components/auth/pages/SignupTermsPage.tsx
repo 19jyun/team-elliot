@@ -1,12 +1,12 @@
 'use client'
 
 import * as React from 'react'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import axios from 'axios'
 import Image from 'next/image'
-import { useAuth } from '@/contexts/AuthContext'
+
 
 const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
   <div
@@ -18,7 +18,6 @@ const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
 )
 
 export function SignupTermsPage() {
-  const { navigateToAuthSubPage } = useAuth()
   const [currentStep] = useState(4)
   const [isLoading, setIsLoading] = useState(false)
   const [agreements, setAgreements] = useState({

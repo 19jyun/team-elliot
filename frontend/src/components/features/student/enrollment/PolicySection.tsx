@@ -1,5 +1,9 @@
 import * as React from 'react'
-import { PolicySectionProps } from './types'
+
+interface PolicySectionProps {
+  title: string;
+  content: string[];
+}
 
 export const PolicySection: React.FC<PolicySectionProps> = ({
   title,

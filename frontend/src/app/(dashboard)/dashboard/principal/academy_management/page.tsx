@@ -6,17 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Settings, Edit, Save, X } from 'lucide-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { updatePrincipalAcademy as updatePrincipalAcademyApi, getPrincipalAcademy } from '@/api/principal';
 import { UpdatePrincipalAcademyRequest } from '@/types/api/principal';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 
 export default function PrincipalAcademyManagementPage() {
   const router = useRouter();
-  const { data: session, status } = useSession({
+  const { status } = useSession({
     required: true,
     onUnauthenticated() {
       router.push('/auth');
@@ -30,10 +29,10 @@ export default function PrincipalAcademyManagementPage() {
     phoneNumber: '',
     description: '',
   });
-  const queryClient = useQueryClient();
+
 
   // API 기반 데이터 관리
-  const { academy, loadAcademy, isLoading, error } = usePrincipalApi();
+  const { academy, loadAcademy, updateAcademy, isLoading, error } = usePrincipalApi();
 
   // academy 데이터가 로드되면 formData 업데이트
   useEffect(() => {
@@ -50,19 +49,20 @@ export default function PrincipalAcademyManagementPage() {
   // 초기 데이터 로드
   useEffect(() => {
     loadAcademy();
-  }, []);
+  }, [loadAcademy]);
 
   // 학원 정보 수정 뮤테이션
   const updateAcademyMutation = useMutation({
-    mutationFn: updatePrincipalAcademyApi,
-    onSuccess: (updatedAcademy) => {
-      // API 데이터 다시 로드
-      loadAcademy();
+    mutationFn: updateAcademy,
+    onSuccess: () => {
       toast.success('학원 정보가 수정되었습니다.');
       setIsEditing(false);
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || '학원 정보 수정에 실패했습니다.');
+    onError: (error: unknown) => {
+      const errorMessage = error && typeof error === 'object' && 'response' in error 
+        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message 
+        : '학원 정보 수정에 실패했습니다.';
+      toast.error(errorMessage || '학원 정보 수정에 실패했습니다.');
     },
   });
 

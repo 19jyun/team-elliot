@@ -251,7 +251,7 @@ export function ConnectedCalendar() {
   // 요일 헤더
   const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
 
-  const handleDateClick = (dayInfo: any) => {
+  const handleDateClick = (dayInfo: { date: Date; sessions: ClassSession[] }) => {
     // student-view 모드에서는 날짜 클릭 시 모달 열기
     if (calendarMode === 'student-view' || calendarMode === 'teacher-view') {
       if (dayInfo.sessions.length > 0) {

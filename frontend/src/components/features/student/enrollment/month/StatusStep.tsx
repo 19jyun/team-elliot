@@ -1,5 +1,12 @@
 import * as React from 'react'
-import { StatusStepProps } from './types'
+import Image from 'next/image'
+
+interface StatusStepProps {
+  icon: string
+  label: string
+  isActive?: boolean
+  isCompleted?: boolean
+}
 
 export const StatusStep: React.FC<StatusStepProps> = ({
   icon,
@@ -7,23 +14,24 @@ export const StatusStep: React.FC<StatusStepProps> = ({
   isActive = false,
   isCompleted = false,
 }) => {
-  // 아이콘 경로 분기
+  // 아이콘 경로 분기 (Principal Dashboard와 동일한 로직)
   let iconSrc = icon;
-  if (label === '결제하기' && isCompleted) {
-    iconSrc = '/icons/CourseRegistrationsStatusSteps3.svg'; // 결제하기 완료(체크+갈색)
-  } else if (isCompleted) {
+  if (isCompleted) {
     iconSrc = '/icons/CourseRegistrationsStatusSteps1.svg'; // 완료(갈색 체크)
   } else if (isActive) {
-    iconSrc = '/icons/CourseRegistrationsStatusSteps2-active.svg'; // 진행중(갈색 테두리)
+    iconSrc = '/icons/CourseRegistrationsStatusSteps2.svg'; // 진행중(갈색 테두리)
   } else {
     iconSrc = '/icons/CourseRegistrationsStatusSteps2.svg'; // 비활성(회색 테두리)
   }
+  
   return (
     <div className="flex flex-col flex-1 items-center">
-      <img
+      <Image
         loading="lazy"
         src={iconSrc}
         alt={`${label} 단계 아이콘`}
+        width={32}
+        height={32}
         className="object-contain w-8 aspect-square"
       />
       <div

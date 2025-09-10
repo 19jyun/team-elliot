@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import type { CommonState, User } from "@/types/store/common";
+import type { CommonState } from "@/types/store/common";
 
 const initialState: CommonState = {
   user: null,
@@ -8,7 +8,7 @@ const initialState: CommonState = {
   lastUpdated: null,
 };
 
-export const commonSlice = createSlice({
+const commonSlice = createSlice({
   name: "common",
   initialState,
   reducers: {
@@ -28,18 +28,18 @@ export const commonSlice = createSlice({
       state.lastUpdated = action.payload;
     },
 
-    clearCommonData: (state) => {
+    clearCommonData: () => {
       return initialState;
     },
   },
 });
 
 export const {
-  setUser,
-  setLoading,
-  setError,
-  setLastUpdated,
-  clearCommonData,
+  
+  
+  
+  
+  
 } = commonSlice.actions;
 
 export default commonSlice.reducer;

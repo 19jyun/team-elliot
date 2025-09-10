@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { useTeacherApi } from "@/hooks/teacher/useTeacherApi";
 import { toast } from "sonner";
 import { leaveAcademy, requestJoinAcademy } from "@/api/teacher";
-import { Academy, CreateAcademyRequest } from "@/types/api/teacher";
+import { extractErrorMessage } from "@/types/api/error";
 
 export function useTeacherAcademyManagement() {
   const { academy: currentAcademy, loadAcademy, isLoading } = useTeacherApi();
@@ -45,15 +45,13 @@ export function useTeacherAcademyManagement() {
   const performJoinAcademyRequest = async (code: string) => {
     try {
       setIsJoining(true);
-      const result = await requestJoinAcademy({ code });
+      await requestJoinAcademy({ code });
       setJoinCode("");
       setPendingJoinCode("");
-      toast.success(result.message);
-    } catch (error: any) {
+      toast.success("학원 가입 요청이 완료되었습니다.");
+    } catch (error: unknown) {
       console.error("학원 가입 요청 실패:", error);
-      toast.error(
-        error.response?.data?.message || "학원 가입 요청에 실패했습니다."
-      );
+      toast.error(extractErrorMessage(error, "학원 가입 요청에 실패했습니다."));
     } finally {
       setIsJoining(false);
     }
@@ -71,11 +69,9 @@ export function useTeacherAcademyManagement() {
 
         // 그 다음 새 학원 가입 요청
         await performJoinAcademyRequest(pendingJoinCode);
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("학원 변경 실패:", error);
-        toast.error(
-          error.response?.data?.message || "학원 변경에 실패했습니다."
-        );
+        toast.error(extractErrorMessage(error, "학원 변경에 실패했습니다."));
       }
     } else if (withdrawalType === "leave") {
       // 단순 탈퇴인 경우
@@ -84,25 +80,11 @@ export function useTeacherAcademyManagement() {
         toast.success("학원에서 탈퇴되었습니다.");
         // 데이터 재로드
         await loadAcademy();
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("학원 탈퇴 실패:", error);
-        toast.error(
-          error.response?.data?.message || "학원 탈퇴에 실패했습니다."
-        );
+        toast.error(extractErrorMessage(error, "학원 탈퇴에 실패했습니다."));
       }
     }
-  };
-
-  const handleCreateAcademy = async (_formData: CreateAcademyRequest) => {
-    // 교사는 학원 생성 권한이 없음
-    toast.error("학원 생성은 원장만 가능합니다.");
-    return Promise.reject(new Error("Teacher cannot create academy"));
-  };
-
-  const handleUpdateAcademy = async (_formData: CreateAcademyRequest) => {
-    // 교사는 학원 정보 수정 권한이 없음
-    toast.error("학원 정보 수정은 원장만 가능합니다.");
-    return Promise.reject(new Error("Teacher cannot update academy"));
   };
 
   const handleLeaveAcademy = () => {
@@ -122,8 +104,6 @@ export function useTeacherAcademyManagement() {
     loadCurrentAcademy,
     handleJoinAcademy,
     handleWithdrawalConfirm,
-    handleCreateAcademy,
-    handleUpdateAcademy,
     handleLeaveAcademy,
   };
 }

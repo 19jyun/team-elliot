@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "@/lib/axios";
 import {
   CreateSessionContentRequest,
-  UpdateSessionContentRequest,
   ReorderSessionContentsRequest,
 } from "@/types/api/session-content";
 import { toast } from "sonner";
@@ -45,34 +44,6 @@ export const useAddSessionContent = (sessionId: number) => {
   });
 };
 
-// 세션 내용 수정
-export const useUpdateSessionContent = (sessionId: number) => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      contentId,
-      data,
-    }: {
-      contentId: number;
-      data: UpdateSessionContentRequest;
-    }) =>
-      axios
-        .patch(`/class-sessions/${sessionId}/contents/${contentId}`, data)
-        .then((r) => r.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["session-contents", sessionId],
-      });
-      toast.success("세션 내용이 수정되었습니다.");
-    },
-    onError: (error) => {
-      console.error("세션 내용 수정 실패:", error);
-      toast.error("세션 내용 수정에 실패했습니다.");
-    },
-  });
-};
-
 // 세션 내용 삭제
 export const useDeleteSessionContent = (sessionId: number) => {
   const queryClient = useQueryClient();
@@ -102,7 +73,10 @@ export const useReorderSessionContents = (sessionId: number) => {
   return useMutation({
     mutationFn: async (data: ReorderSessionContentsRequest) => {
       const ids =
-        (data as any).orderedContentIds ?? (data as any).contentIds ?? [];
+        (data as unknown as { orderedContentIds?: number[] })
+          .orderedContentIds ??
+        (data as unknown as { contentIds?: number[] }).contentIds ??
+        [];
       const contentIds: string[] = (ids as Array<string | number>).map(String);
       const res = await axios.patch(
         `/class-sessions/${sessionId}/contents/reorder`,

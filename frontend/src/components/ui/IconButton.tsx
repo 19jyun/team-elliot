@@ -1,5 +1,10 @@
 import * as React from 'react'
-import { IconButtonProps } from './types'
+
+interface IconButtonProps {
+  children: React.ReactNode;
+  onClick?: () => void;
+  className?: string;
+}
 
 export function IconButton({ children, onClick, className }: IconButtonProps) {
   return (

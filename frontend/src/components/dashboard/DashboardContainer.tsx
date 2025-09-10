@@ -9,10 +9,9 @@ interface DashboardContainerProps {
   activeTab: number;
   onTabChange: (tab: number) => void;
   isTransitioning?: boolean;
-  subPage?: string | null;
 }
 
-export function DashboardContainer({ children, activeTab, onTabChange, isTransitioning = false, subPage = null }: DashboardContainerProps) {
+export function DashboardContainer({ children, activeTab, onTabChange, isTransitioning = false }: DashboardContainerProps) {
   // 각 페이지의 스크롤 위치를 개별적으로 관리
   const [pageScrollPositions, setPageScrollPositions] = useState<Record<number, number>>({});
 

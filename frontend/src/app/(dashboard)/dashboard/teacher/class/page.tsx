@@ -9,18 +9,11 @@ import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessi
 import { SessionDetailModal } from '@/components/common/Session/SessionDetailModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
-import { ClassSession } from '@/types/api/class'
 import { useDashboardNavigation } from '@/contexts/DashboardContext'
-
-// Type for extended session
-type ExtendedSession = {
-  accessToken?: string
-  user: {
-    id: string
-    role: string
-    accessToken?: string
-  } & { name?: string | null | undefined; email?: string | null | undefined; image?: string | null | undefined }
-}
+import { toTeacherCalendarSessionVM, toTeacherSessionDetailModalVM, toClassSessionForCalendar } from '@/lib/adapters/teacher'
+import type { TeacherSessionDetailModalVM } from '@/types/view/teacher'
+import type { TeacherSession } from '@/types/api/teacher'
+import type { ClassSession } from '@/types/api/class'
 
 export default function TeacherDashboardPage() {
   const router = useRouter()
@@ -41,13 +34,13 @@ export default function TeacherDashboardPage() {
   const [isDateModalOpen, setIsDateModalOpen] = useState(false)
   
   // 세션 상세 모달 상태 추가
-  const [selectedSession, setSelectedSession] = useState<any>(null)
+  const [selectedSession, setSelectedSession] = useState<TeacherSession | null>(null)
   const [isSessionDetailModalOpen, setIsSessionDetailModalOpen] = useState(false)
 
   // 초기 데이터 로드
   useEffect(() => {
     loadSessions();
-  }, []);
+  }, [loadSessions]);
 
   // 백엔드에서 받은 캘린더 범위 사용 (새로운 정책 적용)
   const calendarRange = useMemo(() => {
@@ -58,6 +51,16 @@ export default function TeacherDashboardPage() {
       endDate: new Date(now.getFullYear(), now.getMonth() + 2, 0), // 현재 월 + 2개월 = 3개월 범위
     };
   }, []);
+
+  // CalendarProvider용 데이터 변환 (ClassSession 타입으로 변환)
+  const classSessionsForCalendar = (calendarSessions as TeacherSession[]).map(toClassSessionForCalendar);
+  
+  // 세션 상세 모달 ViewModel
+  const sessionDetailModalVM: TeacherSessionDetailModalVM = toTeacherSessionDetailModalVM({
+    isOpen: isSessionDetailModalOpen,
+    session: selectedSession ? toTeacherCalendarSessionVM(selectedSession) : null,
+    onClose: () => setIsSessionDetailModalOpen(false)
+  });
 
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {
@@ -70,7 +73,8 @@ export default function TeacherDashboardPage() {
 
   // 에러 처리
   if (error) {
-    if ((error as any)?.response?.status === 401) {
+    const errorResponse = error as { response?: { status?: number } };
+    if (errorResponse?.response?.status === 401) {
       signOut({ redirect: true, callbackUrl: '/auth' });
       return null;
     }
@@ -101,15 +105,13 @@ export default function TeacherDashboardPage() {
   }
 
   // 세션 클릭 핸들러 추가
-  const handleSessionClick = (session: any) => {
-    setSelectedSession(session)
+  const handleSessionClick = (session: ClassSession) => {
+    // ClassSession을 TeacherSession으로 변환하여 저장
+    const teacherSession = calendarSessions.find(s => s.id === session.id) as TeacherSession
+    setSelectedSession(teacherSession)
     setIsSessionDetailModalOpen(true)
   }
 
-  const closeSessionDetailModal = () => {
-    setIsSessionDetailModalOpen(false)
-    setSelectedSession(null)
-  }
 
   // 담당 클래스 SubPage로 이동
   const handleTeacherClassesClick = () => {
@@ -155,7 +157,7 @@ export default function TeacherDashboardPage() {
         <div className="flex flex-col w-full bg-white text-stone-700" style={{ height: 'calc(100vh - 450px)' }}>
           <CalendarProvider
             mode="teacher-view"
-            sessions={calendarSessions}
+            sessions={classSessionsForCalendar}
             selectedSessionIds={new Set()}
             onSessionSelect={() => {}} // teacher-view에서는 선택 기능 없음
             onDateClick={handleDateClick}
@@ -177,9 +179,9 @@ export default function TeacherDashboardPage() {
 
       {/* Session Detail Modal - API 방식 */}
       <SessionDetailModal
-        isOpen={isSessionDetailModalOpen}
+        isOpen={sessionDetailModalVM.isOpen}
         sessionId={selectedSession?.id || null}
-        onClose={closeSessionDetailModal}
+        onClose={sessionDetailModalVM.onClose}
         role="teacher"
       />
     </div>

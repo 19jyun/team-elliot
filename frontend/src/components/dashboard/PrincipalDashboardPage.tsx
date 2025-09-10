@@ -19,7 +19,7 @@ import { PrincipalBankInfoManagement } from './principal/profile/PrincipalBankIn
 import { EnrollmentRefundManagementContainer } from './principal/person_management/enrollment_refund_management/containers/EnrollmentRefundManagementContainer';
 import { TeacherStudentManagementContainer } from './principal/person_management/teacher_student_management/containers/TeacherStudentManagementContainer';
 import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSocketListener';
-import { SocketStatus } from '@/components/common/Socket/SocketStatus';
+
 import { usePrincipalInitialization } from '@/hooks/redux/usePrincipalInitialization';
 
 
@@ -81,7 +81,6 @@ function PrincipalDashboardContent() {
           activeTab={activeTab}
           onTabChange={handleTabChange}
           isTransitioning={isTransitioning}
-          subPage={subPage}
         >
           {tabPages}
         </DashboardContainer>

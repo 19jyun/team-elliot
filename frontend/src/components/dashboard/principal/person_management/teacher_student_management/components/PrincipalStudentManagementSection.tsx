@@ -8,12 +8,21 @@ import { toast } from 'sonner';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { useState, useEffect } from 'react';
 import { PrincipalStudentSessionHistoryModal } from './PrincipalStudentSessionHistoryModal';
+import { toPrincipalStudentListVM } from '@/lib/adapters/principal';
+import type { PrincipalStudentListVM } from '@/types/view/principal';
 
 export default function PrincipalStudentManagementSection() {
-  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [selectedStudent, setSelectedStudent] = useState<{ id: number; name: string } | null>(null);
 
   // API 기반 데이터 관리
   const { students, loadStudents, isLoading, error, removeStudent } = usePrincipalApi();
+
+  // ViewModel 생성
+  const studentListVM: PrincipalStudentListVM = toPrincipalStudentListVM(
+    students || [],
+    isLoading,
+    error
+  );
 
   // 컴포넌트 마운트 시 학생 데이터 로드
   useEffect(() => {
@@ -28,13 +37,16 @@ export default function PrincipalStudentManagementSection() {
       loadStudents();
       toast.success('수강생이 학원에서 제거되었습니다.');
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || '수강생 제거에 실패했습니다.');
+    onError: (error: unknown) => {
+      const errorMessage = error && typeof error === 'object' && 'response' in error 
+        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message 
+        : '수강생 제거에 실패했습니다.';
+      toast.error(errorMessage || '수강생 제거에 실패했습니다.');
     },
   });
 
   // 로딩 상태 처리
-  if (isLoading) {
+  if (studentListVM.isLoading) {
     return (
       <div className="space-y-4">
         <Card>
@@ -58,7 +70,7 @@ export default function PrincipalStudentManagementSection() {
   }
 
   // 에러 처리
-  if (error) {
+  if (studentListVM.error) {
     return (
       <div className="space-y-4">
         <Card>
@@ -93,13 +105,13 @@ export default function PrincipalStudentManagementSection() {
             수강생 목록
           </CardTitle>
           <CardDescription>
-            현재 {students?.length || 0}명의 수강생이 소속되어 있습니다.
+            현재 {studentListVM.totalCount}명의 수강생이 소속되어 있습니다.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {students && students.length > 0 ? (
-              students.map((student: any) => (
+            {studentListVM.students && studentListVM.students.length > 0 ? (
+              studentListVM.students.map((student) => (
                 <div key={student.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-3">
                     <div>
@@ -111,7 +123,7 @@ export default function PrincipalStudentManagementSection() {
                     <Button 
                       size="sm" 
                       variant="outline" 
-                      onClick={() => setSelectedStudent(student)}
+                      onClick={() => setSelectedStudent({ id: student.id, name: student.name })}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>

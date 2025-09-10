@@ -10,22 +10,13 @@ export interface CreateRefundRequestDto {
 }
 
 // 환불 사유 enum
-export enum RefundReason {
+enum RefundReason {
   PERSONAL_SCHEDULE = "PERSONAL_SCHEDULE",
   HEALTH_ISSUE = "HEALTH_ISSUE",
   DISSATISFACTION = "DISSATISFACTION",
   FINANCIAL_ISSUE = "FINANCIAL_ISSUE",
   OTHER = "OTHER",
 }
-
-// 환불 사유 한국어 라벨
-export const REFUND_REASON_LABELS: Record<RefundReason, string> = {
-  [RefundReason.PERSONAL_SCHEDULE]: "개인 일정",
-  [RefundReason.HEALTH_ISSUE]: "건강상 문제",
-  [RefundReason.DISSATISFACTION]: "서비스 불만족",
-  [RefundReason.FINANCIAL_ISSUE]: "경제적 사유",
-  [RefundReason.OTHER]: "기타",
-};
 
 // 환불 처리 요청 타입
 export interface ProcessRefundRequestDto {
@@ -35,7 +26,7 @@ export interface ProcessRefundRequestDto {
   actualRefundAmount?: number;
 }
 
-// 환불 상태 enum
+// 환불 상태 enum (Refund API 전용 - 더 상세한 상태 포함)
 export enum RefundStatus {
   PENDING = "PENDING",
   APPROVED = "APPROVED",
@@ -43,24 +34,6 @@ export enum RefundStatus {
   PARTIAL_APPROVED = "PARTIAL_APPROVED",
   CANCELLED = "CANCELLED",
 }
-
-// 환불 상태 한국어 라벨
-export const REFUND_STATUS_LABELS: Record<RefundStatus, string> = {
-  [RefundStatus.PENDING]: "대기중",
-  [RefundStatus.APPROVED]: "승인됨",
-  [RefundStatus.REJECTED]: "거부됨",
-  [RefundStatus.PARTIAL_APPROVED]: "부분 승인",
-  [RefundStatus.CANCELLED]: "취소됨",
-};
-
-// 환불 상태 색상
-export const REFUND_STATUS_COLORS: Record<RefundStatus, string> = {
-  [RefundStatus.PENDING]: "bg-yellow-100 text-yellow-800",
-  [RefundStatus.APPROVED]: "bg-green-100 text-green-800",
-  [RefundStatus.REJECTED]: "bg-red-100 text-red-800",
-  [RefundStatus.PARTIAL_APPROVED]: "bg-blue-100 text-blue-800",
-  [RefundStatus.CANCELLED]: "bg-gray-100 text-gray-800",
-};
 
 // 환불 요청 응답 타입
 export interface RefundRequestResponse {
@@ -82,8 +55,11 @@ export interface RefundRequestResponse {
   accountHolder?: string;
   sessionEnrollment: {
     session: {
+      id: number;
       class: {
+        id: number;
         className: string;
+        level: string;
         teacher: {
           name: string;
         };
@@ -92,9 +68,14 @@ export interface RefundRequestResponse {
       startTime: string;
       endTime: string;
     };
+    date: string;
+    startTime: string;
+    endTime: string;
   };
   student: {
+    id: number;
     name: string;
+    phoneNumber?: string;
   };
   processor?: {
     name: string;
@@ -130,12 +111,6 @@ export interface RefundStatistics {
   averageRefundAmount: number;
 }
 
-// 환불 요청 생성 응답 타입
-export interface CreateRefundRequestResponse {
-  data: RefundRequestResponse;
-  message: string;
-}
-
 // 환불 요청 취소 응답 타입
 export interface CancelRefundRequestResponse {
   data: RefundRequestResponse;
@@ -147,3 +122,6 @@ export interface ProcessRefundRequestResponse {
   data: RefundRequestResponse;
   message: string;
 }
+
+// 전체 환불 요청 목록 조회 응답 타입
+export type GetRefundRequestsResponse = RefundRequestResponse[];

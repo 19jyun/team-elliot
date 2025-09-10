@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -12,7 +12,8 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const sessionId = parseInt(params.sessionId);
+    const resolvedParams = await params;
+    const sessionId = parseInt(resolvedParams.sessionId);
     if (isNaN(sessionId)) {
       return NextResponse.json(
         { error: "Invalid session ID" },

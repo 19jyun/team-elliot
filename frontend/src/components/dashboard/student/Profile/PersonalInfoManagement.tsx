@@ -6,18 +6,19 @@ import { Input } from '@/components/ui/input';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { User, Phone, Mail, Calendar, Edit, Save, X } from 'lucide-react';
+import { User, Phone, Calendar, Edit, Save, X } from 'lucide-react';
+import { CloseCircleIcon } from '@/components/icons';
 import { toast } from 'sonner';
-import { UpdateProfileRequest } from '@/types/api/student';
+import { UpdateStudentProfileRequest } from '@/types/api/student';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
 import { useApiError } from '@/hooks/useApiError';
-import { validateProfileData, ValidationError } from '@/utils/validation';
+import { validateProfileData } from '@/utils/validation';
 
 export function PersonalInfoManagement() {
   const { userProfile, isLoading, error, loadUserProfile, updateUserProfile } = useStudentApi();
   const { handleApiError, fieldErrors, clearErrors } = useApiError();
   const [isEditing, setIsEditing] = useState(false);
-  const [editedInfo, setEditedInfo] = useState<UpdateProfileRequest>({});
+  const [editedInfo, setEditedInfo] = useState<UpdateStudentProfileRequest>({});
   const [isSaving, setIsSaving] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -104,7 +105,7 @@ export function PersonalInfoManagement() {
   }, [editedInfo.phoneNumber, userProfile, isEditing]);
 
   // 입력 필드 변경 시 에러 초기화 (새로 타이핑할 때만)
-  const [previousInputs, setPreviousInputs] = useState<UpdateProfileRequest>({});
+  const [previousInputs, setPreviousInputs] = useState<UpdateStudentProfileRequest>({});
   
   useEffect(() => {
     // 각 필드별로 이전 값과 현재 값을 비교하여 새로 타이핑된 경우에만 에러 제거
@@ -234,13 +235,7 @@ export function PersonalInfoManagement() {
     toast.success('전화번호 인증이 완료되었습니다.');
   };
 
-  const handleCancelVerification = () => {
-    setIsPhoneVerificationRequired(false);
-    setIsPhoneVerified(false);
-    setIsTimerRunning(false);
-    setTimeLeft(180);
-    setVerificationCode('');
-  };
+
 
   const handleClearVerificationCode = () => {
     setVerificationCode('');
@@ -252,7 +247,7 @@ export function PersonalInfoManagement() {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  const handleInputChange = (field: keyof UpdateProfileRequest, value: string) => {
+  const handleInputChange = (field: keyof UpdateStudentProfileRequest, value: string) => {
     setEditedInfo(prev => ({
       ...prev,
       [field]: value,
@@ -458,11 +453,9 @@ export function PersonalInfoManagement() {
                             onClick={handleClearVerificationCode}
                             className="p-1 hover:bg-gray-100 rounded"
                           >
-                            <img 
-                              src="/icons/close-circle.svg" 
-                              alt="인증번호 지우기" 
-                              width="16" 
-                              height="16"
+                            <CloseCircleIcon 
+                              width={16} 
+                              height={16}
                             />
                           </button>
                           <div className="text-sm font-mono" style={{ color: '#573B30', fontFamily: 'Pretendard Variable' }}>
@@ -540,7 +533,7 @@ export function PersonalInfoManagement() {
               <label className="text-sm font-medium text-gray-700">생년월일</label>
               {isEditing ? (
                 <div className="space-y-1">
-                                     <Input
+                    <Input
                      value={editedInfo.birthDate || ''}
                      onChange={(e) => handleInputChange('birthDate', e.target.value)}
                      placeholder="생년월일을 입력하세요"
@@ -570,7 +563,7 @@ export function PersonalInfoManagement() {
               <label className="text-sm font-medium text-gray-700">레벨</label>
               {isEditing ? (
                 <div className="space-y-1">
-                                     <select
+                   <select
                      value={editedInfo.level || ''}
                      onChange={(e) => handleInputChange('level', e.target.value)}
                      className={`w-full p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 ${
@@ -602,7 +595,7 @@ export function PersonalInfoManagement() {
               <label className="text-sm font-medium text-gray-700">특이사항</label>
               {isEditing ? (
                 <div className="space-y-1">
-                                     <Input
+                   <Input
                      value={editedInfo.notes || ''}
                      onChange={(e) => handleInputChange('notes', e.target.value)}
                      placeholder="특이사항을 입력하세요 (알러지, 부상 이력 등)"

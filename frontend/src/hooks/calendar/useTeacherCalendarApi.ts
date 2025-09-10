@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { getTeacherClassesWithSessions } from "@/api/teacher";
-import type { TeacherClassesWithSessionsResponse } from "@/types/api/teacher";
+import type { TeacherSession } from "@/types/api/teacher";
 
 // Teacher Calendar API 훅
 export function useTeacherCalendarApi() {
   const { data: session, status } = useSession();
-  const [sessions, setSessions] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<TeacherSession[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,10 +24,15 @@ export function useTeacherCalendarApi() {
       // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
       const data = response.data;
       if (data) {
-        setSessions(data.sessions || []);
+        setSessions((data.sessions || []) as TeacherSession[]);
       }
-    } catch (err: any) {
-      setError(err.response?.data?.message || "세션 로드 실패");
+    } catch (err: unknown) {
+      const errorMessage =
+        err && typeof err === "object" && "response" in err
+          ? (err as { response?: { data?: { message?: string } } }).response
+              ?.data?.message
+          : "세션 로드 실패";
+      setError(errorMessage || "세션 로드 실패");
     } finally {
       setIsLoading(false);
     }
@@ -50,25 +55,15 @@ export function useTeacherCalendarApi() {
   };
 
   const getSessionsByClassId = (classId: number) => {
-    return sessions.filter((session) => session.classId === classId);
+    return sessions.filter((session) => session.class.id === classId);
   };
 
   const getSessionById = (sessionId: number) => {
     return sessions.find((session) => session.id === sessionId);
   };
 
-  // 캘린더용 세션 데이터 변환
-  const calendarSessions = sessions.map((session) => ({
-    id: session.id,
-    title: session.title || session.class?.name || "세션",
-    date: session.date,
-    startTime: session.startTime,
-    endTime: session.endTime,
-    classId: session.classId,
-    class: session.class,
-    enrollments: session.enrollments || [],
-    status: session.status,
-  }));
+  // 캘린더용 세션 데이터 변환 (TeacherSession 구조 그대로 사용)
+  const calendarSessions = sessions;
 
   return {
     // 데이터
