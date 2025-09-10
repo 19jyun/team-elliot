@@ -11,7 +11,7 @@ import { useAppDispatch } from '@/store/hooks';
 import { updatePrincipalEnrollment, updatePrincipalRefundRequest } from '@/store/slices/principalSlice';
 import { extractErrorMessage } from '@/types/api/error';
 import { toPrincipalRequestDetailVM } from '@/lib/adapters/principal';
-import type { PrincipalEnrollment, PrincipalRefundRequest } from '@/types/api/principal';
+import type { PrincipalEnrollment } from '@/types/api/principal';
 import type { PrincipalRequestDetailVM } from '@/types/view/principal';
 
 export function PrincipalRequestDetail() {

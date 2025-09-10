@@ -12,7 +12,6 @@ import {
   getPrincipalAllEnrollments,
   getPrincipalAllRefundRequests,
 } from "@/api/principal";
-import type { RefundRequestResponse } from "@/types/api/refund";
 import { toast } from "sonner";
 
 export function usePrincipalInitialization() {

@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar } from 'lucide-react';
 import { toPrincipalSessionListForRequestsVM } from '@/lib/adapters/principal';
 import type { PrincipalEnrollment } from '@/types/api/principal';
-import type { RefundRequestResponse } from '@/types/api/refund';
 import type { PrincipalSessionListForRequestsVM } from '@/types/view/principal';
 
 export function PrincipalSessionList() {
