@@ -1,7 +1,7 @@
 // 공통으로 사용되는 Redux 타입들
 
 // 사용자 관련 타입
-interface User {
+export interface User {
   id: number;
   userId: string;
   name: string;

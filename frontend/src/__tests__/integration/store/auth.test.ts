@@ -1,6 +1,16 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { http, HttpResponse } from "msw";
 import { server } from "@/__mocks__/server";
+import type { User } from "@/types/store/common";
+import type { PayloadAction } from "@reduxjs/toolkit";
+
+// Auth state interface
+interface AuthState {
+  user: User | null;
+  isAuthenticated: boolean;
+  loading: boolean;
+  error: string | null;
+}
 
 // Mock Redux slice (실제 구현에 맞게 수정 필요)
 const authSlice = {
@@ -10,16 +20,16 @@ const authSlice = {
     isAuthenticated: false,
     loading: false,
     error: null,
-  },
+  } as AuthState,
   reducers: {
-    loginStart: (state: any) => {
+    loginStart: (state: AuthState) => {
       return {
         ...state,
         loading: true,
         error: null,
       };
     },
-    loginSuccess: (state: any, action: any) => {
+    loginSuccess: (state: AuthState, action: PayloadAction<User>) => {
       return {
         ...state,
         loading: false,
@@ -28,7 +38,7 @@ const authSlice = {
         error: null,
       };
     },
-    loginFailure: (state: any, action: any) => {
+    loginFailure: (state: AuthState, action: PayloadAction<string>) => {
       return {
         ...state,
         loading: false,
@@ -37,7 +47,7 @@ const authSlice = {
         error: action.payload,
       };
     },
-    logout: (state: any) => {
+    logout: (state: AuthState) => {
       return {
         ...state,
         isAuthenticated: false,
@@ -49,14 +59,23 @@ const authSlice = {
 };
 
 // Mock store 생성
-const createTestStore = (preloadedState = {}) => {
+const createTestStore = (preloadedState: Partial<AuthState> = {}) => {
   return configureStore({
     reducer: {
-      auth: (state = authSlice.initialState, action: any) => {
+      auth: (
+        state = authSlice.initialState,
+        action: { type: string; payload?: User | string }
+      ) => {
         const reducer =
           authSlice.reducers[action.type as keyof typeof authSlice.reducers];
         if (reducer) {
-          return reducer(state, action);
+          // 타입 단언을 사용하여 reducer 호출
+          return (
+            reducer as (
+              state: AuthState,
+              action: { type: string; payload?: User | string }
+            ) => AuthState
+          )(state, action);
         }
         return state;
       },

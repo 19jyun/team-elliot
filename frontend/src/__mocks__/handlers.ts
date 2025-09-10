@@ -1,4 +1,4 @@
-const { http, HttpResponse } = require("msw");
+import { http, HttpResponse } from "msw";
 
 // API 모킹 핸들러들
 export const handlers = [

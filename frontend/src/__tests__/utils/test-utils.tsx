@@ -3,6 +3,7 @@ import { render, RenderOptions } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { RootState } from '@/store';
 
 // Mock store 생성
 const createMockStore = () => {
@@ -40,7 +41,7 @@ const createMockQueryClient = () => {
 
 // 커스텀 렌더 함수
 interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
-  preloadedState?: any;
+  preloadedState?: Partial<RootState>;
   store?: ReturnType<typeof createMockStore>;
   queryClient?: QueryClient;
 }
@@ -48,7 +49,7 @@ interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
 const customRender = (
   ui: ReactElement,
   {
-    preloadedState = {},
+    preloadedState: _preloadedState = {},
     store = createMockStore(),
     queryClient = createMockQueryClient(),
     ...renderOptions
@@ -102,7 +103,7 @@ export const createMockSession = (overrides = {}) => ({
 });
 
 // API 응답 모킹 함수
-export const mockApiResponse = (data: any, status = 200) => {
+export const mockApiResponse = <T,>(data: T, status = 200) => {
   return {
     data,
     status,

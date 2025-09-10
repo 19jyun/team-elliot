@@ -2,7 +2,6 @@ import { http, HttpResponse } from 'msw';
 import { server } from '@/__mocks__/server';
 import { render, screen, waitFor, act } from '@/__tests__/utils/test-utils';
 import userEvent from '@testing-library/user-event';
-import { createMockUser, createMockClass } from '@/__tests__/utils/test-utils';
 import { EnrollmentContainer } from '@/components/dashboard/student/Enrollment/enroll/EnrollmentContainer';
 import { DashboardProvider } from '@/contexts/DashboardContext';
 import { StudentProvider } from '@/contexts/StudentContext';

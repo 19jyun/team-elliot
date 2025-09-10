@@ -1,9 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
+import type { ComponentProps } from 'react';
 
 // Next.js Image 컴포넌트 모킹
 jest.mock('next/image', () => {
-  return function MockImage({ src, alt, ...props }: any) {
+  return function MockImage({ src, alt, ...props }: ComponentProps<'img'>) {
+    // eslint-disable-next-line @next/next/no-img-element
     return <img src={src} alt={alt} {...props} />;
   };
 });

@@ -4,6 +4,7 @@ import { render, screen, waitFor } from "@/__tests__/utils/test-utils";
 import userEvent from "@testing-library/user-event";
 import { LoginPage } from "@/components/auth/pages/LoginPage";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { signIn, signOut, useSession } from "next-auth/react";
 
 // NextAuth mock
 jest.mock("next-auth/react", () => ({
@@ -28,10 +29,9 @@ describe("Auth API Integration", () => {
   describe("Login Flow", () => {
     it("should handle successful login", async () => {
       const user = userEvent.setup();
-      const { signIn } = require("next-auth/react");
 
       // NextAuth signIn mock 설정
-      signIn.mockResolvedValue({ ok: true, error: null });
+      (signIn as jest.Mock).mockResolvedValue({ ok: true, error: null });
 
       // MSW 핸들러 오버라이드 (NextAuth API 경로)
       server.use(
@@ -73,10 +73,9 @@ describe("Auth API Integration", () => {
 
     it("should handle login error", async () => {
       const user = userEvent.setup();
-      const { signIn } = require("next-auth/react");
 
       // NextAuth signIn mock 설정 (에러 반환)
-      signIn.mockResolvedValue({ 
+      (signIn as jest.Mock).mockResolvedValue({ 
         ok: false, 
         error: "CredentialsSignin" 
       });
@@ -102,10 +101,9 @@ describe("Auth API Integration", () => {
   describe("Logout Flow", () => {
     it("should handle successful logout", async () => {
       const user = userEvent.setup();
-      const { signOut } = require("next-auth/react");
 
       // NextAuth signOut mock 설정
-      signOut.mockResolvedValue({ ok: true });
+      (signOut as jest.Mock).mockResolvedValue({ ok: true });
 
       server.use(
         http.post("/api/auth/logout", () => {
@@ -135,18 +133,18 @@ describe("Auth API Integration", () => {
 
   describe("User Profile", () => {
     it("should fetch current user profile", async () => {
-      const { useSession } = require("next-auth/react");
       
       // NextAuth useSession mock 설정 (로그인된 상태)
-      useSession.mockReturnValue({
+      (useSession as jest.Mock).mockReturnValue({
         data: {
           user: {
             id: "1",
-            userId: "testuser",
             name: "Test User",
+            email: "test@example.com",
             role: "STUDENT",
           },
-          accessToken: "mock-token"
+          accessToken: "mock-token",
+          expires: "2024-12-31T23:59:59.999Z"
         },
         status: "authenticated"
       });

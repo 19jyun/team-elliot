@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // 워크스페이스 루트 설정 (경고 해결)
+  outputFileTracingRoot: __dirname,
+
   // 이미지 최적화 설정
   images: {
     remotePatterns: [
