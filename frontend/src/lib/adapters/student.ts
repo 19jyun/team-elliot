@@ -203,6 +203,12 @@ export function toEnrollmentClassVMs(
   const classMap = new Map<string, EnrollmentClassVM>();
 
   sessions.forEach((session) => {
+    // session.class가 존재하는지 확인
+    if (!session.class) {
+      console.warn("Session missing class data:", session);
+      return;
+    }
+
     const className = session.class.className;
     if (!classMap.has(className)) {
       // 난이도에 따른 색상 결정
@@ -214,7 +220,7 @@ export function toEnrollmentClassVMs(
         className: session.class.className,
         level: level,
         tuitionFee: session.class.tuitionFee,
-        teacher: { name: session.class.teacher.name || "선생님" },
+        teacher: { name: session.class.teacher?.name || "선생님" },
         dayOfWeek: "MONDAY", // 기본값, 실제로는 첫 세션에서 계산
         startTime: session.startTime,
         endTime: session.endTime,
