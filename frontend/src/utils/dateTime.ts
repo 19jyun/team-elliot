@@ -16,12 +16,18 @@ export function formatTime(
   const { hour12 = false, showSeconds = false } = options;
   const date = typeof time === "string" ? new Date(time) : time;
 
-  return date.toLocaleTimeString("ko-KR", {
+  let result = date.toLocaleTimeString("ko-KR", {
     hour: "2-digit",
     minute: "2-digit",
     second: showSeconds ? "2-digit" : undefined,
     hour12,
   });
+
+  if (result.includes("24:00")) {
+    result = result.replace("24:00", "00:00");
+  }
+
+  return result;
 }
 
 /**
