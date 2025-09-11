@@ -1,4 +1,4 @@
-import { DashboardProvider } from '@/contexts/DashboardContext';
+// DashboardProvider는 이제 AppProvider에 통합되어 상위에서 제공됨
 import { AppInitializer } from '@/components/common/AppInitializer';
 
 export default function DashboardLayout({
@@ -7,10 +7,8 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   return (
-    <DashboardProvider>
-      <AppInitializer>
-        {children}
-      </AppInitializer>
-    </DashboardProvider>
+    <AppInitializer>
+      {children}
+    </AppInitializer>
   )
 }

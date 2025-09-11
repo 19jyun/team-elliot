@@ -3,14 +3,15 @@
 import React from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
-import { useDashboardNavigation } from '@/contexts/DashboardContext';
+import { useApp } from '@/contexts';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { CalendarProvider } from '@/contexts/CalendarContext';
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
 
 export function EnrollmentDateStep() {
-  const { enrollment, setEnrollmentStep, setSelectedSessions, goBack } = useDashboardNavigation();
+  const { form, goBack } = useApp();
+  const { enrollment, setEnrollmentStep, setSelectedSessions } = form;
   const { selectedAcademyId, selectedClassIds } = enrollment;
   const { status } = useSession({
     required: true,

@@ -1,8 +1,7 @@
 'use client';
 
-import { PrincipalProvider, usePrincipalContext } from '@/contexts/PrincipalContext';
+import { useApp } from '@/contexts';
 import { CommonHeader } from '@/components/layout/CommonHeader';
-import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import { DashboardContainer } from './DashboardContainer';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -25,8 +24,8 @@ import { usePrincipalInitialization } from '@/hooks/redux/usePrincipalInitializa
 
 
 function PrincipalDashboardContent() {
-  const { activeTab, handleTabChange } = usePrincipalContext();
-  const { subPage, isTransitioning } = useDashboardNavigation();
+  const { navigation } = useApp();
+  const { activeTab, handleTabChange, subPage, isTransitioning } = navigation;
 
   // Principal 데이터 초기화
   usePrincipalInitialization();
@@ -128,9 +127,5 @@ export function PrincipalDashboardPage() {
     );
   }
 
-  return (
-    <PrincipalProvider>
-      <PrincipalDashboardContent />
-    </PrincipalProvider>
-  );
+  return <PrincipalDashboardContent />;
 } 

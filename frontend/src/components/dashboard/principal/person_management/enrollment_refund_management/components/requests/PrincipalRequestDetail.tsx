@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { usePrincipalContext } from '@/contexts/PrincipalContext';
+import { useApp } from '@/contexts';
 import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { PrincipalRequestCard } from './PrincipalRequestCard';
@@ -17,7 +17,7 @@ import type { PrincipalRequestDetailVM } from '@/types/view/principal';
 export function PrincipalRequestDetail() {
   const { 
     personManagement
-  } = usePrincipalContext();
+  } = useApp();
   const { selectedTab, selectedSessionId } = personManagement;
   const [showRejectionModal, setShowRejectionModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<{ id: number } | null>(null);

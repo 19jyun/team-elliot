@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { usePrincipalContext } from '@/contexts/PrincipalContext';
+import { useApp } from '@/contexts';
 
 export function EnrollmentRefundManagementTabs() {
   const {
@@ -12,7 +12,7 @@ export function EnrollmentRefundManagementTabs() {
     setSelectedRequestId,
     setSelectedRequestType,
     setSelectedClassId
-  } = usePrincipalContext();
+  } = useApp();
   const { selectedTab } = personManagement;
 
   const handleTabClick = (tab: 'enrollment' | 'refund') => {

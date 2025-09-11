@@ -3,8 +3,7 @@ import { server } from '@/__mocks__/server';
 import { render, screen, waitFor, act } from '@/__tests__/utils/test-utils';
 import userEvent from '@testing-library/user-event';
 import { EnrollmentContainer } from '@/components/dashboard/student/Enrollment/enroll/EnrollmentContainer';
-import { DashboardProvider } from '@/contexts/DashboardContext';
-import { StudentProvider } from '@/contexts/StudentContext';
+import { AppProvider } from '@/contexts/AppContext';
 
 // NextAuth mock
 jest.mock("next-auth/react", () => ({
@@ -104,11 +103,9 @@ describe('Student Enrollment Flow', () => {
     );
 
     render(
-      <DashboardProvider>
-        <StudentProvider>
-          <EnrollmentContainer />
-        </StudentProvider>
-      </DashboardProvider>
+      <AppProvider>
+        <EnrollmentContainer />
+      </AppProvider>
     );
 
     // 학원 선택 단계 확인
@@ -172,11 +169,9 @@ describe('Student Enrollment Flow', () => {
     );
 
     render(
-      <DashboardProvider>
-        <StudentProvider>
-          <EnrollmentContainer />
-        </StudentProvider>
-      </DashboardProvider>
+      <AppProvider>
+        <EnrollmentContainer />
+      </AppProvider>
     );
 
     // 학원 선택 단계 확인
@@ -233,11 +228,9 @@ describe('Student Enrollment Flow', () => {
     );
 
     render(
-      <DashboardProvider>
-        <StudentProvider>
-          <EnrollmentContainer />
-        </StudentProvider>
-      </DashboardProvider>
+      <AppProvider>
+        <EnrollmentContainer />
+      </AppProvider>
     );
 
     // 학원 선택 단계 확인

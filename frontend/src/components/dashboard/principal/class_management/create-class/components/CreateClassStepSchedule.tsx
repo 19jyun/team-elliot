@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useDashboardNavigation } from '@/contexts/DashboardContext';
+import { useApp } from '@/contexts';
 import { StatusStep } from './StatusStep';
 import { toast } from 'sonner';
 import TimePicker from '@/components/common/WheelPicker/TimePicker';
@@ -19,7 +19,8 @@ const DAYS_OF_WEEK = [
 ];
 
 export function CreateClassStepSchedule() {
-  const { createClass, setClassFormData, setCreateClassStep } = useDashboardNavigation();
+  const { form } = useApp();
+  const { createClass, setClassFormData, setCreateClassStep } = form;
   const { classFormData } = createClass;
 
   const [formData, setFormData] = useState({

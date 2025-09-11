@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { usePrincipalContext } from '@/contexts/PrincipalContext';
+import { useApp } from '@/contexts';
 import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
 
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +15,7 @@ export function PrincipalSessionList() {
     personManagement,
     setSelectedSessionId, 
     setPersonManagementStep
-  } = usePrincipalContext();
+  } = useApp();
   const { selectedTab, selectedClassId } = personManagement;
 
   // Redux store에서 데이터 가져오기

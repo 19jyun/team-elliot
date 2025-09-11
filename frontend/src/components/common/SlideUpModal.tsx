@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useDashboardNavigation } from '@/contexts/DashboardContext';
+import { useApp } from '@/contexts';
 
 interface SlideUpModalProps {
   isOpen: boolean;
@@ -28,7 +28,8 @@ export function SlideUpModal({
 }: SlideUpModalProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
-  const { pushFocus, popFocus } = useDashboardNavigation();
+  const { ui } = useApp();
+  const { pushFocus, popFocus } = ui;
 
   // 모달이 열릴 때 애니메이션 시작
   useEffect(() => {

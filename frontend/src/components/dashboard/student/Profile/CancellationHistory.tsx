@@ -6,13 +6,14 @@ import { Card, CardContent} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Calendar, Clock, BookOpen, CheckCircle, XCircle, AlertCircle, Clock as ClockIcon, DollarSign } from 'lucide-react';
-import { useDashboardNavigation } from '@/contexts/DashboardContext';
+import { useApp } from '@/contexts';
 import { useStudentData } from '@/hooks/redux/useStudentData';
 import { toStudentCancellationHistoryVMs } from '@/lib/adapters/student';
 import type { StudentCancellationHistoryVM } from '@/types/view/student';
 
 export function CancellationHistory() {
-  const { pushFocus, popFocus } = useDashboardNavigation();
+  const { ui } = useApp();
+  const { pushFocus, popFocus } = ui;
   const { cancellationHistory, isLoading, error } = useStudentData();
   const [selectedFilter, setSelectedFilter] = useState<string>('ALL');
 

@@ -1,8 +1,7 @@
 'use client';
 
-import { TeacherProvider, useTeacherContext } from '@/contexts/TeacherContext';
+import { useApp } from '@/contexts';
 import { CommonHeader } from '@/components/layout/CommonHeader';
-import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import TeacherClassPage from '@/app/(dashboard)/dashboard/teacher/class/page';
 import TeacherClassManagementPage from '@/app/(dashboard)/dashboard/teacher/class_management/page';
 import TeacherProfilePage from '@/app/(dashboard)/dashboard/teacher/profile/page';
@@ -18,8 +17,8 @@ import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSoc
 
 
 function TeacherDashboardContent() {
-  const { activeTab, handleTabChange } = useTeacherContext();
-  const { subPage, clearSubPage, isTransitioning } = useDashboardNavigation();
+  const { navigation } = useApp();
+  const { activeTab, handleTabChange, subPage, clearSubPage, isTransitioning } = navigation;
 
   // SubPage 렌더링 함수
   const renderSubPage = () => {
@@ -102,9 +101,5 @@ export function TeacherDashboardPage() {
     );
   }
 
-  return (
-    <TeacherProvider>
-      <TeacherDashboardContent />
-    </TeacherProvider>
-  );
+  return <TeacherDashboardContent />;
 } 

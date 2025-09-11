@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useDashboardNavigation } from '@/contexts/DashboardContext';
+import { useApp } from '@/contexts';
 import { EnrollmentAcademyStep } from './EnrollmentAcademyStep';
 import { EnrollmentClassStep } from './EnrollmentClassStep';
 import { EnrollmentDateStep } from './EnrollmentDateStep';
@@ -9,7 +9,8 @@ import { EnrollmentPaymentStep } from './EnrollmentPaymentStep';
 import { EnrollmentCompleteStep } from './EnrollmentCompleteStep';
 
 export function EnrollmentContainer() {
-  const { enrollment } = useDashboardNavigation();
+  const { form } = useApp();
+  const { enrollment } = form;
   const { currentStep } = enrollment;
 
 

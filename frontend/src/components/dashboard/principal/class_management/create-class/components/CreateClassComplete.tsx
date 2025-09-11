@@ -1,12 +1,14 @@
 'use client';
 
 import React from 'react';
-import { useDashboardNavigation } from '@/contexts/DashboardContext';
+import { useApp } from '@/contexts';
 import { StatusStep } from './StatusStep';
 import { CompleteIcon } from '@/components/icons';
 
 export function CreateClassComplete() {
-  const { createClass, goBack, resetCreateClass } = useDashboardNavigation();
+  const { form, goBack } = useApp();
+  const { createClass } = form;
+  const { resetCreateClass } = form;
   const { classFormData } = createClass;
 
   const handleFinish = () => {

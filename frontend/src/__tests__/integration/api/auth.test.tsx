@@ -3,7 +3,7 @@ import { server } from "@/__mocks__/server";
 import { render, screen, waitFor } from "@/__tests__/utils/test-utils";
 import userEvent from "@testing-library/user-event";
 import { LoginPage } from "@/components/auth/pages/LoginPage";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AppProvider } from "@/contexts/AppContext";
 import { signIn, signOut, useSession } from "next-auth/react";
 
 // NextAuth mock
@@ -51,9 +51,9 @@ describe("Auth API Integration", () => {
 
       // 실제 LoginPage 컴포넌트 렌더링
       render(
-        <AuthProvider>
+        <AppProvider>
           <LoginPage />
-        </AuthProvider>
+        </AppProvider>
       );
 
       // 사용자 입력 시뮬레이션
@@ -82,9 +82,9 @@ describe("Auth API Integration", () => {
 
       // 실제 LoginPage 컴포넌트 렌더링
       render(
-        <AuthProvider>
+        <AppProvider>
           <LoginPage />
-        </AuthProvider>
+        </AppProvider>
       );
 
       await user.type(screen.getByLabelText("아이디"), "wronguser");

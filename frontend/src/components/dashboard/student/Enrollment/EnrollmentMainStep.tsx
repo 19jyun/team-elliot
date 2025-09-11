@@ -3,11 +3,13 @@
 import React from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useDashboardNavigation } from '@/contexts/DashboardContext';
+import { useApp } from '@/contexts';
 
 export function EnrollmentMainStep() {
   const router = useRouter();
-  const { setEnrollmentStep, navigateToSubPage } = useDashboardNavigation();
+  const { form, navigation } = useApp();
+  const { setEnrollmentStep } = form;
+  const { navigateToSubPage } = navigation;
   const { status } = useSession({
     required: true,
     onUnauthenticated() {

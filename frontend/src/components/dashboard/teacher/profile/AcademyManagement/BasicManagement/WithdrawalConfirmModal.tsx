@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle } from 'lucide-react';
-import { useDashboardNavigation } from '@/contexts/DashboardContext';
+import { useApp } from '@/contexts';
 
 interface WithdrawalConfirmModalProps {
   isOpen: boolean;
@@ -18,7 +18,8 @@ export function WithdrawalConfirmModal({
   onConfirm, 
   withdrawalType = 'leave' 
 }: WithdrawalConfirmModalProps) {
-  const { pushFocus, popFocus } = useDashboardNavigation();
+  const { ui } = useApp();
+  const { pushFocus, popFocus } = ui;
 
   useEffect(() => {
     if (isOpen) {
