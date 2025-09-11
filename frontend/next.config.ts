@@ -73,16 +73,10 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // 리다이렉트 설정
-  async redirects() {
-    return [
-      {
-        source: "/dashboard",
-        destination: "/dashboard/student",
-        permanent: false,
-      },
-    ];
-  },
+  // 리다이렉트 설정 제거 (미들웨어에서 처리)
+  // async redirects() {
+  //   return [];
+  // },
 };
 
 export default nextConfig;
