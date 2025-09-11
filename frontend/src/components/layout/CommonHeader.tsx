@@ -5,43 +5,48 @@ import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import { ArrowLeft } from 'lucide-react';
 
-import { useDashboardNavigation } from '@/contexts/DashboardContext';
-import { useOptionalStudentContext } from '@/contexts/StudentContext';
-import { useOptionalTeacherContext } from '@/contexts/TeacherContext';
-import { useOptionalPrincipalContext, PrincipalPersonManagementState } from '@/contexts/PrincipalContext';
+import { useApp } from '@/contexts';
+import { PersonManagementForm } from '@/contexts/types';
 
 export function CommonHeader() {
   const { data: session } = useSession();
+  const { navigation, form } = useApp();
 
-  const { subPage, goBack } = useDashboardNavigation();
+  const { subPage, goBack } = navigation;
   const userRole = session?.user?.role || 'STUDENT';
   
-  // 모든 Hook을 최상위에서 호출 (조건부 Hook 호출 문제 해결)
-  const studentContext = useOptionalStudentContext();
-  const teacherContext = useOptionalTeacherContext();
-  const principalContext = useOptionalPrincipalContext();
-  
-  // 조건부로 context 값 결정
+  // 역할별 네비게이션 아이템 결정
   let navigationItems: { label: string; value: number }[] = [];
   let activeTab = 0;
   let handleTabChange = (_tab: number) => {};
-  let principalPersonManagement: PrincipalPersonManagementState | null = null;
+  let principalPersonManagement: PersonManagementForm | null = null;
   let principalGoBack: (() => void) | null = null;
   
-  if (userRole === 'STUDENT' && studentContext) {
-    navigationItems = studentContext.navigationItems;
-    activeTab = studentContext.activeTab;
-    handleTabChange = studentContext.handleTabChange;
-  } else if (userRole === 'TEACHER' && teacherContext) {
-    navigationItems = teacherContext.navigationItems;
-    activeTab = teacherContext.activeTab;
-    handleTabChange = teacherContext.handleTabChange;
-  } else if (userRole === 'PRINCIPAL' && principalContext) {
-    navigationItems = principalContext.navigationItems;
-    activeTab = principalContext.activeTab;
-    handleTabChange = principalContext.handleTabChange;
-    principalPersonManagement = principalContext.personManagement;
-    principalGoBack = principalContext.goBack;
+  if (userRole === 'STUDENT') {
+    navigationItems = [
+      { label: '수업', value: 0 },
+      { label: '수강신청', value: 1 },
+      { label: '프로필', value: 2 }
+    ];
+    activeTab = navigation.activeTab;
+    handleTabChange = navigation.handleTabChange;
+  } else if (userRole === 'TEACHER') {
+    navigationItems = [
+      { label: '수업', value: 0 },
+      { label: '프로필', value: 1 }
+    ];
+    activeTab = navigation.activeTab;
+    handleTabChange = navigation.handleTabChange;
+  } else if (userRole === 'PRINCIPAL') {
+    navigationItems = [
+      { label: '수업', value: 0 },
+      { label: '인원관리', value: 1 },
+      { label: '프로필', value: 2 }
+    ];
+    activeTab = navigation.activeTab;
+    handleTabChange = navigation.handleTabChange;
+    principalPersonManagement = form.principalPersonManagement;
+    principalGoBack = form.goBack;
   }
 
   // 뒤로가기 버튼이 표시되어야 하는지 확인

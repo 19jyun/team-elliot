@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
-import { useAuth } from '@/contexts/AuthContext'
+import { useApp } from '@/contexts'
 
 interface InputFieldProps {
   label: string
@@ -140,7 +140,8 @@ const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
 )
 
 export function SignupPersonalPage() {
-  const { navigateToAuthSubPage } = useAuth()
+  const { form } = useApp()
+  const { navigateToAuthSubPage } = form
   const [currentStep] = useState(2)
   const [formData, setFormData] = useState({
     name: '',

@@ -3,10 +3,11 @@ import { CloseIcon } from '@/components/icons'
 import { useEffect } from 'react'
 import { IconButton } from '@/components/ui/IconButton'
 import { LogoutModalProps } from '@/app/(dashboard)/types'
-import { useDashboardNavigation } from '@/contexts/DashboardContext'
+import { useApp } from '@/contexts'
 
 export function LogoutModal({ onLogout, onClose }: LogoutModalProps) {
-  const { pushFocus, popFocus } = useDashboardNavigation();
+  const { ui } = useApp();
+  const { pushFocus, popFocus } = ui;
 
   useEffect(() => {
     pushFocus('modal'); // 모달이 열릴 때 포커스를 modal로 변경

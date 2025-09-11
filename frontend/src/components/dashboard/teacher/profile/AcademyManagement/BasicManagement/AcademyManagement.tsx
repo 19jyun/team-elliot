@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, Users } from 'lucide-react';
 
-import { useDashboardNavigation } from '@/contexts/DashboardContext';
+import { useApp } from '@/contexts';
 
 // 커스텀 훅들
 import { useTeacherAcademyManagement } from '@/hooks/teacher/academy_management/useTeacherAcademyManagement';
@@ -17,7 +17,8 @@ import { AcademyCard } from '@/components/common/AcademyCard';
 import { JoinAcademyCard } from './JoinAcademyCard';
 
 export default function AcademyManagement() {
-  const { pushFocus, popFocus } = useDashboardNavigation();
+  const { ui } = useApp();
+  const { pushFocus, popFocus } = ui;
   
   // 커스텀 훅들
   const {

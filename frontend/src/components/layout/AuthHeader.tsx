@@ -1,11 +1,13 @@
 'use client';
 
-import { useAuth } from '@/contexts/AuthContext';
+import { useApp } from '@/contexts';
 import Image from 'next/image';
 import { ArrowLeft } from 'lucide-react';
 
 export function AuthHeader() {
-  const { authSubPage, goBackFromAuth } = useAuth();
+  const { form } = useApp();
+  const { auth, goBackFromAuth } = form;
+  const { authSubPage } = auth;
 
   return (
     <div className="sticky top-0 left-0 right-0 z-50 bg-white shadow-sm border-b border-gray-200 flex-shrink-0">

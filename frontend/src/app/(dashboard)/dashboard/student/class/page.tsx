@@ -9,7 +9,7 @@ import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
 import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessionModal'
 import { StudentSessionDetailModal } from '@/components/features/student/classes/StudentSessionDetailModal'
-import { useDashboardNavigation } from '@/contexts/DashboardContext'
+import { useApp } from '@/contexts'
 import type { RootState } from '@/store/index'
 import type { StudentCalendarSessionVM, StudentCalendarRangeVM } from '@/types/view/student'
 import type { ClassSession } from '@/types/api/class'
@@ -24,7 +24,8 @@ export default function StudentDashboard() {
     },
   })
 
-  const { navigateToSubPage } = useDashboardNavigation()
+  const { navigation } = useApp()
+  const { navigateToSubPage } = navigation
 
   // Redux store에서 캘린더 데이터 가져오기
   const studentData = useSelector((state: RootState) => state.student.data);

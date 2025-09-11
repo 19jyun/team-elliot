@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useDashboardNavigation } from '@/contexts/DashboardContext';
+import { useApp } from '@/contexts';
 import { CreateClassStepInfo } from '../components/CreateClassStepInfo';
 import { CreateClassStepTeacher } from '../components/CreateClassStepTeacher';
 import { CreateClassStepSchedule } from '../components/CreateClassStepSchedule';
@@ -9,7 +9,8 @@ import { CreateClassStepDetail } from '../components/CreateClassStepDetail';
 import { CreateClassComplete } from '../components/CreateClassComplete';
 
 export function CreateClassContainer() {
-  const { createClass } = useDashboardNavigation();
+  const { form } = useApp();
+  const { createClass } = form;
   const { currentStep } = createClass;
 
   // 현재 단계에 따라 적절한 컴포넌트 렌더링

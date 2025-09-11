@@ -8,7 +8,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { LogoutModal } from '@/components/user/LogoutModal'
-import { useDashboardNavigation } from '@/contexts/DashboardContext'
+import { useApp } from '@/contexts'
 import { logout } from '@/api/auth'
 import FooterLinks from '@/components/common/FooterLinks'
 import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'
@@ -16,7 +16,8 @@ import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'
 export default function TeacherProfilePage() {
   const router = useRouter()
   const [showLogoutModal, setShowLogoutModal] = React.useState(false)
-  const { navigateToSubPage } = useDashboardNavigation()
+  const { navigation } = useApp()
+  const { navigateToSubPage } = navigation
   const { data: session, status } = useSession({
     required: true,
     onUnauthenticated() {

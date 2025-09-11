@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { PrincipalPaymentBox } from '@/components/features/student/enrollment/month/date/payment/PrincipalPaymentBox';
 import { PaymentConfirmFooter } from '@/components/features/student/enrollment/month/date/payment/PaymentConfirmFooter';
 import { SelectedSession, PrincipalPaymentInfo } from '@/components/features/student/enrollment/month/date/payment/types';
-import { useDashboardNavigation } from '@/contexts/DashboardContext';
+import { useApp } from '@/contexts';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
 import type { ModificationSessionVM } from '@/types/view/student';
 
@@ -18,7 +18,8 @@ interface EnrollmentModificationPaymentStepProps {
 export function EnrollmentModificationPaymentStep({ 
   onComplete
 }: EnrollmentModificationPaymentStepProps) {
-  const { enrollment, setEnrollmentStep } = useDashboardNavigation();
+  const { form } = useApp();
+  const { enrollment, setEnrollmentStep } = form;
   const { selectedSessions: contextSessions } = enrollment;
   const { modifyEnrollments } = useStudentApi();
   const [_selectedSessions, setSelectedSessions] = useState<SelectedSession[]>([]);
@@ -82,7 +83,7 @@ export function EnrollmentModificationPaymentStep({
     let sessions: SelectedSession[] = [];
     
     if (contextSessions && contextSessions.length > 0) {
-      sessions = contextSessions;
+      sessions = contextSessions as SelectedSession[];
     } else if (typeof window !== 'undefined') {
       const sessionsData = localStorage.getItem('selectedSessions');
       

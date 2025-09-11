@@ -1,14 +1,15 @@
 'use client';
 
 import React from 'react';
-import { usePrincipalContext } from '@/contexts/PrincipalContext';
+import { useApp } from '@/contexts';
 import { EnrollmentRefundManagementTabs } from '../components/navigation/EnrollmentRefundManagementTabs';
 import { PrincipalClassList } from '../components/navigation/PrincipalClassList';
 import { PrincipalSessionList } from '../components/sessions/PrincipalSessionList';
 import { PrincipalRequestDetail } from '../components/requests/PrincipalRequestDetail';
 
 export function EnrollmentRefundManagementContainer() {
-  const { personManagement } = usePrincipalContext();
+  const { form } = useApp();
+  const { personManagement } = form;
   const { currentStep, selectedSessionId } = personManagement;
 
   // 현재 단계에 따라 적절한 컴포넌트 렌더링

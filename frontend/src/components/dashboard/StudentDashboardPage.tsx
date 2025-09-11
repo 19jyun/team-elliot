@@ -1,8 +1,7 @@
 'use client';
 
-import { StudentProvider, useStudentContext } from '@/contexts/StudentContext';
+import { useApp } from '@/contexts';
 import { CommonHeader } from '@/components/layout/CommonHeader';
-import { useDashboardNavigation } from '@/contexts/DashboardContext';
 import StudentClassPage from '@/app/(dashboard)/dashboard/student/class/page';
 import StudentEnrollPage from '@/app/(dashboard)/dashboard/student/enroll/page';
 import StudentProfilePage from '@/app/(dashboard)/dashboard/student/profile/page';
@@ -22,8 +21,8 @@ import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSoc
 
 
 function StudentDashboardContent() {
-  const { activeTab, handleTabChange } = useStudentContext();
-  const { subPage, isTransitioning } = useDashboardNavigation();
+  const { navigation } = useApp();
+  const { activeTab, handleTabChange, subPage, isTransitioning } = navigation;
 
   // Student 데이터 초기화
   useStudentInitialization();
@@ -123,9 +122,5 @@ export function StudentDashboardPage() {
     );
   }
 
-  return (
-    <StudentProvider>
-      <StudentDashboardContent />
-    </StudentProvider>
-  );
+  return <StudentDashboardContent />;
 } 

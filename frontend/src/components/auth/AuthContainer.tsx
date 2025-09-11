@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useApp } from '@/contexts';
 import { AuthHeader } from '@/components/layout/AuthHeader';
 import { LoginPage } from './pages/LoginPage';
 import { SignupRolePage } from './pages/SignupRolePage';
@@ -10,7 +10,8 @@ import { SignupAccountPage } from './pages/SignupAccountPage';
 import { SignupTermsPage } from './pages/SignupTermsPage';
 
 export function AuthContainer() {
-  const { authSubPage } = useAuth();
+  const { form } = useApp();
+  const { authSubPage } = form.auth;
 
   // 기본 페이지 (로그인) - 뒤로가기 버튼 없음
   if (authSubPage === null) {

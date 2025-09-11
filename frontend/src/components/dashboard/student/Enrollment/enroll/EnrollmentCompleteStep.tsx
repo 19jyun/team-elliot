@@ -1,10 +1,12 @@
 'use client'
 import React from 'react';
-import { useDashboardNavigation } from '@/contexts/DashboardContext';
+import { useApp } from '@/contexts';
 import { CompleteIcon } from '@/components/icons';
 
 export function EnrollmentCompleteStep() {
-  const { resetEnrollment, clearSubPage } = useDashboardNavigation();
+  const { form, navigation } = useApp();
+  const { resetEnrollment } = form;
+  const { clearSubPage } = navigation;
 
   const handleConfirm = () => {
     // localStorage에서 모든 enrollment 관련 데이터 삭제
