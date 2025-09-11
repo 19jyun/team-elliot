@@ -3,20 +3,22 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { StudentDashboardPage } from '@/components/dashboard/StudentDashboardPage';
-import { TeacherDashboardPage } from '@/components/dashboard/TeacherDashboardPage';
-import { PrincipalDashboardPage } from '@/components/dashboard/PrincipalDashboardPage';
+import { StudentDashboard } from '@/components/dashboard/StudentDashboard';
+import { TeacherDashboard } from '@/components/dashboard/TeacherDashboard';
+import { PrincipalDashboard } from '@/components/dashboard/PrincipalDashboard';
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
   useEffect(() => {
+    // 인증되지 않은 사용자는 미들웨어에서 처리되지만 이중 체크
     if (status === 'unauthenticated') {
       router.push('/auth');
     }
   }, [status, router]);
 
+  // 로딩 상태
   if (status === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-full">
@@ -25,17 +27,29 @@ export default function DashboardPage() {
     );
   }
 
-  // 사용자 역할에 따른 대시보드 페이지 렌더링
-  const userRole = session?.user.role || 'STUDENT';
-
-  switch (userRole) {
-    case 'STUDENT':
-      return <StudentDashboardPage />;
-    case 'TEACHER':
-      return <TeacherDashboardPage />;
-    case 'PRINCIPAL':
-      return <PrincipalDashboardPage />;
-    default:
-      return <StudentDashboardPage />;
+  // 인증되지 않은 사용자
+  if (!session?.user) {
+    return (
+      <div className="flex items-center justify-center min-h-full">
+        <p>인증이 필요합니다.</p>
+      </div>
+    );
   }
+
+  // 역할별 대시보드 렌더링 (상태 기반)
+  const renderDashboard = () => {
+    switch (session.user.role) {
+      case 'STUDENT':
+        return <StudentDashboard />;
+      case 'TEACHER':
+        return <TeacherDashboard />;
+      case 'PRINCIPAL':
+        return <PrincipalDashboard />;
+      default:
+        // 알 수 없는 역할의 경우 기본적으로 학생 대시보드
+        return <StudentDashboard />;
+    }
+  };
+
+  return renderDashboard();
 }
