@@ -26,12 +26,5 @@
         }
       ]
     }
-  ],
-  "redirects": [
-    {
-      "source": "/dashboard",
-      "destination": "/dashboard/student",
-      "permanent": false
-    }
   ]
 }
