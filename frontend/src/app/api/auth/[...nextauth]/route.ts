@@ -102,7 +102,7 @@ const handler = NextAuth({
       }
       return session;
     },
-    async redirect({ baseUrl }) {
+    async redirect({ url, baseUrl }) {
       // 모든 로그인 성공 후 /dashboard로 리다이렉트
       return `${baseUrl}/dashboard`;
     },
