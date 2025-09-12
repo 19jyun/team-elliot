@@ -5,22 +5,28 @@ import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import { ArrowLeft } from 'lucide-react';
 
-import { useApp } from '@/contexts/legacy';
+import { useApp } from '@/contexts';
 import { PersonManagementForm } from '@/contexts/legacy/types';
 
 export function CommonHeader() {
   const { data: session } = useSession();
-  const { navigation, form } = useApp();
+  const { 
+    activeTab, 
+    subPage, 
+    canGoBack, 
+    isTransitioning,
+    setActiveTab, 
+    handleTabChange, 
+    navigateToSubPage, 
+    clearSubPage, 
+    goBack,
+    forms 
+  } = useApp();
 
-  const { subPage, goBack } = navigation;
   const userRole = session?.user?.role || 'STUDENT';
   
   // 역할별 네비게이션 아이템 결정
   let navigationItems: { label: string; value: number }[] = [];
-  let activeTab = 0;
-  let handleTabChange = (_tab: number) => {};
-  let principalPersonManagement: PersonManagementForm | null = null;
-  let principalGoBack: (() => void) | null = null;
   
   if (userRole === 'STUDENT') {
     navigationItems = [
@@ -28,16 +34,12 @@ export function CommonHeader() {
       { label: '수강신청', value: 1 },
       { label: '프로필', value: 2 }
     ];
-    activeTab = navigation.activeTab;
-    handleTabChange = navigation.handleTabChange;
   } else if (userRole === 'TEACHER') {
     navigationItems = [
       { label: '수업', value: 0 },
       { label: '수업 관리', value: 1 },
       { label: '프로필', value: 2 }
     ];
-    activeTab = navigation.activeTab;
-    handleTabChange = navigation.handleTabChange;
   } else if (userRole === 'PRINCIPAL') {
     navigationItems = [
       { label: '수업', value: 0 },
@@ -45,34 +47,21 @@ export function CommonHeader() {
       { label: '학원 관리', value: 2 },
       { label: '프로필', value: 3 }
     ];
-    activeTab = navigation.activeTab;
-    handleTabChange = navigation.handleTabChange;
-    principalPersonManagement = form.principalPersonManagement;
-    principalGoBack = form.goBack;
   }
 
   // 뒤로가기 버튼이 표시되어야 하는지 확인
   const shouldShowBackButton = () => {
     if (subPage !== null) return true;
-    
-    return false;
+    return canGoBack;
   };
 
-  // 뒤로가기 함수 결정
-  const handleGoBack = () => {
-    if (userRole === 'PRINCIPAL' && principalGoBack && principalPersonManagement && subPage === 'enrollment-refund-management') {
-      // Principal의 enrollment-refund-management 서브페이지에서만 PrincipalContext의 goBack 함수 사용
-      // 단, class-list 단계에서는 DashboardContext의 goBack을 사용하여 서브페이지 닫기
-      if (principalPersonManagement.currentStep === 'class-list') {
-        goBack();
-        return;
-      }
-      principalGoBack();
-      return;
+  // 통합된 뒤로가기 함수
+  const handleGoBack = async () => {
+    try {
+      await goBack();
+    } catch (error) {
+      console.error('GoBack error:', error);
     }
-    
-    // 기본 뒤로가기 (DashboardContext)
-    goBack();
   };
 
   return (

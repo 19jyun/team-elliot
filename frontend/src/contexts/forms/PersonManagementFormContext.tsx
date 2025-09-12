@@ -71,7 +71,7 @@ export const PersonManagementFormProvider: React.FC<PersonManagementFormProvider
 
   const setSelectedClassId = useCallback((classId: number | null) => {
     manager.setSelectedClassId(classId);
-  }, [manager });
+  }, [manager]);
 
   const setSelectedSessionId = useCallback((sessionId: number | null) => {
     manager.setSelectedSessionId(sessionId);
