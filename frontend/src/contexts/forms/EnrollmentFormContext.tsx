@@ -18,6 +18,11 @@ interface EnrollmentFormContextType {
   setSelectedAcademyId: (academyId: number | null) => void;
   setSelectedClassesWithSessions: (classes: ClassesWithSessionsByMonthResponse[]) => void;
   
+  // 유효성 검사
+  validateStep: (step: EnrollmentStep) => { isValid: boolean; errors: string[] };
+  validateCurrentStep: () => { isValid: boolean; errors: string[] };
+  canProceedToNextStep: () => boolean;
+  
   // 초기화
   reset: () => void;
 }
@@ -90,6 +95,19 @@ export const EnrollmentFormProvider: React.FC<EnrollmentFormProviderProps> = ({ 
     manager.setSelectedClassesWithSessions(classes);
   }, [manager]);
 
+  // 유효성 검사 메서드들
+  const validateStep = useCallback((step: EnrollmentStep) => {
+    return manager.validateStep(step);
+  }, [manager]);
+
+  const validateCurrentStep = useCallback(() => {
+    return manager.validateCurrentStep();
+  }, [manager]);
+
+  const canProceedToNextStep = useCallback(() => {
+    return manager.canProceedToNextStep();
+  }, [manager]);
+
   const reset = useCallback(() => {
     manager.reset();
   }, [manager]);
@@ -103,6 +121,9 @@ export const EnrollmentFormProvider: React.FC<EnrollmentFormProviderProps> = ({ 
     setSelectedClassIds,
     setSelectedAcademyId,
     setSelectedClassesWithSessions,
+    validateStep,
+    validateCurrentStep,
+    canProceedToNextStep,
     reset,
   };
 

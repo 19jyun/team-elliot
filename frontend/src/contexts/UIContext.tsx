@@ -74,6 +74,28 @@ interface UIContextType {
   removeNotification: (id: string) => void;
   clearNotifications: () => void;
   
+  // 에러 처리 및 복구
+  showError: (message: string, options?: { 
+    title?: string; 
+    duration?: number; 
+    onRetry?: () => void; 
+    onDismiss?: () => void;
+  }) => void;
+  showSuccess: (message: string, options?: { 
+    title?: string; 
+    duration?: number; 
+  }) => void;
+  showWarning: (message: string, options?: { 
+    title?: string; 
+    duration?: number; 
+  }) => void;
+  showInfo: (message: string, options?: { 
+    title?: string; 
+    duration?: number; 
+  }) => void;
+  clearNotification: (id: string) => void;
+  clearAllNotifications: () => void;
+  
   // 통합 UI 관리
   resetUI: () => void;
 }
@@ -262,6 +284,79 @@ export const UIContextProvider: React.FC<UIProviderProps> = ({ children }) => {
     }));
   }, []);
 
+  // 에러 처리 및 복구 메서드들
+  const showError = useCallback((message: string, options?: { 
+    title?: string; 
+    duration?: number; 
+    onRetry?: () => void; 
+    onDismiss?: () => void;
+  }) => {
+    const notification: Omit<NotificationState, 'id'> = {
+      type: 'error',
+      title: options?.title || '오류',
+      message,
+      duration: options?.duration || 0, // 에러는 수동으로 닫아야 함
+      action: options?.onRetry ? {
+        label: '다시 시도',
+        onClick: options.onRetry,
+      } : undefined,
+    };
+    
+    addNotification(notification);
+    
+    // onDismiss 콜백이 있으면 알림이 제거될 때 호출
+    if (options?.onDismiss) {
+      const id = `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      setTimeout(() => {
+        options.onDismiss?.();
+      }, 100);
+    }
+  }, [addNotification]);
+
+  const showSuccess = useCallback((message: string, options?: { 
+    title?: string; 
+    duration?: number; 
+  }) => {
+    addNotification({
+      type: 'success',
+      title: options?.title || '성공',
+      message,
+      duration: options?.duration || 3000,
+    });
+  }, [addNotification]);
+
+  const showWarning = useCallback((message: string, options?: { 
+    title?: string; 
+    duration?: number; 
+  }) => {
+    addNotification({
+      type: 'warning',
+      title: options?.title || '경고',
+      message,
+      duration: options?.duration || 4000,
+    });
+  }, [addNotification]);
+
+  const showInfo = useCallback((message: string, options?: { 
+    title?: string; 
+    duration?: number; 
+  }) => {
+    addNotification({
+      type: 'info',
+      title: options?.title || '알림',
+      message,
+      duration: options?.duration || 3000,
+    });
+  }, [addNotification]);
+
+  const clearNotification = useCallback((id: string) => {
+    removeNotification(id);
+  }, [removeNotification]);
+
+  const clearAllNotifications = useCallback(() => {
+    clearNotifications();
+  }, [clearNotifications]);
+
   // 통합 UI 관리
   const resetUI = useCallback(() => {
     setState({
@@ -302,6 +397,12 @@ export const UIContextProvider: React.FC<UIProviderProps> = ({ children }) => {
     addNotification,
     removeNotification,
     clearNotifications,
+    showError,
+    showSuccess,
+    showWarning,
+    showInfo,
+    clearNotification,
+    clearAllNotifications,
     resetUI,
   };
 

@@ -2,11 +2,14 @@
 import { ContextEventBus } from "../events/ContextEventBus";
 
 export type EnrollmentStep =
+  | "main"
   | "academy-selection"
   | "class-selection"
   | "date-selection"
   | "payment"
-  | "complete";
+  | "complete"
+  | "refund-request"
+  | "refund-complete";
 
 export interface ClassesWithSessionsByMonthResponse {
   classId: number;
@@ -48,7 +51,7 @@ export class EnrollmentFormManager {
   }
 
   setCurrentStep(step: EnrollmentStep): void {
-    if (this.validateStep(step)) {
+    if (this.canNavigateToStep(step)) {
       this.state.currentStep = step;
       this.emitStateChange();
       this.notifyListeners();
@@ -93,6 +96,79 @@ export class EnrollmentFormManager {
     this.notifyListeners();
   }
 
+  // 유효성 검사
+  validateStep(step: EnrollmentStep): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    switch (step) {
+      case "academy-selection":
+        if (!this.state.selectedAcademyId) {
+          errors.push("학원을 선택해주세요.");
+        }
+        break;
+      case "class-selection":
+        if (this.state.selectedClassIds.length === 0) {
+          errors.push("최소 하나의 클래스를 선택해주세요.");
+        }
+        if (!this.state.selectedAcademyId) {
+          errors.push("학원을 선택해주세요.");
+        }
+        break;
+      case "date-selection":
+        if (this.state.selectedSessions.length === 0) {
+          errors.push("최소 하나의 세션을 선택해주세요.");
+        }
+        break;
+      case "payment":
+        if (this.state.selectedClassesWithSessions.length === 0) {
+          errors.push("선택된 클래스와 세션이 없습니다.");
+        }
+        break;
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+    };
+  }
+
+  validateCurrentStep(): { isValid: boolean; errors: string[] } {
+    return this.validateStep(this.state.currentStep);
+  }
+
+  canProceedToNextStep(): boolean {
+    const validation = this.validateCurrentStep();
+    return validation.isValid;
+  }
+
+  // 성능 최적화: 상태 변경이 실제로 필요한지 확인
+  shouldUpdateState(newState: Partial<EnrollmentFormState>): boolean {
+    const currentState = this.state;
+
+    // 현재 상태와 새 상태를 비교하여 실제 변경사항이 있는지 확인
+    for (const key in newState) {
+      if (key in currentState) {
+        const currentValue = currentState[key as keyof EnrollmentFormState];
+        const newValue = newState[key as keyof EnrollmentFormState];
+
+        if (JSON.stringify(currentValue) !== JSON.stringify(newValue)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  // 성능 최적화: 배치 업데이트
+  batchUpdate(updates: Partial<EnrollmentFormState>): void {
+    if (this.shouldUpdateState(updates)) {
+      this.state = { ...this.state, ...updates };
+      this.emitStateChange();
+      this.notifyListeners();
+    }
+  }
+
   reset(): void {
     this.state = this.getInitialState();
     this.emitStateChange();
@@ -108,7 +184,7 @@ export class EnrollmentFormManager {
   // 내부 구현 (캡슐화됨)
   private getInitialState(): EnrollmentFormState {
     return {
-      currentStep: "academy-selection",
+      currentStep: "main",
       selectedMonth: null,
       selectedClasses: [],
       selectedSessions: [],
@@ -118,8 +194,9 @@ export class EnrollmentFormManager {
     };
   }
 
-  private validateStep(step: EnrollmentStep): boolean {
+  private canNavigateToStep(step: EnrollmentStep): boolean {
     const stepOrder: EnrollmentStep[] = [
+      "main",
       "academy-selection",
       "class-selection",
       "date-selection",

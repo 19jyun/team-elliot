@@ -12,11 +12,21 @@ export {
   PersonManagementFormProvider,
   usePersonManagementForm,
 } from "./PersonManagementFormContext";
+export {
+  PrincipalCreateClassFormProvider,
+  usePrincipalCreateClassForm,
+} from "./PrincipalCreateClassFormContext";
+export {
+  PrincipalPersonManagementFormProvider,
+  usePrincipalPersonManagementForm,
+} from "./PrincipalPersonManagementFormContext";
 
 export { EnrollmentFormManager } from "./EnrollmentFormManager";
 export { CreateClassFormManager } from "./CreateClassFormManager";
 export { AuthFormManager } from "./AuthFormManager";
 export { PersonManagementFormManager } from "./PersonManagementFormManager";
+export { PrincipalCreateClassFormManager } from "./PrincipalCreateClassFormManager";
+export { PrincipalPersonManagementFormManager } from "./PrincipalPersonManagementFormManager";
 
 export type {
   EnrollmentFormState,
@@ -30,7 +40,13 @@ export type {
   ClassFormData,
 } from "./CreateClassFormManager";
 export type { AuthFormState, AuthMode, SignupStep } from "./AuthFormManager";
+export type { PersonManagementFormState } from "./PersonManagementFormManager";
 export type {
-  PersonManagementFormState,
+  PrincipalCreateClassFormState,
+  PrincipalCreateClassStep,
+  PrincipalClassFormData,
+} from "./PrincipalCreateClassFormManager";
+export type {
+  PrincipalPersonManagementFormState,
   PrincipalPersonManagementStep,
-} from "./PersonManagementFormManager";
+} from "./PrincipalPersonManagementFormManager";

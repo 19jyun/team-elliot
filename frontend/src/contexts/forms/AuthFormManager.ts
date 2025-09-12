@@ -3,10 +3,10 @@ import { ContextEventBus } from "../events/ContextEventBus";
 
 export type AuthMode = "login" | "signup";
 export type SignupStep =
-  | "signup-role"
-  | "signup-personal"
-  | "signup-account"
-  | "signup-terms";
+  | "role-selection"
+  | "personal-info"
+  | "account-info"
+  | "terms";
 
 export interface SignupData {
   step: SignupStep;
@@ -112,6 +112,109 @@ export class AuthFormManager {
     this.notifyListeners();
   }
 
+  // Auth 관련 특수 메서드들
+  navigateToAuthSubPage(page: string): void {
+    this.state.authSubPage = page;
+    this.emitStateChange();
+    this.notifyListeners();
+  }
+
+  goBackFromAuth(): void {
+    this.state.authSubPage = null;
+    this.emitStateChange();
+    this.notifyListeners();
+  }
+
+  clearAuthSubPage(): void {
+    this.state.authSubPage = null;
+    this.emitStateChange();
+    this.notifyListeners();
+  }
+
+  resetSignup(): void {
+    this.state.signup = this.getInitialSignupState();
+    this.emitStateChange();
+    this.notifyListeners();
+  }
+
+  resetLogin(): void {
+    this.state.login = this.getInitialLoginState();
+    this.emitStateChange();
+    this.notifyListeners();
+  }
+
+  // 유효성 검사
+  validateSignupStep(step: SignupStep): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    switch (step) {
+      case "role-selection":
+        if (!this.state.signup.role) {
+          errors.push("역할을 선택해주세요.");
+        }
+        break;
+      case "personal-info":
+        if (!this.state.signup.personalInfo.name.trim()) {
+          errors.push("이름을 입력해주세요.");
+        }
+        if (!this.state.signup.personalInfo.phoneNumber.trim()) {
+          errors.push("전화번호를 입력해주세요.");
+        }
+        break;
+      case "account-info":
+        if (!this.state.signup.accountInfo.userId.trim()) {
+          errors.push("아이디를 입력해주세요.");
+        }
+        if (!this.state.signup.accountInfo.password.trim()) {
+          errors.push("비밀번호를 입력해주세요.");
+        }
+        if (
+          this.state.signup.accountInfo.password !==
+          this.state.signup.accountInfo.confirmPassword
+        ) {
+          errors.push("비밀번호가 일치하지 않습니다.");
+        }
+        break;
+      case "terms":
+        if (!this.state.signup.terms.age) {
+          errors.push("나이 확인에 동의해주세요.");
+        }
+        if (!this.state.signup.terms.terms1) {
+          errors.push("이용약관에 동의해주세요.");
+        }
+        if (!this.state.signup.terms.terms2) {
+          errors.push("개인정보처리방침에 동의해주세요.");
+        }
+        break;
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+    };
+  }
+
+  validateLogin(): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    if (!this.state.login.userId.trim()) {
+      errors.push("아이디를 입력해주세요.");
+    }
+    if (!this.state.login.password.trim()) {
+      errors.push("비밀번호를 입력해주세요.");
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+    };
+  }
+
+  canProceedToNextSignupStep(): boolean {
+    const validation = this.validateSignupStep(this.state.signup.step);
+    return validation.isValid;
+  }
+
   reset(): void {
     this.state = this.getInitialState();
     this.emitStateChange();
@@ -129,29 +232,37 @@ export class AuthFormManager {
     return {
       authMode: "login",
       authSubPage: null,
-      signup: {
-        step: "signup-role",
-        role: null,
-        personalInfo: {
-          name: "",
-          phoneNumber: "",
-        },
-        accountInfo: {
-          userId: "",
-          password: "",
-          confirmPassword: "",
-        },
-        terms: {
-          age: false,
-          terms1: false,
-          terms2: false,
-          marketing: false,
-        },
+      signup: this.getInitialSignupState(),
+      login: this.getInitialLoginState(),
+    };
+  }
+
+  private getInitialSignupState() {
+    return {
+      step: "role-selection" as SignupStep,
+      role: null as "STUDENT" | "TEACHER" | null,
+      personalInfo: {
+        name: "",
+        phoneNumber: "",
       },
-      login: {
+      accountInfo: {
         userId: "",
         password: "",
+        confirmPassword: "",
       },
+      terms: {
+        age: false,
+        terms1: false,
+        terms2: false,
+        marketing: false,
+      },
+    };
+  }
+
+  private getInitialLoginState() {
+    return {
+      userId: "",
+      password: "",
     };
   }
 

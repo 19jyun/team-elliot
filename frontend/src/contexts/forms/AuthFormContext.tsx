@@ -21,6 +21,18 @@ interface AuthFormContextType {
   // 로그인 관리
   setLoginInfo: (info: { userId: string; password: string }) => void;
   
+  // Auth 관련 특수 메서드들
+  navigateToAuthSubPage: (page: string) => void;
+  goBackFromAuth: () => void;
+  clearAuthSubPage: () => void;
+  resetSignup: () => void;
+  resetLogin: () => void;
+  
+  // 유효성 검사
+  validateSignupStep: (step: SignupStep) => { isValid: boolean; errors: string[] };
+  validateLogin: () => { isValid: boolean; errors: string[] };
+  canProceedToNextSignupStep: () => boolean;
+  
   // 초기화
   reset: () => void;
 }
@@ -97,6 +109,40 @@ export const AuthFormProvider: React.FC<AuthFormProviderProps> = ({ children }) 
     manager.setLoginInfo(info);
   }, [manager]);
 
+  // Auth 관련 특수 메서드들
+  const navigateToAuthSubPage = useCallback((page: string) => {
+    manager.navigateToAuthSubPage(page);
+  }, [manager]);
+
+  const goBackFromAuth = useCallback(() => {
+    manager.goBackFromAuth();
+  }, [manager]);
+
+  const clearAuthSubPage = useCallback(() => {
+    manager.clearAuthSubPage();
+  }, [manager]);
+
+  const resetSignup = useCallback(() => {
+    manager.resetSignup();
+  }, [manager]);
+
+  const resetLogin = useCallback(() => {
+    manager.resetLogin();
+  }, [manager]);
+
+  // 유효성 검사 메서드들
+  const validateSignupStep = useCallback((step: SignupStep) => {
+    return manager.validateSignupStep(step);
+  }, [manager]);
+
+  const validateLogin = useCallback(() => {
+    return manager.validateLogin();
+  }, [manager]);
+
+  const canProceedToNextSignupStep = useCallback(() => {
+    return manager.canProceedToNextSignupStep();
+  }, [manager]);
+
   const reset = useCallback(() => {
     manager.reset();
   }, [manager]);
@@ -111,6 +157,14 @@ export const AuthFormProvider: React.FC<AuthFormProviderProps> = ({ children }) 
     setAccountInfo,
     setTerms,
     setLoginInfo,
+    navigateToAuthSubPage,
+    goBackFromAuth,
+    clearAuthSubPage,
+    resetSignup,
+    resetLogin,
+    validateSignupStep,
+    validateLogin,
+    canProceedToNextSignupStep,
     reset,
   };
 

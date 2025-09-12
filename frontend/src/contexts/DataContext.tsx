@@ -1,7 +1,19 @@
 // src/contexts/DataContext.tsx
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useMemo } from 'react';
+
+// 디바운스 유틸리티 함수
+function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
 
 // 기본 데이터 타입
 interface BaseData {
@@ -71,6 +83,11 @@ interface DataContextType {
   resetData: (type?: keyof DataState) => void;
   resetAllData: () => void;
   
+  // 낙관적 업데이트
+  addOptimisticData: (type: keyof DataState, data: BaseData & { isOptimistic?: boolean }) => void;
+  replaceOptimisticData: (type: keyof DataState, optimisticId: string | number, realData: BaseData) => void;
+  removeOptimisticData: (type: keyof DataState, optimisticId: string | number) => void;
+  
   // 상태 조회
   getState: () => DataState;
 }
@@ -119,7 +136,7 @@ export const DataContextProvider: React.FC<DataProviderProps> = ({ children }) =
       }
       return data;
     }
-    return data;
+    return data as BaseData | null;
   }, [state]);
 
   const getAllData = useCallback((type: keyof DataState): BaseData[] => {
@@ -315,6 +332,86 @@ export const DataContextProvider: React.FC<DataProviderProps> = ({ children }) =
     });
   }, []);
 
+  // 낙관적 업데이트
+  const addOptimisticData = useCallback((type: keyof DataState, data: BaseData & { isOptimistic?: boolean }) => {
+    setState(prev => {
+      const currentData = prev[type];
+      if (Array.isArray(currentData)) {
+        const optimisticData = { ...data, isOptimistic: true };
+        return {
+          ...prev,
+          [type]: [...currentData, optimisticData],
+          lastUpdated: {
+            ...prev.lastUpdated,
+            [type]: Date.now(),
+          },
+        };
+      }
+      return prev;
+    });
+  }, []);
+
+  const replaceOptimisticData = useCallback((type: keyof DataState, optimisticId: string | number, realData: BaseData) => {
+    setState(prev => {
+      const currentData = prev[type];
+      if (Array.isArray(currentData)) {
+        const updatedData = currentData.map(item => 
+          item.id === optimisticId && item.isOptimistic ? realData : item
+        );
+        return {
+          ...prev,
+          [type]: updatedData,
+          lastUpdated: {
+            ...prev.lastUpdated,
+            [type]: Date.now(),
+          },
+        };
+      }
+      return prev;
+    });
+  }, []);
+
+  const removeOptimisticData = useCallback((type: keyof DataState, optimisticId: string | number) => {
+    setState(prev => {
+      const currentData = prev[type];
+      if (Array.isArray(currentData)) {
+        const filteredData = currentData.filter(item => 
+          !(item.id === optimisticId && item.isOptimistic)
+        );
+        return {
+          ...prev,
+          [type]: filteredData,
+          lastUpdated: {
+            ...prev.lastUpdated,
+            [type]: Date.now(),
+          },
+        };
+      }
+      return prev;
+    });
+  }, []);
+
+  // 성능 최적화: 메모이제이션된 데이터 조회
+  const memoizedData = useMemo(() => ({
+    classes: state.classes,
+    sessions: state.sessions,
+    teachers: state.teachers,
+    students: state.students,
+    academies: state.academies,
+    enrollments: state.enrollments,
+  }), [
+    state.classes, state.sessions, state.teachers, state.students,
+    state.academies, state.enrollments
+  ]);
+
+  // 성능 최적화: 디바운스된 데이터 업데이트
+  const debouncedSetData = useCallback(
+    debounce((type: keyof DataState, data: any) => {
+      setData(type, data);
+    }, 300),
+    [setData]
+  );
+
   // 상태 조회
   const getState = useCallback((): DataState => {
     return { ...state };
@@ -323,7 +420,7 @@ export const DataContextProvider: React.FC<DataProviderProps> = ({ children }) =
   const value: DataContextType = {
     getData,
     getAllData,
-    setData,
+    setData: debouncedSetData, // 디바운스된 setData 사용
     updateData,
     removeData,
     getCache,
@@ -339,6 +436,9 @@ export const DataContextProvider: React.FC<DataProviderProps> = ({ children }) =
     getLastUpdated,
     resetData,
     resetAllData,
+    addOptimisticData,
+    replaceOptimisticData,
+    removeOptimisticData,
     getState,
   };
 
