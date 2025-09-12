@@ -1,19 +1,15 @@
 // src/contexts/events/ContextEventBus.ts
-export interface EventMap {
-  navigationChanged: { subPage: string | null; activeTab: number };
-  formStateChanged: { formType: string; step: string };
-  goBackExecuted: {
-    commandId: string;
-    description: string;
-    context: string | null;
-    action: string;
-  };
-  modalOpened: { modalId: string; modalType: string };
-  dataUpdated: { dataType: string; data: any };
-}
+import {
+  EventMap,
+  EventListener,
+  UnsubscribeFunction,
+} from "../types/EventTypes";
 
 export class ContextEventBus {
-  private listeners: Map<keyof EventMap, Function[]> = new Map();
+  private listeners: Map<
+    keyof EventMap,
+    ((data: EventMap[keyof EventMap]) => void)[]
+  > = new Map();
 
   emit<K extends keyof EventMap>(event: K, data: EventMap[K]): void {
     const eventListeners = this.listeners.get(event) || [];
@@ -28,16 +24,20 @@ export class ContextEventBus {
 
   subscribe<K extends keyof EventMap>(
     event: K,
-    listener: (data: EventMap[K]) => void
-  ): () => void {
+    listener: EventListener<K>
+  ): UnsubscribeFunction {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
     }
-    this.listeners.get(event)!.push(listener);
+    this.listeners
+      .get(event)!
+      .push(listener as (data: EventMap[keyof EventMap]) => void);
 
     return () => {
       const eventListeners = this.listeners.get(event) || [];
-      const index = eventListeners.indexOf(listener);
+      const index = eventListeners.indexOf(
+        listener as (data: EventMap[keyof EventMap]) => void
+      );
       if (index > -1) {
         eventListeners.splice(index, 1);
       }

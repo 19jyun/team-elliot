@@ -17,7 +17,7 @@ const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
 
 export function SignupRolePage() {
   const { form } = useApp()
-  const { navigateToAuthSubPage } = form
+  const { setSignupStep } = form.auth
   const [currentStep] = useState(1)
   const [selectedRole, setSelectedRole] = useState<'STUDENT' | 'TEACHER' | null>(null)
 
@@ -36,7 +36,7 @@ export function SignupRolePage() {
         role: role,
       }),
     )
-    navigateToAuthSubPage('signup-personal')
+    setSignupStep('personal-info')
   }
 
   return (

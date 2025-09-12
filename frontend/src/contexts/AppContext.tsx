@@ -1,11 +1,18 @@
 // src/contexts/AppContext.tsx
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, useCallback, ReactNode, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
+import { FormDataMap } from './types/FormData';
+import { EnrollmentStep, ClassesWithSessionsByMonthResponse, SessionData } from './forms/EnrollmentFormManager';
+import { CreateClassStep, ClassFormData } from './forms/CreateClassFormManager';
+import { PrincipalClassFormData } from './forms/PrincipalCreateClassFormManager';
+import { SignupStep, AuthMode, SignupData, LoginData } from './forms/AuthFormManager';
+import { PrincipalPersonManagementStep } from './forms/PersonManagementFormManager';
 
 // Navigation Context
-import { NavigationProvider, useNavigation, NavigationItem, NavigationHistoryItem } from './NavigationContext';
+import { NavigationProvider, useNavigation } from './NavigationContext';
+import { NavigationItem, NavigationHistoryItem } from './types/NavigationTypes';
 
 // Form Contexts
 import {
@@ -29,8 +36,7 @@ import { UIContextProvider, useUI } from './UIContext';
 // Data Context
 import { DataContextProvider, useData } from './DataContext';
 
-// Event Bus
-import { contextEventBus } from './events/ContextEventBus';
+// Event Bus (사용하지 않음 - 제거 예정)
 
 // 통합된 AppContext 타입
 interface AppContextType {
@@ -73,12 +79,12 @@ interface AppContextType {
   goBackAdvanced: () => Promise<boolean>;
   
   // 통합 폼 관리 (Legacy 호환)
-  updateForm: <T extends keyof any>(
+  updateForm: <T extends keyof FormDataMap>(
     formType: T,
-    updates: Partial<any>
+    updates: Partial<FormDataMap[T]>
   ) => void;
   resetAllForms: () => void;
-  getFormState: (formType: string) => any;
+  getFormState: (formType: string) => unknown;
 
   // 하위 호환성을 위한 직접 접근 (Legacy API)
   navigation: ReturnType<typeof useNavigation>;
@@ -93,44 +99,44 @@ interface AppContextType {
 
   // 하위 호환성을 위한 직접 메서드들
   // 수강신청 관련
-  setEnrollmentStep: (step: any) => void;
+  setEnrollmentStep: (step: EnrollmentStep) => void;
   setSelectedMonth: (month: number) => void;
-  setSelectedClasses: (classes: any[]) => void;
-  setSelectedSessions: (sessions: any[]) => void;
+  setSelectedClasses: (classes: ClassesWithSessionsByMonthResponse[]) => void;
+  setSelectedSessions: (sessions: SessionData[]) => void;
   setSelectedClassIds: (classIds: number[]) => void;
   setSelectedAcademyId: (academyId: number | null) => void;
-  setSelectedClassesWithSessions: (classes: any[]) => void;
+  setSelectedClassesWithSessions: (classes: ClassesWithSessionsByMonthResponse[]) => void;
   resetEnrollment: () => void;
 
   // 클래스 생성 관련
-  setCreateClassStep: (step: any) => void;
-  setClassFormData: (data: any) => void;
+  setCreateClassStep: (step: CreateClassStep) => void;
+  setClassFormData: (data: Partial<ClassFormData>) => void;
   setSelectedTeacherId: (teacherId: number | null) => void;
   resetCreateClass: () => void;
 
   // Principal 클래스 생성 관련
-  setPrincipalCreateClassStep: (step: any) => void;
-  setPrincipalClassFormData: (data: any) => void;
+  setPrincipalCreateClassStep: (step: CreateClassStep) => void;
+  setPrincipalClassFormData: (data: Partial<PrincipalClassFormData>) => void;
   setPrincipalSelectedTeacherId: (teacherId: number | null) => void;
   resetPrincipalCreateClass: () => void;
 
   // 인증 관련
-  setAuthMode: (mode: any) => void;
+  setAuthMode: (mode: AuthMode) => void;
   setAuthSubPage: (page: string | null) => void;
   navigateToAuthSubPage: (page: string) => void;
   goBackFromAuth: () => void;
   clearAuthSubPage: () => void;
-  setSignupStep: (step: any) => void;
+  setSignupStep: (step: SignupStep) => void;
   setRole: (role: 'STUDENT' | 'TEACHER') => void;
-  setPersonalInfo: (info: any) => void;
-  setAccountInfo: (info: any) => void;
-  setTerms: (terms: any) => void;
+  setPersonalInfo: (info: SignupData['personalInfo']) => void;
+  setAccountInfo: (info: SignupData['accountInfo']) => void;
+  setTerms: (terms: SignupData['terms']) => void;
   resetSignup: () => void;
-  setLoginInfo: (info: any) => void;
+  setLoginInfo: (info: LoginData) => void;
   resetLogin: () => void;
 
   // 인원 관리 관련
-  setPersonManagementStep: (step: any) => void;
+  setPersonManagementStep: (step: PrincipalPersonManagementStep) => void;
   setPersonManagementTab: (tab: 'enrollment' | 'refund') => void;
   setSelectedClassId: (classId: number | null) => void;
   setSelectedSessionId: (sessionId: number | null) => void;
@@ -151,12 +157,10 @@ export const useApp = (): AppContextType => {
 
 // 내부 컴포넌트들
 const NavigationConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const navigation = useNavigation();
   return <>{children}</>;
 };
 
 const FormsConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const navigation = useNavigation();
   const enrollment = useEnrollmentForm();
   const createClass = useCreateClassForm();
   const auth = useAuthForm();
@@ -166,6 +170,7 @@ const FormsConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
   const ui = useUI();
   const data = useData();
   const session = useSession();
+  const navigation = useNavigation();
 
   // 고급 goBack 시스템 (새로운 설계)
   const goBackAdvanced = useCallback(async (): Promise<boolean> => {
@@ -174,58 +179,59 @@ const FormsConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
   }, [navigation]);
 
   // 통합 폼 관리 메서드들 (Legacy 호환)
-  const updateForm = useCallback(<T extends keyof any>(
+  const updateForm = useCallback(<T extends string>(
     formType: T,
-    updates: Partial<any>
+    updates: Record<string, unknown>
   ) => {
     switch (formType) {
       case 'enrollment':
         // enrollment 폼 업데이트는 개별 메서드들을 통해 처리
-        if (updates.currentStep) enrollment.setCurrentStep(updates.currentStep);
-        if (updates.selectedMonth !== undefined) enrollment.setSelectedMonth(updates.selectedMonth);
-        if (updates.selectedClasses) enrollment.setSelectedClasses(updates.selectedClasses);
-        if (updates.selectedSessions) enrollment.setSelectedSessions(updates.selectedSessions);
-        if (updates.selectedClassIds) enrollment.setSelectedClassIds(updates.selectedClassIds);
-        if (updates.selectedAcademyId !== undefined) enrollment.setSelectedAcademyId(updates.selectedAcademyId);
-        if (updates.selectedClassesWithSessions) enrollment.setSelectedClassesWithSessions(updates.selectedClassesWithSessions);
+        if (updates.currentStep) enrollment.setCurrentStep(updates.currentStep as EnrollmentStep);
+        if (updates.selectedMonth !== undefined) enrollment.setSelectedMonth(updates.selectedMonth as number);
+        if (updates.selectedClasses) enrollment.setSelectedClasses(updates.selectedClasses as ClassesWithSessionsByMonthResponse[]);
+        if (updates.selectedSessions) enrollment.setSelectedSessions(updates.selectedSessions as SessionData[]);
+        if (updates.selectedClassIds) enrollment.setSelectedClassIds(updates.selectedClassIds as number[]);
+        if (updates.selectedAcademyId !== undefined) enrollment.setSelectedAcademyId(updates.selectedAcademyId as number | null);
+        if (updates.selectedClassesWithSessions) enrollment.setSelectedClassesWithSessions(updates.selectedClassesWithSessions as ClassesWithSessionsByMonthResponse[]);
         break;
       case 'createClass':
-        if (updates.currentStep) createClass.setCurrentStep(updates.currentStep);
-        if (updates.classFormData) createClass.setClassFormData(updates.classFormData);
-        if (updates.selectedTeacherId !== undefined) createClass.setSelectedTeacherId(updates.selectedTeacherId);
+        if (updates.currentStep) createClass.setCurrentStep(updates.currentStep as CreateClassStep);
+        if (updates.classFormData) createClass.setClassFormData(updates.classFormData as Partial<ClassFormData>);
+        if (updates.selectedTeacherId !== undefined) createClass.setSelectedTeacherId(updates.selectedTeacherId as number | null);
         break;
       case 'auth':
-        if (updates.authMode) auth.setAuthMode(updates.authMode);
-        if (updates.authSubPage !== undefined) auth.setAuthSubPage(updates.authSubPage);
+        if (updates.authMode) auth.setAuthMode(updates.authMode as AuthMode);
+        if (updates.authSubPage !== undefined) auth.setAuthSubPage(updates.authSubPage as string | null);
         if (updates.signup) {
-          if (updates.signup.step) auth.setSignupStep(updates.signup.step);
-          if (updates.signup.role) auth.setRole(updates.signup.role);
-          if (updates.signup.personalInfo) auth.setPersonalInfo(updates.signup.personalInfo);
-          if (updates.signup.accountInfo) auth.setAccountInfo(updates.signup.accountInfo);
-          if (updates.signup.terms) auth.setTerms(updates.signup.terms);
+          const signup = updates.signup as Partial<SignupData>;
+          if (signup.step) auth.setSignupStep(signup.step as SignupStep);
+          if (signup.role) auth.setRole(signup.role as 'STUDENT' | 'TEACHER');
+          if (signup.personalInfo) auth.setPersonalInfo(signup.personalInfo);
+          if (signup.accountInfo) auth.setAccountInfo(signup.accountInfo);
+          if (signup.terms) auth.setTerms(signup.terms);
         }
-        if (updates.login) auth.setLoginInfo(updates.login);
+        if (updates.login) auth.setLoginInfo(updates.login as LoginData);
         break;
       case 'personManagement':
-        if (updates.currentStep) personManagement.setCurrentStep(updates.currentStep);
-        if (updates.selectedTab) personManagement.setSelectedTab(updates.selectedTab);
-        if (updates.selectedClassId !== undefined) personManagement.setSelectedClassId(updates.selectedClassId);
-        if (updates.selectedSessionId !== undefined) personManagement.setSelectedSessionId(updates.selectedSessionId);
-        if (updates.selectedRequestId !== undefined) personManagement.setSelectedRequestId(updates.selectedRequestId);
-        if (updates.selectedRequestType !== undefined) personManagement.setSelectedRequestType(updates.selectedRequestType);
+        if (updates.currentStep) personManagement.setCurrentStep(updates.currentStep as PrincipalPersonManagementStep);
+        if (updates.selectedTab) personManagement.setSelectedTab(updates.selectedTab as 'enrollment' | 'refund');
+        if (updates.selectedClassId !== undefined) personManagement.setSelectedClassId(updates.selectedClassId as number | null);
+        if (updates.selectedSessionId !== undefined) personManagement.setSelectedSessionId(updates.selectedSessionId as number | null);
+        if (updates.selectedRequestId !== undefined) personManagement.setSelectedRequestId(updates.selectedRequestId as number | null);
+        if (updates.selectedRequestType !== undefined) personManagement.setSelectedRequestType(updates.selectedRequestType as 'enrollment' | 'refund' | null);
         break;
       case 'principalCreateClass':
-        if (updates.currentStep) principalCreateClass.setCurrentStep(updates.currentStep);
-        if (updates.classFormData) principalCreateClass.setClassFormData(updates.classFormData);
-        if (updates.selectedTeacherId !== undefined) principalCreateClass.setSelectedTeacherId(updates.selectedTeacherId);
+        if (updates.currentStep) principalCreateClass.setCurrentStep(updates.currentStep as CreateClassStep);
+        if (updates.classFormData) principalCreateClass.setClassFormData(updates.classFormData as Partial<PrincipalClassFormData>);
+        if (updates.selectedTeacherId !== undefined) principalCreateClass.setSelectedTeacherId(updates.selectedTeacherId as number | null);
         break;
       case 'principalPersonManagement':
-        if (updates.currentStep) principalPersonManagement.setCurrentStep(updates.currentStep);
-        if (updates.selectedTab) principalPersonManagement.setSelectedTab(updates.selectedTab);
-        if (updates.selectedClassId !== undefined) principalPersonManagement.setSelectedClassId(updates.selectedClassId);
-        if (updates.selectedSessionId !== undefined) principalPersonManagement.setSelectedSessionId(updates.selectedSessionId);
-        if (updates.selectedRequestId !== undefined) principalPersonManagement.setSelectedRequestId(updates.selectedRequestId);
-        if (updates.selectedRequestType !== undefined) principalPersonManagement.setSelectedRequestType(updates.selectedRequestType);
+        if (updates.currentStep) principalPersonManagement.setCurrentStep(updates.currentStep as PrincipalPersonManagementStep);
+        if (updates.selectedTab) principalPersonManagement.setSelectedTab(updates.selectedTab as 'enrollment' | 'refund');
+        if (updates.selectedClassId !== undefined) principalPersonManagement.setSelectedClassId(updates.selectedClassId as number | null);
+        if (updates.selectedSessionId !== undefined) principalPersonManagement.setSelectedSessionId(updates.selectedSessionId as number | null);
+        if (updates.selectedRequestId !== undefined) principalPersonManagement.setSelectedRequestId(updates.selectedRequestId as number | null);
+        if (updates.selectedRequestType !== undefined) principalPersonManagement.setSelectedRequestType(updates.selectedRequestType as 'enrollment' | 'refund' | null);
         break;
     }
   }, [enrollment, createClass, auth, personManagement, principalCreateClass, principalPersonManagement]);
@@ -362,11 +368,8 @@ const FormsConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
         resetPersonManagement: personManagement.reset,
       }), [
     // 의존성 배열
-    navigation.activeTab, navigation.subPage, navigation.canGoBack, navigation.isTransitioning,
-    navigation.navigationItems, navigation.history, navigation.setActiveTab, navigation.handleTabChange,
-    navigation.navigateToSubPage, navigation.clearSubPage, navigation.goBack,
-    enrollment, createClass, auth, personManagement, principalCreateClass, principalPersonManagement,
-    ui, data, session
+    navigation, enrollment, createClass, auth, personManagement, principalCreateClass, principalPersonManagement,
+    ui, data, session, getFormState, goBackAdvanced, resetAllForms, updateForm
   ]);
 
   return (

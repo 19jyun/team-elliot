@@ -7,6 +7,17 @@ interface AuthFormContextType {
   // 상태
   state: AuthFormState;
   
+  // 편의 속성들 (하위 호환성)
+  authMode: AuthMode;
+  authSubPage: string | null;
+  signup: {
+    step: SignupStep;
+    role: 'STUDENT' | 'TEACHER' | null;
+    personalInfo: { name: string; phoneNumber: string };
+    accountInfo: { userId: string; password: string; confirmPassword: string };
+    terms: { age: boolean; terms1: boolean; terms2: boolean; marketing: boolean };
+  };
+  
   // 모드 관리
   setAuthMode: (mode: AuthMode) => void;
   setAuthSubPage: (page: string | null) => void;
@@ -149,6 +160,16 @@ export const AuthFormProvider: React.FC<AuthFormProviderProps> = ({ children }) 
 
   const value: AuthFormContextType = {
     state,
+    // 편의 속성들 (하위 호환성)
+    authMode: state.authMode,
+    authSubPage: state.authSubPage,
+    signup: {
+      step: state.signup.step,
+      role: state.signup.role,
+      personalInfo: state.signup.personalInfo,
+      accountInfo: state.signup.accountInfo,
+      terms: state.signup.terms,
+    },
     setAuthMode,
     setAuthSubPage,
     setSignupStep,

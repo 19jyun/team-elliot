@@ -3,13 +3,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { useSession } from 'next-auth/react';
 import { VirtualHistoryManager, GoBackManager, GoBackContext, GoBackResult } from './navigation';
 import { contextEventBus } from './events/ContextEventBus';
-
-// Navigation Items (Legacy에서 가져옴)
-export interface NavigationItem {
-  label: string;
-  href: string;
-  index: number;
-}
+import { NavigationItem, NavigationHistoryItem } from './types/NavigationTypes';
 
 export const STUDENT_NAVIGATION_ITEMS: NavigationItem[] = [
   { label: "클래스 정보", href: "/dashboard", index: 0 },
@@ -30,19 +24,7 @@ export const PRINCIPAL_NAVIGATION_ITEMS: NavigationItem[] = [
   { label: "나의 정보", href: "/dashboard", index: 3 },
 ];
 
-interface NavigationHistoryItem {
-  id: string;
-  timestamp: number;
-  type: 'navigation' | 'subpage' | 'form-step';
-  data: {
-    activeTab?: number;
-    subPage?: string | null;
-    formType?: string;
-    formStep?: string;
-    title?: string;
-    description?: string;
-  };
-}
+// NavigationHistoryItem는 types/NavigationTypes에서 import됨
 
 interface NavigationContextType {
   // 상태
@@ -347,7 +329,13 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
       // 뒤로갈 수 없으면 앱 종료
       if (!success) {
         if (typeof window !== 'undefined' && 'App' in window) {
-          const { App } = window as any;
+          const { App } = window as { 
+            App: { 
+              addListener: (event: string, callback: () => void) => void;
+              removeListener: (event: string, callback: () => void) => void;
+              exitApp: () => void;
+            } 
+          };
           App.exitApp();
         }
       }
@@ -355,7 +343,13 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
 
     // Capacitor 네이티브 앱 뒤로가기 버튼 리스너
     if (typeof window !== 'undefined' && 'App' in window) {
-      const { App } = window as any;
+      const { App } = window as { 
+        App: { 
+          addListener: (event: string, callback: () => void) => void;
+          removeListener: (event: string, callback: () => void) => void;
+          exitApp: () => void;
+        } 
+      };
       App.addListener('backButton', handleNativeBackButton);
       
       return () => {

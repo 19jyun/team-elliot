@@ -11,10 +11,10 @@ import { SignupTermsPage } from './pages/SignupTermsPage';
 
 export function AuthContainer() {
   const { form } = useApp();
-  const { authSubPage } = form.auth;
+  const { authMode, signup } = form.auth;
 
   // 기본 페이지 (로그인) - 뒤로가기 버튼 없음
-  if (authSubPage === null) {
+  if (authMode === 'login') {
     return (
       <div className="flex overflow-hidden flex-col mx-auto w-full bg-white max-w-[480px] h-screen">
         <LoginPage />
@@ -28,10 +28,10 @@ export function AuthContainer() {
       <AuthHeader />
       
       <div className="flex flex-col px-5 w-full flex-1 overflow-hidden">
-        {authSubPage === 'signup-role' && <SignupRolePage />}
-        {authSubPage === 'signup-personal' && <SignupPersonalPage />}
-        {authSubPage === 'signup-account' && <SignupAccountPage />}
-        {authSubPage === 'signup-terms' && <SignupTermsPage />}
+        {signup.step === 'role-selection' && <SignupRolePage />}
+        {signup.step === 'personal-info' && <SignupPersonalPage />}
+        {signup.step === 'account-info' && <SignupAccountPage />}
+        {signup.step === 'terms' && <SignupTermsPage />}
       </div>
     </div>
   );

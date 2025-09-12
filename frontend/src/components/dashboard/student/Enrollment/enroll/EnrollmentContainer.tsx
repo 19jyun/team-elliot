@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 import { EnrollmentAcademyStep } from './EnrollmentAcademyStep';
 import { EnrollmentClassStep } from './EnrollmentClassStep';
 import { EnrollmentDateStep } from './EnrollmentDateStep';
@@ -17,6 +17,7 @@ export function EnrollmentContainer() {
   // 현재 단계에 따라 적절한 컴포넌트 렌더링
   const renderCurrentStep = () => {
     switch (currentStep) {
+      case 'main':
       case 'academy-selection':
         return <EnrollmentAcademyStep />;
       case 'class-selection':

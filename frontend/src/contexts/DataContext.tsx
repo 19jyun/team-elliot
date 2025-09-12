@@ -1,15 +1,15 @@
 // src/contexts/DataContext.tsx
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
 // 디바운스 유틸리티 함수
-function debounce<T extends (...args: any[]) => any>(
-  func: T,
+function debounce<TArgs extends readonly unknown[], TReturn>(
+  func: (...args: TArgs) => TReturn,
   wait: number
-): (...args: Parameters<T>) => void {
+): (...args: TArgs) => void {
   let timeout: NodeJS.Timeout;
-  return (...args: Parameters<T>) => {
+  return (...args: TArgs) => {
     clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
   };
@@ -391,24 +391,27 @@ export const DataContextProvider: React.FC<DataProviderProps> = ({ children }) =
     });
   }, []);
 
-  // 성능 최적화: 메모이제이션된 데이터 조회
-  const memoizedData = useMemo(() => ({
-    classes: state.classes,
-    sessions: state.sessions,
-    teachers: state.teachers,
-    students: state.students,
-    academies: state.academies,
-    enrollments: state.enrollments,
-  }), [
-    state.classes, state.sessions, state.teachers, state.students,
-    state.academies, state.enrollments
-  ]);
+  // 성능 최적화: 메모이제이션된 데이터 조회 (현재 사용하지 않음)
+  // const memoizedData = useMemo(() => ({
+  //   classes: state.classes,
+  //   sessions: state.sessions,
+  //   teachers: state.teachers,
+  //   students: state.students,
+  //   academies: state.academies,
+  //   enrollments: state.enrollments,
+  // }), [
+  //   state.classes, state.sessions, state.teachers, state.students,
+  //   state.academies, state.enrollments
+  // ]);
 
   // 성능 최적화: 디바운스된 데이터 업데이트
   const debouncedSetData = useCallback(
-    debounce((type: keyof DataState, data: any) => {
-      setData(type, data);
-    }, 300),
+    (type: keyof DataState, data: BaseData | BaseData[]) => {
+      const debouncedFn = debounce((t: keyof DataState, d: BaseData | BaseData[]) => {
+        setData(t, d);
+      }, 300);
+      debouncedFn(type, data);
+    },
     [setData]
   );
 

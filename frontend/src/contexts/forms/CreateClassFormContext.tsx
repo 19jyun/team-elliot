@@ -7,6 +7,11 @@ interface CreateClassFormContextType {
   // 상태
   state: CreateClassFormState;
   
+  // 편의 속성들 (하위 호환성)
+  currentStep: CreateClassStep;
+  classFormData: ClassFormData;
+  selectedTeacherId: number | null;
+  
   // 단계 관리
   setCurrentStep: (step: CreateClassStep) => void;
   
@@ -76,6 +81,10 @@ export const CreateClassFormProvider: React.FC<CreateClassFormProviderProps> = (
 
   const value: CreateClassFormContextType = {
     state,
+    // 편의 속성들 (하위 호환성)
+    currentStep: state.currentStep,
+    classFormData: state.classFormData,
+    selectedTeacherId: state.selectedTeacherId,
     setCurrentStep,
     setClassFormData,
     setSelectedTeacherId,

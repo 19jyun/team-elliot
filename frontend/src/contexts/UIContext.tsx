@@ -214,19 +214,19 @@ export const UIContextProvider: React.FC<UIProviderProps> = ({ children }) => {
 
   const isDashboardFocused = useCallback(() => {
     return state.focus.current === 'dashboard';
-  }, [state.focus.current]);
+  }, [state.focus]);
 
   const isModalFocused = useCallback(() => {
     return state.focus.current === 'modal';
-  }, [state.focus.current]);
+  }, [state.focus]);
 
   const isSubPageFocused = useCallback(() => {
     return state.focus.current === 'subpage';
-  }, [state.focus.current]);
+  }, [state.focus]);
 
   const isOverlayFocused = useCallback(() => {
     return state.focus.current === 'overlay';
-  }, [state.focus.current]);
+  }, [state.focus]);
 
   const clearFocusHistory = useCallback(() => {
     setState(prev => ({
@@ -252,6 +252,13 @@ export const UIContextProvider: React.FC<UIProviderProps> = ({ children }) => {
   }, []);
 
   // 알림 관리
+  const removeNotification = useCallback((id: string) => {
+    setState(prev => ({
+      ...prev,
+      notifications: prev.notifications.filter(notification => notification.id !== id),
+    }));
+  }, []);
+
   const addNotification = useCallback((notification: Omit<NotificationState, 'id'>) => {
     const id = `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const newNotification: NotificationState = { ...notification, id };
@@ -268,14 +275,7 @@ export const UIContextProvider: React.FC<UIProviderProps> = ({ children }) => {
         removeNotification(id);
       }, duration);
     }
-  }, []);
-
-  const removeNotification = useCallback((id: string) => {
-    setState(prev => ({
-      ...prev,
-      notifications: prev.notifications.filter(notification => notification.id !== id),
-    }));
-  }, []);
+  }, [removeNotification]);
 
   const clearNotifications = useCallback(() => {
     setState(prev => ({
@@ -306,7 +306,6 @@ export const UIContextProvider: React.FC<UIProviderProps> = ({ children }) => {
     
     // onDismiss 콜백이 있으면 알림이 제거될 때 호출
     if (options?.onDismiss) {
-      const id = `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       setTimeout(() => {
         options.onDismiss?.();
       }, 100);

@@ -5,4 +5,4 @@ export type {
   HistoryEntry,
   VirtualHistoryState,
 } from "./VirtualHistoryManager";
-export type { GoBackContext, GoBackResult } from "./GoBackManager";
+export type { GoBackContext, GoBackResult } from "../types/NavigationTypes";

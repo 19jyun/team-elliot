@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 import { StatusStep } from './StatusStep';
 import { toast } from 'sonner';
 import TimePicker from '@/components/common/WheelPicker/TimePicker';
@@ -20,8 +20,9 @@ const DAYS_OF_WEEK = [
 
 export function CreateClassStepSchedule() {
   const { form } = useApp();
-  const { createClass, setClassFormData, setCreateClassStep } = form;
-  const { classFormData } = createClass;
+  const { createClass } = form;
+  const { setClassFormData, setCurrentStep } = createClass;
+  const { classFormData } = createClass.state;
 
   const [formData, setFormData] = useState({
     days: classFormData.schedule.days || [],
@@ -122,11 +123,11 @@ export function CreateClassStepSchedule() {
         endDate: formData.endDate,
       },
     });
-    setCreateClassStep('content');
+    setCurrentStep('content');
   };
 
   const handleBack = () => {
-    setCreateClassStep('teacher');
+    setCurrentStep('teacher');
   };
 
   const statusSteps = [

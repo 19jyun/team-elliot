@@ -1,15 +1,16 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 import { StatusStep } from './StatusStep';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { toast } from 'sonner';
 
 export function CreateClassStepDetail() {
   const { form } = useApp();
-  const { createClass, setClassFormData, setCreateClassStep } = form;
-  const { classFormData, selectedTeacherId } = createClass;
+  const { createClass } = form;
+  const { setClassFormData, setCurrentStep } = createClass;
+  const { classFormData, selectedTeacherId } = createClass.state;
 
   // API 기반 데이터 관리
   const { createClass: createClassApi } = usePrincipalApi();
@@ -75,7 +76,7 @@ export function CreateClassStepDetail() {
       toast.success('강의가 성공적으로 생성되었습니다!');
       
       // complete 단계로 이동
-      setCreateClassStep('complete');
+      setCurrentStep('complete');
     } catch (error) {
       console.error('강의 생성 실패:', error);
       toast.error('강의 생성에 실패했습니다. 다시 시도해주세요.');
@@ -85,7 +86,7 @@ export function CreateClassStepDetail() {
   };
 
   const handleBack = () => {
-    setCreateClassStep('schedule');
+    setCurrentStep('schedule');
   };
 
   const statusSteps = [

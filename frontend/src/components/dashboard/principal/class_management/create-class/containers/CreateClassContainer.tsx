@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 import { CreateClassStepInfo } from '../components/CreateClassStepInfo';
 import { CreateClassStepTeacher } from '../components/CreateClassStepTeacher';
 import { CreateClassStepSchedule } from '../components/CreateClassStepSchedule';

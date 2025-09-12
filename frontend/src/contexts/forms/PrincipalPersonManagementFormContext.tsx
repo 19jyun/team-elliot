@@ -17,6 +17,14 @@ interface PrincipalPersonManagementFormContextType {
   // 상태
   state: PrincipalPersonManagementFormState;
 
+  // 편의 속성들 (하위 호환성)
+  selectedTab: "enrollment" | "refund";
+  currentStep: PrincipalPersonManagementStep;
+  selectedClassId: number | null;
+  selectedSessionId: number | null;
+  selectedRequestId: number | null;
+  selectedRequestType: "enrollment" | "refund" | null;
+
   // 단계 관리
   setCurrentStep: (step: PrincipalPersonManagementStep) => void;
   setSelectedTab: (tab: "enrollment" | "refund") => void;
@@ -115,6 +123,13 @@ export const PrincipalPersonManagementFormProvider: React.FC<
 
   const value: PrincipalPersonManagementFormContextType = {
     state,
+    // 편의 속성들 (하위 호환성)
+    selectedTab: state.selectedTab,
+    currentStep: state.currentStep,
+    selectedClassId: state.selectedClassId,
+    selectedSessionId: state.selectedSessionId,
+    selectedRequestId: state.selectedRequestId,
+    selectedRequestType: state.selectedRequestType,
     setCurrentStep,
     setSelectedTab,
     setSelectedClassId,

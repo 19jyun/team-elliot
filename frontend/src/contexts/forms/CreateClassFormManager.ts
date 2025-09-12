@@ -11,15 +11,17 @@ export type CreateClassStep =
 export interface ClassFormData {
   name: string;
   description: string;
+  level: "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
   maxStudents: number;
   price: number;
-  startDate: string;
-  endDate: string;
+  content: string;
   schedule: {
-    dayOfWeek: number;
+    days: string[];
     startTime: string;
     endTime: string;
-  }[];
+    startDate: string;
+    endDate: string;
+  };
 }
 
 export interface CreateClassFormState {
@@ -82,11 +84,17 @@ export class CreateClassFormManager {
       classFormData: {
         name: "",
         description: "",
+        level: "BEGINNER",
         maxStudents: 0,
         price: 0,
-        startDate: "",
-        endDate: "",
-        schedule: [],
+        content: "",
+        schedule: {
+          days: [],
+          startTime: "",
+          endTime: "",
+          startDate: "",
+          endDate: "",
+        },
       },
       selectedTeacherId: null,
     };

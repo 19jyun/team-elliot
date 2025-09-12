@@ -166,7 +166,7 @@ const InputField: React.FC<InputFieldProps> = ({
 export function LoginPage() {
   const router = useRouter()
   const { form } = useApp()
-  const { navigateToAuthSubPage } = form
+  const { setAuthMode, setSignupStep } = form.auth
   const [formData, setFormData] = useState({
     userId: '',
     password: '',
@@ -307,7 +307,10 @@ export function LoginPage() {
             계정이 아직 없으신가요?
           </Typography>
           <Button
-            onClick={() => navigateToAuthSubPage('signup-role')}
+            onClick={() => {
+              setAuthMode('signup');
+              setSignupStep('role-selection');
+            }}
             sx={{
               fontSize: '16px',
               fontWeight: 500,

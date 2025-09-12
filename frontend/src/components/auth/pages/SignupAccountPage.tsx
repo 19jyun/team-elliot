@@ -147,7 +147,7 @@ const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
 
 export function SignupAccountPage() {
   const { form } = useApp()
-  const { navigateToAuthSubPage } = form
+  const { setSignupStep } = form.auth
   const [currentStep] = useState(3)
   const [formData, setFormData] = useState({
     userId: '',
@@ -233,7 +233,7 @@ export function SignupAccountPage() {
         confirmPassword: formData.confirmPassword,
       }),
     )
-    navigateToAuthSubPage('signup-terms')
+    setSignupStep('terms')
   }
 
   return (

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
 import { Badge } from '@/components/ui/badge';
 import { toPrincipalClassListForRequestsVM } from '@/lib/adapters/principal';
@@ -10,12 +10,9 @@ import type { PrincipalClassListForRequestsVM } from '@/types/view/principal';
 
 
 export function PrincipalClassList() {
-  const {
-    personManagement,
-    setSelectedClassId,
-    setPersonManagementStep
-  } = useApp();
-  const { selectedTab } = personManagement;
+  const { form } = useApp();
+  const { principalPersonManagement } = form;
+  const { selectedTab, setSelectedClassId, setCurrentStep } = principalPersonManagement;
 
   // Redux store에서 데이터 가져오기
   const {
@@ -36,7 +33,7 @@ export function PrincipalClassList() {
 
   const handleClassClick = (classId: number) => {
     setSelectedClassId(classId);
-    setPersonManagementStep('session-list');
+    setCurrentStep('session-list');
   };
 
   if (classListVM.isLoading) {

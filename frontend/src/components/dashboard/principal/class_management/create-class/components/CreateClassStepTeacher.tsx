@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { StatusStep } from './StatusStep';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { getImageUrl } from '@/utils/imageUtils';
 import Image from 'next/image';
@@ -18,8 +18,8 @@ interface Teacher {
 
 export function CreateClassStepTeacher() {
   const { form, goBack } = useApp();
-  const { createClass, setCreateClassStep, setSelectedTeacherId } = form;
-  const { selectedTeacherId } = createClass;
+  const { createClass } = form;
+  const { setCurrentStep, setSelectedTeacherId, selectedTeacherId } = createClass;
   
   const [selectedTeacher, setSelectedTeacher] = useState<number | null>(selectedTeacherId);
 
@@ -49,7 +49,7 @@ export function CreateClassStepTeacher() {
     // DashboardContext의 selectedTeacherId 업데이트
     setSelectedTeacherId(selectedTeacher);
     
-    setCreateClassStep('schedule');
+    setCurrentStep('schedule');
   };
 
   const handleBack = () => {

@@ -1,28 +1,7 @@
 // src/contexts/navigation/GoBackManager.ts
 import { VirtualHistoryManager } from "./VirtualHistoryManager";
 import { ContextEventBus } from "../events/ContextEventBus";
-
-export interface GoBackContext {
-  subPage: string | null;
-  activeTab: number;
-  formStates: {
-    enrollment?: { currentStep: string };
-    createClass?: { currentStep: string };
-    auth?: { currentStep: string };
-    personManagement?: { currentStep: string };
-    principalPersonManagement?: { currentStep: string };
-  };
-  history: any[];
-  currentHistoryIndex: number;
-}
-
-export interface GoBackResult {
-  success: boolean;
-  action: "navigate" | "close" | "step-back" | "history-back" | "none";
-  data?: any;
-  message?: string;
-  shouldPreventDefault?: boolean;
-}
+import { GoBackContext, GoBackResult } from "../types/NavigationTypes";
 
 export class GoBackManager {
   private virtualHistory: VirtualHistoryManager;
@@ -39,6 +18,15 @@ export class GoBackManager {
   // 공개 API
   async executeGoBack(context: GoBackContext): Promise<GoBackResult> {
     try {
+      // context가 유효한지 확인
+      if (!context) {
+        return {
+          success: false,
+          action: "none",
+          message: "Invalid context provided",
+        };
+      }
+
       // 1. 가상 히스토리에서 뒤로가기 시도
       if (this.virtualHistory.canGoBack()) {
         return await this.handleVirtualHistoryGoBack();

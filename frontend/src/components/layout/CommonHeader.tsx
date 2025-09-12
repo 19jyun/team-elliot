@@ -5,8 +5,7 @@ import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import { ArrowLeft } from 'lucide-react';
 
-import { useApp } from '@/contexts';
-import { PersonManagementForm } from '@/contexts/legacy/types';
+import { useApp } from '@/contexts/AppContext';
 
 export function CommonHeader() {
   const { data: session } = useSession();
@@ -14,13 +13,8 @@ export function CommonHeader() {
     activeTab, 
     subPage, 
     canGoBack, 
-    isTransitioning,
-    setActiveTab, 
     handleTabChange, 
-    navigateToSubPage, 
-    clearSubPage, 
-    goBack,
-    forms 
+    goBack
   } = useApp();
 
   const userRole = session?.user?.role || 'STUDENT';

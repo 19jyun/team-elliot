@@ -5,7 +5,7 @@ import { CalendarProvider } from '@/contexts/CalendarContext'
 import DateSelectFooter from '@/components/features/student/enrollment/month/date/DateSelectFooter'
 import { useState } from 'react'
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep'
-import { useApp } from '@/contexts'
+import { useApp } from '@/contexts/AppContext'
 import { useEnrollmentCalculation } from '@/hooks/useEnrollmentCalculation'
 import { useStudentApi } from '@/hooks/student/useStudentApi'
 import type { ClassSessionForModification } from '@/types/api/class'
@@ -17,8 +17,7 @@ export function EnrollmentModificationDateStep({
   existingEnrollments, 
   onComplete 
 }: EnrollmentModificationDateStepVM) {
-  const { form } = useApp()
-  const { setSelectedSessions } = form
+  const { setSelectedSessions } = useApp()
   const { loadModificationSessions } = useStudentApi();
   const [selectedCount, setSelectedCount] = useState(0);
   const [selectedClasses, setSelectedClasses] = useState<Array<{ id: number; sessions: ClassSessionForModification[] }>>([]);
@@ -245,19 +244,13 @@ export function EnrollmentModificationDateStep({
       localStorage.setItem('selectedSessions', JSON.stringify(selectedSessions));
       localStorage.setItem('selectedClasses', JSON.stringify(selectedClasses));
       
-      // Context에도 저장 (타입 변환)
+      // Context에도 저장 (SessionData 타입으로 변환)
       const convertedSessions = selectedSessions.map(session => ({
-        id: session.id,
-        date: session.date,
+        sessionId: session.id,
+        sessionName: session.class?.className || 'Unknown Class',
         startTime: session.startTime,
         endTime: session.endTime,
-        currentStudents: 0, // 수강 변경에서는 현재 학생 수 정보가 없으므로 기본값
-        maxStudents: 10, // 수강 변경에서는 최대 학생 수 정보가 없으므로 기본값
-        isEnrollable: session.isEnrollable || false,
-        isFull: session.isFull,
-        isPastStartTime: session.isPastStartTime,
-        isAlreadyEnrolled: session.isAlreadyEnrolled,
-        studentEnrollmentStatus: session.studentEnrollmentStatus ?? null,
+        date: session.date,
       }));
       setSelectedSessions(convertedSessions);
       

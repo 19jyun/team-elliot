@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { PrincipalRequestCard } from './PrincipalRequestCard';
@@ -15,10 +15,9 @@ import type { PrincipalEnrollment } from '@/types/api/principal';
 import type { PrincipalRequestDetailVM } from '@/types/view/principal';
 
 export function PrincipalRequestDetail() {
-  const { 
-    personManagement
-  } = useApp();
-  const { selectedTab, selectedSessionId } = personManagement;
+  const { form } = useApp();
+  const { principalPersonManagement } = form;
+  const { selectedTab, selectedSessionId } = principalPersonManagement;
   const [showRejectionModal, setShowRejectionModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<{ id: number } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);

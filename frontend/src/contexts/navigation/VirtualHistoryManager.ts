@@ -1,17 +1,9 @@
 // src/contexts/navigation/VirtualHistoryManager.ts
-export interface HistoryEntry {
+import { HistoryItem } from "../types/NavigationTypes";
+
+export interface HistoryEntry extends HistoryItem {
   id: string;
   timestamp: number;
-  type: "navigation" | "subpage" | "form-step";
-  data: {
-    activeTab?: number;
-    subPage?: string | null;
-    formType?: string;
-    formStep?: string;
-    formData?: Record<string, any>;
-    title?: string;
-    description?: string;
-  };
 }
 
 export interface VirtualHistoryState {

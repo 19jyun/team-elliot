@@ -9,7 +9,8 @@ import { useStudentApi } from '@/hooks/student/useStudentApi';
 
 export function EnrollmentAcademyStep() {
   const { form, goBack } = useApp();
-  const { setEnrollmentStep, setSelectedAcademyId: setContextSelectedAcademyId } = form;
+  const { enrollment } = form;
+  const { setCurrentStep, setSelectedAcademyId: setContextSelectedAcademyId } = enrollment;
   const { status } = useSession({
     required: true,
     onUnauthenticated() {
@@ -59,7 +60,7 @@ export function EnrollmentAcademyStep() {
     }
     
     setContextSelectedAcademyId(localSelectedAcademyId);
-    setEnrollmentStep('class-selection');
+    setCurrentStep('class-selection');
   };
 
   // 에러 처리

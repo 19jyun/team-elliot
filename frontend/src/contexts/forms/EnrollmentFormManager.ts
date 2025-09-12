@@ -12,9 +12,16 @@ export type EnrollmentStep =
   | "refund-complete";
 
 export interface ClassesWithSessionsByMonthResponse {
-  classId: number;
-  className: string;
-  sessions: SessionData[];
+  month: number;
+  classes: {
+    classId: number;
+    className: string;
+    level: string;
+    tuitionFee: string;
+    teacher: { id: number; name: string };
+    academy: { id: number; name: string };
+    sessions: SessionData[];
+  }[];
 }
 
 export interface SessionData {

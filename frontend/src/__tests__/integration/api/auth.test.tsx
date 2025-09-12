@@ -1,6 +1,6 @@
 import { http, HttpResponse } from "msw";
 import { server } from "@/__mocks__/server";
-import { render, screen, waitFor } from "@/__tests__/utils/test-utils";
+import { render, screen, waitFor, act } from "@/__tests__/utils/test-utils";
 import userEvent from "@testing-library/user-event";
 import { LoginPage } from "@/components/auth/pages/LoginPage";
 import { AppProvider } from "@/contexts/AppContext";
@@ -57,9 +57,11 @@ describe("Auth API Integration", () => {
       );
 
       // 사용자 입력 시뮬레이션
-      await user.type(screen.getByLabelText("아이디"), "testuser");
-      await user.type(screen.getByLabelText("비밀번호"), "password123");
-      await user.click(screen.getByRole("button", { name: /로그인하기/i }));
+      await act(async () => {
+        await user.type(screen.getByLabelText("아이디"), "testuser");
+        await user.type(screen.getByLabelText("비밀번호"), "password123");
+        await user.click(screen.getByRole("button", { name: /로그인하기/i }));
+      });
 
       // NextAuth signIn 호출 검증
       await waitFor(() => {
@@ -87,9 +89,11 @@ describe("Auth API Integration", () => {
         </AppProvider>
       );
 
-      await user.type(screen.getByLabelText("아이디"), "wronguser");
-      await user.type(screen.getByLabelText("비밀번호"), "wrongpass");
-      await user.click(screen.getByRole("button", { name: /로그인하기/i }));
+      await act(async () => {
+        await user.type(screen.getByLabelText("아이디"), "wronguser");
+        await user.type(screen.getByLabelText("비밀번호"), "wrongpass");
+        await user.click(screen.getByRole("button", { name: /로그인하기/i }));
+      });
 
       // 에러 메시지 표시 검증
       await waitFor(() => {
@@ -122,7 +126,9 @@ describe("Auth API Integration", () => {
         </div>
       );
 
-      await user.click(screen.getByTestId("logout-button"));
+      await act(async () => {
+        await user.click(screen.getByTestId("logout-button"));
+      });
 
       // NextAuth signOut 호출 검증
       await waitFor(() => {

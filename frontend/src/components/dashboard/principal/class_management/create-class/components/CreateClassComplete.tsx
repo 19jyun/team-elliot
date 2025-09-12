@@ -1,19 +1,19 @@
 'use client';
 
 import React from 'react';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 import { StatusStep } from './StatusStep';
 import { CompleteIcon } from '@/components/icons';
 
 export function CreateClassComplete() {
   const { form, goBack } = useApp();
   const { createClass } = form;
-  const { resetCreateClass } = form;
-  const { classFormData } = createClass;
+  const { reset } = createClass;
+  const { classFormData } = createClass.state;
 
   const handleFinish = () => {
     // 상태 초기화 후 메인으로 돌아가기
-    resetCreateClass();
+    reset();
     goBack();
   };
 

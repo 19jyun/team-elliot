@@ -7,8 +7,18 @@ interface EnrollmentFormContextType {
   // 상태
   state: EnrollmentFormState;
   
+  // 편의 속성들 (하위 호환성)
+  currentStep: EnrollmentStep;
+  selectedMonth: number | null;
+  selectedClasses: ClassesWithSessionsByMonthResponse[];
+  selectedSessions: SessionData[];
+  selectedClassIds: number[];
+  selectedAcademyId: number | null;
+  selectedClassesWithSessions: ClassesWithSessionsByMonthResponse[];
+  
   // 단계 관리
   setCurrentStep: (step: EnrollmentStep) => void;
+  setEnrollmentStep: (step: EnrollmentStep) => void; // 하위 호환성
   
   // 데이터 관리
   setSelectedMonth: (month: number) => void;
@@ -25,6 +35,7 @@ interface EnrollmentFormContextType {
   
   // 초기화
   reset: () => void;
+  resetEnrollment: () => void; // 하위 호환성
 }
 
 const EnrollmentFormContext = createContext<EnrollmentFormContextType | undefined>(undefined);
@@ -114,7 +125,16 @@ export const EnrollmentFormProvider: React.FC<EnrollmentFormProviderProps> = ({ 
 
   const value: EnrollmentFormContextType = {
     state,
+    // 편의 속성들 (하위 호환성)
+    currentStep: state.currentStep,
+    selectedMonth: state.selectedMonth,
+    selectedClasses: state.selectedClasses,
+    selectedSessions: state.selectedSessions,
+    selectedClassIds: state.selectedClassIds,
+    selectedAcademyId: state.selectedAcademyId,
+    selectedClassesWithSessions: state.selectedClassesWithSessions,
     setCurrentStep,
+    setEnrollmentStep: setCurrentStep, // 하위 호환성
     setSelectedMonth,
     setSelectedClasses,
     setSelectedSessions,
@@ -125,6 +145,7 @@ export const EnrollmentFormProvider: React.FC<EnrollmentFormProviderProps> = ({ 
     validateCurrentStep,
     canProceedToNextStep,
     reset,
+    resetEnrollment: reset, // 하위 호환성
   };
 
   return (
