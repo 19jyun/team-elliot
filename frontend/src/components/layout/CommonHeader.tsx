@@ -5,8 +5,8 @@ import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import { ArrowLeft } from 'lucide-react';
 
-import { useApp } from '@/contexts';
-import { PersonManagementForm } from '@/contexts/types';
+import { useApp } from '@/contexts/legacy';
+import { PersonManagementForm } from '@/contexts/legacy/types';
 
 export function CommonHeader() {
   const { data: session } = useSession();
@@ -33,7 +33,8 @@ export function CommonHeader() {
   } else if (userRole === 'TEACHER') {
     navigationItems = [
       { label: '수업', value: 0 },
-      { label: '프로필', value: 1 }
+      { label: '수업 관리', value: 1 },
+      { label: '프로필', value: 2 }
     ];
     activeTab = navigation.activeTab;
     handleTabChange = navigation.handleTabChange;
@@ -41,7 +42,8 @@ export function CommonHeader() {
     navigationItems = [
       { label: '수업', value: 0 },
       { label: '인원관리', value: 1 },
-      { label: '프로필', value: 2 }
+      { label: '학원 관리', value: 2 },
+      { label: '프로필', value: 3 }
     ];
     activeTab = navigation.activeTab;
     handleTabChange = navigation.handleTabChange;
