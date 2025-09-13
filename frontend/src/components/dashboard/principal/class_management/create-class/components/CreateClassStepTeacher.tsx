@@ -17,9 +17,9 @@ interface Teacher {
 }
 
 export function CreateClassStepTeacher() {
-  const { form, goBack } = useImprovedApp();
+  const { form, goBack, setCreateClassStep, setSelectedTeacherId } = useImprovedApp();
   const { createClass } = form;
-  const { setCurrentStep, setSelectedTeacherId, selectedTeacherId } = createClass;
+  const { selectedTeacherId } = createClass;
   
   const [selectedTeacher, setSelectedTeacher] = useState<number | null>(selectedTeacherId);
 
@@ -49,7 +49,7 @@ export function CreateClassStepTeacher() {
     // DashboardContext의 selectedTeacherId 업데이트
     setSelectedTeacherId(selectedTeacher);
     
-    setCurrentStep('schedule');
+    setCreateClassStep('schedule');
   };
 
   const handleBack = () => {

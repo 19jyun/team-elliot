@@ -11,9 +11,9 @@ import type { PrincipalEnrollment } from '@/types/api/principal';
 import type { PrincipalSessionListForRequestsVM } from '@/types/view/principal';
 
 export function PrincipalSessionList() {
-  const { form } = useImprovedApp();
+  const { form, setPrincipalSelectedSessionId, setPrincipalPersonManagementStep } = useImprovedApp();
   const { principalPersonManagement } = form;
-  const { selectedTab, selectedClassId, setSelectedSessionId, setCurrentStep } = principalPersonManagement;
+  const { selectedTab, selectedClassId } = principalPersonManagement;
 
   // Redux store에서 데이터 가져오기
   const { 
@@ -22,6 +22,7 @@ export function PrincipalSessionList() {
     isLoading, 
     error 
   } = usePrincipalData();
+
 
   // ViewModel 생성
   const sessionListVM: PrincipalSessionListForRequestsVM = toPrincipalSessionListForRequestsVM({
@@ -34,8 +35,8 @@ export function PrincipalSessionList() {
   });
 
   const handleSessionClick = (sessionId: number) => {
-    setSelectedSessionId(sessionId);
-    setCurrentStep('request-detail');
+    setPrincipalSelectedSessionId(sessionId);
+    setPrincipalPersonManagementStep('request-detail');
   };
 
   const formatDate = (dateString: string) => {

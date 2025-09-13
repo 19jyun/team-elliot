@@ -1,14 +1,14 @@
 // src/contexts/ImprovedAppContext.tsx
 'use client';
 
-import React, { createContext, useContext, useCallback, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, useCallback, ReactNode, useMemo, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { StateSyncProvider, useStateSync } from './state/StateSyncContext';
 import { ImprovedNavigationProvider, useImprovedNavigation } from './navigation/ImprovedNavigationContext';
 import { ImprovedFormsProvider, useImprovedForms } from './forms/ImprovedFormsContext';
 import { UIContextProvider, useUI } from './UIContext';
 import { DataContextProvider, useData } from './DataContext';
-import { GlobalState, NavigationState, FormsState, UIState, DataState } from './state/StateSyncTypes';
+import { FormsState } from './state/StateSyncTypes';
 import { EnrollmentStep } from './forms/EnrollmentFormManager';
 import { CreateClassStep } from './forms/CreateClassFormManager';
 import { AuthMode, SignupStep } from './forms/AuthFormManager';
@@ -57,6 +57,7 @@ interface ImprovedAppContextType {
   handleTabChange: (tab: number) => void;
   navigateToSubPage: (page: string) => void;
   clearSubPage: () => void;
+  clearHistory: () => void;
   
   // 하위 호환성을 위한 폼 접근
   form: {
@@ -114,6 +115,18 @@ interface ImprovedAppContextType {
   setSelectedRequestId: (requestId: number | null) => void;
   setSelectedRequestType: (requestType: 'enrollment' | 'refund' | null) => void;
   resetPersonManagement: () => void;
+  
+  // Principal 인원 관리 관련
+  setPrincipalPersonManagementStep: (step: PrincipalPersonManagementStep) => void;
+  setPrincipalPersonManagementTab: (tab: 'enrollment' | 'refund') => void;
+  setPrincipalSelectedClassId: (classId: number | null) => void;
+  setPrincipalSelectedSessionId: (sessionId: number | null) => void;
+  setPrincipalSelectedRequestId: (requestId: number | null) => void;
+  setPrincipalSelectedRequestType: (requestType: 'enrollment' | 'refund' | null) => void;
+  resetPrincipalPersonManagement: () => void;
+  
+  // 탭 전환 시 초기화 메소드
+  switchPrincipalPersonManagementTab: (tab: 'enrollment' | 'refund') => void;
 }
 
 const ImprovedAppContext = createContext<ImprovedAppContextType | undefined>(undefined);
@@ -166,6 +179,31 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     return forms.getFormState(formType);
   }, [forms]);
 
+  // 브라우저 뒤로가기 버튼 처리 (통합된 goBack 사용)
+  useEffect(() => {
+    const handleBrowserBackButton = async (event: PopStateEvent) => {
+      event.preventDefault();
+      
+      // 통합된 goBack 사용 (ImprovedGoBackManager를 통해 단계별 로직 처리)
+      const success = await goBack();
+      
+      // 뒤로갈 수 없으면 히스토리에 현재 상태 추가
+      if (!success) {
+        window.history.pushState(null, '', window.location.href);
+      }
+    };
+
+    // 브라우저 뒤로가기 버튼 리스너
+    window.addEventListener('popstate', handleBrowserBackButton);
+    
+    // 초기 상태를 히스토리에 추가
+    window.history.pushState(null, '', window.location.href);
+    
+    return () => {
+      window.removeEventListener('popstate', handleBrowserBackButton);
+    };
+  }, [goBack]);
+
   // 메모이제이션된 value 객체
   const contextValue = useMemo(() => ({
     // 새로운 구조
@@ -195,6 +233,7 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     handleTabChange: navigation.handleTabChange,
     navigateToSubPage: navigation.navigateToSubPage,
     clearSubPage: navigation.clearSubPage,
+    clearHistory: navigation.clearHistory,
     
     // 하위 호환성을 위한 폼 접근
     form: {
@@ -252,6 +291,20 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     setSelectedRequestId: (requestId: number | null) => forms.setPersonManagementData({ selectedRequestId: requestId }),
     setSelectedRequestType: (requestType: 'enrollment' | 'refund' | null) => forms.setPersonManagementData({ selectedRequestType: requestType }),
     resetPersonManagement: forms.resetPersonManagement,
+    
+    // Principal 인원 관리 관련
+    setPrincipalPersonManagementStep: forms.setPrincipalPersonManagementStep,
+    setPrincipalPersonManagementTab: (tab: 'enrollment' | 'refund') => forms.setPrincipalPersonManagementData({ selectedTab: tab }),
+    setPrincipalSelectedClassId: (classId: number | null) => forms.setPrincipalPersonManagementData({ selectedClassId: classId }),
+    setPrincipalSelectedSessionId: (sessionId: number | null) => forms.setPrincipalPersonManagementData({ selectedSessionId: sessionId }),
+    setPrincipalSelectedRequestId: (requestId: number | null) => forms.setPrincipalPersonManagementData({ selectedRequestId: requestId }),
+    setPrincipalSelectedRequestType: (requestType: 'enrollment' | 'refund' | null) => forms.setPrincipalPersonManagementData({ selectedRequestType: requestType }),
+    resetPrincipalPersonManagement: forms.resetPrincipalPersonManagement,
+    
+    // 탭 전환 시 초기화 메소드
+    switchPrincipalPersonManagementTab: (tab: 'enrollment' | 'refund') => {
+      forms.switchPrincipalPersonManagementTab(tab);
+    },
   }), [
     navigation, forms, ui, data, session, stateSync,
     goBack, updateForm, resetAllForms, getFormState

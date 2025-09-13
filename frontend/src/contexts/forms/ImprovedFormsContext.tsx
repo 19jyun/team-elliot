@@ -63,6 +63,7 @@ interface ImprovedFormsContextType {
   setPrincipalPersonManagementStep: (step: PrincipalPersonManagementStep) => void;
   setPrincipalPersonManagementData: (data: Partial<PrincipalPersonManagementFormState>) => void;
   resetPrincipalPersonManagement: () => void;
+  switchPrincipalPersonManagementTab: (tab: 'enrollment' | 'refund') => void;
   
   // 전체 폼 관리
   resetAllForms: () => void;
@@ -298,6 +299,10 @@ export const ImprovedFormsProvider: React.FC<ImprovedFormsProviderProps> = ({ ch
     principalPersonManagementManager.reset();
   }, [principalPersonManagementManager]);
 
+  const switchPrincipalPersonManagementTab = useCallback((tab: 'enrollment' | 'refund') => {
+    principalPersonManagementManager.switchTab(tab);
+  }, [principalPersonManagementManager]);
+
   const resetAllForms = useCallback(() => {
     enrollmentManager.reset();
     createClassManager.reset();
@@ -339,6 +344,7 @@ export const ImprovedFormsProvider: React.FC<ImprovedFormsProviderProps> = ({ ch
     setPrincipalPersonManagementStep,
     setPrincipalPersonManagementData,
     resetPrincipalPersonManagement,
+    switchPrincipalPersonManagementTab,
     resetAllForms,
     getFormState,
   };

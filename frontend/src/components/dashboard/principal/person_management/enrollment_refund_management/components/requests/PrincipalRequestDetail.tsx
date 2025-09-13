@@ -35,6 +35,7 @@ export function PrincipalRequestDetail() {
   const { 
     getSessionEnrollments, 
     getSessionRefundRequests, 
+    refundRequests,
     isLoading,
     error 
   } = usePrincipalData();
@@ -45,6 +46,7 @@ export function PrincipalRequestDetail() {
       ? (getSessionEnrollments(selectedSessionId) as unknown as PrincipalEnrollment[])
       : getSessionRefundRequests(selectedSessionId)
     : [];
+
 
   // ViewModel 생성
   const requestDetailVM: PrincipalRequestDetailVM = toPrincipalRequestDetailVM({

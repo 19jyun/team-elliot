@@ -4,20 +4,12 @@ import React from 'react';
 import { useImprovedApp } from '@/contexts/ImprovedAppContext';
 
 export function EnrollmentRefundManagementTabs() {
-  const { form } = useImprovedApp();
+  const { form, switchPrincipalPersonManagementTab } = useImprovedApp();
   const { principalPersonManagement } = form;
-  const { selectedTab, setSelectedTab, setCurrentStep, setSelectedSessionId, setSelectedRequestId, setSelectedRequestType, setSelectedClassId } = principalPersonManagement;
+  const { selectedTab } = principalPersonManagement;
 
   const handleTabClick = (tab: 'enrollment' | 'refund') => {
-    // 탭 변경 시 컨텍스트 초기화
-    setSelectedClassId(null);
-    setSelectedSessionId(null);
-    setSelectedRequestId(null);
-    setSelectedRequestType(null);
-    
-    // 탭과 단계 설정
-    setSelectedTab(tab);
-    setCurrentStep('class-list');
+    switchPrincipalPersonManagementTab(tab);
   };
 
   return (

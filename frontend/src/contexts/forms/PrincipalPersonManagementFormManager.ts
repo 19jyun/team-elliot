@@ -69,6 +69,40 @@ export class PrincipalPersonManagementFormManager {
     this.notifyListeners();
   }
 
+  // 탭 전환 시 초기화 메소드
+  switchTab(tab: "enrollment" | "refund"): void {
+    this.state = {
+      currentStep: "class-list",
+      selectedTab: tab,
+      selectedClassId: null,
+      selectedSessionId: null,
+      selectedRequestId: null,
+      selectedRequestType: null,
+    };
+    this.emitStateChange();
+    this.notifyListeners();
+  }
+
+  // 단계별 초기화 메소드들
+  resetToClassList(): void {
+    this.state.currentStep = "class-list";
+    this.state.selectedClassId = null;
+    this.state.selectedSessionId = null;
+    this.state.selectedRequestId = null;
+    this.state.selectedRequestType = null;
+    this.emitStateChange();
+    this.notifyListeners();
+  }
+
+  resetToSessionList(): void {
+    this.state.currentStep = "session-list";
+    this.state.selectedSessionId = null;
+    this.state.selectedRequestId = null;
+    this.state.selectedRequestType = null;
+    this.emitStateChange();
+    this.notifyListeners();
+  }
+
   reset(): void {
     this.state = this.getInitialState();
     this.emitStateChange();

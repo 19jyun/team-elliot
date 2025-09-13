@@ -6,15 +6,16 @@ import { StatusStep } from './StatusStep';
 import { CompleteIcon } from '@/components/icons';
 
 export function CreateClassComplete() {
-  const { form, goBack } = useImprovedApp();
+  const { form, goBack, resetCreateClass, clearSubPage, clearHistory } = useImprovedApp();
   const { createClass } = form;
-  const { reset } = createClass;
-  const { classFormData } = createClass.state;
+  const { classFormData } = createClass;
 
   const handleFinish = () => {
-    // 상태 초기화 후 메인으로 돌아가기
-    reset();
-    goBack();
+    resetCreateClass();
+
+    clearHistory();
+
+    clearSubPage();
   };
 
   const statusSteps = [

@@ -14,9 +14,9 @@ const LEVELS = [
 ];
 
 export function CreateClassStepInfo() {
-  const { form, goBack } = useImprovedApp();
+  const { form, goBack, setClassFormData, setCreateClassStep } = useImprovedApp();
   const { createClass } = form;
-  const { setClassFormData, setCurrentStep, classFormData } = createClass;
+  const { classFormData } = createClass;
   
   // API 기반 데이터 관리
   const { academy, loadAcademy, isLoading: isAcademyLoading } = usePrincipalApi();
@@ -84,7 +84,7 @@ export function CreateClassStepInfo() {
       maxStudents: formData.maxStudents,
       price: formData.price,
     });
-    setCurrentStep('teacher');
+    setCreateClassStep('teacher');
   };
 
   const handleBack = () => {

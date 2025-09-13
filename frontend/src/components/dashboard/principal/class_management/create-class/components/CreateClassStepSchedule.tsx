@@ -19,10 +19,9 @@ const DAYS_OF_WEEK = [
 ];
 
 export function CreateClassStepSchedule() {
-  const { form } = useImprovedApp();
+  const { form, setClassFormData, setCreateClassStep } = useImprovedApp();
   const { createClass } = form;
-  const { setClassFormData, setCurrentStep } = createClass;
-  const { classFormData } = createClass.state;
+  const { classFormData } = createClass;
 
   const [formData, setFormData] = useState({
     days: classFormData.schedule.days || [],
@@ -123,11 +122,11 @@ export function CreateClassStepSchedule() {
         endDate: formData.endDate,
       },
     });
-    setCurrentStep('content');
+    setCreateClassStep('content');
   };
 
   const handleBack = () => {
-    setCurrentStep('teacher');
+    setCreateClassStep('teacher');
   };
 
   const statusSteps = [

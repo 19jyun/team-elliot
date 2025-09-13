@@ -123,9 +123,28 @@ export const ImprovedNavigationProvider: React.FC<ImprovedNavigationProviderProp
           'cancellation-history'
         ].includes(page) || page.startsWith('modify-');
       case 'TEACHER':
-        return ['my-classes', 'class-management', 'my-info'].includes(page);
+        return [
+          'my-classes', 
+          'class-management', 
+          'my-info',
+          'profile',
+          'personal-info',
+          'academy-management',
+          'teacher-classes'
+        ].includes(page);
       case 'PRINCIPAL':
-        return ['class-management', 'person-management', 'academy-management', 'my-info', 'create-class'].includes(page);
+        return [
+          'class-management', 
+          'person-management', 
+          'academy-management', 
+          'my-info', 
+          'create-class',
+          'profile',
+          'personal-info',
+          'bank-info',
+          'enrollment-refund-management',
+          'teacher-student-management'
+        ].includes(page);
       default:
         return false;
     }
@@ -443,32 +462,7 @@ export const ImprovedNavigationProvider: React.FC<ImprovedNavigationProviderProp
     }
   }, [goBack]);
 
-  // 브라우저 뒤로가기 버튼 처리 (고급 시스템)
-  useEffect(() => {
-    const handleBrowserBackButton = async (event: PopStateEvent) => {
-      event.preventDefault();
-      
-      // formsState가 있으면 goBackWithForms 사용, 없으면 goBack 사용
-      const success = formsState 
-        ? await goBackWithForms(formsState)
-        : await goBack();
-      
-      // 뒤로갈 수 없으면 히스토리에 현재 상태 추가
-      if (!success) {
-        window.history.pushState(null, '', window.location.href);
-      }
-    };
-
-    // 브라우저 뒤로가기 버튼 리스너
-    window.addEventListener('popstate', handleBrowserBackButton);
-    
-    // 초기 상태를 히스토리에 추가
-    window.history.pushState(null, '', window.location.href);
-    
-    return () => {
-      window.removeEventListener('popstate', handleBrowserBackButton);
-    };
-  }, [goBack, goBackWithForms, formsState]);
+  // 브라우저 뒤로가기 처리는 ImprovedAppContext에서 담당
 
   const value: ImprovedNavigationContextType = {
     activeTab,

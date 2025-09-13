@@ -10,9 +10,9 @@ import type { PrincipalClassListForRequestsVM } from '@/types/view/principal';
 
 
 export function PrincipalClassList() {
-  const { form } = useImprovedApp();
+  const { form, setPrincipalSelectedClassId, setPrincipalPersonManagementStep } = useImprovedApp();
   const { principalPersonManagement } = form;
-  const { selectedTab, setSelectedClassId, setCurrentStep } = principalPersonManagement;
+  const { selectedTab } = principalPersonManagement;
 
   // Redux store에서 데이터 가져오기
   const {
@@ -21,6 +21,7 @@ export function PrincipalClassList() {
     isLoading,
     error
   } = usePrincipalData();
+
 
   // ViewModel 생성
   const classListVM: PrincipalClassListForRequestsVM = toPrincipalClassListForRequestsVM({
@@ -32,8 +33,8 @@ export function PrincipalClassList() {
   });
 
   const handleClassClick = (classId: number) => {
-    setSelectedClassId(classId);
-    setCurrentStep('session-list');
+    setPrincipalSelectedClassId(classId);
+    setPrincipalPersonManagementStep('session-list');
   };
 
   if (classListVM.isLoading) {

@@ -185,6 +185,7 @@ export class ImprovedGoBackManager {
       case "auth":
         return await this.handleAuthGoBack(context, formsState);
       case "person-management":
+      case "enrollment-refund-management":
         return await this.handlePersonManagementGoBack(context, formsState);
       case "modify":
         return await this.handleModifyGoBack(context, formsState);
@@ -232,12 +233,12 @@ export class ImprovedGoBackManager {
       };
     }
 
-    // 수정 폼의 단계 순서 (enrollment와 동일)
+    // 수정 폼의 단계 순서 (enrollment modification 실제 단계)
     const modificationStepOrder = [
-      "academy-selection",
-      "class-selection",
       "date-selection",
       "payment",
+      "refund-request",
+      "refund-complete",
       "complete",
     ];
     const currentIndex = modificationStepOrder.indexOf(enrollment.currentStep);
@@ -504,35 +505,50 @@ export class ImprovedGoBackManager {
         },
       });
 
+      // 이전 단계로 돌아갈 때 관련 선택 상태 초기화
+      const updatedFormState = {
+        ...(formsState as any)[formType],
+        currentStep: previousStep,
+        // 단계별 초기화
+        ...(previousStep === "class-list" && {
+          selectedClassId: null,
+          selectedSessionId: null,
+          selectedRequestId: null,
+          selectedRequestType: null,
+        }),
+        ...(previousStep === "session-list" && {
+          selectedSessionId: null,
+          selectedRequestId: null,
+          selectedRequestType: null,
+        }),
+      };
+
       // 실제 폼 상태 업데이트
       this.stateSync.publish("forms", {
         ...formsState,
-        [formType]: {
-          ...(formsState as any)[formType],
-          currentStep: previousStep,
-        },
+        [formType]: updatedFormState,
       });
 
-      return {
+      const result = {
         success: true,
-        action: "step-back",
+        action: "step-back" as const,
         data: {
           formType,
           step: previousStep,
-          // 단계별 상태 초기화
-          ...(previousStep === "session-list"
-            ? { clearRequestSelection: true }
-            : {}),
-          ...(previousStep === "class-list"
-            ? { clearSessionSelection: true }
-            : {}),
+          // 단계별 초기화 플래그
+          ...(previousStep === "class-list" && { clearAllSelections: true }),
+          ...(previousStep === "session-list" && {
+            clearSessionAndRequestSelections: true,
+          }),
         },
         message: `Person Management: ${personManagement.currentStep} → ${previousStep}`,
       };
+
+      return result;
     } else {
       return {
         success: true,
-        action: "close",
+        action: "close" as const,
         data: { subPage: null },
         message: "Person Management first step - closing subpage",
       };
