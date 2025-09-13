@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle } from 'lucide-react';
-import { useApp } from '@/contexts';
+import { useImprovedApp } from '@/contexts/ImprovedAppContext';
 
 interface WithdrawalConfirmModalProps {
   isOpen: boolean;
@@ -18,7 +18,7 @@ export function WithdrawalConfirmModal({
   onConfirm, 
   withdrawalType = 'leave' 
 }: WithdrawalConfirmModalProps) {
-  const { ui } = useApp();
+  const { ui } = useImprovedApp();
   const { pushFocus, popFocus } = ui;
 
   useEffect(() => {

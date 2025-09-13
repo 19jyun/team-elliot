@@ -1,10 +1,10 @@
 'use client'
 import React from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useImprovedApp } from '@/contexts/ImprovedAppContext';
 import { CompleteIcon } from '@/components/icons';
 
 export function EnrollmentCompleteStep() {
-  const { navigation, resetEnrollment } = useApp();
+  const { navigation, resetEnrollment } = useImprovedApp();
   const { clearSubPage } = navigation;
 
   const handleConfirm = () => {

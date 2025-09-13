@@ -6,13 +6,13 @@ import { Card, CardContent} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Calendar, Clock, BookOpen, CheckCircle, XCircle, AlertCircle, Clock as ClockIcon, DollarSign } from 'lucide-react';
-import { useApp } from '@/contexts';
+import { useImprovedApp } from '@/contexts/ImprovedAppContext';
 import { useStudentData } from '@/hooks/redux/useStudentData';
 import { toStudentCancellationHistoryVMs } from '@/lib/adapters/student';
 import type { StudentCancellationHistoryVM } from '@/types/view/student';
 
 export function CancellationHistory() {
-  const { ui } = useApp();
+  const { ui } = useImprovedApp();
   const { pushFocus, popFocus } = ui;
   const { cancellationHistory, isLoading, error } = useStudentData();
   const [selectedFilter, setSelectedFilter] = useState<string>('ALL');

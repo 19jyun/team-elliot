@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useImprovedApp } from '@/contexts/ImprovedAppContext';
 import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
 import { Badge } from '@/components/ui/badge';
 import { toPrincipalClassListForRequestsVM } from '@/lib/adapters/principal';
@@ -10,7 +10,7 @@ import type { PrincipalClassListForRequestsVM } from '@/types/view/principal';
 
 
 export function PrincipalClassList() {
-  const { form } = useApp();
+  const { form } = useImprovedApp();
   const { principalPersonManagement } = form;
   const { selectedTab, setSelectedClassId, setCurrentStep } = principalPersonManagement;
 

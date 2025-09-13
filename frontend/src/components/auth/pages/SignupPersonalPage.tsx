@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
-import { useApp } from '@/contexts'
+import { useImprovedApp } from '@/contexts/ImprovedAppContext'
 
 interface InputFieldProps {
   label: string
@@ -140,7 +140,7 @@ const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
 )
 
 export function SignupPersonalPage() {
-  const { form } = useApp()
+  const { form } = useImprovedApp()
   const { setSignupStep } = form.auth
   const [currentStep] = useState(2)
   const [formData, setFormData] = useState({

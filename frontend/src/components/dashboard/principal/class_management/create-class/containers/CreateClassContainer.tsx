@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useImprovedApp } from '@/contexts/ImprovedAppContext';
 import { CreateClassStepInfo } from '../components/CreateClassStepInfo';
 import { CreateClassStepTeacher } from '../components/CreateClassStepTeacher';
 import { CreateClassStepSchedule } from '../components/CreateClassStepSchedule';
@@ -9,7 +9,7 @@ import { CreateClassStepDetail } from '../components/CreateClassStepDetail';
 import { CreateClassComplete } from '../components/CreateClassComplete';
 
 export function CreateClassContainer() {
-  const { form } = useApp();
+  const { form } = useImprovedApp();
   const { createClass } = form;
   const { currentStep } = createClass;
 

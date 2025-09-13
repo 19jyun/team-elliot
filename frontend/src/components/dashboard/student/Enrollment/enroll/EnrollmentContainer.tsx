@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useImprovedApp } from '@/contexts/ImprovedAppContext';
 import { EnrollmentAcademyStep } from './EnrollmentAcademyStep';
 import { EnrollmentClassStep } from './EnrollmentClassStep';
 import { EnrollmentDateStep } from './EnrollmentDateStep';
@@ -9,7 +9,7 @@ import { EnrollmentPaymentStep } from './EnrollmentPaymentStep';
 import { EnrollmentCompleteStep } from './EnrollmentCompleteStep';
 
 export function EnrollmentContainer() {
-  const { form } = useApp();
+  const { form } = useImprovedApp();
   const { enrollment } = form;
   const { currentStep } = enrollment;
 

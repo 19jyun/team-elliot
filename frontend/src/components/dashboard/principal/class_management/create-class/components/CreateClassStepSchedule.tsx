@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useImprovedApp } from '@/contexts/ImprovedAppContext';
 import { StatusStep } from './StatusStep';
 import { toast } from 'sonner';
 import TimePicker from '@/components/common/WheelPicker/TimePicker';
@@ -19,7 +19,7 @@ const DAYS_OF_WEEK = [
 ];
 
 export function CreateClassStepSchedule() {
-  const { form } = useApp();
+  const { form } = useImprovedApp();
   const { createClass } = form;
   const { setClassFormData, setCurrentStep } = createClass;
   const { classFormData } = createClass.state;

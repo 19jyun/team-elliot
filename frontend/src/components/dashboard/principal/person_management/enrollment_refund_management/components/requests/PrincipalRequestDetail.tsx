@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useImprovedApp } from '@/contexts/ImprovedAppContext';
 import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { PrincipalRequestCard } from './PrincipalRequestCard';
@@ -15,7 +15,7 @@ import type { PrincipalEnrollment } from '@/types/api/principal';
 import type { PrincipalRequestDetailVM } from '@/types/view/principal';
 
 export function PrincipalRequestDetail() {
-  const { form } = useApp();
+  const { form } = useImprovedApp();
   const { principalPersonManagement } = form;
   const { selectedTab, selectedSessionId } = principalPersonManagement;
   const [showRejectionModal, setShowRejectionModal] = useState(false);

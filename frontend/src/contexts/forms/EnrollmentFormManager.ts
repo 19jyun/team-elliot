@@ -2,7 +2,6 @@
 import { ContextEventBus } from "../events/ContextEventBus";
 
 export type EnrollmentStep =
-  | "main"
   | "academy-selection"
   | "class-selection"
   | "date-selection"
@@ -191,7 +190,7 @@ export class EnrollmentFormManager {
   // 내부 구현 (캡슐화됨)
   private getInitialState(): EnrollmentFormState {
     return {
-      currentStep: "main",
+      currentStep: "academy-selection",
       selectedMonth: null,
       selectedClasses: [],
       selectedSessions: [],
@@ -203,7 +202,6 @@ export class EnrollmentFormManager {
 
   private canNavigateToStep(step: EnrollmentStep): boolean {
     const stepOrder: EnrollmentStep[] = [
-      "main",
       "academy-selection",
       "class-selection",
       "date-selection",

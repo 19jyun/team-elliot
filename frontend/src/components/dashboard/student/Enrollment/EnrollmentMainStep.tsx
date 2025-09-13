@@ -3,11 +3,11 @@
 import React from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useApp } from '@/contexts/AppContext';
+import { useImprovedApp } from '@/contexts/ImprovedAppContext';
 
 export function EnrollmentMainStep() {
   const router = useRouter();
-  const { navigation, setEnrollmentStep } = useApp();
+  const { navigation, setEnrollmentStep } = useImprovedApp();
   const { navigateToSubPage } = navigation;
   const { status } = useSession({
     required: true,

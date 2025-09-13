@@ -5,7 +5,7 @@ import { CalendarProvider } from '@/contexts/CalendarContext'
 import DateSelectFooter from '@/components/features/student/enrollment/month/date/DateSelectFooter'
 import { useState } from 'react'
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep'
-import { useApp } from '@/contexts/AppContext'
+import { useImprovedApp } from '@/contexts/ImprovedAppContext'
 import { useEnrollmentCalculation } from '@/hooks/useEnrollmentCalculation'
 import { useStudentApi } from '@/hooks/student/useStudentApi'
 import type { ClassSessionForModification } from '@/types/api/class'
@@ -17,7 +17,7 @@ export function EnrollmentModificationDateStep({
   existingEnrollments, 
   onComplete 
 }: EnrollmentModificationDateStepVM) {
-  const { setSelectedSessions } = useApp()
+  const { setSelectedSessions } = useImprovedApp()
   const { loadModificationSessions } = useStudentApi();
   const [selectedCount, setSelectedCount] = useState(0);
   const [selectedClasses, setSelectedClasses] = useState<Array<{ id: number; sessions: ClassSessionForModification[] }>>([]);

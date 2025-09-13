@@ -1,9 +1,14 @@
-// src/contexts/NavigationContext.tsx
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+// src/contexts/navigation/ImprovedNavigationContext.tsx
+'use client';
+
+import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { useSession } from 'next-auth/react';
-import { VirtualHistoryManager, GoBackManager, GoBackContext, GoBackResult } from './navigation';
-import { contextEventBus } from './events/ContextEventBus';
-import { NavigationItem, NavigationHistoryItem } from './types/NavigationTypes';
+import { VirtualHistoryManager } from './index';
+import { ImprovedGoBackManager } from './ImprovedGoBackManager';
+import { contextEventBus } from '../events/ContextEventBus';
+import { NavigationItem, NavigationHistoryItem } from '../types/NavigationTypes';
+import { useStateSync } from '../state/StateSyncContext';
+import { NavigationState, FormsState } from '../state/StateSyncTypes';
 
 export const STUDENT_NAVIGATION_ITEMS: NavigationItem[] = [
   { label: "클래스 정보", href: "/dashboard", index: 0 },
@@ -24,9 +29,7 @@ export const PRINCIPAL_NAVIGATION_ITEMS: NavigationItem[] = [
   { label: "나의 정보", href: "/dashboard", index: 3 },
 ];
 
-// NavigationHistoryItem는 types/NavigationTypes에서 import됨
-
-interface NavigationContextType {
+interface ImprovedNavigationContextType {
   // 상태
   activeTab: number;
   subPage: string | null;
@@ -45,8 +48,9 @@ interface NavigationContextType {
   navigateToSubPage: (page: string) => void;
   clearSubPage: () => void;
   
-  // 통합된 goBack (VirtualHistoryManager + GoBackManager 사용)
+  // 통합된 goBack (ImprovedGoBackManager 사용)
   goBack: () => Promise<boolean>;
+  goBackWithForms: (formsState: FormsState) => Promise<boolean>;
   
   // 히스토리 관리
   pushHistory: (item: NavigationHistoryItem) => void;
@@ -57,29 +61,28 @@ interface NavigationContextType {
   canAccessSubPage: (page: string) => boolean;
 }
 
-const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
+const ImprovedNavigationContext = createContext<ImprovedNavigationContextType | undefined>(undefined);
 
-export const useNavigation = (): NavigationContextType => {
-  const context = useContext(NavigationContext);
+export const useImprovedNavigation = (): ImprovedNavigationContextType => {
+  const context = useContext(ImprovedNavigationContext);
   if (!context) {
-    throw new Error('useNavigation must be used within a NavigationProvider');
+    throw new Error('useImprovedNavigation must be used within an ImprovedNavigationProvider');
   }
   return context;
 };
 
-// NavigationHistoryItem 타입 export
-export type { NavigationHistoryItem };
-
-interface NavigationProviderProps {
-  children: React.ReactNode;
+interface ImprovedNavigationProviderProps {
+  children: ReactNode;
+  formsState?: FormsState;
 }
 
-export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children }) => {
+export const ImprovedNavigationProvider: React.FC<ImprovedNavigationProviderProps> = ({ children, formsState }) => {
   const { data: session } = useSession();
   const userRole = session?.user?.role || 'STUDENT';
+  const stateSync = useStateSync();
   
   const [virtualHistory] = useState(() => new VirtualHistoryManager());
-  const [goBackManager] = useState(() => new GoBackManager(virtualHistory, contextEventBus));
+  const [goBackManager] = useState(() => new ImprovedGoBackManager(virtualHistory, contextEventBus, stateSync));
   
   const [activeTab, setActiveTabState] = useState(0);
   const [subPage, setSubPageState] = useState<string | null>(null);
@@ -111,7 +114,14 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
   const canAccessSubPage = useCallback((page: string): boolean => {
     switch (userRole) {
       case 'STUDENT':
-        return ['enrollment', 'class-info', 'my-info'].includes(page);
+        return [
+          'enroll',
+          'enrolled-classes', 
+          'academy',
+          'personal-info',
+          'enrollment-history',
+          'cancellation-history'
+        ].includes(page) || page.startsWith('modify-');
       case 'TEACHER':
         return ['my-classes', 'class-management', 'my-info'].includes(page);
       case 'PRINCIPAL':
@@ -151,6 +161,34 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
     return unsubscribe;
   }, [virtualHistory]);
 
+  // 초기 상태를 StateSync에 발행 (한 번만 실행)
+  useEffect(() => {
+    const navigationState: NavigationState = {
+      activeTab,
+      subPage,
+      canGoBack,
+      isTransitioning,
+      navigationItems: getNavigationItems(),
+      history: history,
+    };
+    
+    stateSync.publish('navigation', navigationState);
+  }, []); // 빈 의존성 배열로 한 번만 실행
+
+  // 상태 변경 시 StateSync에 발행
+  useEffect(() => {
+    const navigationState: NavigationState = {
+      activeTab,
+      subPage,
+      canGoBack,
+      isTransitioning,
+      navigationItems: getNavigationItems(),
+      history: history,
+    };
+    
+    stateSync.publish('navigation', navigationState);
+  }, [activeTab, subPage, canGoBack, isTransitioning]);
+
   // 이벤트 버스 구독
   useEffect(() => {
     const unsubscribe = contextEventBus.subscribe('formStateChanged', (data) => {
@@ -174,6 +212,17 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
     setActiveTabState(tab);
     setSubPageState(null);
     
+    // StateSync에 상태 발행
+    const navigationState: NavigationState = {
+      activeTab: tab,
+      subPage: null,
+      canGoBack: virtualHistory.getState().currentIndex > 0,
+      isTransitioning: false,
+      navigationItems: getNavigationItems(),
+      history: history,
+    };
+    stateSync.publish('navigation', navigationState);
+    
     // 히스토리에 추가
     virtualHistory.push({
       type: 'navigation',
@@ -190,7 +239,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
       subPage: null,
       activeTab: tab,
     });
-  }, [virtualHistory]);
+  }, [virtualHistory, getNavigationItems, history, stateSync]);
 
   const handleTabChange = useCallback((tab: number) => {
     if (tab === activeTab) return;
@@ -213,6 +262,17 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
     
     setSubPageState(page);
     
+    // StateSync에 상태 발행
+    const navigationState: NavigationState = {
+      activeTab,
+      subPage: page,
+      canGoBack: virtualHistory.getState().currentIndex > 0,
+      isTransitioning: false,
+      navigationItems: getNavigationItems(),
+      history: history,
+    };
+    stateSync.publish('navigation', navigationState);
+    
     // 히스토리에 추가
     virtualHistory.push({
       type: 'subpage',
@@ -229,39 +289,53 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
       subPage: page,
       activeTab,
     });
-  }, [activeTab, canAccessSubPage, userRole, virtualHistory]);
+  }, [activeTab, canAccessSubPage, userRole, virtualHistory, getNavigationItems, history, stateSync]);
 
   const clearSubPage = useCallback(() => {
     setSubPageState(null);
+    
+    // StateSync에 상태 발행
+    const navigationState: NavigationState = {
+      activeTab,
+      subPage: null,
+      canGoBack: virtualHistory.getState().currentIndex > 0,
+      isTransitioning: false,
+      navigationItems: getNavigationItems(),
+      history: history,
+    };
+    stateSync.publish('navigation', navigationState);
     
     // 이벤트 발생
     contextEventBus.emit('navigationChanged', {
       subPage: null,
       activeTab,
     });
-  }, [activeTab]);
+  }, [activeTab, virtualHistory, getNavigationItems, history, stateSync]);
 
-  const goBack = useCallback(async (): Promise<boolean> => {
+  const goBackWithForms = useCallback(async (formsState: FormsState): Promise<boolean> => {
     setIsTransitioning(true);
     
     try {
-      // GoBackContext 구성 (실제 구현에서는 다른 Context에서 가져와야 함)
-      const context: GoBackContext = {
-        subPage,
+      // StateSync를 거치지 않고 직접 상태를 전달
+      const navigationState: NavigationState = {
         activeTab,
-        formStates: {
-          // 실제 구현에서는 각 FormContext에서 가져와야 함
-          enrollment: { currentStep: 'academy-selection' },
-          createClass: { currentStep: 'info' },
-          auth: { currentStep: 'role-selection' },
-          personManagement: { currentStep: 'class-list' },
-          principalPersonManagement: { currentStep: 'class-list' },
-        },
-        history: virtualHistory.getState().entries,
-        currentHistoryIndex: virtualHistory.getState().currentIndex,
+        subPage,
+        canGoBack,
+        isTransitioning,
+        navigationItems: getNavigationItems(),
+        history: history,
       };
-
-      const result: GoBackResult = await goBackManager.executeGoBack(context);
+      
+      // formsState가 전달되지 않은 경우 기본값 사용
+      if (!formsState) {
+           if (subPage) {
+            clearSubPage();
+            return true;
+           }
+           return false;
+      }
+      
+      const result = await goBackManager.executeGoBackWithState(navigationState, formsState);
       
       if (result.success) {
         // 결과에 따라 상태 업데이트
@@ -270,9 +344,8 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
             // 가상 히스토리에서 이미 처리됨
             break;
           case "step-back":
-            // 폼 단계 뒤로가기는 각 FormContext에서 처리
-            // 여기서는 로그만 출력
-            console.log('Form step reverted:', result.data);
+            // 폼 단계 뒤로가기는 ImprovedGoBackManager에서 이미 처리됨
+            // 여기서는 추가적인 특수 처리만 수행
             break;
           case "close":
             // subPage 닫기
@@ -308,7 +381,19 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
     } finally {
       setIsTransitioning(false);
     }
-  }, [subPage, activeTab, goBackManager, virtualHistory, clearSubPage]);
+  }, [goBackManager, stateSync, clearSubPage]);
+
+  const goBack = useCallback(async (): Promise<boolean> => {
+    // formsState가 없으면 기본 뒤로가기 로직 사용
+    if (!formsState) {
+      if (subPage) {
+        clearSubPage();
+        return true;
+      }
+      return false;
+    }
+    return await goBackWithForms(formsState);
+  }, [goBackWithForms, formsState, subPage, clearSubPage]);
 
   const pushHistory = useCallback((item: NavigationHistoryItem) => {
     virtualHistory.push({
@@ -363,7 +448,10 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
     const handleBrowserBackButton = async (event: PopStateEvent) => {
       event.preventDefault();
       
-      const success = await goBack();
+      // formsState가 있으면 goBackWithForms 사용, 없으면 goBack 사용
+      const success = formsState 
+        ? await goBackWithForms(formsState)
+        : await goBack();
       
       // 뒤로갈 수 없으면 히스토리에 현재 상태 추가
       if (!success) {
@@ -380,9 +468,9 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
     return () => {
       window.removeEventListener('popstate', handleBrowserBackButton);
     };
-  }, [goBack]);
+  }, [goBack, goBackWithForms, formsState]);
 
-  const value: NavigationContextType = {
+  const value: ImprovedNavigationContextType = {
     activeTab,
     subPage,
     canGoBack,
@@ -394,6 +482,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
     navigateToSubPage,
     clearSubPage,
     goBack,
+    goBackWithForms,
     pushHistory,
     clearHistory,
     canAccessTab,
@@ -401,8 +490,8 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
   };
 
   return (
-    <NavigationContext.Provider value={value}>
+    <ImprovedNavigationContext.Provider value={value}>
       {children}
-    </NavigationContext.Provider>
+    </ImprovedNavigationContext.Provider>
   );
 };

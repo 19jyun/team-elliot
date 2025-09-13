@@ -1,6 +1,6 @@
 'use client';
 
-import { useApp } from '@/contexts';
+import { useImprovedApp } from '@/contexts/ImprovedAppContext';
 import { CommonHeader } from '@/components/layout/CommonHeader';
 import { DashboardContainer } from './DashboardContainer';
 import { useSession } from 'next-auth/react';
@@ -24,7 +24,7 @@ import { usePrincipalInitialization } from '@/hooks/redux/usePrincipalInitializa
 
 
 function PrincipalDashboardContent() {
-  const { navigation } = useApp();
+  const { navigation } = useImprovedApp();
   const { activeTab, handleTabChange, subPage, isTransitioning } = navigation;
 
   // Principal 데이터 초기화

@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { PrincipalPaymentBox } from '@/components/features/student/enrollment/month/date/payment/PrincipalPaymentBox';
 import { PaymentConfirmFooter } from '@/components/features/student/enrollment/month/date/payment/PaymentConfirmFooter';
 import { SelectedSession, PrincipalPaymentInfo } from '@/components/features/student/enrollment/month/date/payment/types';
-import { useApp } from '@/contexts/AppContext';
+import { useImprovedApp } from '@/contexts/ImprovedAppContext';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
 import type { ModificationSessionVM } from '@/types/view/student';
 
@@ -18,7 +18,7 @@ interface EnrollmentModificationPaymentStepProps {
 export function EnrollmentModificationPaymentStep({ 
   onComplete
 }: EnrollmentModificationPaymentStepProps) {
-  const { form, setEnrollmentStep } = useApp();
+  const { form, setEnrollmentStep } = useImprovedApp();
   const { enrollment } = form;
   const { selectedSessions: contextSessions } = enrollment;
   const { modifyEnrollments } = useStudentApi();

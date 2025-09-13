@@ -10,7 +10,7 @@ import { cva } from 'class-variance-authority'
 import { Box, Button, Typography } from '@mui/material'
 import { Visibility, VisibilityOff } from '@mui/icons-material'
 import Image from 'next/image'
-import { useApp } from '@/contexts'
+import { useImprovedApp } from '@/contexts/ImprovedAppContext'
 import { useApiError } from '@/hooks/useApiError'
 
 const buttonVariants = cva(
@@ -165,7 +165,7 @@ const InputField: React.FC<InputFieldProps> = ({
 
 export function LoginPage() {
   const router = useRouter()
-  const { form } = useApp()
+  const { form } = useImprovedApp()
   const { setAuthMode, setSignupStep } = form.auth
   const [formData, setFormData] = useState({
     userId: '',

@@ -3,14 +3,13 @@
 import React from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
-import { useApp } from '@/contexts';
+import { useImprovedApp } from '@/contexts/ImprovedAppContext';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
 
 export function EnrollmentAcademyStep() {
-  const { form, goBack } = useApp();
+  const { form, goBack, setSelectedAcademyId: setContextSelectedAcademyId, setEnrollmentStep } = useImprovedApp();
   const { enrollment } = form;
-  const { setCurrentStep, setSelectedAcademyId: setContextSelectedAcademyId } = enrollment;
   const { status } = useSession({
     required: true,
     onUnauthenticated() {
@@ -60,7 +59,7 @@ export function EnrollmentAcademyStep() {
     }
     
     setContextSelectedAcademyId(localSelectedAcademyId);
-    setCurrentStep('class-selection');
+    setEnrollmentStep('class-selection');
   };
 
   // 에러 처리

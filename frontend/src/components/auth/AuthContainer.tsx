@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useApp } from '@/contexts';
+import { useImprovedApp } from '@/contexts/ImprovedAppContext';
 import { AuthHeader } from '@/components/layout/AuthHeader';
 import { LoginPage } from './pages/LoginPage';
 import { SignupRolePage } from './pages/SignupRolePage';
@@ -10,7 +10,7 @@ import { SignupAccountPage } from './pages/SignupAccountPage';
 import { SignupTermsPage } from './pages/SignupTermsPage';
 
 export function AuthContainer() {
-  const { form } = useApp();
+  const { form } = useImprovedApp();
   const { authMode, signup } = form.auth;
 
   // 기본 페이지 (로그인) - 뒤로가기 버튼 없음

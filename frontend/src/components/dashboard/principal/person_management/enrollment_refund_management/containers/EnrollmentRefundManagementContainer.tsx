@@ -1,14 +1,14 @@
 'use client';
 
 import React from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useImprovedApp } from '@/contexts/ImprovedAppContext';
 import { EnrollmentRefundManagementTabs } from '../components/navigation/EnrollmentRefundManagementTabs';
 import { PrincipalClassList } from '../components/navigation/PrincipalClassList';
 import { PrincipalSessionList } from '../components/sessions/PrincipalSessionList';
 import { PrincipalRequestDetail } from '../components/requests/PrincipalRequestDetail';
 
 export function EnrollmentRefundManagementContainer() {
-  const { form } = useApp();
+  const { form } = useImprovedApp();
   const { principalPersonManagement } = form;
   const { currentStep, selectedSessionId } = principalPersonManagement;
 
