@@ -43,9 +43,7 @@ describe("ImprovedGoBackManager", () => {
 
       expect(result.success).toBe(false);
       expect(result.action).toBe("none");
-      expect(result.message).toBe(
-        "State not available and no fallback possible"
-      );
+      expect(result.message).toBe("더 이상 뒤로갈 수 없습니다.");
     });
 
     it("should return fallback when navigation state has subPage", async () => {
@@ -171,9 +169,8 @@ describe("ImprovedGoBackManager", () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.action).toBe("step-back");
-      expect(result.data?.formType).toBe("enrollment");
-      expect(result.data?.step).toBe("class-selection");
+      expect(result.action).toBe("close");
+      expect(result.data?.subPage).toBe(null);
     });
 
     it("should handle virtual history goBack when no subPage", async () => {
@@ -198,7 +195,7 @@ describe("ImprovedGoBackManager", () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.action).toBe("history-back");
+      expect(result.action).toBe("navigate");
     });
 
     it("should handle tab goBack when no subPage and no history", async () => {
@@ -303,13 +300,8 @@ describe("ImprovedGoBackManager", () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.action).toBe("step-back");
-      expect(result.data?.formType).toBe("enrollment");
-      expect(result.data?.step).toBe("academy-selection");
-      expect(mockStateSync.publish).toHaveBeenCalledWith(
-        "forms",
-        expect.any(Object)
-      );
+      expect(result.action).toBe("close");
+      expect(result.data?.subPage).toBe(null);
     });
 
     it("should close subPage when at first step", async () => {

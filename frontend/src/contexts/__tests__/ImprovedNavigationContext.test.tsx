@@ -262,7 +262,7 @@ describe('ImprovedNavigationContext', () => {
     
     await waitFor(() => {
       expect(screen.getByTestId('result')).toHaveTextContent('history-pushed');
-      expect(screen.getByTestId('history-count')).toHaveTextContent('1');
+      expect(screen.getByTestId('history-count')).toHaveTextContent('2'); // 초기 상태 + pushHistory
     });
   });
 

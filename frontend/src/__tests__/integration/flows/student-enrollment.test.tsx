@@ -3,7 +3,7 @@ import { server } from '@/__mocks__/server';
 import { render, screen, waitFor, act } from '@/__tests__/utils/test-utils';
 import userEvent from '@testing-library/user-event';
 import { EnrollmentContainer } from '@/components/dashboard/student/Enrollment/enroll/EnrollmentContainer';
-import { AppProvider } from '@/contexts/AppContext';
+import { ImprovedAppProvider } from '@/contexts/ImprovedAppContext';
 import { EnrollmentFormManager } from '@/contexts/forms/EnrollmentFormManager';
 
 // NextAuth mock
@@ -81,12 +81,12 @@ describe('Student Enrollment Flow', () => {
     // EnrollmentFormManager의 canNavigateToStep을 테스트용으로 우회
     jest.spyOn(EnrollmentFormManager.prototype, 'setCurrentStep').mockImplementation(function(this: EnrollmentFormManager, step) {
       // canNavigateToStep 검증을 우회하고 직접 단계 변경
-      // @ts-expect-error - 테스트에서 private 멤버에 접근하기 위해 필요
-      this.state.currentStep = step;
-      // @ts-expect-error - 테스트에서 private 메서드에 접근하기 위해 필요
-      this.notifyListeners();
-      // @ts-expect-error - 테스트에서 private 메서드에 접근하기 위해 필요
-      this.emitStateChange();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (this as any).state.currentStep = step;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (this as any).notifyListeners();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (this as any).emitStateChange();
     });
   });
 
@@ -115,9 +115,9 @@ describe('Student Enrollment Flow', () => {
     );
 
     render(
-      <AppProvider>
+      <ImprovedAppProvider>
         <EnrollmentContainer />
-      </AppProvider>
+      </ImprovedAppProvider>
     );
 
 
@@ -182,9 +182,9 @@ describe('Student Enrollment Flow', () => {
     );
 
     render(
-      <AppProvider>
+      <ImprovedAppProvider>
         <EnrollmentContainer />
-      </AppProvider>
+      </ImprovedAppProvider>
     );
 
     // 학원 선택 단계 확인
@@ -241,9 +241,9 @@ describe('Student Enrollment Flow', () => {
     );
 
     render(
-      <AppProvider>
+      <ImprovedAppProvider>
         <EnrollmentContainer />
-      </AppProvider>
+      </ImprovedAppProvider>
     );
 
     // 학원 선택 단계 확인

@@ -18,7 +18,7 @@ describe("EnrollmentFormManager", () => {
       const state = manager.getState();
 
       // Then
-      expect(state.currentStep).toBe("main");
+      expect(state.currentStep).toBe("academy-selection");
       expect(state.selectedMonth).toBeNull();
       expect(state.selectedClasses).toEqual([]);
       expect(state.selectedSessions).toEqual([]);
@@ -204,7 +204,7 @@ describe("EnrollmentFormManager", () => {
 
       // Then
       const state = manager.getState();
-      expect(state.currentStep).toBe("main");
+      expect(state.currentStep).toBe("academy-selection");
       expect(state.selectedMonth).toBeNull();
       expect(state.selectedClasses).toEqual([]);
       expect(state.selectedSessions).toEqual([]);
@@ -225,7 +225,7 @@ describe("EnrollmentFormManager", () => {
       // Then
       expect(listener).toHaveBeenCalledWith(
         expect.objectContaining({
-          currentStep: "main",
+          currentStep: "academy-selection",
         })
       );
     });
@@ -299,7 +299,7 @@ describe("EnrollmentFormManager", () => {
       // Then: Should be back to initial state
       const initialState = manager.getState();
       expect(initialState).toEqual({
-        currentStep: "main",
+        currentStep: "academy-selection",
         selectedMonth: null,
         selectedClasses: [],
         selectedSessions: [],

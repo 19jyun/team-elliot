@@ -3,7 +3,7 @@ import { server } from "@/__mocks__/server";
 import { render, screen, waitFor, act } from "@/__tests__/utils/test-utils";
 import userEvent from "@testing-library/user-event";
 import { LoginPage } from "@/components/auth/pages/LoginPage";
-import { AppProvider } from "@/contexts/AppContext";
+import { ImprovedAppProvider } from "@/contexts/ImprovedAppContext";
 import { signIn, signOut, useSession } from "next-auth/react";
 
 // NextAuth mock
@@ -51,9 +51,9 @@ describe("Auth API Integration", () => {
 
       // 실제 LoginPage 컴포넌트 렌더링
       render(
-        <AppProvider>
+        <ImprovedAppProvider>
           <LoginPage />
-        </AppProvider>
+        </ImprovedAppProvider>
       );
 
       // 사용자 입력 시뮬레이션
@@ -84,9 +84,9 @@ describe("Auth API Integration", () => {
 
       // 실제 LoginPage 컴포넌트 렌더링
       render(
-        <AppProvider>
+        <ImprovedAppProvider>
           <LoginPage />
-        </AppProvider>
+        </ImprovedAppProvider>
       );
 
       await act(async () => {
