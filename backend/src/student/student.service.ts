@@ -430,7 +430,13 @@ export class StudentService {
       where: {
         studentId: student.id,
         status: {
-          in: ['PENDING', 'CONFIRMED', 'REJECTED', 'REFUND_REQUESTED'],
+          in: [
+            'PENDING',
+            'CONFIRMED',
+            'REJECTED',
+            'REFUND_REQUESTED',
+            'REFUND_REJECTED_CONFIRMED',
+          ],
         },
       },
       include: {

@@ -11,6 +11,7 @@ export interface SessionInfo {
   date: string;
   startTime: string;
   endTime: string;
+  isAlreadyEnrolled?: boolean; // 백엔드에서 계산된 값 사용
   enrollment?: {
     id: number;
     status:
@@ -28,39 +29,35 @@ export interface SessionInfo {
 }
 
 /**
- * 수강 변경 시 금액 계산
+ * 수강 변경 시 금액 계산 (세션 ID 기반)
  * @param originalEnrollments - 기존 수강 신청 세션들
- * @param selectedDates - 현재 선택된 날짜들 (날짜 문자열 배열)
+ * @param selectedSessionIds - 현재 선택된 세션 ID들
  * @param sessionPrice - 세션당 가격
  * @returns EnrollmentChange 객체
  */
 export function calculateEnrollmentChange(
   originalEnrollments: SessionInfo[],
-  selectedDates: string[],
+  selectedSessionIds: Set<number>,
   sessionPrice: number
 ): EnrollmentChange {
-  // 기존에 신청된 세션들 (활성 상태)
+  // 백엔드에서 계산된 isAlreadyEnrolled 값을 사용하여 기존 수강 세션 필터링
   const originalEnrolledSessions = originalEnrollments.filter(
-    (enrollment) =>
-      enrollment.enrollment &&
-      (enrollment.enrollment.status === "CONFIRMED" ||
-        enrollment.enrollment.status === "PENDING" ||
-        enrollment.enrollment.status === "REFUND_REJECTED_CONFIRMED")
+    (enrollment) => enrollment.isAlreadyEnrolled === true
   );
 
-  // 기존 신청 세션의 날짜들
-  const originalDates = originalEnrolledSessions.map(
-    (session) => new Date(session.date).toISOString().split("T")[0] // YYYY-MM-DD 형식
+  // 기존 수강 세션의 ID들
+  const originalSessionIds = new Set(
+    originalEnrolledSessions.map((session) => session.id)
   );
 
   // 새로 추가될 세션 수 (기존에 없던 세션들)
-  const newlyAddedSessionsCount = selectedDates.filter(
-    (date) => !originalDates.includes(date)
+  const newlyAddedSessionsCount = Array.from(selectedSessionIds).filter(
+    (sessionId) => !originalSessionIds.has(sessionId)
   ).length;
 
   // 새로 취소될 세션 수 (기존에 있던 세션들)
-  const newlyCancelledSessionsCount = originalDates.filter(
-    (date) => !selectedDates.includes(date)
+  const newlyCancelledSessionsCount = Array.from(originalSessionIds).filter(
+    (sessionId) => !selectedSessionIds.has(sessionId)
   ).length;
 
   // 순 변경 세션 수 = 새로 추가 - 새로 취소
