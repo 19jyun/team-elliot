@@ -138,11 +138,14 @@ export function EnrollmentDateStep() {
     const selectedSessionsData = selectedClassSessions
       .filter(session => selectedSessionIds.has(session.id))
       .map(session => ({
-        sessionId: session.id,
+        id: session.id,
         sessionName: session.class.className,
         startTime: session.startTime,
         endTime: session.endTime,
         date: session.date,
+        isAlreadyEnrolled: session.isAlreadyEnrolled,
+        isEnrollable: session.isEnrollable,
+        class: session.class,
       }));
     
     setSelectedSessions(selectedSessionsData);

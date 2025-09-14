@@ -152,6 +152,20 @@ export const ImprovedNavigationProvider: React.FC<ImprovedNavigationProviderProp
 
   const navigationItems = getNavigationItems();
 
+  // Virtual History 초기화
+  useEffect(() => {
+    // 앱 시작 시 초기 상태를 Virtual History에 추가
+    virtualHistory.push({
+      type: "navigation",
+      data: {
+        activeTab: 0,
+        subPage: null,
+        title: "Initial State",
+        description: "Application started",
+      },
+    });
+  }, []); // 한 번만 실행
+
   // 가상 히스토리 상태 구독
   useEffect(() => {
     const unsubscribe = virtualHistory.subscribe((historyState) => {
@@ -211,6 +225,15 @@ export const ImprovedNavigationProvider: React.FC<ImprovedNavigationProviderProp
   // 이벤트 버스 구독
   useEffect(() => {
     const unsubscribe = contextEventBus.subscribe('formStateChanged', (data) => {
+      // 중복 방지를 위한 체크
+      const currentEntry = virtualHistory.getCurrentEntry();
+      if (currentEntry && 
+          currentEntry.type === 'form-step' && 
+          currentEntry.data.formType === data.formType && 
+          currentEntry.data.formStep === data.step) {
+        return; // 이미 같은 단계가 기록되어 있으면 스킵
+      }
+
       // 폼 상태 변경 시 히스토리에 추가
       virtualHistory.push({
         type: 'form-step',
