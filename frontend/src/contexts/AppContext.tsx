@@ -184,20 +184,24 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     const handleBrowserBackButton = async (event: PopStateEvent) => {
       event.preventDefault();
       
-      // 통합된 goBack 사용 (ImprovedGoBackManager를 통해 단계별 로직 처리)
-      const success = await goBack();
-      
-      // 뒤로갈 수 없으면 히스토리에 현재 상태 추가
-      if (!success) {
-        window.history.pushState(null, '', window.location.href);
+      try {
+        // 통합된 goBack 사용 (ImprovedGoBackManager를 통해 단계별 로직 처리)
+        const success = await goBack();
+        
+        // 앱 내부 상태로만 관리, pushState 호출 제거
+        if (!success) {
+          console.log('Cannot go back further - at root state');
+        }
+      } catch (error) {
+        console.warn('Go back failed:', error);
       }
     };
 
-    // 브라우저 뒤로가기 버튼 리스너
+    // 브라우저 뒤로가기 버튼 리스너만 등록
     window.addEventListener('popstate', handleBrowserBackButton);
     
-    // 초기 상태를 히스토리에 추가
-    window.history.pushState(null, '', window.location.href);
+    // 초기화 시점의 pushState 호출 제거
+    // 브라우저가 이미 페이지를 히스토리에 추가하므로 불필요
     
     return () => {
       window.removeEventListener('popstate', handleBrowserBackButton);
