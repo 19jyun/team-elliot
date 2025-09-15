@@ -184,7 +184,7 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     const handleBrowserBackButton = async (event: PopStateEvent) => {
       event.preventDefault();
       
-      // 통합된 goBack 사용 (ImprovedGoBackManager를 통해 단계별 로직 처리)
+      // 통합된 goBack 사용 (GoBackManager를 통해 단계별 로직 처리)
       const success = await goBack();
       
       // 뒤로갈 수 없으면 히스토리에 현재 상태 추가
@@ -202,7 +202,7 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     return () => {
       window.removeEventListener('popstate', handleBrowserBackButton);
     };
-  }, [goBack]);
+  }, [goBack]); 
 
   // 메모이제이션된 value 객체
   const contextValue = useMemo(() => ({
