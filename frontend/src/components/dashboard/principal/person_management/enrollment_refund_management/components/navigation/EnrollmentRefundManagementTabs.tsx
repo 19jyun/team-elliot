@@ -1,10 +1,10 @@
 'use client';
 
 import React from 'react';
-import { useImprovedApp } from '@/contexts/ImprovedAppContext';
+import { useApp } from '@/contexts/AppContext';
 
 export function EnrollmentRefundManagementTabs() {
-  const { form, switchPrincipalPersonManagementTab } = useImprovedApp();
+  const { form, switchPrincipalPersonManagementTab } = useApp();
   const { principalPersonManagement } = form;
   const { selectedTab } = principalPersonManagement;
 

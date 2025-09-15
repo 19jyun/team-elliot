@@ -1,11 +1,23 @@
 // src/contexts/__tests__/ImprovedNavigationContext.test.tsx
 import React from 'react';
-import { render, screen, act, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { SessionProvider } from 'next-auth/react';
-import { ImprovedNavigationProvider, useImprovedNavigation } from '../navigation/ImprovedNavigationContext';
+import { NavigationProvider, useNavigation } from '../navigation/NavigationContext';
 import { StateSyncProvider } from '../state/StateSyncContext';
 import { FormsState } from '../state/StateSyncTypes';
 
+// StateSyncContext 모킹 - 무한 루프 방지
+jest.mock('../state/StateSyncContext', () => ({
+  StateSyncProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useStateSync: jest.fn(() => ({
+    publish: jest.fn(),
+    subscribe: jest.fn(() => jest.fn()),
+    getState: jest.fn(() => ({})),
+    syncStates: jest.fn(),
+    clearState: jest.fn(),
+    clearAllStates: jest.fn(),
+  })),
+}));
 // Mock SessionProvider
 const mockSession = {
   data: {
@@ -46,7 +58,21 @@ const mockFormsState: FormsState = {
   },
   createClass: {
     currentStep: 'info',
-    classFormData: {} as any,
+    classFormData: {
+      name: '',
+      description: '',
+      level: 'BEGINNER' as const,
+      maxStudents: 0,
+      price: 0,
+      content: '',
+      schedule: {
+        days: [],
+        startTime: '',
+        endTime: '',
+        startDate: '',
+        endDate: '',
+      },
+    },
     selectedTeacherId: null,
   },
   auth: {
@@ -55,11 +81,26 @@ const mockFormsState: FormsState = {
     signup: {
       step: 'role-selection',
       role: 'STUDENT',
-      personalInfo: {} as any,
-      accountInfo: {} as any,
-      terms: {} as any,
+      personalInfo: {
+        name: '',
+        phoneNumber: '',
+      },
+      accountInfo: {
+        userId: '',
+        password: '',
+        confirmPassword: '',
+      },
+      terms: {
+        age: false,
+        terms1: false,
+        terms2: false,
+        marketing: false,
+      },
     },
-    login: {} as any,
+    login: {
+      userId: '',
+      password: '',
+    },
   },
   personManagement: {
     currentStep: 'class-list',
@@ -71,7 +112,15 @@ const mockFormsState: FormsState = {
   },
   principalCreateClass: {
     currentStep: 'info',
-    classFormData: {} as any,
+    classFormData: {
+      name: '',
+      description: '',
+      maxStudents: 0,
+      price: 0,
+      startDate: '',
+      endDate: '',
+      schedule: [],
+    },
     selectedTeacherId: null,
   },
   principalPersonManagement: {
@@ -86,14 +135,14 @@ const mockFormsState: FormsState = {
 
 // Test component
 const TestComponent = () => {
-  const navigation = useImprovedNavigation();
+  const navigation = useNavigation();
   const [result, setResult] = React.useState<string>('');
 
   const handleGoBack = async () => {
     try {
       const success = await navigation.goBack();
       setResult(success ? 'go-back-success' : 'go-back-failed');
-    } catch (error) {
+    } catch (_error) {
       setResult('go-back-error');
     }
   };
@@ -102,7 +151,7 @@ const TestComponent = () => {
     try {
       const success = await navigation.goBackWithForms(mockFormsState);
       setResult(success ? 'go-back-with-forms-success' : 'go-back-with-forms-failed');
-    } catch (error) {
+    } catch (_error) {
       setResult('go-back-with-forms-error');
     }
   };
@@ -168,9 +217,9 @@ describe('ImprovedNavigationContext', () => {
     render(
       <SessionProvider session={mockSession}>
         <StateSyncProvider>
-          <ImprovedNavigationProvider formsState={mockFormsState}>
+          <NavigationProvider formsState={mockFormsState}>
             <TestComponent />
-          </ImprovedNavigationProvider>
+          </NavigationProvider>
         </StateSyncProvider>
       </SessionProvider>
     );
@@ -186,15 +235,15 @@ describe('ImprovedNavigationContext', () => {
     render(
       <SessionProvider session={mockSession}>
         <StateSyncProvider>
-          <ImprovedNavigationProvider formsState={mockFormsState}>
+          <NavigationProvider formsState={mockFormsState}>
             <TestComponent />
-          </ImprovedNavigationProvider>
+          </NavigationProvider>
         </StateSyncProvider>
       </SessionProvider>
     );
 
     fireEvent.click(screen.getByTestId('tab-change-button'));
-    
+
     await waitFor(() => {
       expect(screen.getByTestId('result')).toHaveTextContent('tab-changed');
       expect(screen.getByTestId('active-tab')).toHaveTextContent('1');
@@ -205,15 +254,15 @@ describe('ImprovedNavigationContext', () => {
     render(
       <SessionProvider session={mockSession}>
         <StateSyncProvider>
-          <ImprovedNavigationProvider formsState={mockFormsState}>
+          <NavigationProvider formsState={mockFormsState}>
             <TestComponent />
-          </ImprovedNavigationProvider>
+          </NavigationProvider>
         </StateSyncProvider>
       </SessionProvider>
     );
 
     fireEvent.click(screen.getByTestId('navigate-subpage-button'));
-    
+
     await waitFor(() => {
       expect(screen.getByTestId('result')).toHaveTextContent('subpage-navigated');
       expect(screen.getByTestId('sub-page')).toHaveTextContent('enroll');
@@ -224,23 +273,23 @@ describe('ImprovedNavigationContext', () => {
     render(
       <SessionProvider session={mockSession}>
         <StateSyncProvider>
-          <ImprovedNavigationProvider formsState={mockFormsState}>
+          <NavigationProvider formsState={mockFormsState}>
             <TestComponent />
-          </ImprovedNavigationProvider>
+          </NavigationProvider>
         </StateSyncProvider>
       </SessionProvider>
     );
 
     // First navigate to subpage
     fireEvent.click(screen.getByTestId('navigate-subpage-button'));
-    
+
     await waitFor(() => {
       expect(screen.getByTestId('sub-page')).toHaveTextContent('enroll');
     });
 
     // Then clear it
     fireEvent.click(screen.getByTestId('clear-subpage-button'));
-    
+
     await waitFor(() => {
       expect(screen.getByTestId('result')).toHaveTextContent('subpage-cleared');
       expect(screen.getByTestId('sub-page')).toHaveTextContent('null');
@@ -251,15 +300,15 @@ describe('ImprovedNavigationContext', () => {
     render(
       <SessionProvider session={mockSession}>
         <StateSyncProvider>
-          <ImprovedNavigationProvider formsState={mockFormsState}>
+          <NavigationProvider formsState={mockFormsState}>
             <TestComponent />
-          </ImprovedNavigationProvider>
+          </NavigationProvider>
         </StateSyncProvider>
       </SessionProvider>
     );
 
     fireEvent.click(screen.getByTestId('push-history-button'));
-    
+
     await waitFor(() => {
       expect(screen.getByTestId('result')).toHaveTextContent('history-pushed');
       expect(screen.getByTestId('history-count')).toHaveTextContent('2'); // 초기 상태 + pushHistory
@@ -270,23 +319,23 @@ describe('ImprovedNavigationContext', () => {
     render(
       <SessionProvider session={mockSession}>
         <StateSyncProvider>
-          <ImprovedNavigationProvider formsState={mockFormsState}>
+          <NavigationProvider formsState={mockFormsState}>
             <TestComponent />
-          </ImprovedNavigationProvider>
+          </NavigationProvider>
         </StateSyncProvider>
       </SessionProvider>
     );
 
     // First navigate to subpage
     fireEvent.click(screen.getByTestId('navigate-subpage-button'));
-    
+
     await waitFor(() => {
       expect(screen.getByTestId('sub-page')).toHaveTextContent('enroll');
     });
 
     // Then try to go back with forms
     fireEvent.click(screen.getByTestId('go-back-with-forms-button'));
-    
+
     await waitFor(() => {
       expect(screen.getByTestId('result')).toHaveTextContent('go-back-with-forms-success');
     });
@@ -297,7 +346,7 @@ describe('ImprovedNavigationContext', () => {
 
     expect(() => {
       render(<TestComponent />);
-    }).toThrow('useImprovedNavigation must be used within an ImprovedNavigationProvider');
+    }).toThrow('useNavigation must be used within an NavigationProvider');
 
     consoleSpy.mockRestore();
   });
@@ -317,9 +366,9 @@ describe('ImprovedNavigationContext', () => {
     render(
       <SessionProvider session={teacherSession}>
         <StateSyncProvider>
-          <ImprovedNavigationProvider formsState={mockFormsState}>
+          <NavigationProvider formsState={mockFormsState}>
             <TestComponent />
-          </ImprovedNavigationProvider>
+          </NavigationProvider>
         </StateSyncProvider>
       </SessionProvider>
     );

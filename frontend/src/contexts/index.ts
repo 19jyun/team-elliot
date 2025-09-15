@@ -12,7 +12,10 @@ export { useUIContext } from "./AppContext";
 export { useDataContext } from "./AppContext";
 
 // Navigation
-export { NavigationProvider, useNavigation } from "./NavigationContext";
+export {
+  NavigationProvider,
+  useNavigation,
+} from "./navigation/NavigationContext";
 
 // Forms
 export * from "./forms";

@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { ClassDetailsResponse } from '@/types/api/class';
 import { toast } from 'sonner';
 import cn from 'classnames';
-import { useImprovedApp } from '@/contexts/ImprovedAppContext';
+import { useApp } from '@/contexts/AppContext';
 import { TeacherProfileCardForStudent } from '@/components/features/student/classes/TeacherProfileCardForStudent';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
 import type { StudentEnrolledSessionVM, ClassDetailVM, ClassDetailDisplayVM } from '@/types/view/student';
@@ -18,7 +18,7 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
   const [classDetails, setClassDetails] = useState<ClassDetailsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { navigation } = useImprovedApp();
+  const { navigation } = useApp();
   const { navigateToSubPage } = navigation;
   const { getClassDetails } = useStudentApi();
 

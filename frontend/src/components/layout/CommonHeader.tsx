@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import { ArrowLeft } from 'lucide-react';
 
-import { useImprovedApp } from '@/contexts/ImprovedAppContext';
+import { useApp } from '@/contexts/AppContext';
 
 export function CommonHeader() {
   const { data: session } = useSession();
@@ -15,7 +15,7 @@ export function CommonHeader() {
     canGoBack, 
     handleTabChange, 
     goBack
-  } = useImprovedApp();
+  } = useApp();
 
   const userRole = session?.user?.role || 'STUDENT';
   

@@ -4,7 +4,7 @@ import * as React from 'react'
 import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
-import { useImprovedApp } from '@/contexts/ImprovedAppContext'
+import { useApp } from '@/contexts/AppContext'
 import { useCheckDuplicateUserId } from '@/hooks/useCheckDuplicateUserId'
 
 interface InputFieldProps {
@@ -146,8 +146,7 @@ const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
 )
 
 export function SignupAccountPage() {
-  const { form } = useImprovedApp()
-  const { setSignupStep } = form.auth
+  const { setSignupStep } = useApp()
   const [currentStep] = useState(3)
   const [formData, setFormData] = useState({
     userId: '',

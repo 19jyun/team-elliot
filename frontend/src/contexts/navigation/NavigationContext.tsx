@@ -1,10 +1,10 @@
-// src/contexts/navigation/ImprovedNavigationContext.tsx
+// src/contexts/navigation/NavigationContext.tsx
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { useSession } from 'next-auth/react';
 import { VirtualHistoryManager } from './index';
-import { ImprovedGoBackManager } from './ImprovedGoBackManager';
+import { GoBackManager } from './GoBackManager';
 import { contextEventBus } from '../events/ContextEventBus';
 import { NavigationItem, NavigationHistoryItem } from '../types/NavigationTypes';
 import { useStateSync } from '../state/StateSyncContext';
@@ -29,7 +29,7 @@ export const PRINCIPAL_NAVIGATION_ITEMS: NavigationItem[] = [
   { label: "나의 정보", href: "/dashboard", index: 3 },
 ];
 
-interface ImprovedNavigationContextType {
+interface NavigationContextType {
   // 상태
   activeTab: number;
   subPage: string | null;
@@ -48,7 +48,7 @@ interface ImprovedNavigationContextType {
   navigateToSubPage: (page: string) => void;
   clearSubPage: () => void;
   
-  // 통합된 goBack (ImprovedGoBackManager 사용)
+  // 통합된 goBack (GoBackManager 사용)
   goBack: () => Promise<boolean>;
   goBackWithForms: (formsState: FormsState) => Promise<boolean>;
   
@@ -61,28 +61,28 @@ interface ImprovedNavigationContextType {
   canAccessSubPage: (page: string) => boolean;
 }
 
-const ImprovedNavigationContext = createContext<ImprovedNavigationContextType | undefined>(undefined);
+const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
 
-export const useImprovedNavigation = (): ImprovedNavigationContextType => {
-  const context = useContext(ImprovedNavigationContext);
+export const useNavigation = (): NavigationContextType => {
+  const context = useContext(NavigationContext);
   if (!context) {
-    throw new Error('useImprovedNavigation must be used within an ImprovedNavigationProvider');
+    throw new Error('useNavigation must be used within an NavigationProvider');
   }
   return context;
 };
 
-interface ImprovedNavigationProviderProps {
+interface NavigationProviderProps {
   children: ReactNode;
   formsState?: FormsState;
 }
 
-export const ImprovedNavigationProvider: React.FC<ImprovedNavigationProviderProps> = ({ children, formsState }) => {
+export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children, formsState }) => {
   const { data: session } = useSession();
   const userRole = session?.user?.role || 'STUDENT';
   const stateSync = useStateSync();
   
   const [virtualHistory] = useState(() => new VirtualHistoryManager());
-  const [goBackManager] = useState(() => new ImprovedGoBackManager(virtualHistory, contextEventBus, stateSync));
+  const [goBackManager] = useState(() => new GoBackManager(virtualHistory, contextEventBus, stateSync));
   
   const [activeTab, setActiveTabState] = useState(0);
   const [subPage, setSubPageState] = useState<string | null>(null);
@@ -164,7 +164,7 @@ export const ImprovedNavigationProvider: React.FC<ImprovedNavigationProviderProp
         description: "Application started",
       },
     });
-  }, []); // 한 번만 실행
+  }, [virtualHistory]); // virtualHistory 의존성 추가
 
   // 가상 히스토리 상태 구독
   useEffect(() => {
@@ -206,7 +206,7 @@ export const ImprovedNavigationProvider: React.FC<ImprovedNavigationProviderProp
     };
     
     stateSync.publish('navigation', navigationState);
-  }, []); // 빈 의존성 배열로 한 번만 실행
+  }, [activeTab, canGoBack, getNavigationItems, history, isTransitioning, stateSync, subPage]);
 
   // 상태 변경 시 StateSync에 발행
   useEffect(() => {
@@ -220,7 +220,7 @@ export const ImprovedNavigationProvider: React.FC<ImprovedNavigationProviderProp
     };
     
     stateSync.publish('navigation', navigationState);
-  }, [activeTab, subPage, canGoBack, isTransitioning]);
+  }, [activeTab, subPage, canGoBack, isTransitioning, getNavigationItems, history, stateSync]);
 
   // 이벤트 버스 구독
   useEffect(() => {
@@ -386,7 +386,7 @@ export const ImprovedNavigationProvider: React.FC<ImprovedNavigationProviderProp
             // 가상 히스토리에서 이미 처리됨
             break;
           case "step-back":
-            // 폼 단계 뒤로가기는 ImprovedGoBackManager에서 이미 처리됨
+            // 폼 단계 뒤로가기는 GoBackManager에서 이미 처리됨
             // 여기서는 추가적인 특수 처리만 수행
             break;
           case "close":
@@ -423,7 +423,7 @@ export const ImprovedNavigationProvider: React.FC<ImprovedNavigationProviderProp
     } finally {
       setIsTransitioning(false);
     }
-  }, [goBackManager, stateSync, clearSubPage]);
+  }, [goBackManager, clearSubPage, activeTab, canGoBack, getNavigationItems, history, isTransitioning, subPage]);
 
   const goBack = useCallback(async (): Promise<boolean> => {
     // formsState가 없으면 기본 뒤로가기 로직 사용
@@ -485,9 +485,9 @@ export const ImprovedNavigationProvider: React.FC<ImprovedNavigationProviderProp
     }
   }, [goBack]);
 
-  // 브라우저 뒤로가기 처리는 ImprovedAppContext에서 담당
+  // 브라우저 뒤로가기 처리는 AppContext에서 담당
 
-  const value: ImprovedNavigationContextType = {
+  const value: NavigationContextType = {
     activeTab,
     subPage,
     canGoBack,
@@ -507,8 +507,8 @@ export const ImprovedNavigationProvider: React.FC<ImprovedNavigationProviderProp
   };
 
   return (
-    <ImprovedNavigationContext.Provider value={value}>
+    <NavigationContext.Provider value={value}>
       {children}
-    </ImprovedNavigationContext.Provider>
+    </NavigationContext.Provider>
   );
 };

@@ -1,12 +1,12 @@
 'use client';
 
 import React from 'react';
-import { useImprovedApp } from '@/contexts/ImprovedAppContext';
+import { useApp } from '@/contexts/AppContext';
 import { StatusStep } from './StatusStep';
 import { CompleteIcon } from '@/components/icons';
 
 export function CreateClassComplete() {
-  const { form, goBack, resetCreateClass, clearSubPage, clearHistory } = useImprovedApp();
+  const { form, resetCreateClass, clearSubPage, clearHistory } = useApp();
   const { createClass } = form;
   const { classFormData } = createClass;
 

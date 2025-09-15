@@ -1,4 +1,4 @@
-// src/contexts/navigation/ImprovedGoBackManager.ts
+// src/contexts/navigation/GoBackManager.ts
 import { VirtualHistoryManager, HistoryEntry } from "./VirtualHistoryManager";
 import { ContextEventBus } from "../events/ContextEventBus";
 import { GoBackContext, GoBackResult } from "../types/NavigationTypes";
@@ -12,7 +12,7 @@ import { SignupStep } from "../forms/AuthFormManager";
 import { CreateClassStep } from "../forms/CreateClassFormManager";
 import { PrincipalPersonManagementStep } from "../forms/PrincipalPersonManagementFormManager";
 
-export class ImprovedGoBackManager {
+export class GoBackManager {
   private virtualHistory: VirtualHistoryManager;
   private eventBus: ContextEventBus;
   private stateSync: StateSyncContextType;
@@ -57,7 +57,7 @@ export class ImprovedGoBackManager {
 
       return await this.handleGoBack(context, formsState);
     } catch (error) {
-      console.error("ImprovedGoBackManager execution error:", error);
+      console.error("GoBackManager execution error:", error);
       return {
         success: false,
         action: "none",
@@ -94,7 +94,7 @@ export class ImprovedGoBackManager {
 
       return await this.handleGoBack(context, formsState);
     } catch (error) {
-      console.error("ImprovedGoBackManager execution error:", error);
+      console.error("GoBackManager execution error:", error);
       return {
         success: false,
         action: "none",

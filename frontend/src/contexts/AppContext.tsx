@@ -1,27 +1,27 @@
-// src/contexts/ImprovedAppContext.tsx
+// src/contexts/AppContext.tsx
 'use client';
 
 import React, { createContext, useContext, useCallback, ReactNode, useMemo, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { StateSyncProvider, useStateSync } from './state/StateSyncContext';
-import { ImprovedNavigationProvider, useImprovedNavigation } from './navigation/ImprovedNavigationContext';
-import { ImprovedFormsProvider, useImprovedForms } from './forms/ImprovedFormsContext';
+import { NavigationProvider, useNavigation } from './navigation/NavigationContext';
+import { FormsProvider, useForms } from './forms/FormsContext';
 import { UIContextProvider, useUI } from './UIContext';
 import { DataContextProvider, useData } from './DataContext';
 import { FormsState } from './state/StateSyncTypes';
-import { EnrollmentStep } from './forms/EnrollmentFormManager';
-import { CreateClassStep } from './forms/CreateClassFormManager';
-import { AuthMode, SignupStep } from './forms/AuthFormManager';
+import { EnrollmentStep, ClassesWithSessionsByMonthResponse, ExtendedSessionData } from './forms/EnrollmentFormManager';
+import { CreateClassStep, ClassFormData } from './forms/CreateClassFormManager';
+import { AuthMode, SignupStep, SignupData, LoginData } from './forms/AuthFormManager';
 import { PrincipalPersonManagementStep } from './forms/PersonManagementFormManager';
-import { PrincipalCreateClassStep } from './forms/PrincipalCreateClassFormManager';
+import { PrincipalCreateClassStep, PrincipalClassFormData } from './forms/PrincipalCreateClassFormManager';
 
 // 통합된 AppContext 타입
-interface ImprovedAppContextType {
+interface AppContextType {
   // Navigation
-  navigation: ReturnType<typeof useImprovedNavigation>;
+  navigation: ReturnType<typeof useNavigation>;
   
   // Forms
-  forms: ReturnType<typeof useImprovedForms>;
+  forms: ReturnType<typeof useForms>;
   
   // UI
   ui: ReturnType<typeof useUI>;
@@ -51,8 +51,8 @@ interface ImprovedAppContextType {
   subPage: string | null;
   canGoBack: boolean;
   isTransitioning: boolean;
-  navigationItems: ReturnType<typeof useImprovedNavigation>['navigationItems'];
-  history: ReturnType<typeof useImprovedNavigation>['history'];
+  navigationItems: ReturnType<typeof useNavigation>['navigationItems'];
+  history: ReturnType<typeof useNavigation>['history'];
   setActiveTab: (tab: number) => void;
   handleTabChange: (tab: number) => void;
   navigateToSubPage: (page: string) => void;
@@ -61,34 +61,34 @@ interface ImprovedAppContextType {
   
   // 하위 호환성을 위한 폼 접근
   form: {
-    enrollment: ReturnType<typeof useImprovedForms>['enrollment'];
-    createClass: ReturnType<typeof useImprovedForms>['createClass'];
-    principalCreateClass: ReturnType<typeof useImprovedForms>['principalCreateClass'];
-    auth: ReturnType<typeof useImprovedForms>['auth'];
-    personManagement: ReturnType<typeof useImprovedForms>['personManagement'];
-    principalPersonManagement: ReturnType<typeof useImprovedForms>['principalPersonManagement'];
+    enrollment: ReturnType<typeof useForms>['enrollment'];
+    createClass: ReturnType<typeof useForms>['createClass'];
+    principalCreateClass: ReturnType<typeof useForms>['principalCreateClass'];
+    auth: ReturnType<typeof useForms>['auth'];
+    personManagement: ReturnType<typeof useForms>['personManagement'];
+    principalPersonManagement: ReturnType<typeof useForms>['principalPersonManagement'];
   };
   
   // 하위 호환성을 위한 직접 메서드들
   // 수강신청 관련
   setEnrollmentStep: (step: EnrollmentStep) => void;
   setSelectedMonth: (month: number) => void;
-  setSelectedClasses: (classes: unknown[]) => void;
-  setSelectedSessions: (sessions: unknown[]) => void;
+  setSelectedClasses: (classes: ClassesWithSessionsByMonthResponse[]) => void;
+  setSelectedSessions: (sessions: ExtendedSessionData[]) => void;
   setSelectedClassIds: (classIds: number[]) => void;
   setSelectedAcademyId: (academyId: number | null) => void;
-  setSelectedClassesWithSessions: (classes: unknown[]) => void;
+  setSelectedClassesWithSessions: (classes: ClassesWithSessionsByMonthResponse[]) => void;
   resetEnrollment: () => void;
   
   // 클래스 생성 관련
   setCreateClassStep: (step: CreateClassStep) => void;
-  setClassFormData: (data: unknown) => void;
+  setClassFormData: (data: ClassFormData) => void;
   setSelectedTeacherId: (teacherId: number | null) => void;
   resetCreateClass: () => void;
   
   // Principal 클래스 생성 관련
   setPrincipalCreateClassStep: (step: PrincipalCreateClassStep) => void;
-  setPrincipalClassFormData: (data: unknown) => void;
+  setPrincipalClassFormData: (data: PrincipalClassFormData) => void;
   setPrincipalSelectedTeacherId: (teacherId: number | null) => void;
   resetPrincipalCreateClass: () => void;
   
@@ -100,11 +100,11 @@ interface ImprovedAppContextType {
   clearAuthSubPage: () => void;
   setSignupStep: (step: SignupStep) => void;
   setRole: (role: 'STUDENT' | 'TEACHER') => void;
-  setPersonalInfo: (info: unknown) => void;
-  setAccountInfo: (info: unknown) => void;
-  setTerms: (terms: unknown) => void;
+  setPersonalInfo: (info: SignupData['personalInfo']) => void;
+  setAccountInfo: (info: SignupData['accountInfo']) => void;
+  setTerms: (terms: SignupData['terms']) => void;
   resetSignup: () => void;
-  setLoginInfo: (info: unknown) => void;
+  setLoginInfo: (info: LoginData) => void;
   resetLogin: () => void;
   
   // 인원 관리 관련
@@ -129,34 +129,34 @@ interface ImprovedAppContextType {
   switchPrincipalPersonManagementTab: (tab: 'enrollment' | 'refund') => void;
 }
 
-const ImprovedAppContext = createContext<ImprovedAppContextType | undefined>(undefined);
+const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const useImprovedApp = (): ImprovedAppContextType => {
-  const context = useContext(ImprovedAppContext);
+export const useApp = (): AppContextType => {
+  const context = useContext(AppContext);
   if (!context) {
-    throw new Error('useImprovedApp must be used within an ImprovedAppProvider');
+    throw new Error('useApp must be used within an AppProvider');
   }
   return context;
 };
 
 // 내부 컴포넌트들
 const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const navigation = useImprovedNavigation();
-  const forms = useImprovedForms();
+  const navigation = useNavigation();
+  const forms = useForms();
   const ui = useUI();
   const data = useData();
   const session = useSession();
   const stateSync = useStateSync();
 
   // formsState를 navigation에 전달
-  const formsState: FormsState = {
+  const formsState: FormsState = useMemo(() => ({
     enrollment: forms.enrollment,
     createClass: forms.createClass,
     auth: forms.auth,
     personManagement: forms.personManagement,
     principalCreateClass: forms.principalCreateClass,
     principalPersonManagement: forms.principalPersonManagement,
-  };
+  }), [forms.enrollment, forms.createClass, forms.auth, forms.personManagement, forms.principalCreateClass, forms.principalPersonManagement]);
 
   // 통합된 goBack (하위 호환성)
   const goBack = useCallback(async (): Promise<boolean> => {
@@ -249,22 +249,22 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     // 수강신청 관련
     setEnrollmentStep: forms.setEnrollmentStep,
     setSelectedMonth: (month: number) => forms.setEnrollmentData({ selectedMonth: month }),
-    setSelectedClasses: (classes: unknown[]) => forms.setEnrollmentData({ selectedClasses: classes as any }),
-    setSelectedSessions: (sessions: unknown[]) => forms.setEnrollmentData({ selectedSessions: sessions as any }),
+    setSelectedClasses: (classes: ClassesWithSessionsByMonthResponse[]) => forms.setEnrollmentData({ selectedClasses: classes }),
+    setSelectedSessions: (sessions: ExtendedSessionData[]) => forms.setEnrollmentData({ selectedSessions: sessions }),
     setSelectedClassIds: (classIds: number[]) => forms.setEnrollmentData({ selectedClassIds: classIds }),
     setSelectedAcademyId: (academyId: number | null) => forms.setEnrollmentData({ selectedAcademyId: academyId }),
-    setSelectedClassesWithSessions: (classes: unknown[]) => forms.setEnrollmentData({ selectedClassesWithSessions: classes as any }),
+    setSelectedClassesWithSessions: (classes: ClassesWithSessionsByMonthResponse[]) => forms.setEnrollmentData({ selectedClassesWithSessions: classes }),
     resetEnrollment: forms.resetEnrollment,
     
     // 클래스 생성 관련
     setCreateClassStep: forms.setCreateClassStep,
-    setClassFormData: (data: unknown) => forms.setCreateClassData({ classFormData: data as any }),
+    setClassFormData: (data: ClassFormData) => forms.setCreateClassData({ classFormData: data }),
     setSelectedTeacherId: (teacherId: number | null) => forms.setCreateClassData({ selectedTeacherId: teacherId }),
     resetCreateClass: forms.resetCreateClass,
     
     // Principal 클래스 생성 관련
     setPrincipalCreateClassStep: forms.setPrincipalCreateClassStep,
-    setPrincipalClassFormData: (data: unknown) => forms.setPrincipalCreateClassData({ classFormData: data as any }),
+    setPrincipalClassFormData: (data: PrincipalClassFormData) => forms.setPrincipalCreateClassData({ classFormData: data }),
     setPrincipalSelectedTeacherId: (teacherId: number | null) => forms.setPrincipalCreateClassData({ selectedTeacherId: teacherId }),
     resetPrincipalCreateClass: forms.resetPrincipalCreateClass,
     
@@ -275,12 +275,12 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     goBackFromAuth: () => forms.setAuthData({ authSubPage: null }),
     clearAuthSubPage: () => forms.setAuthData({ authSubPage: null }),
     setSignupStep: forms.setAuthStep,
-    setRole: (role: 'STUDENT' | 'TEACHER') => forms.setAuthData({ signup: { role } as any }),
-    setPersonalInfo: (info: unknown) => forms.setAuthData({ signup: { personalInfo: info as any } as any }),
-    setAccountInfo: (info: unknown) => forms.setAuthData({ signup: { accountInfo: info as any } as any }),
-    setTerms: (terms: unknown) => forms.setAuthData({ signup: { terms: terms as any } as any }),
+    setRole: (role: 'STUDENT' | 'TEACHER') => forms.setAuthData({ signup: { ...forms.auth.signup, role } }),
+    setPersonalInfo: (info: SignupData['personalInfo']) => forms.setAuthData({ signup: { ...forms.auth.signup, personalInfo: info } }),
+    setAccountInfo: (info: SignupData['accountInfo']) => forms.setAuthData({ signup: { ...forms.auth.signup, accountInfo: info } }),
+    setTerms: (terms: SignupData['terms']) => forms.setAuthData({ signup: { ...forms.auth.signup, terms: terms } }),
     resetSignup: () => forms.resetAuth(),
-    setLoginInfo: (info: unknown) => forms.setAuthData({ login: info as any }),
+    setLoginInfo: (info: LoginData) => forms.setAuthData({ login: info }),
     resetLogin: () => forms.resetAuth(),
     
     // 인원 관리 관련
@@ -311,22 +311,22 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
   ]);
 
   return (
-    <ImprovedAppContext.Provider value={contextValue}>
+    <AppContext.Provider value={contextValue}>
       {children}
-    </ImprovedAppContext.Provider>
+    </AppContext.Provider>
   );
 };
 
-// 메인 ImprovedAppProvider
-interface ImprovedAppProviderProps {
+// 메인 AppProvider
+interface AppProviderProps {
   children: ReactNode;
 }
 
-export const ImprovedAppProvider: React.FC<ImprovedAppProviderProps> = ({ children }) => {
+export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   return (
     <StateSyncProvider>
-      <ImprovedFormsProvider>
-        <ImprovedNavigationProvider>
+      <FormsProvider>
+        <NavigationProvider>
           <UIContextProvider>
             <DataContextProvider>
               <AppConsumer>
@@ -334,17 +334,17 @@ export const ImprovedAppProvider: React.FC<ImprovedAppProviderProps> = ({ childr
               </AppConsumer>
             </DataContextProvider>
           </UIContextProvider>
-        </ImprovedNavigationProvider>
-      </ImprovedFormsProvider>
+        </NavigationProvider>
+      </FormsProvider>
     </StateSyncProvider>
   );
 };
 
 // 하위 호환성을 위한 개별 Context들
-export const useNavigationContext = useImprovedNavigation;
-export const useEnrollmentFormContext = () => useImprovedForms().forms.enrollment;
-export const useCreateClassFormContext = () => useImprovedForms().forms.createClass;
-export const useAuthFormContext = () => useImprovedForms().forms.auth;
-export const usePersonManagementFormContext = () => useImprovedForms().forms.personManagement;
+export const useNavigationContext = useNavigation;
+export const useEnrollmentFormContext = () => useForms().forms.enrollment;
+export const useCreateClassFormContext = () => useForms().forms.createClass;
+export const useAuthFormContext = () => useForms().forms.auth;
+export const usePersonManagementFormContext = () => useForms().forms.personManagement;
 export const useUIContext = useUI;
 export const useDataContext = useData;

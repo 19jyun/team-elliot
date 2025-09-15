@@ -7,13 +7,13 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Calendar, Clock, BookOpen, CheckCircle, XCircle, AlertCircle, Clock as ClockIcon } from 'lucide-react';
 
-import { useImprovedApp } from '@/contexts/ImprovedAppContext';
+import { useApp } from '@/contexts/AppContext';
 import { useStudentData } from '@/hooks/redux/useStudentData';
 import { toStudentEnrollmentHistoryVMs } from '@/lib/adapters/student';
 import type { StudentEnrollmentHistoryVM } from '@/types/view/student';
 
 export function EnrollmentHistory() {
-  const { ui } = useImprovedApp();
+  const { ui } = useApp();
   const { pushFocus, popFocus } = ui;
   const { enrollmentHistory, isLoading, error } = useStudentData();
   const [selectedFilter, setSelectedFilter] = useState<string>('ALL');

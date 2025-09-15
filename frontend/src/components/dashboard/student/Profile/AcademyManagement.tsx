@@ -7,14 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { Plus, Users, Building2, AlertTriangle, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { useImprovedApp } from '@/contexts/ImprovedAppContext';
+import { useApp } from '@/contexts/AppContext';
 import { AcademyCard } from '@/components/common/AcademyCard';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
 import { useApiError } from '@/hooks/useApiError';
 import type { LeaveAcademyModalVM } from '@/types/view/student';
 
 function LeaveAcademyModal({ isOpen, onClose, onConfirm, academyName }: LeaveAcademyModalVM) {
-  const { ui } = useImprovedApp();
+  const { ui } = useApp();
   const { pushFocus, popFocus } = ui;
 
   useEffect(() => {
@@ -99,7 +99,7 @@ function LeaveAcademyModal({ isOpen, onClose, onConfirm, academyName }: LeaveAca
 }
 
 export function AcademyManagement() {
-  const { ui } = useImprovedApp();
+  const { ui } = useApp();
   const { pushFocus, popFocus } = ui;
   const { academies, isLoading, error, loadAcademies, joinAcademyApi, leaveAcademyApi } = useStudentApi();
   

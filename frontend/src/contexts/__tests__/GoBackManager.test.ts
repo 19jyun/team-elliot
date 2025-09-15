@@ -1,5 +1,5 @@
 // src/contexts/__tests__/ImprovedGoBackManager.test.ts
-import { ImprovedGoBackManager } from "../navigation/ImprovedGoBackManager";
+import { GoBackManager } from "../navigation/GoBackManager";
 import { VirtualHistoryManager } from "../navigation/VirtualHistoryManager";
 import { ContextEventBus } from "../events/ContextEventBus";
 import {
@@ -22,12 +22,12 @@ const mockStateSync: StateSyncContextType = {
 const mockEventBus = new ContextEventBus();
 
 describe("ImprovedGoBackManager", () => {
-  let goBackManager: ImprovedGoBackManager;
+  let goBackManager: GoBackManager;
   let virtualHistory: VirtualHistoryManager;
 
   beforeEach(() => {
     virtualHistory = new VirtualHistoryManager();
-    goBackManager = new ImprovedGoBackManager(
+    goBackManager = new GoBackManager(
       virtualHistory,
       mockEventBus,
       mockStateSync
@@ -84,7 +84,21 @@ describe("ImprovedGoBackManager", () => {
       },
       createClass: {
         currentStep: "info",
-        classFormData: {} as any,
+        classFormData: {
+          name: "",
+          description: "",
+          level: "BEGINNER" as const,
+          maxStudents: 0,
+          price: 0,
+          content: "",
+          schedule: {
+            days: [],
+            startTime: "",
+            endTime: "",
+            startDate: "",
+            endDate: "",
+          },
+        },
         selectedTeacherId: null,
       },
       auth: {
@@ -93,11 +107,26 @@ describe("ImprovedGoBackManager", () => {
         signup: {
           step: "role-selection",
           role: "STUDENT",
-          personalInfo: {} as any,
-          accountInfo: {} as any,
-          terms: {} as any,
+          personalInfo: {
+            name: "",
+            phoneNumber: "",
+          },
+          accountInfo: {
+            userId: "",
+            password: "",
+            confirmPassword: "",
+          },
+          terms: {
+            age: false,
+            terms1: false,
+            terms2: false,
+            marketing: false,
+          },
         },
-        login: {} as any,
+        login: {
+          userId: "",
+          password: "",
+        },
       },
       personManagement: {
         currentStep: "class-list",
@@ -109,7 +138,15 @@ describe("ImprovedGoBackManager", () => {
       },
       principalCreateClass: {
         currentStep: "info",
-        classFormData: {} as any,
+        classFormData: {
+          name: "",
+          description: "",
+          maxStudents: 0,
+          price: 0,
+          startDate: "",
+          endDate: "",
+          schedule: [],
+        },
         selectedTeacherId: null,
       },
       principalPersonManagement: {
@@ -159,7 +196,7 @@ describe("ImprovedGoBackManager", () => {
         ...mockFormsState,
         enrollment: {
           ...mockFormsState.enrollment,
-          currentStep: "date-selection" as any,
+          currentStep: "date-selection",
         },
       };
 
@@ -256,7 +293,21 @@ describe("ImprovedGoBackManager", () => {
         },
         createClass: {
           currentStep: "info",
-          classFormData: {} as any,
+          classFormData: {
+            name: "",
+            description: "",
+            level: "BEGINNER" as const,
+            maxStudents: 0,
+            price: 0,
+            content: "",
+            schedule: {
+              days: [],
+              startTime: "",
+              endTime: "",
+              startDate: "",
+              endDate: "",
+            },
+          },
           selectedTeacherId: null,
         },
         auth: {
@@ -265,11 +316,26 @@ describe("ImprovedGoBackManager", () => {
           signup: {
             step: "role-selection",
             role: "STUDENT",
-            personalInfo: {} as any,
-            accountInfo: {} as any,
-            terms: {} as any,
+            personalInfo: {
+              name: "",
+              phoneNumber: "",
+            },
+            accountInfo: {
+              userId: "",
+              password: "",
+              confirmPassword: "",
+            },
+            terms: {
+              age: false,
+              terms1: false,
+              terms2: false,
+              marketing: false,
+            },
           },
-          login: {} as any,
+          login: {
+            userId: "",
+            password: "",
+          },
         },
         personManagement: {
           currentStep: "class-list",
@@ -281,7 +347,15 @@ describe("ImprovedGoBackManager", () => {
         },
         principalCreateClass: {
           currentStep: "info",
-          classFormData: {} as any,
+          classFormData: {
+            name: "",
+            description: "",
+            maxStudents: 0,
+            price: 0,
+            startDate: "",
+            endDate: "",
+            schedule: [],
+          },
           selectedTeacherId: null,
         },
         principalPersonManagement: {
@@ -326,7 +400,21 @@ describe("ImprovedGoBackManager", () => {
         },
         createClass: {
           currentStep: "info",
-          classFormData: {} as any,
+          classFormData: {
+            name: "",
+            description: "",
+            level: "BEGINNER" as const,
+            maxStudents: 0,
+            price: 0,
+            content: "",
+            schedule: {
+              days: [],
+              startTime: "",
+              endTime: "",
+              startDate: "",
+              endDate: "",
+            },
+          },
           selectedTeacherId: null,
         },
         auth: {
@@ -335,11 +423,26 @@ describe("ImprovedGoBackManager", () => {
           signup: {
             step: "role-selection",
             role: "STUDENT",
-            personalInfo: {} as any,
-            accountInfo: {} as any,
-            terms: {} as any,
+            personalInfo: {
+              name: "",
+              phoneNumber: "",
+            },
+            accountInfo: {
+              userId: "",
+              password: "",
+              confirmPassword: "",
+            },
+            terms: {
+              age: false,
+              terms1: false,
+              terms2: false,
+              marketing: false,
+            },
           },
-          login: {} as any,
+          login: {
+            userId: "",
+            password: "",
+          },
         },
         personManagement: {
           currentStep: "class-list",
@@ -351,7 +454,15 @@ describe("ImprovedGoBackManager", () => {
         },
         principalCreateClass: {
           currentStep: "info",
-          classFormData: {} as any,
+          classFormData: {
+            name: "",
+            description: "",
+            maxStudents: 0,
+            price: 0,
+            startDate: "",
+            endDate: "",
+            schedule: [],
+          },
           selectedTeacherId: null,
         },
         principalPersonManagement: {

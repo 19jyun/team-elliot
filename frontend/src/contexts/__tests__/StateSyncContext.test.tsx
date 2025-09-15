@@ -1,9 +1,8 @@
 // src/contexts/__tests__/StateSyncContext.test.tsx
 import React from 'react';
-import { render, screen, act, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { StateSyncProvider, useStateSync } from '../state/StateSyncContext';
 import { NavigationState, FormsState } from '../state/StateSyncTypes';
-
 // Test component
 const TestComponent = () => {
   const stateSync = useStateSync();
@@ -35,7 +34,21 @@ const TestComponent = () => {
       },
       createClass: {
         currentStep: 'info',
-        classFormData: {} as any,
+        classFormData: {
+          name: '',
+          description: '',
+          level: 'BEGINNER' as const,
+          maxStudents: 0,
+          price: 0,
+          content: '',
+          schedule: {
+            days: [],
+            startTime: '',
+            endTime: '',
+            startDate: '',
+            endDate: '',
+          },
+        },
         selectedTeacherId: null,
       },
       auth: {
@@ -44,11 +57,26 @@ const TestComponent = () => {
         signup: {
           step: 'role-selection',
           role: 'STUDENT',
-          personalInfo: {} as any,
-          accountInfo: {} as any,
-          terms: {} as any,
+          personalInfo: {
+            name: '',
+            phoneNumber: '',
+          },
+          accountInfo: {
+            userId: '',
+            password: '',
+            confirmPassword: '',
+          },
+          terms: {
+            age: false,
+            terms1: false,
+            terms2: false,
+            marketing: false,
+          },
         },
-        login: {} as any,
+        login: {
+          userId: '',
+          password: '',
+        },
       },
       personManagement: {
         currentStep: 'class-list',
@@ -60,7 +88,15 @@ const TestComponent = () => {
       },
       principalCreateClass: {
         currentStep: 'info',
-        classFormData: {} as any,
+        classFormData: {
+          name: '',
+          description: '',
+          maxStudents: 0,
+          price: 0,
+          startDate: '',
+          endDate: '',
+          schedule: [],
+        },
         selectedTeacherId: null,
       },
       principalPersonManagement: {
@@ -125,8 +161,8 @@ const TestComponent = () => {
 // Subscription test component
 const SubscriptionTestComponent = () => {
   const stateSync = useStateSync();
-  const [navigationData, setNavigationData] = React.useState<any>(null);
-  const [formsData, setFormsData] = React.useState<any>(null);
+  const [navigationData, setNavigationData] = React.useState<NavigationState | null>(null);
+  const [formsData, setFormsData] = React.useState<FormsState | null>(null);
 
   React.useEffect(() => {
     const unsubscribeNav = stateSync.subscribe('navigation', (data) => {

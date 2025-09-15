@@ -31,11 +31,30 @@ export interface SessionData {
   date: string;
 }
 
+export interface ExtendedSessionData extends SessionData {
+  isAlreadyEnrolled: boolean;
+  isEnrollable: boolean;
+  class: {
+    id: number;
+    className: string;
+    level: string;
+    tuitionFee: string;
+    teacher: {
+      id: number;
+      name: string;
+    };
+    academy: {
+      id: number;
+      name: string;
+    };
+  };
+}
+
 export interface EnrollmentFormState {
   currentStep: EnrollmentStep;
   selectedMonth: number | null;
   selectedClasses: ClassesWithSessionsByMonthResponse[];
-  selectedSessions: SessionData[];
+  selectedSessions: ExtendedSessionData[];
   selectedClassIds: number[];
   selectedAcademyId: number | null;
   selectedClassesWithSessions: ClassesWithSessionsByMonthResponse[];
@@ -76,7 +95,7 @@ export class EnrollmentFormManager {
     this.notifyListeners();
   }
 
-  setSelectedSessions(sessions: SessionData[]): void {
+  setSelectedSessions(sessions: ExtendedSessionData[]): void {
     this.state.selectedSessions = sessions;
     this.emitStateChange();
     this.notifyListeners();

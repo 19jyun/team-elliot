@@ -8,7 +8,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { LogoutModal } from '@/components/user/LogoutModal'
-import { useImprovedApp } from '@/contexts/ImprovedAppContext'
+import { useApp } from '@/contexts/AppContext'
 import { logout } from '@/api/auth'
 import FooterLinks from '@/components/common/FooterLinks'
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi'
@@ -16,7 +16,7 @@ import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi'
 export default function PrincipalProfilePage() {
   const router = useRouter()
   const [showLogoutModal, setShowLogoutModal] = React.useState(false)
-  const { navigation } = useImprovedApp()
+  const { navigation } = useApp()
   const { navigateToSubPage } = navigation
   const { status } = useSession({
     required: true,

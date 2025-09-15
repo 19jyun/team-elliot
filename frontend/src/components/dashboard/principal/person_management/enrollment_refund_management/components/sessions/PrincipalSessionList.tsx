@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useImprovedApp } from '@/contexts/ImprovedAppContext';
+import { useApp } from '@/contexts/AppContext';
 import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
 
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +11,7 @@ import type { PrincipalEnrollment } from '@/types/api/principal';
 import type { PrincipalSessionListForRequestsVM } from '@/types/view/principal';
 
 export function PrincipalSessionList() {
-  const { form, setPrincipalSelectedSessionId, setPrincipalPersonManagementStep } = useImprovedApp();
+  const { form, setPrincipalSelectedSessionId, setPrincipalPersonManagementStep } = useApp();
   const { principalPersonManagement } = form;
   const { selectedTab, selectedClassId } = principalPersonManagement;
 

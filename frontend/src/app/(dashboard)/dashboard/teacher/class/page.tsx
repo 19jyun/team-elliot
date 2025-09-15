@@ -9,7 +9,7 @@ import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessi
 import { SessionDetailModal } from '@/components/common/Session/SessionDetailModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
-import { useImprovedApp } from '@/contexts/ImprovedAppContext'
+import { useApp } from '@/contexts/AppContext'
 import { toTeacherCalendarSessionVM, toTeacherSessionDetailModalVM, toClassSessionForCalendar } from '@/lib/adapters/teacher'
 import type { TeacherSessionDetailModalVM } from '@/types/view/teacher'
 import type { TeacherSession } from '@/types/api/teacher'
@@ -24,7 +24,7 @@ export default function TeacherDashboardPage() {
     },
   })
 
-  const { navigation } = useImprovedApp()
+  const { navigation } = useApp()
   const { navigateToSubPage } = navigation
   
   // API 기반 데이터 관리

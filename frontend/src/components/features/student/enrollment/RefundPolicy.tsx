@@ -4,7 +4,7 @@ import { CheckboxAgreement } from './CheckboxAgreement'
 import { Button } from './Button'
 import { policyData } from './data'
 import type { PolicySectionData } from '@/types/ui/common'
-import { useImprovedApp } from '@/contexts/ImprovedAppContext'
+import { useApp } from '@/contexts/AppContext'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 
 interface RefundPolicyProps {
@@ -17,7 +17,7 @@ export const RefundPolicy: React.FC<RefundPolicyProps> = ({ isOpen, onClose }) =
   const [isBottom, setIsBottom] = React.useState(false)
   const [isChecked, setIsChecked] = React.useState(false)
   const contentRef = React.useRef<HTMLDivElement>(null)
-  const { goBack } = useImprovedApp()
+  const { goBack } = useApp()
 
   const scrollToBottom = () => {
     if (contentRef.current) {

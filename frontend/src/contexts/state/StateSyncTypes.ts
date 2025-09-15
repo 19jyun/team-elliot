@@ -1,23 +1,11 @@
 // src/contexts/state/StateSyncTypes.ts
 // StateSync 시스템의 타입 정의
 
-import {
-  EnrollmentFormState,
-  EnrollmentStep,
-} from "../forms/EnrollmentFormManager";
-import {
-  CreateClassFormState,
-  CreateClassStep,
-} from "../forms/CreateClassFormManager";
-import { AuthFormState, AuthMode, SignupStep } from "../forms/AuthFormManager";
-import {
-  PersonManagementFormState,
-  PrincipalPersonManagementStep,
-} from "../forms/PersonManagementFormManager";
-import {
-  PrincipalCreateClassFormState,
-  PrincipalCreateClassStep,
-} from "../forms/PrincipalCreateClassFormManager";
+import { EnrollmentFormState } from "../forms/EnrollmentFormManager";
+import { CreateClassFormState } from "../forms/CreateClassFormManager";
+import { AuthFormState } from "../forms/AuthFormManager";
+import { PersonManagementFormState } from "../forms/PersonManagementFormManager";
+import { PrincipalCreateClassFormState } from "../forms/PrincipalCreateClassFormManager";
 import {
   NavigationItem,
   NavigationHistoryItem,

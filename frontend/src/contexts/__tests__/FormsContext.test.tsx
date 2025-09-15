@@ -1,12 +1,25 @@
 // src/contexts/__tests__/ImprovedFormsContext.test.tsx
 import React from 'react';
-import { render, screen, act, fireEvent, waitFor } from '@testing-library/react';
-import { ImprovedFormsProvider, useImprovedForms } from '../forms/ImprovedFormsContext';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { FormsProvider, useForms } from '../forms/FormsContext';
 import { StateSyncProvider } from '../state/StateSyncContext';
+
+// StateSyncContext 모킹 - 무한 루프 방지
+jest.mock('../state/StateSyncContext', () => ({
+  StateSyncProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useStateSync: jest.fn(() => ({
+    publish: jest.fn(),
+    subscribe: jest.fn(() => jest.fn()),
+    getState: jest.fn(() => ({})),
+    syncStates: jest.fn(),
+    clearState: jest.fn(),
+    clearAllStates: jest.fn(),
+  })),
+}));
 
 // Test component
 const TestComponent = () => {
-  const forms = useImprovedForms();
+  const forms = useForms();
   const [result, setResult] = React.useState<string>('');
 
   const handleEnrollmentStep = () => {
@@ -64,9 +77,9 @@ describe('ImprovedFormsContext', () => {
   it('should provide forms context', () => {
     render(
       <StateSyncProvider>
-        <ImprovedFormsProvider>
+        <FormsProvider>
           <TestComponent />
-        </ImprovedFormsProvider>
+        </FormsProvider>
       </StateSyncProvider>
     );
 
@@ -79,9 +92,9 @@ describe('ImprovedFormsContext', () => {
   it('should handle enrollment step changes', async () => {
     render(
       <StateSyncProvider>
-        <ImprovedFormsProvider>
+        <FormsProvider>
           <TestComponent />
-        </ImprovedFormsProvider>
+        </FormsProvider>
       </StateSyncProvider>
     );
 
@@ -96,9 +109,9 @@ describe('ImprovedFormsContext', () => {
   it('should handle enrollment data changes', async () => {
     render(
       <StateSyncProvider>
-        <ImprovedFormsProvider>
+        <FormsProvider>
           <TestComponent />
-        </ImprovedFormsProvider>
+        </FormsProvider>
       </StateSyncProvider>
     );
 
@@ -113,9 +126,9 @@ describe('ImprovedFormsContext', () => {
   it('should handle create class step changes', async () => {
     render(
       <StateSyncProvider>
-        <ImprovedFormsProvider>
+        <FormsProvider>
           <TestComponent />
-        </ImprovedFormsProvider>
+        </FormsProvider>
       </StateSyncProvider>
     );
 
@@ -130,9 +143,9 @@ describe('ImprovedFormsContext', () => {
   it('should handle auth mode changes', async () => {
     render(
       <StateSyncProvider>
-        <ImprovedFormsProvider>
+        <FormsProvider>
           <TestComponent />
-        </ImprovedFormsProvider>
+        </FormsProvider>
       </StateSyncProvider>
     );
 
@@ -147,9 +160,9 @@ describe('ImprovedFormsContext', () => {
   it('should reset all forms', async () => {
     render(
       <StateSyncProvider>
-        <ImprovedFormsProvider>
+        <FormsProvider>
           <TestComponent />
-        </ImprovedFormsProvider>
+        </FormsProvider>
       </StateSyncProvider>
     );
 
@@ -178,7 +191,7 @@ describe('ImprovedFormsContext', () => {
 
     expect(() => {
       render(<TestComponent />);
-    }).toThrow('useImprovedForms must be used within an ImprovedFormsProvider');
+    }).toThrow('useForms must be used within an FormsProvider');
 
     consoleSpy.mockRestore();
   });

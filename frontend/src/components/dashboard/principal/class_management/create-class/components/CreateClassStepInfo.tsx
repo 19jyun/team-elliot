@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useImprovedApp } from '@/contexts/ImprovedAppContext';
+import { useApp } from '@/contexts/AppContext';
 import { StatusStep } from './StatusStep';
 
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
@@ -14,7 +14,7 @@ const LEVELS = [
 ];
 
 export function CreateClassStepInfo() {
-  const { form, goBack, setClassFormData, setCreateClassStep } = useImprovedApp();
+  const { form, goBack, setClassFormData, setCreateClassStep } = useApp();
   const { createClass } = form;
   const { classFormData } = createClass;
   

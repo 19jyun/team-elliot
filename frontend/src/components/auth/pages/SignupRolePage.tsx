@@ -4,7 +4,7 @@ import * as React from 'react'
 import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
-import { useImprovedApp } from '@/contexts/ImprovedAppContext'
+import { useApp } from '@/contexts/AppContext'
 
 const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
   <div
@@ -16,8 +16,7 @@ const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
 )
 
 export function SignupRolePage() {
-  const { form } = useImprovedApp()
-  const { setSignupStep } = form.auth
+  const { setSignupStep } = useApp()
   const [currentStep] = useState(1)
   const [selectedRole, setSelectedRole] = useState<'STUDENT' | 'TEACHER' | null>(null)
 

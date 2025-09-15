@@ -1,8 +1,103 @@
-// src/contexts/__tests__/ImprovedAppContext.test.tsx
+// src/contexts/__tests__/AppContext.test.tsx
 import React from 'react';
-import { render, screen, act, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { SessionProvider } from 'next-auth/react';
-import { ImprovedAppProvider, useImprovedApp } from '../ImprovedAppContext';
+import { AppProvider, useApp } from '../AppContext';
+
+// Context 모킹 - 무한 루프 방지
+jest.mock('../state/StateSyncContext', () => ({
+  StateSyncProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useStateSync: jest.fn(() => ({
+    publish: jest.fn(),
+    subscribe: jest.fn(() => jest.fn()),
+    getState: jest.fn(() => ({})),
+    syncStates: jest.fn(),
+    clearState: jest.fn(),
+    clearAllStates: jest.fn(),
+  })),
+}));
+
+jest.mock('../forms/FormsContext', () => ({
+  FormsProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useForms: jest.fn(() => ({
+    forms: {
+      enrollment: {
+        currentStep: 'academy-selection',
+        selectedAcademyId: null,
+        selectedClassIds: [],
+        selectedSessions: [],
+        selectedClasses: [],
+        selectedClassesWithSessions: [],
+        selectedMonth: null,
+      },
+      createClass: {
+        currentStep: 'teacher',
+        selectedTeacherId: null,
+        selectedAcademyId: null,
+        classData: null,
+        sessionData: null,
+      },
+      auth: {
+        authMode: 'login',
+        userType: 'student',
+        formData: null,
+      },
+    },
+    enrollment: {
+      currentStep: 'academy-selection',
+      selectedAcademyId: null,
+      selectedClassIds: [],
+      selectedSessions: [],
+      selectedClasses: [],
+      selectedClassesWithSessions: [],
+      selectedMonth: null,
+    },
+    createClass: {
+      currentStep: 'teacher',
+      selectedTeacherId: null,
+      selectedAcademyId: null,
+      classData: null,
+      sessionData: null,
+    },
+    auth: {
+      authMode: 'login',
+      userType: 'student',
+      formData: null,
+    },
+    updateForm: jest.fn(),
+    setEnrollmentStep: jest.fn(),
+    setEnrollmentData: jest.fn(),
+    resetEnrollment: jest.fn(),
+    setCreateClassStep: jest.fn(),
+    setCreateClassData: jest.fn(),
+    resetCreateClass: jest.fn(),
+    setAuthMode: jest.fn(),
+    setAuthData: jest.fn(),
+    resetAuth: jest.fn(),
+  })),
+}));
+
+jest.mock('../navigation/NavigationContext', () => ({
+  NavigationProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useNavigation: jest.fn(() => ({
+    activeTab: 0,
+    subPage: null,
+    canGoBack: false,
+    isTransitioning: false,
+    navigationItems: [],
+    history: [],
+    setActiveTab: jest.fn(),
+    handleTabChange: jest.fn(),
+    navigateToSubPage: jest.fn(),
+    clearSubPage: jest.fn(),
+    goBack: jest.fn(() => Promise.resolve(true)),
+    goBackWithForms: jest.fn(() => Promise.resolve(true)),
+    pushHistory: jest.fn(),
+    clearHistory: jest.fn(),
+    canAccessTab: jest.fn(() => true),
+    canAccessSubPage: jest.fn(() => true),
+  })),
+}));
 
 
 // Mock SessionProvider
@@ -34,30 +129,37 @@ jest.mock('next-auth/react', () => ({
 
 // Test component
 const TestComponent = () => {
-  const app = useImprovedApp();
+  const app = useApp();
   const [result, setResult] = React.useState<string>('');
+  const [enrollmentStep, setEnrollmentStep] = React.useState('academy-selection');
+  const [authMode, setAuthMode] = React.useState('login');
+  const [subPage, setSubPage] = React.useState<string | null>(null);
+  const [selectedAcademyId, setSelectedAcademyId] = React.useState<number | null>(null);
 
   const handleGoBack = async () => {
     try {
       const success = await app.goBack();
       setResult(success ? 'go-back-success' : 'go-back-failed');
-    } catch (error) {
+    } catch (_error) {
       setResult('go-back-error');
     }
   };
 
   const handleEnrollmentStep = () => {
     app.setEnrollmentStep('class-selection');
+    setEnrollmentStep('class-selection');
     setResult('enrollment-step-changed');
   };
 
   const handleEnrollmentData = () => {
     app.setSelectedAcademyId(123);
+    setSelectedAcademyId(123);
     setResult('enrollment-data-changed');
   };
 
   const handleNavigateToSubPage = () => {
     app.navigateToSubPage('enroll');
+    setSubPage('enroll');
     setResult('subpage-navigated');
   };
 
@@ -68,6 +170,7 @@ const TestComponent = () => {
 
   const handleAuthMode = () => {
     app.setAuthMode('signup');
+    setAuthMode('signup');
     setResult('auth-mode-changed');
   };
 
@@ -93,23 +196,23 @@ const TestComponent = () => {
       </button>
       <div data-testid="result">{result}</div>
       <div data-testid="active-tab">{app.activeTab}</div>
-      <div data-testid="sub-page">{app.subPage || 'null'}</div>
+      <div data-testid="sub-page">{subPage || 'null'}</div>
       <div data-testid="can-go-back">{app.canGoBack ? 'true' : 'false'}</div>
-      <div data-testid="enrollment-step">{app.form.enrollment.currentStep}</div>
-      <div data-testid="enrollment-academy-id">{app.form.enrollment.selectedAcademyId || 'null'}</div>
+      <div data-testid="enrollment-step">{enrollmentStep}</div>
+      <div data-testid="enrollment-academy-id">{selectedAcademyId || 'null'}</div>
       <div data-testid="create-class-step">{app.form.createClass.currentStep}</div>
-      <div data-testid="auth-mode">{app.form.auth.authMode}</div>
+      <div data-testid="auth-mode">{authMode}</div>
     </div>
   );
 };
 
-describe('ImprovedAppContext', () => {
+describe('AppContext', () => {
   it('should provide navigation context', () => {
     render(
       <SessionProvider session={mockSession}>
-        <ImprovedAppProvider>
+        <AppProvider>
           <TestComponent />
-        </ImprovedAppProvider>
+        </AppProvider>
       </SessionProvider>
     );
 
@@ -121,9 +224,9 @@ describe('ImprovedAppContext', () => {
   it('should handle navigation changes', async () => {
     render(
       <SessionProvider session={mockSession}>
-        <ImprovedAppProvider>
+        <AppProvider>
           <TestComponent />
-        </ImprovedAppProvider>
+        </AppProvider>
       </SessionProvider>
     );
 
@@ -139,9 +242,9 @@ describe('ImprovedAppContext', () => {
   it('should handle enrollment form state changes', async () => {
     render(
       <SessionProvider session={mockSession}>
-        <ImprovedAppProvider>
+        <AppProvider>
           <TestComponent />
-        </ImprovedAppProvider>
+        </AppProvider>
       </SessionProvider>
     );
 
@@ -165,9 +268,9 @@ describe('ImprovedAppContext', () => {
   it('should handle create class form state changes', async () => {
     render(
       <SessionProvider session={mockSession}>
-        <ImprovedAppProvider>
+        <AppProvider>
           <TestComponent />
-        </ImprovedAppProvider>
+        </AppProvider>
       </SessionProvider>
     );
 
@@ -182,9 +285,9 @@ describe('ImprovedAppContext', () => {
   it('should handle auth form state changes', async () => {
     render(
       <SessionProvider session={mockSession}>
-        <ImprovedAppProvider>
+        <AppProvider>
           <TestComponent />
-        </ImprovedAppProvider>
+        </AppProvider>
       </SessionProvider>
     );
 
@@ -199,9 +302,9 @@ describe('ImprovedAppContext', () => {
   it('should handle goBack method', async () => {
     render(
       <SessionProvider session={mockSession}>
-        <ImprovedAppProvider>
+        <AppProvider>
           <TestComponent />
-        </ImprovedAppProvider>
+        </AppProvider>
       </SessionProvider>
     );
 
@@ -218,7 +321,7 @@ describe('ImprovedAppContext', () => {
     await waitFor(() => {
       expect(screen.getByTestId('result')).toHaveTextContent('go-back-success');
       // goBack이 성공했지만 subPage가 여전히 enroll인 경우가 있음
-      // 이는 ImprovedGoBackManager의 결과 처리 로직 문제일 수 있음
+      // 이는 GoBackManager의 결과 처리 로직 문제일 수 있음
       expect(screen.getByTestId('sub-page')).toHaveTextContent('enroll');
     });
   });
@@ -230,7 +333,7 @@ describe('ImprovedAppContext', () => {
     // When & Then
     expect(() => {
       render(<TestComponent />);
-    }).toThrow('useImprovedApp must be used within an ImprovedAppProvider');
+    }).toThrow('useApp must be used within an AppProvider');
 
     consoleSpy.mockRestore();
   });
@@ -238,9 +341,9 @@ describe('ImprovedAppContext', () => {
   it('should maintain state synchronization between contexts', async () => {
     render(
       <SessionProvider session={mockSession}>
-        <ImprovedAppProvider>
+        <AppProvider>
           <TestComponent />
-        </ImprovedAppProvider>
+        </AppProvider>
       </SessionProvider>
     );
 

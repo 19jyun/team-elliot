@@ -1,6 +1,6 @@
 'use client';
 
-import { useImprovedApp } from '@/contexts/ImprovedAppContext';
+import { useApp } from '@/contexts/AppContext';
 import { CommonHeader } from '@/components/layout/CommonHeader';
 import StudentClassPage from '@/app/(dashboard)/dashboard/student/class/page';
 import StudentEnrollPage from '@/app/(dashboard)/dashboard/student/enroll/page';
@@ -21,7 +21,7 @@ import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSoc
 
 
 function StudentDashboardContent() {
-  const { navigation } = useImprovedApp();
+  const { navigation } = useApp();
   const { activeTab, handleTabChange, subPage, isTransitioning } = navigation;
 
   // Student 데이터 초기화

@@ -3,7 +3,7 @@
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { useImprovedApp } from '@/contexts/ImprovedAppContext'
+import { useApp } from '@/contexts/AppContext'
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi'
 import { useEffect } from 'react'
 
@@ -64,7 +64,7 @@ export default function PrincipalPersonManagementPage() {
       router.push('/auth')
     },
   })
-  const { navigation } = useImprovedApp()
+  const { navigation } = useApp()
   const { navigateToSubPage } = navigation
 
   // API 기반 데이터 관리

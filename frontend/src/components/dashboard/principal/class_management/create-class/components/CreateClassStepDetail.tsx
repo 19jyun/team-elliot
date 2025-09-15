@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useImprovedApp } from '@/contexts/ImprovedAppContext';
+import { useApp } from '@/contexts/AppContext';
 import { StatusStep } from './StatusStep';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { toast } from 'sonner';
 
 export function CreateClassStepDetail() {
-  const { form, setClassFormData, setCreateClassStep } = useImprovedApp();
+  const { form, setClassFormData, setCreateClassStep } = useApp();
   const { createClass } = form;
   const { classFormData, selectedTeacherId } = createClass;
 

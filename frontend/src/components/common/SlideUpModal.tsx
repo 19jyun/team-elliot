@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useImprovedApp } from '@/contexts/ImprovedAppContext';
+import { useApp } from '@/contexts/AppContext';
 
 interface SlideUpModalProps {
   isOpen: boolean;
@@ -28,7 +28,7 @@ export function SlideUpModal({
 }: SlideUpModalProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
-  const { ui } = useImprovedApp();
+  const { ui } = useApp();
   const { pushFocus, popFocus } = ui;
 
   // 모달이 열릴 때 애니메이션 시작

@@ -1,6 +1,6 @@
 'use client';
 
-import { useImprovedApp } from '@/contexts/ImprovedAppContext';
+import { useApp } from '@/contexts/AppContext';
 import { CommonHeader } from '@/components/layout/CommonHeader';
 import TeacherClassPage from '@/app/(dashboard)/dashboard/teacher/class/page';
 import TeacherClassManagementPage from '@/app/(dashboard)/dashboard/teacher/class_management/page';
@@ -17,7 +17,7 @@ import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSoc
 
 
 function TeacherDashboardContent() {
-  const { navigation } = useImprovedApp();
+  const { navigation } = useApp();
   const { activeTab, handleTabChange, subPage, clearSubPage, isTransitioning } = navigation;
 
   // SubPage 렌더링 함수

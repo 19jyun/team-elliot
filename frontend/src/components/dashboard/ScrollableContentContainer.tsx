@@ -2,7 +2,7 @@
 
 import React, { ReactNode, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { useImprovedApp } from '@/contexts/ImprovedAppContext';
+import { useApp } from '@/contexts/AppContext';
 
 interface ScrollableContentContainerProps {
   children: ReactNode;
@@ -19,7 +19,7 @@ export function ScrollableContentContainer({
   onTransitionComplete,
   onTabChange,
 }: ScrollableContentContainerProps) {
-  const { ui } = useImprovedApp();
+  const { ui } = useApp();
   const { isDashboardFocused } = ui;
   const containerRef = useRef<HTMLDivElement>(null);
   const [dragOffset, setDragOffset] = useState(0);

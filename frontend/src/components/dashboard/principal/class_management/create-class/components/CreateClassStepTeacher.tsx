@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { StatusStep } from './StatusStep';
-import { useImprovedApp } from '@/contexts/ImprovedAppContext';
+import { useApp } from '@/contexts/AppContext';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { getImageUrl } from '@/utils/imageUtils';
 import Image from 'next/image';
@@ -17,7 +17,7 @@ interface Teacher {
 }
 
 export function CreateClassStepTeacher() {
-  const { form, goBack, setCreateClassStep, setSelectedTeacherId } = useImprovedApp();
+  const { form, goBack, setCreateClassStep, setSelectedTeacherId } = useApp();
   const { createClass } = form;
   const { selectedTeacherId } = createClass;
   

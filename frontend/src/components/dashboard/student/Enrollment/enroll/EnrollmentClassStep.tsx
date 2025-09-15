@@ -3,7 +3,7 @@
 import React from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
-import { useImprovedApp } from '@/contexts/ImprovedAppContext';
+import { useApp } from '@/contexts/AppContext';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { ClassCard } from '@/components/features/student/enrollment/month/ClassCard';
 import { ClassDetailModal } from '@/components/features/student/classes/ClassDetailModal';
@@ -38,7 +38,7 @@ function formatTimeForCalendar(date: string | Date) {
 }
 
 export function EnrollmentClassStep() {
-  const { form, goBack, setEnrollmentStep, setSelectedClassIds } = useImprovedApp();
+  const { form, goBack, setEnrollmentStep, setSelectedClassIds } = useApp();
   const { enrollment } = form;
   const { selectedAcademyId } = enrollment;
   const { status } = useSession({

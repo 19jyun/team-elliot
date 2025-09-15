@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useImprovedApp } from '@/contexts/ImprovedAppContext';
+import { useApp } from '@/contexts/AppContext';
 import { EnrollmentModificationDateStep } from './EnrollmentModificationDateStep';
 import { EnrollmentModificationPaymentStep } from './EnrollmentModificationPaymentStep';
 import { EnrollmentCompleteStep } from '../enroll/EnrollmentCompleteStep';
@@ -13,7 +13,7 @@ import type { ModificationSessionVM } from '@/types/view/student';
 import type { EnrollmentModificationContainerVM } from '@/types/view/student';
 
 export function EnrollmentModificationContainer({ classId, month }: EnrollmentModificationContainerVM) {
-  const { form, setEnrollmentStep } = useImprovedApp();
+  const { form, setEnrollmentStep } = useApp();
   const { enrollment } = form;
   const { currentStep } = enrollment;
   const { enrollmentHistory, isLoading, error, loadEnrollmentHistory } = useStudentApi();

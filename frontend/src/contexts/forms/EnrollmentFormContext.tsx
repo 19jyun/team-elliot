@@ -1,7 +1,8 @@
 // src/contexts/forms/EnrollmentFormContext.tsx
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { EnrollmentFormManager, EnrollmentFormState, EnrollmentStep, ClassesWithSessionsByMonthResponse, SessionData } from './EnrollmentFormManager';
+import { EnrollmentFormManager, EnrollmentFormState, EnrollmentStep, ClassesWithSessionsByMonthResponse } from './EnrollmentFormManager';
 import { contextEventBus } from '../events/ContextEventBus';
+import { ExtendedSessionData } from '@/contexts/forms/EnrollmentFormManager';
 
 interface EnrollmentFormContextType {
   // 상태
@@ -11,7 +12,7 @@ interface EnrollmentFormContextType {
   currentStep: EnrollmentStep;
   selectedMonth: number | null;
   selectedClasses: ClassesWithSessionsByMonthResponse[];
-  selectedSessions: SessionData[];
+  selectedSessions: ExtendedSessionData[];
   selectedClassIds: number[];
   selectedAcademyId: number | null;
   selectedClassesWithSessions: ClassesWithSessionsByMonthResponse[];
@@ -23,7 +24,7 @@ interface EnrollmentFormContextType {
   // 데이터 관리
   setSelectedMonth: (month: number) => void;
   setSelectedClasses: (classes: ClassesWithSessionsByMonthResponse[]) => void;
-  setSelectedSessions: (sessions: SessionData[]) => void;
+  setSelectedSessions: (sessions: ExtendedSessionData[]) => void;
   setSelectedClassIds: (classIds: number[]) => void;
   setSelectedAcademyId: (academyId: number | null) => void;
   setSelectedClassesWithSessions: (classes: ClassesWithSessionsByMonthResponse[]) => void;
@@ -90,7 +91,7 @@ export const EnrollmentFormProvider: React.FC<EnrollmentFormProviderProps> = ({ 
     manager.setSelectedClasses(classes);
   }, [manager]);
 
-  const setSelectedSessions = useCallback((sessions: SessionData[]) => {
+  const setSelectedSessions = useCallback((sessions: ExtendedSessionData[]) => {
     manager.setSelectedSessions(sessions);
   }, [manager]);
 

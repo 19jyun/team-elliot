@@ -1,6 +1,6 @@
 // src/contexts/navigation/index.ts
 export { VirtualHistoryManager } from "./VirtualHistoryManager";
-export { ImprovedGoBackManager } from "./ImprovedGoBackManager";
+export { GoBackManager as ImprovedGoBackManager } from "./GoBackManager";
 export type {
   HistoryEntry,
   VirtualHistoryState,

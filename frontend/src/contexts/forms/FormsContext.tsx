@@ -1,7 +1,7 @@
-// src/contexts/forms/ImprovedFormsContext.tsx
+// src/contexts/forms/FormsContext.tsx
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, ReactNode } from 'react';
 import { useStateSync } from '../state/StateSyncContext';
 import { FormsState } from '../state/StateSyncTypes';
 import { contextEventBus } from '../events/ContextEventBus';
@@ -14,7 +14,7 @@ import { PersonManagementFormManager, PersonManagementFormState, PrincipalPerson
 import { PrincipalCreateClassFormManager, PrincipalCreateClassFormState, PrincipalCreateClassStep } from './PrincipalCreateClassFormManager';
 import { PrincipalPersonManagementFormManager, PrincipalPersonManagementFormState } from './PrincipalPersonManagementFormManager';
 
-interface ImprovedFormsContextType {
+interface FormsContextType {
   // 상태
   forms: FormsState;
   
@@ -70,21 +70,21 @@ interface ImprovedFormsContextType {
   getFormState: <T extends keyof FormsState>(formType: T) => FormsState[T];
 }
 
-const ImprovedFormsContext = createContext<ImprovedFormsContextType | undefined>(undefined);
+const FormsContext = createContext<FormsContextType | undefined>(undefined);
 
-export const useImprovedForms = (): ImprovedFormsContextType => {
-  const context = useContext(ImprovedFormsContext);
+export const useForms = (): FormsContextType => {
+  const context = useContext(FormsContext);
   if (!context) {
-    throw new Error('useImprovedForms must be used within an ImprovedFormsProvider');
+    throw new Error('useForms must be used within an FormsProvider');
   }
   return context;
 };
 
-interface ImprovedFormsProviderProps {
+interface FormsProviderProps {
   children: ReactNode;
 }
 
-export const ImprovedFormsProvider: React.FC<ImprovedFormsProviderProps> = ({ children }) => {
+export const FormsProvider: React.FC<FormsProviderProps> = ({ children }) => {
   const stateSync = useStateSync();
   
   // 개별 폼 Manager들 초기화
@@ -104,14 +104,14 @@ export const ImprovedFormsProvider: React.FC<ImprovedFormsProviderProps> = ({ ch
   const [principalPersonManagement, setPrincipalPersonManagement] = useState<PrincipalPersonManagementFormState>(principalPersonManagementManager.getState());
   
   // 통합 폼 상태
-  const forms: FormsState = {
+  const forms: FormsState = useMemo(() => ({
     enrollment,
     createClass,
     auth,
     personManagement,
     principalCreateClass,
     principalPersonManagement,
-  };
+  }), [enrollment, createClass, auth, personManagement, principalCreateClass, principalPersonManagement]);
 
   // Manager 상태 구독
   useEffect(() => {
@@ -181,7 +181,7 @@ export const ImprovedFormsProvider: React.FC<ImprovedFormsProviderProps> = ({ ch
     };
     
     stateSync.publish('forms', formsState);
-  }, [enrollment, createClass, auth, personManagement, principalCreateClass, principalPersonManagement]);
+  }, [enrollment, createClass, auth, personManagement, principalCreateClass, principalPersonManagement, stateSync]);
 
   // 폼 상태 업데이트
   const updateForm = useCallback(<T extends keyof FormsState>(
@@ -316,7 +316,7 @@ export const ImprovedFormsProvider: React.FC<ImprovedFormsProviderProps> = ({ ch
     return forms[formType];
   }, [forms]);
 
-  const value: ImprovedFormsContextType = {
+  const value: FormsContextType = {
     forms,
     enrollment,
     createClass,
@@ -350,8 +350,8 @@ export const ImprovedFormsProvider: React.FC<ImprovedFormsProviderProps> = ({ ch
   };
 
   return (
-    <ImprovedFormsContext.Provider value={value}>
+    <FormsContext.Provider value={value}>
       {children}
-    </ImprovedFormsContext.Provider>
+    </FormsContext.Provider>
   );
 };

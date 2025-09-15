@@ -5,9 +5,9 @@ import { CalendarProvider } from '@/contexts/CalendarContext'
 import DateSelectFooter from '@/components/features/student/enrollment/month/date/DateSelectFooter'
 import { useState } from 'react'
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep'
-import { useImprovedApp } from '@/contexts/ImprovedAppContext'
-import { useEnrollmentCalculation } from '@/hooks/useEnrollmentCalculation'
+import { useApp } from '@/contexts/AppContext'
 import { useStudentApi } from '@/hooks/student/useStudentApi'
+import { ExtendedSessionData } from '@/contexts/forms/EnrollmentFormManager'
 import type { ClassSessionForModification } from '@/types/api/class'
 import type { ClassSession } from '@/types/api/class'
 import type { EnrollmentModificationDateStepVM } from '@/types/view/student'
@@ -17,10 +17,10 @@ export function EnrollmentModificationDateStep({
   existingEnrollments, 
   onComplete 
 }: EnrollmentModificationDateStepVM) {
-  const { setSelectedSessions } = useImprovedApp()
+  const { setSelectedSessions } = useApp()
   const { loadModificationSessions } = useStudentApi();
   const [selectedCount, setSelectedCount] = useState(0);
-  const [selectedClasses, setSelectedClasses] = useState<Array<{ id: number; sessions: ClassSessionForModification[] }>>([]);
+  const [_selectedClasses, setSelectedClasses] = useState<Array<{ id: number; sessions: ClassSessionForModification[] }>>([]);
   const [modificationSessions, setModificationSessions] = useState<ClassSessionForModification[]>([]);
   const [calendarRange, setCalendarRange] = useState<{startDate: string, endDate: string} | null>(null);
   const [isLoadingSessions, setIsLoadingSessions] = useState(false);
@@ -81,7 +81,7 @@ export function EnrollmentModificationDateStep({
     };
 
     loadSessions();
-  }, [classId, loadModificationSessions]); // existingEnrollments 의존성 제거
+  }, [classId, loadModificationSessions, existingEnrollments]);
 
   // existingEnrollments가 변경될 때 미리 선택 로직 재실행
   React.useEffect(() => {
@@ -237,13 +237,29 @@ export function EnrollmentModificationDateStep({
         sessions: selectedSessions
       }]));
       
-      // Context에도 저장 (SessionData 타입으로 변환)
-      const convertedSessions = selectedSessions.map(session => ({
+      // Context에도 저장 (ExtendedSessionData 타입으로 변환)
+      const convertedSessions: ExtendedSessionData[] = selectedSessions.map(session => ({
         sessionId: session.id,
         sessionName: session.class?.className || 'Unknown Class',
         startTime: session.startTime,
         endTime: session.endTime,
         date: session.date,
+        isAlreadyEnrolled: session.isAlreadyEnrolled || false,
+        isEnrollable: session.isEnrollable || true,
+        class: {
+          id: session.class?.id || 0,
+          className: session.class?.className || 'Unknown Class',
+          level: session.class?.level || 'BEGINNER',
+          tuitionFee: session.class?.tuitionFee || '0',
+          teacher: {
+            id: session.class?.teacher?.id || 0,
+            name: session.class?.teacher?.name || 'Unknown Teacher',
+          },
+          academy: {
+            id: 0,
+            name: 'Unknown Academy',
+          },
+        },
       }));
       setSelectedSessions(convertedSessions);
       

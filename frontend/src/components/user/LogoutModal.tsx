@@ -3,10 +3,10 @@ import { CloseIcon } from '@/components/icons'
 import { useEffect } from 'react'
 import { IconButton } from '@/components/ui/IconButton'
 import { LogoutModalProps } from '@/app/(dashboard)/types'
-import { useImprovedApp } from '@/contexts/ImprovedAppContext'
+import { useApp } from '@/contexts/AppContext'
 
 export function LogoutModal({ onLogout, onClose }: LogoutModalProps) {
-  const { ui } = useImprovedApp();
+  const { ui } = useApp();
   const { pushFocus, popFocus } = ui;
 
   useEffect(() => {
