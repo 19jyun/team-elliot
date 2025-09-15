@@ -129,7 +129,7 @@ jobs:
   deploy-staging:
     needs: [test, security]
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
 
     steps:
       - name: Download build artifacts
@@ -145,7 +145,7 @@ jobs:
           # Example: Vercel preview deployment
 
   deploy-production:
-    needs: [test, security]
+    needs: [test, security, deploy-staging]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
