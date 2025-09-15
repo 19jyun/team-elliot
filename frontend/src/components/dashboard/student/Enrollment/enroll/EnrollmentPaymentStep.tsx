@@ -7,13 +7,13 @@ import { useEnrollment } from '@/hooks/student/useEnrollment';
 import { PrincipalPaymentBox } from '@/components/features/student/enrollment/month/date/payment/PrincipalPaymentBox';
 import { PaymentConfirmFooter } from '@/components/features/student/enrollment/month/date/payment/PaymentConfirmFooter';
 import { SelectedSession, PrincipalPaymentInfo } from '@/components/features/student/enrollment/month/date/payment/types';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 import type { EnrollmentPaymentStepVM } from '@/types/view/student';
 
 // 새로운 수강신청 플로우 전용 결제 페이지
 export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
-  const { form } = useApp();
-  const { enrollment, setEnrollmentStep } = form;
+  const { form, setEnrollmentStep } = useApp();
+  const { enrollment } = form;
   const { selectedSessions: contextSessions } = enrollment;
   const { loadSessionPaymentInfo } = useStudentApi();
   const { enrollSessions } = useEnrollment();
@@ -155,7 +155,7 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
     let sessions: SelectedSession[] = [];
     
     if (contextSessions && contextSessions.length > 0) {
-      sessions = contextSessions as SelectedSession[];
+      sessions = contextSessions as unknown as SelectedSession[];
 
     } else if (typeof window !== 'undefined') {
       const sessionsData = localStorage.getItem('selectedSessions');

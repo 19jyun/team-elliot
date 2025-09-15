@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 import { EnrollmentModificationDateStep } from './EnrollmentModificationDateStep';
 import { EnrollmentModificationPaymentStep } from './EnrollmentModificationPaymentStep';
 import { EnrollmentCompleteStep } from '../enroll/EnrollmentCompleteStep';
@@ -13,11 +13,11 @@ import type { ModificationSessionVM } from '@/types/view/student';
 import type { EnrollmentModificationContainerVM } from '@/types/view/student';
 
 export function EnrollmentModificationContainer({ classId, month }: EnrollmentModificationContainerVM) {
-  const { form } = useApp();
-  const { enrollment, setEnrollmentStep } = form;
+  const { form, setEnrollmentStep } = useApp();
+  const { enrollment } = form;
   const { currentStep } = enrollment;
   const { enrollmentHistory, isLoading, error, loadEnrollmentHistory } = useStudentApi();
-  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [selectedSessionIds, setSelectedSessionIds] = useState<Set<number>>(new Set());
   const [refundAmount, setRefundAmount] = useState(0);
   const [cancelledSessionsCount, setCancelledSessionsCount] = useState(0);
   const [sessionPrice, setSessionPrice] = useState(50000); // 기본값
@@ -34,7 +34,7 @@ export function EnrollmentModificationContainer({ classId, month }: EnrollmentMo
   }, [loadEnrollmentHistory]);
 
   // 수강 변경 모드에서는 항상 date-selection 단계로 강제 설정
-  const effectiveStep = currentStep === 'main' ? 'date-selection' : currentStep;
+  const effectiveStep = (currentStep as string) === 'main' ? 'date-selection' : currentStep;
   
 
   // Redux에서 해당 클래스의 수강 신청 정보 필터링 (ViewModel로 정규화)
@@ -47,12 +47,13 @@ export function EnrollmentModificationContainer({ classId, month }: EnrollmentMo
       enrollment.session.class.id === classId
     );
 
-    return filtered.map((enrollment) => ({
+    const result = filtered.map((enrollment) => ({
       id: enrollment.session.id,
       date: enrollment.session.date,
       startTime: enrollment.session.startTime,
       endTime: enrollment.session.endTime,
       class: enrollment.session.class,
+      isAlreadyEnrolled: enrollment.status !== 'REJECTED', // REJECTED 상태는 수강 중이 아님
       enrollment: {
         id: enrollment.id,
         status: enrollment.status,
@@ -61,18 +62,21 @@ export function EnrollmentModificationContainer({ classId, month }: EnrollmentMo
         refundRejection: enrollment.refundRejection,
       },
     }));
+    
+    return result;
   }, [enrollmentHistory, classId]);
 
   // 수강 변경 금액 계산
   const { change } = useEnrollmentCalculation({
     originalEnrollments: existingEnrollments,
-    selectedDates,
+    selectedSessionIds,
     sessionPrice: sessionPrice
   });
+  
 
-  // 날짜 선택 완료 시 처리
-  const handleDateSelectionComplete = (dates: string[], sessionPrice?: number) => {
-    setSelectedDates(dates);
+  // 세션 선택 완료 시 처리
+  const handleSessionSelectionComplete = (sessionIds: Set<number>, sessionPrice?: number) => {
+    setSelectedSessionIds(sessionIds);
     
     // 전달받은 sessionPrice가 있으면 사용, 없으면 기존 값 사용
     const actualSessionPrice = sessionPrice || 50000;
@@ -82,40 +86,24 @@ export function EnrollmentModificationContainer({ classId, month }: EnrollmentMo
       setSessionPrice(sessionPrice);
     }
     
-    // 즉시 단계 분기 처리 - useEnrollmentCalculation 로직을 직접 구현
-    // 실제 sessionPrice 사용
-    
-    // 기존에 신청된 세션들 (활성 상태)
+    // 직접 계산 (훅은 컴포넌트 최상위에서만 호출 가능)
     const originalEnrolledSessions = existingEnrollments.filter(
-      (enrollment) =>
-        !!enrollment.enrollment &&
-        (enrollment.enrollment!.status === "CONFIRMED" ||
-          enrollment.enrollment!.status === "PENDING" ||
-          enrollment.enrollment!.status === "REFUND_REJECTED_CONFIRMED")
+      (enrollment) => enrollment.isAlreadyEnrolled === true
     );
-
-    // 기존 신청 세션의 날짜들
-    const originalDates = originalEnrolledSessions.map(
-      (enrollment) => new Date(enrollment.date).toISOString().split("T")[0]
-    );
-
-    // 새로 추가될 세션 수 (기존에 없던 세션들)
-    const newlyAddedSessionsCount = dates.filter(
-      date => !originalDates.includes(date)
+    
+    const originalSessionIds = new Set(originalEnrolledSessions.map(session => session.id));
+    
+    const newlyAddedSessionsCount = Array.from(sessionIds).filter(
+      (sessionId) => !originalSessionIds.has(sessionId)
     ).length;
-
-    // 새로 취소될 세션 수 (기존에 있던 세션들)
-    const newlyCancelledSessionsCount = originalDates.filter(
-      date => !dates.includes(date)
+    
+    const newlyCancelledSessionsCount = Array.from(originalSessionIds).filter(
+      (sessionId) => !sessionIds.has(sessionId)
     ).length;
-
-    // 순 변경 세션 수 = 새로 추가 - 새로 취소
+    
     const netChange = newlyAddedSessionsCount - newlyCancelledSessionsCount;
-
-    // 총 금액 계산
     const totalAmount = netChange * actualSessionPrice;
-
-    // 변경 타입 결정
+    
     let changeType: "additional_payment" | "refund" | "no_change";
     if (totalAmount > 0) {
       changeType = "additional_payment";
@@ -124,17 +112,6 @@ export function EnrollmentModificationContainer({ classId, month }: EnrollmentMo
     } else {
       changeType = "no_change";
     }
-    
-    // 변경 정보 로깅
-    console.log('수강 변경 정보:', {
-      dates,
-      originalEnrolledSessions: originalEnrolledSessions.length,
-      newlyAddedSessionsCount,
-      newlyCancelledSessionsCount,
-      netChange,
-      totalAmount,
-      changeType
-    });
     
     // 실제 변경 사항이 있는지 확인
     const hasChanges = newlyAddedSessionsCount > 0 || newlyCancelledSessionsCount > 0;
@@ -146,10 +123,8 @@ export function EnrollmentModificationContainer({ classId, month }: EnrollmentMo
         setEnrollmentStep('complete');
       }
     } else if (changeType === "additional_payment") {
-      // 추가 결제가 필요하면 결제 페이지로
       setEnrollmentStep('payment');
     } else if (changeType === "refund") {
-      // 환불이 필요하면 환불 신청 페이지로
       setRefundAmount(Math.abs(totalAmount));
       setCancelledSessionsCount(newlyCancelledSessionsCount);
       setEnrollmentStep('refund-request');
@@ -193,7 +168,7 @@ export function EnrollmentModificationContainer({ classId, month }: EnrollmentMo
             classId={classId}
             existingEnrollments={existingEnrollments}
             month={month}
-            onComplete={handleDateSelectionComplete}
+            onComplete={handleSessionSelectionComplete}
           />
         );
       case 'payment':
@@ -230,7 +205,7 @@ export function EnrollmentModificationContainer({ classId, month }: EnrollmentMo
             classId={classId}
             existingEnrollments={existingEnrollments}
             month={month}
-            onComplete={handleDateSelectionComplete}
+            onComplete={handleSessionSelectionComplete}
           />
         );
     }

@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { Plus, Users, Building2, AlertTriangle, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 import { AcademyCard } from '@/components/common/AcademyCard';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
 import { useApiError } from '@/hooks/useApiError';

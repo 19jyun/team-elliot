@@ -10,7 +10,7 @@ import { cva } from 'class-variance-authority'
 import { Box, Button, Typography } from '@mui/material'
 import { Visibility, VisibilityOff } from '@mui/icons-material'
 import Image from 'next/image'
-import { useApp } from '@/contexts'
+import { useApp } from '@/contexts/AppContext'
 import { useApiError } from '@/hooks/useApiError'
 
 const buttonVariants = cva(
@@ -165,8 +165,7 @@ const InputField: React.FC<InputFieldProps> = ({
 
 export function LoginPage() {
   const router = useRouter()
-  const { form } = useApp()
-  const { navigateToAuthSubPage } = form
+  const { setAuthMode, setSignupStep } = useApp()
   const [formData, setFormData] = useState({
     userId: '',
     password: '',
@@ -307,7 +306,10 @@ export function LoginPage() {
             계정이 아직 없으신가요?
           </Typography>
           <Button
-            onClick={() => navigateToAuthSubPage('signup-role')}
+            onClick={() => {
+              setAuthMode('signup');
+              setSignupStep('role-selection');
+            }}
             sx={{
               fontSize: '16px',
               fontWeight: 500,

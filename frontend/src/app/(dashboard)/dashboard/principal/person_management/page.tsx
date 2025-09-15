@@ -3,7 +3,7 @@
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { useApp } from '@/contexts'
+import { useApp } from '@/contexts/AppContext'
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi'
 import { useEffect } from 'react'
 

@@ -3,13 +3,12 @@
 import React from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
 
 export function EnrollmentAcademyStep() {
-  const { form, goBack } = useApp();
-  const { setEnrollmentStep, setSelectedAcademyId: setContextSelectedAcademyId } = form;
+  const { goBack, setSelectedAcademyId: setContextSelectedAcademyId, setEnrollmentStep } = useApp();
   const { status } = useSession({
     required: true,
     onUnauthenticated() {

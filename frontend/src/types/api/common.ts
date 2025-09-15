@@ -14,7 +14,8 @@ export type EnrollmentStatus =
   | "PENDING"
   | "CONFIRMED"
   | "REJECTED"
-  | "REFUND_REQUESTED";
+  | "REFUND_REQUESTED"
+  | "REFUND_REJECTED_CONFIRMED";
 
 // 환불 상태 타입
 export type RefundStatusType = "REFUND_REQUESTED" | "APPROVED" | "REJECTED";

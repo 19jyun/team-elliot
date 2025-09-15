@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { StatusStep } from './StatusStep';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { getImageUrl } from '@/utils/imageUtils';
 import Image from 'next/image';
@@ -17,8 +17,8 @@ interface Teacher {
 }
 
 export function CreateClassStepTeacher() {
-  const { form, goBack } = useApp();
-  const { createClass, setCreateClassStep, setSelectedTeacherId } = form;
+  const { form, goBack, setCreateClassStep, setSelectedTeacherId } = useApp();
+  const { createClass } = form;
   const { selectedTeacherId } = createClass;
   
   const [selectedTeacher, setSelectedTeacher] = useState<number | null>(selectedTeacherId);

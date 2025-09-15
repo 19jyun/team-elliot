@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 import { StatusStep } from './StatusStep';
 
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
@@ -14,8 +14,8 @@ const LEVELS = [
 ];
 
 export function CreateClassStepInfo() {
-  const { form, goBack } = useApp();
-  const { createClass, setClassFormData, setCreateClassStep } = form;
+  const { form, goBack, setClassFormData, setCreateClassStep } = useApp();
+  const { createClass } = form;
   const { classFormData } = createClass;
   
   // API 기반 데이터 관리
@@ -76,7 +76,6 @@ export function CreateClassStepInfo() {
     }
 
     // DashboardContext의 createClass 상태 업데이트
-    const academyId = academy.id;
     setClassFormData({
       ...classFormData,
       name: formData.name,
@@ -84,7 +83,6 @@ export function CreateClassStepInfo() {
       level: formData.level,
       maxStudents: formData.maxStudents,
       price: formData.price,
-      academyId,
     });
     setCreateClassStep('teacher');
   };

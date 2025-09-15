@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle } from 'lucide-react';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 
 interface WithdrawalConfirmModalProps {
   isOpen: boolean;

@@ -103,22 +103,31 @@ if (typeof global.BroadcastChannel === 'undefined') {
 // MSW 서버 설정 (모든 테스트에서 사용)
 const { server } = require('./src/__mocks__/server')
 
-// 테스트 전에 MSW 서버 시작
-beforeAll(() => {
-  console.log('Starting MSW server...')
-  server.listen({ onUnhandledRequest: 'warn' })
-})
+// 통합 테스트에서만 MSW 서버 사용
+const isIntegrationTest = process.env.TEST_TYPE === 'integration'
 
-// 각 테스트 후에 핸들러를 초기 상태로 리셋
-afterEach(() => {
-  server.resetHandlers()
-})
+if (isIntegrationTest) {
+  // 테스트 전에 MSW 서버 시작
+  beforeAll(() => {
+    console.log('Starting MSW server...')
+    server.listen({ 
+      onUnhandledRequest: 'warn',
+      // 성능 최적화를 위한 설정
+      quiet: true
+    })
+  })
 
-// 모든 테스트 후에 MSW 서버 정리
-afterAll(() => {
-  console.log('Closing MSW server...')
-  server.close()
-})
+  // 각 테스트 후에 핸들러를 초기 상태로 리셋
+  afterEach(() => {
+    server.resetHandlers()
+  })
+
+  // 모든 테스트 후에 MSW 서버 정리
+  afterAll(() => {
+    console.log('Closing MSW server...')
+    server.close()
+  })
+}
 
 // 전역 모킹 설정
 global.ResizeObserver = jest.fn().mockImplementation(() => ({

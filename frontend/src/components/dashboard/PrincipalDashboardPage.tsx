@@ -1,6 +1,6 @@
 'use client';
 
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 import { CommonHeader } from '@/components/layout/CommonHeader';
 import { DashboardContainer } from './DashboardContainer';
 import { useSession } from 'next-auth/react';

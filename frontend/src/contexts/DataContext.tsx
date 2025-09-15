@@ -1,6 +1,19 @@
+// src/contexts/DataContext.tsx
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+
+// 디바운스 유틸리티 함수
+function debounce<TArgs extends readonly unknown[], TReturn>(
+  func: (...args: TArgs) => TReturn,
+  wait: number
+): (...args: TArgs) => void {
+  let timeout: NodeJS.Timeout;
+  return (...args: TArgs) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
 
 // 기본 데이터 타입
 interface BaseData {
@@ -48,21 +61,23 @@ interface DataContextType {
   removeData: (type: keyof DataState, id: string | number) => void;
   
   // 캐시 관리
-  getCachedData: (key: string) => unknown;
-  setCachedData: (key: string, data: unknown) => void;
+  getCache: (key: string) => unknown;
+  setCache: (key: string, value: unknown) => void;
   clearCache: (key?: string) => void;
   
-  // 로딩 상태 관리
+  // 로딩 관리
   setLoading: (key: string, loading: boolean) => void;
   isLoading: (key: string) => boolean;
   
-  // 에러 상태 관리
+  // 에러 관리
   setError: (key: string, error: string | null) => void;
   getError: (key: string) => string | null;
+  clearError: (key: string) => void;
+  clearAllErrors: () => void;
   
-  // 데이터 상태 확인
-  isDataStale: (type: keyof DataState) => boolean;
-  getLastUpdated: (type: keyof DataState) => number;
+  // 메타데이터 관리
+  setLastUpdated: (key: string, timestamp: number) => void;
+  getLastUpdated: (key: string) => number | null;
   
   // 데이터 초기화
   resetData: (type?: keyof DataState) => void;
@@ -72,32 +87,40 @@ interface DataContextType {
   addOptimisticData: (type: keyof DataState, data: BaseData & { isOptimistic?: boolean }) => void;
   replaceOptimisticData: (type: keyof DataState, optimisticId: string | number, realData: BaseData) => void;
   removeOptimisticData: (type: keyof DataState, optimisticId: string | number) => void;
+  
+  // 상태 조회
+  getState: () => DataState;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-export function DataProvider({ children }: { children: ReactNode }) {
+export const useData = (): DataContextType => {
+  const context = useContext(DataContext);
+  if (!context) {
+    throw new Error('useData must be used within a DataProvider');
+  }
+  return context;
+};
+
+interface DataProviderProps {
+  children: ReactNode;
+}
+
+export const DataContextProvider: React.FC<DataProviderProps> = ({ children }) => {
   const [state, setState] = useState<DataState>({
-    // 공통 데이터
     classes: [],
     sessions: [],
     students: [],
     teachers: [],
     academies: [],
-    
-    // 학생 관련 데이터
     enrollmentHistory: [],
     cancellationHistory: [],
     calendarSessions: [],
     availableClasses: [],
     userProfile: null,
-    
-    // 원장 관련 데이터
     enrollments: [],
     refundRequests: [],
     academy: null,
-    
-    // 캐시 및 메타데이터
     cache: {},
     lastUpdated: {},
     loading: {},
@@ -105,10 +128,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   });
 
   // 데이터 조회
-  const getData = useCallback((
-    type: keyof DataState, 
-    id?: string | number
-  ): BaseData | BaseData[] | null => {
+  const getData = useCallback((type: keyof DataState, id?: string | number): BaseData | BaseData[] | null => {
     const data = state[type];
     if (Array.isArray(data)) {
       if (id !== undefined) {
@@ -128,26 +148,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const setData = useCallback((type: keyof DataState, data: BaseData | BaseData[]) => {
     setState(prev => ({
       ...prev,
-      [type]: Array.isArray(data) ? data : [data],
-      lastUpdated: { ...prev.lastUpdated, [type]: Date.now() },
+      [type]: data,
+      lastUpdated: {
+        ...prev.lastUpdated,
+        [type]: Date.now(),
+      },
     }));
   }, []);
 
-  const updateData = useCallback((
-    type: keyof DataState, 
-    id: string | number, 
-    updates: Partial<BaseData>
-  ) => {
+  const updateData = useCallback((type: keyof DataState, id: string | number, updates: Partial<BaseData>) => {
     setState(prev => {
-      const currentData = prev[type];
-      if (Array.isArray(currentData)) {
-        const updatedData = currentData.map(item => 
+      const data = prev[type];
+      if (Array.isArray(data)) {
+        const updatedData = data.map(item => 
           item.id === id ? { ...item, ...updates } : item
         );
         return {
           ...prev,
           [type]: updatedData,
-          lastUpdated: { ...prev.lastUpdated, [type]: Date.now() },
+          lastUpdated: {
+            ...prev.lastUpdated,
+            [type]: Date.now(),
+          },
         };
       }
       return prev;
@@ -156,13 +178,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const removeData = useCallback((type: keyof DataState, id: string | number) => {
     setState(prev => {
-      const currentData = prev[type];
-      if (Array.isArray(currentData)) {
-        const filteredData = currentData.filter(item => item.id !== id);
+      const data = prev[type];
+      if (Array.isArray(data)) {
+        const filteredData = data.filter(item => item.id !== id);
         return {
           ...prev,
           [type]: filteredData,
-          lastUpdated: { ...prev.lastUpdated, [type]: Date.now() },
+          lastUpdated: {
+            ...prev.lastUpdated,
+            [type]: Date.now(),
+          },
         };
       }
       return prev;
@@ -170,62 +195,87 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // 캐시 관리
-  const getCachedData = useCallback((key: string): unknown => {
-    return state.cache[key] || null;
+  const getCache = useCallback((key: string): unknown => {
+    return state.cache[key];
   }, [state.cache]);
 
-  const setCachedData = useCallback((key: string, data: unknown) => {
+  const setCache = useCallback((key: string, value: unknown) => {
     setState(prev => ({
       ...prev,
-      cache: { ...prev.cache, [key]: data },
+      cache: {
+        ...prev.cache,
+        [key]: value,
+      },
     }));
   }, []);
 
   const clearCache = useCallback((key?: string) => {
-    if (key) {
-      setState(prev => {
-        const newCache = { ...prev.cache };
-        delete newCache[key];
-        return { ...prev, cache: newCache };
-      });
-    } else {
-      setState(prev => ({ ...prev, cache: {} }));
-    }
+    setState(prev => ({
+      ...prev,
+      cache: key ? { ...prev.cache, [key]: undefined } : {},
+    }));
   }, []);
 
-  // 로딩 상태 관리
+  // 로딩 관리
   const setLoading = useCallback((key: string, loading: boolean) => {
     setState(prev => ({
       ...prev,
-      loading: { ...prev.loading, [key]: loading },
+      loading: {
+        ...prev.loading,
+        [key]: loading,
+      },
     }));
   }, []);
 
-  const isLoading = useCallback((key: string) => {
+  const isLoading = useCallback((key: string): boolean => {
     return state.loading[key] || false;
   }, [state.loading]);
 
-  // 에러 상태 관리
+  // 에러 관리
   const setError = useCallback((key: string, error: string | null) => {
     setState(prev => ({
       ...prev,
-      errors: { ...prev.errors, [key]: error },
+      errors: {
+        ...prev.errors,
+        [key]: error,
+      },
     }));
   }, []);
 
-  const getError = useCallback((key: string) => {
+  const getError = useCallback((key: string): string | null => {
     return state.errors[key] || null;
   }, [state.errors]);
 
-  // 데이터 상태 확인
-  const isDataStale = useCallback((type: keyof DataState) => {
-    const lastUpdated = state.lastUpdated[type] || 0;
-    const now = Date.now();
-    return now - lastUpdated > 5 * 60 * 1000; // 5분
-  }, [state.lastUpdated]);
+  const clearError = useCallback((key: string) => {
+    setState(prev => ({
+      ...prev,
+      errors: {
+        ...prev.errors,
+        [key]: null,
+      },
+    }));
+  }, []);
 
-  const getLastUpdated = useCallback((type: keyof DataState) => {
-    return state.lastUpdated[type] || 0;
+  const clearAllErrors = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      errors: {},
+    }));
+  }, []);
+
+  // 메타데이터 관리
+  const setLastUpdated = useCallback((key: string, timestamp: number) => {
+    setState(prev => ({
+      ...prev,
+      lastUpdated: {
+        ...prev.lastUpdated,
+        [key]: timestamp,
+      },
+    }));
+  }, []);
+
+  const getLastUpdated = useCallback((key: string): number | null => {
+    return state.lastUpdated[key] || null;
   }, [state.lastUpdated]);
 
   // 데이터 초기화
@@ -234,7 +284,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setState(prev => ({
         ...prev,
         [type]: Array.isArray(prev[type]) ? [] : null,
-        lastUpdated: { ...prev.lastUpdated, [type]: 0 },
+        lastUpdated: {
+          ...prev.lastUpdated,
+          [type]: Date.now(),
+        },
       }));
     } else {
       setState(prev => ({
@@ -280,38 +333,38 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // 낙관적 업데이트
-  const addOptimisticData = useCallback((
-    type: keyof DataState, 
-    data: BaseData & { isOptimistic?: boolean }
-  ) => {
+  const addOptimisticData = useCallback((type: keyof DataState, data: BaseData & { isOptimistic?: boolean }) => {
     setState(prev => {
       const currentData = prev[type];
       if (Array.isArray(currentData)) {
+        const optimisticData = { ...data, isOptimistic: true };
         return {
           ...prev,
-          [type]: [{ ...data, isOptimistic: true }, ...currentData],
-          lastUpdated: { ...prev.lastUpdated, [type]: Date.now() },
+          [type]: [...currentData, optimisticData],
+          lastUpdated: {
+            ...prev.lastUpdated,
+            [type]: Date.now(),
+          },
         };
       }
       return prev;
     });
   }, []);
 
-  const replaceOptimisticData = useCallback((
-    type: keyof DataState, 
-    optimisticId: string | number, 
-    realData: BaseData
-  ) => {
+  const replaceOptimisticData = useCallback((type: keyof DataState, optimisticId: string | number, realData: BaseData) => {
     setState(prev => {
       const currentData = prev[type];
       if (Array.isArray(currentData)) {
         const updatedData = currentData.map(item => 
-          item.id === optimisticId ? { ...realData, isOptimistic: false } : item
+          item.id === optimisticId && item.isOptimistic ? realData : item
         );
         return {
           ...prev,
           [type]: updatedData,
-          lastUpdated: { ...prev.lastUpdated, [type]: Date.now() },
+          lastUpdated: {
+            ...prev.lastUpdated,
+            [type]: Date.now(),
+          },
         };
       }
       return prev;
@@ -322,37 +375,74 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setState(prev => {
       const currentData = prev[type];
       if (Array.isArray(currentData)) {
-        const filteredData = currentData.filter(item => item.id !== optimisticId);
+        const filteredData = currentData.filter(item => 
+          !(item.id === optimisticId && item.isOptimistic)
+        );
         return {
           ...prev,
           [type]: filteredData,
-          lastUpdated: { ...prev.lastUpdated, [type]: Date.now() },
+          lastUpdated: {
+            ...prev.lastUpdated,
+            [type]: Date.now(),
+          },
         };
       }
       return prev;
     });
   }, []);
 
+  // 성능 최적화: 메모이제이션된 데이터 조회 (현재 사용하지 않음)
+  // const memoizedData = useMemo(() => ({
+  //   classes: state.classes,
+  //   sessions: state.sessions,
+  //   teachers: state.teachers,
+  //   students: state.students,
+  //   academies: state.academies,
+  //   enrollments: state.enrollments,
+  // }), [
+  //   state.classes, state.sessions, state.teachers, state.students,
+  //   state.academies, state.enrollments
+  // ]);
+
+  // 성능 최적화: 디바운스된 데이터 업데이트
+  const debouncedSetData = useCallback(
+    (type: keyof DataState, data: BaseData | BaseData[]) => {
+      const debouncedFn = debounce((t: keyof DataState, d: BaseData | BaseData[]) => {
+        setData(t, d);
+      }, 300);
+      debouncedFn(type, data);
+    },
+    [setData]
+  );
+
+  // 상태 조회
+  const getState = useCallback((): DataState => {
+    return { ...state };
+  }, [state]);
+
   const value: DataContextType = {
     getData,
     getAllData,
-    setData,
+    setData: debouncedSetData, // 디바운스된 setData 사용
     updateData,
     removeData,
-    getCachedData,
-    setCachedData,
+    getCache,
+    setCache,
     clearCache,
     setLoading,
     isLoading,
     setError,
     getError,
-    isDataStale,
+    clearError,
+    clearAllErrors,
+    setLastUpdated,
     getLastUpdated,
     resetData,
     resetAllData,
     addOptimisticData,
     replaceOptimisticData,
     removeOptimisticData,
+    getState,
   };
 
   return (
@@ -360,12 +450,4 @@ export function DataProvider({ children }: { children: ReactNode }) {
       {children}
     </DataContext.Provider>
   );
-}
-
-export function useData() {
-  const context = useContext(DataContext);
-  if (!context) {
-    throw new Error('useData must be used within DataProvider');
-  }
-  return context;
-}
+};

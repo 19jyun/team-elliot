@@ -3,15 +3,16 @@
 import React from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
+import { ExtendedSessionData } from '@/contexts/forms/EnrollmentFormManager';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { CalendarProvider } from '@/contexts/CalendarContext';
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
 
 export function EnrollmentDateStep() {
-  const { form, goBack } = useApp();
-  const { enrollment, setEnrollmentStep, setSelectedSessions } = form;
+  const { form, goBack, setEnrollmentStep, setSelectedSessions } = useApp();
+  const { enrollment } = form;
   const { selectedAcademyId, selectedClassIds } = enrollment;
   const { status } = useSession({
     required: true,
@@ -135,9 +136,18 @@ export function EnrollmentDateStep() {
     }
     
     // 선택된 세션들의 정보를 Context에 저장
-    const selectedSessionsData = selectedClassSessions.filter(session => 
-      selectedSessionIds.has(session.id)
-    );
+    const selectedSessionsData: ExtendedSessionData[] = selectedClassSessions
+      .filter(session => selectedSessionIds.has(session.id))
+      .map(session => ({
+        sessionId: session.id,
+        sessionName: session.class.className,
+        startTime: session.startTime,
+        endTime: session.endTime,
+        date: session.date,
+        isAlreadyEnrolled: session.isAlreadyEnrolled,
+        isEnrollable: session.isEnrollable,
+        class: session.class,
+      }));
     
     setSelectedSessions(selectedSessionsData);
     setEnrollmentStep('payment');

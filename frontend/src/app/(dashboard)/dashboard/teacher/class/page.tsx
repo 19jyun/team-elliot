@@ -9,7 +9,7 @@ import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessi
 import { SessionDetailModal } from '@/components/common/Session/SessionDetailModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
-import { useApp } from '@/contexts'
+import { useApp } from '@/contexts/AppContext'
 import { toTeacherCalendarSessionVM, toTeacherSessionDetailModalVM, toClassSessionForCalendar } from '@/lib/adapters/teacher'
 import type { TeacherSessionDetailModalVM } from '@/types/view/teacher'
 import type { TeacherSession } from '@/types/api/teacher'

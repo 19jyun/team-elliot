@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Calendar, Clock, BookOpen, CheckCircle, XCircle, AlertCircle, Clock as ClockIcon } from 'lucide-react';
 
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 import { useStudentData } from '@/hooks/redux/useStudentData';
 import { toStudentEnrollmentHistoryVMs } from '@/lib/adapters/student';
 import type { StudentEnrollmentHistoryVM } from '@/types/view/student';

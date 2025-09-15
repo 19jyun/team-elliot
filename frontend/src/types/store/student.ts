@@ -68,7 +68,12 @@ interface EnrollmentHistory {
     };
   };
   enrolledAt: string;
-  status: "PENDING" | "CONFIRMED" | "REJECTED" | "REFUND_REQUESTED";
+  status:
+    | "PENDING"
+    | "CONFIRMED"
+    | "REJECTED"
+    | "REFUND_REQUESTED"
+    | "REFUND_REJECTED_CONFIRMED";
   description?: string;
   // 거절 사유 정보
   enrollmentRejection?: RejectionDetail;

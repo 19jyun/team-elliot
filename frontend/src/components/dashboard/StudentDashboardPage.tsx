@@ -1,6 +1,6 @@
 'use client';
 
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 import { CommonHeader } from '@/components/layout/CommonHeader';
 import StudentClassPage from '@/app/(dashboard)/dashboard/student/class/page';
 import StudentEnrollPage from '@/app/(dashboard)/dashboard/student/enroll/page';

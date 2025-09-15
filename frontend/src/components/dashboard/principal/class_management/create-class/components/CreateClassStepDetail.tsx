@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 import { StatusStep } from './StatusStep';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { toast } from 'sonner';
 
 export function CreateClassStepDetail() {
-  const { form } = useApp();
-  const { createClass, setClassFormData, setCreateClassStep } = form;
+  const { form, setClassFormData, setCreateClassStep } = useApp();
+  const { createClass } = form;
   const { classFormData, selectedTeacherId } = createClass;
 
   // API 기반 데이터 관리

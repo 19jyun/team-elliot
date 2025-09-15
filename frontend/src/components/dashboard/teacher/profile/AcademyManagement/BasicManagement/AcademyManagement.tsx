@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, Users } from 'lucide-react';
 
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 
 // 커스텀 훅들
 import { useTeacherAcademyManagement } from '@/hooks/teacher/academy_management/useTeacherAcademyManagement';

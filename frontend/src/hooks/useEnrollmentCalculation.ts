@@ -9,7 +9,7 @@ import {
 
 interface UseEnrollmentCalculationProps {
   originalEnrollments: SessionInfo[];
-  selectedDates: string[];
+  selectedSessionIds: Set<number>;
   sessionPrice: number;
 }
 
@@ -27,16 +27,16 @@ interface UseEnrollmentCalculationReturn {
  */
 export function useEnrollmentCalculation({
   originalEnrollments,
-  selectedDates,
+  selectedSessionIds,
   sessionPrice,
 }: UseEnrollmentCalculationProps): UseEnrollmentCalculationReturn {
   const change = useMemo(() => {
     return calculateEnrollmentChange(
       originalEnrollments,
-      selectedDates,
+      selectedSessionIds,
       sessionPrice
     );
-  }, [originalEnrollments, selectedDates, sessionPrice]);
+  }, [originalEnrollments, selectedSessionIds, sessionPrice]);
 
   const summary = useMemo(() => {
     return getEnrollmentChangeSummary(change);

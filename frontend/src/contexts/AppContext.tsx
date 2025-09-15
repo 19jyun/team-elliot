@@ -1,222 +1,350 @@
+// src/contexts/AppContext.tsx
 'use client';
 
-import React, { ReactNode } from 'react';
-import { NavigationProvider, useNavigation } from './NavigationContext';
-import { FormProvider, useForm } from './FormContext';
-import { UIProvider, useUI } from './UIContext';
-import { DataProvider, useData } from './DataContext';
+import React, { createContext, useContext, useCallback, ReactNode, useMemo, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { StateSyncProvider, useStateSync } from './state/StateSyncContext';
+import { NavigationProvider, useNavigation } from './navigation/NavigationContext';
+import { FormsProvider, useForms } from './forms/FormsContext';
+import { UIContextProvider, useUI } from './UIContext';
+import { DataContextProvider, useData } from './DataContext';
+import { FormsState } from './state/StateSyncTypes';
+import { EnrollmentStep, ClassesWithSessionsByMonthResponse, ExtendedSessionData } from './forms/EnrollmentFormManager';
+import { CreateClassStep, ClassFormData } from './forms/CreateClassFormManager';
+import { AuthMode, SignupStep, SignupData, LoginData } from './forms/AuthFormManager';
+import { PrincipalPersonManagementStep } from './forms/PersonManagementFormManager';
+import { PrincipalCreateClassStep, PrincipalClassFormData } from './forms/PrincipalCreateClassFormManager';
 
-// 통합 AppProvider
-export function AppProvider({ children }: { children: ReactNode }) {
-  return (
-    <NavigationProvider>
-      <FormProvider>
-        <UIProvider>
-          <DataProvider>
-            {children}
-          </DataProvider>
-        </UIProvider>
-      </FormProvider>
-    </NavigationProvider>
-  );
+// 통합된 AppContext 타입
+interface AppContextType {
+  // Navigation
+  navigation: ReturnType<typeof useNavigation>;
+  
+  // Forms
+  forms: ReturnType<typeof useForms>;
+  
+  // UI
+  ui: ReturnType<typeof useUI>;
+  
+  // Data
+  data: ReturnType<typeof useData>;
+  
+  // Session
+  session: ReturnType<typeof useSession>;
+  
+  // StateSync
+  stateSync: ReturnType<typeof useStateSync>;
+  
+  // 통합된 goBack (하위 호환성)
+  goBack: () => Promise<boolean>;
+  
+  // 통합 폼 관리 (Legacy 호환)
+  updateForm: <T extends keyof FormsState>(
+    formType: T,
+    updates: Partial<FormsState[T]>
+  ) => void;
+  resetAllForms: () => void;
+  getFormState: <T extends keyof FormsState>(formType: T) => FormsState[T];
+  
+  // 하위 호환성을 위한 직접 접근 (Legacy API)
+  activeTab: number;
+  subPage: string | null;
+  canGoBack: boolean;
+  isTransitioning: boolean;
+  navigationItems: ReturnType<typeof useNavigation>['navigationItems'];
+  history: ReturnType<typeof useNavigation>['history'];
+  setActiveTab: (tab: number) => void;
+  handleTabChange: (tab: number) => void;
+  navigateToSubPage: (page: string) => void;
+  clearSubPage: () => void;
+  clearHistory: () => void;
+  
+  // 하위 호환성을 위한 폼 접근
+  form: {
+    enrollment: ReturnType<typeof useForms>['enrollment'];
+    createClass: ReturnType<typeof useForms>['createClass'];
+    principalCreateClass: ReturnType<typeof useForms>['principalCreateClass'];
+    auth: ReturnType<typeof useForms>['auth'];
+    personManagement: ReturnType<typeof useForms>['personManagement'];
+    principalPersonManagement: ReturnType<typeof useForms>['principalPersonManagement'];
+  };
+  
+  // 하위 호환성을 위한 직접 메서드들
+  // 수강신청 관련
+  setEnrollmentStep: (step: EnrollmentStep) => void;
+  setSelectedMonth: (month: number) => void;
+  setSelectedClasses: (classes: ClassesWithSessionsByMonthResponse[]) => void;
+  setSelectedSessions: (sessions: ExtendedSessionData[]) => void;
+  setSelectedClassIds: (classIds: number[]) => void;
+  setSelectedAcademyId: (academyId: number | null) => void;
+  setSelectedClassesWithSessions: (classes: ClassesWithSessionsByMonthResponse[]) => void;
+  resetEnrollment: () => void;
+  
+  // 클래스 생성 관련
+  setCreateClassStep: (step: CreateClassStep) => void;
+  setClassFormData: (data: ClassFormData) => void;
+  setSelectedTeacherId: (teacherId: number | null) => void;
+  resetCreateClass: () => void;
+  
+  // Principal 클래스 생성 관련
+  setPrincipalCreateClassStep: (step: PrincipalCreateClassStep) => void;
+  setPrincipalClassFormData: (data: PrincipalClassFormData) => void;
+  setPrincipalSelectedTeacherId: (teacherId: number | null) => void;
+  resetPrincipalCreateClass: () => void;
+  
+  // 인증 관련
+  setAuthMode: (mode: AuthMode) => void;
+  setAuthSubPage: (page: string | null) => void;
+  navigateToAuthSubPage: (page: string) => void;
+  goBackFromAuth: () => void;
+  clearAuthSubPage: () => void;
+  setSignupStep: (step: SignupStep) => void;
+  setRole: (role: 'STUDENT' | 'TEACHER') => void;
+  setPersonalInfo: (info: SignupData['personalInfo']) => void;
+  setAccountInfo: (info: SignupData['accountInfo']) => void;
+  setTerms: (terms: SignupData['terms']) => void;
+  resetSignup: () => void;
+  setLoginInfo: (info: LoginData) => void;
+  resetLogin: () => void;
+  
+  // 인원 관리 관련
+  setPersonManagementStep: (step: PrincipalPersonManagementStep) => void;
+  setPersonManagementTab: (tab: 'enrollment' | 'refund') => void;
+  setSelectedClassId: (classId: number | null) => void;
+  setSelectedSessionId: (sessionId: number | null) => void;
+  setSelectedRequestId: (requestId: number | null) => void;
+  setSelectedRequestType: (requestType: 'enrollment' | 'refund' | null) => void;
+  resetPersonManagement: () => void;
+  
+  // Principal 인원 관리 관련
+  setPrincipalPersonManagementStep: (step: PrincipalPersonManagementStep) => void;
+  setPrincipalPersonManagementTab: (tab: 'enrollment' | 'refund') => void;
+  setPrincipalSelectedClassId: (classId: number | null) => void;
+  setPrincipalSelectedSessionId: (sessionId: number | null) => void;
+  setPrincipalSelectedRequestId: (requestId: number | null) => void;
+  setPrincipalSelectedRequestType: (requestType: 'enrollment' | 'refund' | null) => void;
+  resetPrincipalPersonManagement: () => void;
+  
+  // 탭 전환 시 초기화 메소드
+  switchPrincipalPersonManagementTab: (tab: 'enrollment' | 'refund') => void;
 }
 
-// 통합 훅 - 모든 컨텍스트를 하나로 통합
-export function useApp() {
+const AppContext = createContext<AppContextType | undefined>(undefined);
+
+export const useApp = (): AppContextType => {
+  const context = useContext(AppContext);
+  if (!context) {
+    throw new Error('useApp must be used within an AppProvider');
+  }
+  return context;
+};
+
+// 내부 컴포넌트들
+const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
   const navigation = useNavigation();
-  const form = useForm();
+  const forms = useForms();
   const ui = useUI();
   const data = useData();
+  const session = useSession();
+  const stateSync = useStateSync();
 
-  return {
-    // 컨텍스트 객체들
+  // formsState를 navigation에 전달
+  const formsState: FormsState = useMemo(() => ({
+    enrollment: forms.enrollment,
+    createClass: forms.createClass,
+    auth: forms.auth,
+    personManagement: forms.personManagement,
+    principalCreateClass: forms.principalCreateClass,
+    principalPersonManagement: forms.principalPersonManagement,
+  }), [forms.enrollment, forms.createClass, forms.auth, forms.personManagement, forms.principalCreateClass, forms.principalPersonManagement]);
+
+  // 통합된 goBack (하위 호환성)
+  const goBack = useCallback(async (): Promise<boolean> => {
+    return await navigation.goBackWithForms(formsState);
+  }, [navigation, formsState]);
+
+  // 통합 폼 관리 메서드들 (Legacy 호환)
+  const updateForm = useCallback(<T extends keyof FormsState>(
+    formType: T,
+    updates: Partial<FormsState[T]>
+  ) => {
+    forms.updateForm(formType, updates);
+  }, [forms]);
+
+  const resetAllForms = useCallback(() => {
+    forms.resetAllForms();
+  }, [forms]);
+
+  const getFormState = useCallback(<T extends keyof FormsState>(formType: T): FormsState[T] => {
+    return forms.getFormState(formType);
+  }, [forms]);
+
+  // 브라우저 뒤로가기 버튼 처리 (통합된 goBack 사용)
+  useEffect(() => {
+    const handleBrowserBackButton = async (event: PopStateEvent) => {
+      event.preventDefault();
+      
+      // 통합된 goBack 사용 (ImprovedGoBackManager를 통해 단계별 로직 처리)
+      const success = await goBack();
+      
+      // 뒤로갈 수 없으면 히스토리에 현재 상태 추가
+      if (!success) {
+        window.history.pushState(null, '', window.location.href);
+      }
+    };
+
+    // 브라우저 뒤로가기 버튼 리스너
+    window.addEventListener('popstate', handleBrowserBackButton);
+    
+    // 초기 상태를 히스토리에 추가
+    window.history.pushState(null, '', window.location.href);
+    
+    return () => {
+      window.removeEventListener('popstate', handleBrowserBackButton);
+    };
+  }, [goBack]);
+
+  // 메모이제이션된 value 객체
+  const contextValue = useMemo(() => ({
+    // 새로운 구조
     navigation,
-    form,
+    forms,
     ui,
     data,
+    session,
+    stateSync,
     
-    // 네비게이션 관련 (하위 호환성을 위해)
+    // 통합된 goBack (하위 호환성)
+    goBack,
+    
+    // 통합 폼 관리 (Legacy 호환)
+    updateForm,
+    resetAllForms,
+    getFormState,
+    
+    // 하위 호환성을 위한 직접 접근
     activeTab: navigation.activeTab,
     subPage: navigation.subPage,
     canGoBack: navigation.canGoBack,
     isTransitioning: navigation.isTransitioning,
-    history: navigation.history,
     navigationItems: navigation.navigationItems,
+    history: navigation.history,
     setActiveTab: navigation.setActiveTab,
     handleTabChange: navigation.handleTabChange,
     navigateToSubPage: navigation.navigateToSubPage,
     clearSubPage: navigation.clearSubPage,
-    goBack: () => {
-      // 단계별 뒤로가기 로직 (legacy DashboardContext와 동일)
-      const { subPage } = navigation;
-      const { enrollment, createClass, principalPersonManagement } = form;
-      
-      // 수강 변경 중인 경우 (modify-* 형태의 subPage) 단계별로 뒤로가기
-      if (subPage && subPage.startsWith('modify-') && enrollment.currentStep !== 'date-selection') {
-        const modificationStepOrder = ['date-selection', 'payment'];
-        const currentIndex = modificationStepOrder.indexOf(enrollment.currentStep);
-        const previousStep = currentIndex > 0 ? modificationStepOrder[currentIndex - 1] : 'date-selection';
-        
-        form.setEnrollmentStep(previousStep as 'date-selection' | 'payment');
-        return;
-      }
-      
-      // 수강신청 중인 경우 단계별로 뒤로가기
-      if (subPage === 'enroll' && enrollment.currentStep !== 'academy-selection') {
-        const stepOrder = ['academy-selection', 'class-selection', 'date-selection', 'payment', 'complete'];
-        const currentIndex = stepOrder.indexOf(enrollment.currentStep);
-        const previousStep = currentIndex > 0 ? stepOrder[currentIndex - 1] : 'academy-selection';
-        
-        // class-selection에서 academy-selection으로 돌아갈 때 환불 동의 상태 초기화
-        if (enrollment.currentStep === 'class-selection' && previousStep === 'academy-selection') {
-          localStorage.removeItem('refundPolicyAgreed');
-        }
-        
-        form.setEnrollmentStep(previousStep as 'academy-selection' | 'class-selection' | 'date-selection' | 'payment' | 'complete');
-        return;
-      }
-      
-      // 강의 개설 중인 경우 단계별로 뒤로가기
-      if (subPage === 'create-class' && createClass.currentStep !== 'info') {
-        const stepOrder = ['info', 'teacher', 'schedule', 'content', 'complete'];
-        const currentIndex = stepOrder.indexOf(createClass.currentStep);
-        const previousStep = currentIndex > 0 ? stepOrder[currentIndex - 1] : 'info';
-        
-        form.setCreateClassStep(previousStep as 'info' | 'teacher' | 'schedule' | 'content' | 'complete');
-        return;
-      }
-      
-      // Principal 인원 관리 중인 경우 단계별로 뒤로가기
-      if (subPage === 'person-management') {
-        const { currentStep } = principalPersonManagement;
-        switch (currentStep) {
-          case 'request-detail':
-            form.setPersonManagementStep('session-list');
-            form.setSelectedRequestId(null);
-            form.setSelectedRequestType(null);
-            return;
-          case 'session-list':
-            form.setPersonManagementStep('class-list');
-            form.setSelectedSessionId(null);
-            form.setSelectedClassId(null);
-            return;
-          default:
-            break;
-        }
-      }
-      
-      // 그 외의 경우 기본 네비게이션 goBack 사용
-      navigation.goBack();
-    },
-    pushHistory: navigation.pushHistory,
     clearHistory: navigation.clearHistory,
-    setTransitioning: navigation.setTransitioning,
     
-    // 폼 상태 관련 (하위 호환성을 위해)
-    enrollment: form.enrollment,
-    createClass: form.createClass,
-    principalCreateClass: form.principalCreateClass,
-    auth: form.auth,
-    personManagement: form.personManagement,
+    // 하위 호환성을 위한 폼 접근
+    form: {
+      enrollment: forms.enrollment,
+      createClass: forms.createClass,
+      principalCreateClass: forms.principalCreateClass,
+      auth: forms.auth,
+      personManagement: forms.personManagement,
+      principalPersonManagement: forms.principalPersonManagement,
+    },
     
+    // 하위 호환성을 위한 직접 메서드들
     // 수강신청 관련
-    setEnrollmentStep: form.setEnrollmentStep,
-    setSelectedMonth: form.setSelectedMonth,
-    setSelectedClasses: form.setSelectedClasses,
-    setSelectedSessions: form.setSelectedSessions,
-    setSelectedClassIds: form.setSelectedClassIds,
-    setSelectedAcademyId: form.setSelectedAcademyId,
-    setSelectedClassesWithSessions: form.setSelectedClassesWithSessions,
-    resetEnrollment: form.resetEnrollment,
+    setEnrollmentStep: forms.setEnrollmentStep,
+    setSelectedMonth: (month: number) => forms.setEnrollmentData({ selectedMonth: month }),
+    setSelectedClasses: (classes: ClassesWithSessionsByMonthResponse[]) => forms.setEnrollmentData({ selectedClasses: classes }),
+    setSelectedSessions: (sessions: ExtendedSessionData[]) => forms.setEnrollmentData({ selectedSessions: sessions }),
+    setSelectedClassIds: (classIds: number[]) => forms.setEnrollmentData({ selectedClassIds: classIds }),
+    setSelectedAcademyId: (academyId: number | null) => forms.setEnrollmentData({ selectedAcademyId: academyId }),
+    setSelectedClassesWithSessions: (classes: ClassesWithSessionsByMonthResponse[]) => forms.setEnrollmentData({ selectedClassesWithSessions: classes }),
+    resetEnrollment: forms.resetEnrollment,
     
     // 클래스 생성 관련
-    setCreateClassStep: form.setCreateClassStep,
-    setClassFormData: form.setClassFormData,
-    setSelectedTeacherId: form.setSelectedTeacherId,
-    resetCreateClass: form.resetCreateClass,
+    setCreateClassStep: forms.setCreateClassStep,
+    setClassFormData: (data: ClassFormData) => forms.setCreateClassData({ classFormData: data }),
+    setSelectedTeacherId: (teacherId: number | null) => forms.setCreateClassData({ selectedTeacherId: teacherId }),
+    resetCreateClass: forms.resetCreateClass,
     
     // Principal 클래스 생성 관련
-    setPrincipalCreateClass: form.setPrincipalCreateClass,
-    setPrincipalCreateClassStep: form.setPrincipalCreateClassStep,
-    setPrincipalClassFormData: form.setPrincipalClassFormData,
-    setPrincipalSelectedTeacherId: form.setPrincipalSelectedTeacherId,
-    resetPrincipalCreateClass: form.resetPrincipalCreateClass,
+    setPrincipalCreateClassStep: forms.setPrincipalCreateClassStep,
+    setPrincipalClassFormData: (data: PrincipalClassFormData) => forms.setPrincipalCreateClassData({ classFormData: data }),
+    setPrincipalSelectedTeacherId: (teacherId: number | null) => forms.setPrincipalCreateClassData({ selectedTeacherId: teacherId }),
+    resetPrincipalCreateClass: forms.resetPrincipalCreateClass,
     
     // 인증 관련
-    setAuthMode: form.setAuthMode,
-    setAuthSubPage: form.setAuthSubPage,
-    navigateToAuthSubPage: form.navigateToAuthSubPage,
-    goBackFromAuth: form.goBackFromAuth,
-    clearAuthSubPage: form.clearAuthSubPage,
-    setSignupStep: form.setSignupStep,
-    setRole: form.setRole,
-    setPersonalInfo: form.setPersonalInfo,
-    setAccountInfo: form.setAccountInfo,
-    setTerms: form.setTerms,
-    resetSignup: form.resetSignup,
-    setLoginInfo: form.setLoginInfo,
-    resetLogin: form.resetLogin,
+    setAuthMode: forms.setAuthMode,
+    setAuthSubPage: (page: string | null) => forms.setAuthData({ authSubPage: page }),
+    navigateToAuthSubPage: (page: string) => forms.setAuthData({ authSubPage: page }),
+    goBackFromAuth: () => forms.setAuthData({ authSubPage: null }),
+    clearAuthSubPage: () => forms.setAuthData({ authSubPage: null }),
+    setSignupStep: forms.setAuthStep,
+    setRole: (role: 'STUDENT' | 'TEACHER') => forms.setAuthData({ signup: { ...forms.auth.signup, role } }),
+    setPersonalInfo: (info: SignupData['personalInfo']) => forms.setAuthData({ signup: { ...forms.auth.signup, personalInfo: info } }),
+    setAccountInfo: (info: SignupData['accountInfo']) => forms.setAuthData({ signup: { ...forms.auth.signup, accountInfo: info } }),
+    setTerms: (terms: SignupData['terms']) => forms.setAuthData({ signup: { ...forms.auth.signup, terms: terms } }),
+    resetSignup: () => forms.resetAuth(),
+    setLoginInfo: (info: LoginData) => forms.setAuthData({ login: info }),
+    resetLogin: () => forms.resetAuth(),
     
     // 인원 관리 관련
-    setPersonManagementStep: form.setPersonManagementStep,
-    setPersonManagementTab: form.setPersonManagementTab,
-    setSelectedClassId: form.setSelectedClassId,
-    setSelectedSessionId: form.setSelectedSessionId,
-    setSelectedRequestId: form.setSelectedRequestId,
-    setSelectedRequestType: form.setSelectedRequestType,
-    resetPersonManagement: form.resetPersonManagement,
+    setPersonManagementStep: forms.setPersonManagementStep,
+    setPersonManagementTab: (tab: 'enrollment' | 'refund') => forms.setPersonManagementData({ selectedTab: tab }),
+    setSelectedClassId: (classId: number | null) => forms.setPersonManagementData({ selectedClassId: classId }),
+    setSelectedSessionId: (sessionId: number | null) => forms.setPersonManagementData({ selectedSessionId: sessionId }),
+    setSelectedRequestId: (requestId: number | null) => forms.setPersonManagementData({ selectedRequestId: requestId }),
+    setSelectedRequestType: (requestType: 'enrollment' | 'refund' | null) => forms.setPersonManagementData({ selectedRequestType: requestType }),
+    resetPersonManagement: forms.resetPersonManagement,
     
-    // 통합 폼 관리
-    updateForm: form.updateForm,
-    resetForm: form.resetForm,
-    resetAllForms: form.resetAllForms,
+    // Principal 인원 관리 관련
+    setPrincipalPersonManagementStep: forms.setPrincipalPersonManagementStep,
+    setPrincipalPersonManagementTab: (tab: 'enrollment' | 'refund') => forms.setPrincipalPersonManagementData({ selectedTab: tab }),
+    setPrincipalSelectedClassId: (classId: number | null) => forms.setPrincipalPersonManagementData({ selectedClassId: classId }),
+    setPrincipalSelectedSessionId: (sessionId: number | null) => forms.setPrincipalPersonManagementData({ selectedSessionId: sessionId }),
+    setPrincipalSelectedRequestId: (requestId: number | null) => forms.setPrincipalPersonManagementData({ selectedRequestId: requestId }),
+    setPrincipalSelectedRequestType: (requestType: 'enrollment' | 'refund' | null) => forms.setPrincipalPersonManagementData({ selectedRequestType: requestType }),
+    resetPrincipalPersonManagement: forms.resetPrincipalPersonManagement,
     
-    // UI 상태 관련
-    modals: ui.modals,
-    openModal: ui.openModal,
-    closeModal: ui.closeModal,
-    closeAllModals: ui.closeAllModals,
-    loading: ui.loading,
-    setLoading: ui.setLoading,
-    isLoading: ui.isLoading,
-    focus: ui.focus,
-    currentFocus: ui.currentFocus,
-    focusHistory: ui.focusHistory,
-    isFocusTransitioning: ui.isFocusTransitioning,
-    setFocus: ui.setFocus,
-    pushFocus: ui.pushFocus,
-    popFocus: ui.popFocus,
-    isDashboardFocused: ui.isDashboardFocused,
-    isModalFocused: ui.isModalFocused,
-    isSubPageFocused: ui.isSubPageFocused,
-    isOverlayFocused: ui.isOverlayFocused,
-    clearFocusHistory: ui.clearFocusHistory,
-    setFocusTransitioning: ui.setFocusTransitioning,
-    notifications: ui.notifications,
-    addNotification: ui.addNotification,
-    removeNotification: ui.removeNotification,
-    clearNotifications: ui.clearNotifications,
-    resetUI: ui.resetUI,
-    
-    // 데이터 관련
-    getData: data.getData,
-    getAllData: data.getAllData,
-    setData: data.setData,
-    updateData: data.updateData,
-    removeData: data.removeData,
-    getCachedData: data.getCachedData,
-    setCachedData: data.setCachedData,
-    clearCache: data.clearCache,
-    setDataLoading: data.setLoading,
-    isDataLoading: data.isLoading,
-    setDataError: data.setError,
-    getDataError: data.getError,
-    isDataStale: data.isDataStale,
-    getLastUpdated: data.getLastUpdated,
-    resetData: data.resetData,
-    resetAllData: data.resetAllData,
-    addOptimisticData: data.addOptimisticData,
-    replaceOptimisticData: data.replaceOptimisticData,
-    removeOptimisticData: data.removeOptimisticData,
-  };
+    // 탭 전환 시 초기화 메소드
+    switchPrincipalPersonManagementTab: (tab: 'enrollment' | 'refund') => {
+      forms.switchPrincipalPersonManagementTab(tab);
+    },
+  }), [
+    navigation, forms, ui, data, session, stateSync,
+    goBack, updateForm, resetAllForms, getFormState
+  ]);
+
+  return (
+    <AppContext.Provider value={contextValue}>
+      {children}
+    </AppContext.Provider>
+  );
+};
+
+// 메인 AppProvider
+interface AppProviderProps {
+  children: ReactNode;
 }
+
+export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
+  return (
+    <StateSyncProvider>
+      <FormsProvider>
+        <NavigationProvider>
+          <UIContextProvider>
+            <DataContextProvider>
+              <AppConsumer>
+                {children}
+              </AppConsumer>
+            </DataContextProvider>
+          </UIContextProvider>
+        </NavigationProvider>
+      </FormsProvider>
+    </StateSyncProvider>
+  );
+};
+
+// 하위 호환성을 위한 개별 Context들
+export const useNavigationContext = useNavigation;
+export const useEnrollmentFormContext = () => useForms().forms.enrollment;
+export const useCreateClassFormContext = () => useForms().forms.createClass;
+export const useAuthFormContext = () => useForms().forms.auth;
+export const usePersonManagementFormContext = () => useForms().forms.personManagement;
+export const useUIContext = useUI;
+export const useDataContext = useData;

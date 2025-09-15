@@ -1,9 +1,8 @@
 import { http, HttpResponse } from "msw";
 import { server } from "@/__mocks__/server";
-import { render, screen, waitFor } from "@/__tests__/utils/test-utils";
+import { render, screen, waitFor, act } from "@/__tests__/utils/test-utils";
 import userEvent from "@testing-library/user-event";
 import { LoginPage } from "@/components/auth/pages/LoginPage";
-import { AppProvider } from "@/contexts/AppContext";
 import { signIn, signOut, useSession } from "next-auth/react";
 
 // NextAuth mock
@@ -19,6 +18,630 @@ jest.mock("next/navigation", () => ({
     push: jest.fn(),
     back: jest.fn(),
   })),
+}));
+
+// Context 모킹 - 실제 구현에 맞게 정확하게 모킹
+jest.mock("@/contexts/state/StateSyncContext", () => ({
+  useStateSync: jest.fn(() => ({
+    publish: jest.fn(),
+    subscribe: jest.fn(() => jest.fn()),
+    getState: jest.fn(() => ({})),
+    syncStates: jest.fn(),
+    clearState: jest.fn(),
+    clearAllStates: jest.fn(),
+  })),
+  StateSyncProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+jest.mock("@/contexts/navigation/NavigationContext", () => ({
+  useNavigation: jest.fn(() => ({
+    activeTab: 0,
+    subPage: "login",
+    canGoBack: false,
+    isTransitioning: false,
+    navigationItems: [
+      { label: "클래스 정보", href: "/dashboard", index: 0 },
+      { label: "수강신청", href: "/dashboard", index: 1 },
+      { label: "나의 정보", href: "/dashboard", index: 2 },
+    ],
+    history: [],
+    setActiveTab: jest.fn(),
+    handleTabChange: jest.fn(),
+    navigateToSubPage: jest.fn(),
+    clearSubPage: jest.fn(),
+    goBack: jest.fn(),
+    goBackWithForms: jest.fn(),
+    pushHistory: jest.fn(),
+    clearHistory: jest.fn(),
+    canAccessTab: jest.fn(() => true),
+    canAccessSubPage: jest.fn(() => true),
+  })),
+  NavigationProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+jest.mock("@/contexts/forms/FormsContext", () => ({
+  useForms: jest.fn(() => ({
+    forms: {
+      enrollment: {
+        currentStep: "academy-selection",
+        selectedAcademyId: null,
+        selectedClassIds: [],
+        selectedSessions: [],
+        selectedClasses: [],
+        selectedClassesWithSessions: [],
+        selectedMonth: null,
+      },
+      createClass: {
+        currentStep: "class-info",
+        classFormData: {
+          name: "",
+          description: "",
+          maxStudents: 0,
+          price: 0,
+          duration: 0,
+          difficulty: "BEGINNER",
+          category: "BALLET",
+        },
+        selectedTeacherId: null,
+      },
+      auth: {
+        authMode: "login",
+        authSubPage: null,
+        signup: {
+          step: "personal",
+          role: "STUDENT",
+          personalInfo: {
+            name: "",
+            phoneNumber: "",
+            birthDate: "",
+            gender: "",
+          },
+          accountInfo: {
+            email: "",
+            password: "",
+            confirmPassword: "",
+          },
+          terms: {
+            privacy: false,
+            service: false,
+            marketing: false,
+          },
+        },
+        login: {
+          email: "",
+          password: "",
+        },
+      },
+      personManagement: {
+        currentStep: "class-selection",
+        selectedTab: "enrollment",
+        selectedClassId: null,
+        selectedSessionId: null,
+        selectedRequestId: null,
+        selectedRequestType: null,
+      },
+      principalCreateClass: {
+        currentStep: "class-info",
+        classFormData: {
+          name: "",
+          description: "",
+          maxStudents: 0,
+          price: 0,
+          duration: 0,
+          difficulty: "BEGINNER",
+          category: "BALLET",
+        },
+        selectedTeacherId: null,
+      },
+      principalPersonManagement: {
+        currentStep: "class-selection",
+        selectedTab: "enrollment",
+        selectedClassId: null,
+        selectedSessionId: null,
+        selectedRequestId: null,
+        selectedRequestType: null,
+      },
+    },
+    enrollment: {
+      currentStep: "academy-selection",
+      selectedAcademyId: null,
+      selectedClassIds: [],
+      selectedSessions: [],
+      selectedClasses: [],
+      selectedClassesWithSessions: [],
+      selectedMonth: null,
+    },
+    createClass: {
+      currentStep: "class-info",
+      classFormData: {
+        name: "",
+        description: "",
+        maxStudents: 0,
+        price: 0,
+        duration: 0,
+        difficulty: "BEGINNER",
+        category: "BALLET",
+      },
+      selectedTeacherId: null,
+    },
+    auth: {
+      authMode: "login",
+      authSubPage: null,
+      signup: {
+        step: "personal",
+        role: "STUDENT",
+        personalInfo: {
+          name: "",
+          phoneNumber: "",
+          birthDate: "",
+          gender: "",
+        },
+        accountInfo: {
+          email: "",
+          password: "",
+          confirmPassword: "",
+        },
+        terms: {
+          privacy: false,
+          service: false,
+          marketing: false,
+        },
+      },
+      login: {
+        email: "",
+        password: "",
+      },
+    },
+    personManagement: {
+      currentStep: "class-selection",
+      selectedTab: "enrollment",
+      selectedClassId: null,
+      selectedSessionId: null,
+      selectedRequestId: null,
+      selectedRequestType: null,
+    },
+    principalCreateClass: {
+      currentStep: "class-info",
+      classFormData: {
+        name: "",
+        description: "",
+        maxStudents: 0,
+        price: 0,
+        duration: 0,
+        difficulty: "BEGINNER",
+        category: "BALLET",
+      },
+      selectedTeacherId: null,
+    },
+    principalPersonManagement: {
+      currentStep: "class-selection",
+      selectedTab: "enrollment",
+      selectedClassId: null,
+      selectedSessionId: null,
+      selectedRequestId: null,
+      selectedRequestType: null,
+    },
+    updateForm: jest.fn(),
+    setEnrollmentStep: jest.fn(),
+    setEnrollmentData: jest.fn(),
+    resetEnrollment: jest.fn(),
+    setCreateClassStep: jest.fn(),
+    setCreateClassData: jest.fn(),
+    resetCreateClass: jest.fn(),
+    setAuthMode: jest.fn(),
+    setAuthStep: jest.fn(),
+    setAuthData: jest.fn(),
+    resetAuth: jest.fn(),
+    setPersonManagementStep: jest.fn(),
+    setPersonManagementData: jest.fn(),
+    resetPersonManagement: jest.fn(),
+    setPrincipalCreateClassStep: jest.fn(),
+    setPrincipalCreateClassData: jest.fn(),
+    resetPrincipalCreateClass: jest.fn(),
+    setPrincipalPersonManagementStep: jest.fn(),
+    setPrincipalPersonManagementData: jest.fn(),
+    resetPrincipalPersonManagement: jest.fn(),
+    switchPrincipalPersonManagementTab: jest.fn(),
+    resetAllForms: jest.fn(),
+    getFormState: jest.fn(),
+  })),
+  FormsProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+jest.mock("@/contexts/AppContext", () => ({
+  useApp: jest.fn(() => ({
+    // 새로운 구조
+    navigation: {
+      activeTab: 0,
+      subPage: "login",
+      canGoBack: false,
+      isTransitioning: false,
+      navigationItems: [
+        { label: "클래스 정보", href: "/dashboard", index: 0 },
+        { label: "수강신청", href: "/dashboard", index: 1 },
+        { label: "나의 정보", href: "/dashboard", index: 2 },
+      ],
+      history: [],
+      setActiveTab: jest.fn(),
+      handleTabChange: jest.fn(),
+      navigateToSubPage: jest.fn(),
+      clearSubPage: jest.fn(),
+      goBack: jest.fn(),
+      goBackWithForms: jest.fn(),
+      pushHistory: jest.fn(),
+      clearHistory: jest.fn(),
+      canAccessTab: jest.fn(() => true),
+      canAccessSubPage: jest.fn(() => true),
+    },
+    forms: {
+      forms: {
+        enrollment: {
+          currentStep: "academy-selection",
+          selectedAcademyId: null,
+          selectedClassIds: [],
+          selectedSessions: [],
+          selectedClasses: [],
+          selectedClassesWithSessions: [],
+          selectedMonth: null,
+        },
+        createClass: {
+          currentStep: "class-info",
+          classFormData: {
+            name: "",
+            description: "",
+            maxStudents: 0,
+            price: 0,
+            duration: 0,
+            difficulty: "BEGINNER",
+            category: "BALLET",
+          },
+          selectedTeacherId: null,
+        },
+        auth: {
+          authMode: "login",
+          authSubPage: null,
+          signup: {
+            step: "personal",
+            role: "STUDENT",
+            personalInfo: {
+              name: "",
+              phoneNumber: "",
+              birthDate: "",
+              gender: "",
+            },
+            accountInfo: {
+              email: "",
+              password: "",
+              confirmPassword: "",
+            },
+            terms: {
+              privacy: false,
+              service: false,
+              marketing: false,
+            },
+          },
+          login: {
+            email: "",
+            password: "",
+          },
+        },
+        personManagement: {
+          currentStep: "class-selection",
+          selectedTab: "enrollment",
+          selectedClassId: null,
+          selectedSessionId: null,
+          selectedRequestId: null,
+          selectedRequestType: null,
+        },
+        principalCreateClass: {
+          currentStep: "class-info",
+          classFormData: {
+            name: "",
+            description: "",
+            maxStudents: 0,
+            price: 0,
+            duration: 0,
+            difficulty: "BEGINNER",
+            category: "BALLET",
+          },
+          selectedTeacherId: null,
+        },
+        principalPersonManagement: {
+          currentStep: "class-selection",
+          selectedTab: "enrollment",
+          selectedClassId: null,
+          selectedSessionId: null,
+          selectedRequestId: null,
+          selectedRequestType: null,
+        },
+      },
+      enrollment: {
+        currentStep: "academy-selection",
+        selectedAcademyId: null,
+        selectedClassIds: [],
+        selectedSessions: [],
+        selectedClasses: [],
+        selectedClassesWithSessions: [],
+        selectedMonth: null,
+      },
+      createClass: {
+        currentStep: "class-info",
+        classFormData: {
+          name: "",
+          description: "",
+          maxStudents: 0,
+          price: 0,
+          duration: 0,
+          difficulty: "BEGINNER",
+          category: "BALLET",
+        },
+        selectedTeacherId: null,
+      },
+      auth: {
+        authMode: "login",
+        authSubPage: null,
+        signup: {
+          step: "personal",
+          role: "STUDENT",
+          personalInfo: {
+            name: "",
+            phoneNumber: "",
+            birthDate: "",
+            gender: "",
+          },
+          accountInfo: {
+            email: "",
+            password: "",
+            confirmPassword: "",
+          },
+          terms: {
+            privacy: false,
+            service: false,
+            marketing: false,
+          },
+        },
+        login: {
+          email: "",
+          password: "",
+        },
+      },
+      personManagement: {
+        currentStep: "class-selection",
+        selectedTab: "enrollment",
+        selectedClassId: null,
+        selectedSessionId: null,
+        selectedRequestId: null,
+        selectedRequestType: null,
+      },
+      principalCreateClass: {
+        currentStep: "class-info",
+        classFormData: {
+          name: "",
+          description: "",
+          maxStudents: 0,
+          price: 0,
+          duration: 0,
+          difficulty: "BEGINNER",
+          category: "BALLET",
+        },
+        selectedTeacherId: null,
+      },
+      principalPersonManagement: {
+        currentStep: "class-selection",
+        selectedTab: "enrollment",
+        selectedClassId: null,
+        selectedSessionId: null,
+        selectedRequestId: null,
+        selectedRequestType: null,
+      },
+      updateForm: jest.fn(),
+      setEnrollmentStep: jest.fn(),
+      setEnrollmentData: jest.fn(),
+      resetEnrollment: jest.fn(),
+      setCreateClassStep: jest.fn(),
+      setCreateClassData: jest.fn(),
+      resetCreateClass: jest.fn(),
+      setAuthMode: jest.fn(),
+      setAuthStep: jest.fn(),
+      setAuthData: jest.fn(),
+      resetAuth: jest.fn(),
+      setPersonManagementStep: jest.fn(),
+      setPersonManagementData: jest.fn(),
+      resetPersonManagement: jest.fn(),
+      setPrincipalCreateClassStep: jest.fn(),
+      setPrincipalCreateClassData: jest.fn(),
+      resetPrincipalCreateClass: jest.fn(),
+      setPrincipalPersonManagementStep: jest.fn(),
+      setPrincipalPersonManagementData: jest.fn(),
+      resetPrincipalPersonManagement: jest.fn(),
+      switchPrincipalPersonManagementTab: jest.fn(),
+      resetAllForms: jest.fn(),
+      getFormState: jest.fn(),
+    },
+    ui: {
+      isLoading: false,
+      setIsLoading: jest.fn(),
+      showModal: jest.fn(),
+      hideModal: jest.fn(),
+      showToast: jest.fn(),
+      hideToast: jest.fn(),
+    },
+    data: {
+      academies: [],
+      classes: [],
+      teachers: [],
+      students: [],
+      sessions: [],
+      setAcademies: jest.fn(),
+      setClasses: jest.fn(),
+      setTeachers: jest.fn(),
+      setStudents: jest.fn(),
+      setSessions: jest.fn(),
+    },
+    session: {
+      data: null,
+      status: "unauthenticated"
+    },
+    stateSync: {
+      publish: jest.fn(),
+      subscribe: jest.fn(() => jest.fn()),
+      getState: jest.fn(() => ({})),
+      syncStates: jest.fn(),
+      clearState: jest.fn(),
+      clearAllStates: jest.fn(),
+    },
+    goBack: jest.fn(),
+    updateForm: jest.fn(),
+    resetAllForms: jest.fn(),
+    getFormState: jest.fn(),
+    
+    // 하위 호환성을 위한 직접 접근
+    activeTab: 0,
+    subPage: "login",
+    canGoBack: false,
+    isTransitioning: false,
+    navigationItems: [
+      { label: "클래스 정보", href: "/dashboard", index: 0 },
+      { label: "수강신청", href: "/dashboard", index: 1 },
+      { label: "나의 정보", href: "/dashboard", index: 2 },
+    ],
+    history: [],
+    setActiveTab: jest.fn(),
+    handleTabChange: jest.fn(),
+    navigateToSubPage: jest.fn(),
+    clearSubPage: jest.fn(),
+    clearHistory: jest.fn(),
+    
+    // 하위 호환성을 위한 폼 접근
+    form: {
+      enrollment: {
+        currentStep: "academy-selection",
+        selectedAcademyId: null,
+        selectedClassIds: [],
+        selectedSessions: [],
+        selectedClasses: [],
+        selectedClassesWithSessions: [],
+        selectedMonth: null,
+      },
+      createClass: {
+        currentStep: "class-info",
+        classFormData: {
+          name: "",
+          description: "",
+          maxStudents: 0,
+          price: 0,
+          duration: 0,
+          difficulty: "BEGINNER",
+          category: "BALLET",
+        },
+        selectedTeacherId: null,
+      },
+      principalCreateClass: {
+        currentStep: "class-info",
+        classFormData: {
+          name: "",
+          description: "",
+          maxStudents: 0,
+          price: 0,
+          duration: 0,
+          difficulty: "BEGINNER",
+          category: "BALLET",
+        },
+        selectedTeacherId: null,
+      },
+      auth: {
+        authMode: "login",
+        authSubPage: null,
+        signup: {
+          step: "personal",
+          role: "STUDENT",
+          personalInfo: {
+            name: "",
+            phoneNumber: "",
+            birthDate: "",
+            gender: "",
+          },
+          accountInfo: {
+            email: "",
+            password: "",
+            confirmPassword: "",
+          },
+          terms: {
+            privacy: false,
+            service: false,
+            marketing: false,
+          },
+        },
+        login: {
+          email: "",
+          password: "",
+        },
+      },
+      personManagement: {
+        currentStep: "class-selection",
+        selectedTab: "enrollment",
+        selectedClassId: null,
+        selectedSessionId: null,
+        selectedRequestId: null,
+        selectedRequestType: null,
+      },
+      principalPersonManagement: {
+        currentStep: "class-selection",
+        selectedTab: "enrollment",
+        selectedClassId: null,
+        selectedSessionId: null,
+        selectedRequestId: null,
+        selectedRequestType: null,
+      },
+    },
+    
+    // 하위 호환성을 위한 직접 메서드들
+    setEnrollmentStep: jest.fn(),
+    setSelectedMonth: jest.fn(),
+    setSelectedClasses: jest.fn(),
+    setSelectedSessions: jest.fn(),
+    setSelectedClassIds: jest.fn(),
+    setSelectedAcademyId: jest.fn(),
+    setSelectedClassesWithSessions: jest.fn(),
+    resetEnrollment: jest.fn(),
+    setCreateClassStep: jest.fn(),
+    setClassFormData: jest.fn(),
+    setSelectedTeacherId: jest.fn(),
+    resetCreateClass: jest.fn(),
+    setPrincipalCreateClassStep: jest.fn(),
+    setPrincipalClassFormData: jest.fn(),
+    setPrincipalSelectedTeacherId: jest.fn(),
+    resetPrincipalCreateClass: jest.fn(),
+    setAuthMode: jest.fn(),
+    setAuthSubPage: jest.fn(),
+    navigateToAuthSubPage: jest.fn(),
+    goBackFromAuth: jest.fn(),
+    clearAuthSubPage: jest.fn(),
+    setSignupStep: jest.fn(),
+    setRole: jest.fn(),
+    setPersonalInfo: jest.fn(),
+    setAccountInfo: jest.fn(),
+    setTerms: jest.fn(),
+    resetSignup: jest.fn(),
+    setLoginInfo: jest.fn(),
+    resetLogin: jest.fn(),
+    setPersonManagementStep: jest.fn(),
+    setPersonManagementTab: jest.fn(),
+    setSelectedClassId: jest.fn(),
+    setSelectedSessionId: jest.fn(),
+    setSelectedRequestId: jest.fn(),
+    setSelectedRequestType: jest.fn(),
+    resetPersonManagement: jest.fn(),
+    setPrincipalPersonManagementStep: jest.fn(),
+    setPrincipalPersonManagementTab: jest.fn(),
+    setPrincipalSelectedClassId: jest.fn(),
+    setPrincipalSelectedSessionId: jest.fn(),
+    setPrincipalSelectedRequestId: jest.fn(),
+    setPrincipalSelectedRequestType: jest.fn(),
+    resetPrincipalPersonManagement: jest.fn(),
+    switchPrincipalPersonManagementTab: jest.fn(),
+  })),
+  AppProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 describe("Auth API Integration", () => {
@@ -50,16 +673,14 @@ describe("Auth API Integration", () => {
       );
 
       // 실제 LoginPage 컴포넌트 렌더링
-      render(
-        <AppProvider>
-          <LoginPage />
-        </AppProvider>
-      );
+      render(<LoginPage />);
 
       // 사용자 입력 시뮬레이션
-      await user.type(screen.getByLabelText("아이디"), "testuser");
-      await user.type(screen.getByLabelText("비밀번호"), "password123");
-      await user.click(screen.getByRole("button", { name: /로그인하기/i }));
+      await act(async () => {
+        await user.type(screen.getByLabelText("아이디"), "testuser");
+        await user.type(screen.getByLabelText("비밀번호"), "password123");
+        await user.click(screen.getByRole("button", { name: /로그인하기/i }));
+      });
 
       // NextAuth signIn 호출 검증
       await waitFor(() => {
@@ -81,15 +702,13 @@ describe("Auth API Integration", () => {
       });
 
       // 실제 LoginPage 컴포넌트 렌더링
-      render(
-        <AppProvider>
-          <LoginPage />
-        </AppProvider>
-      );
+      render(<LoginPage />);
 
-      await user.type(screen.getByLabelText("아이디"), "wronguser");
-      await user.type(screen.getByLabelText("비밀번호"), "wrongpass");
-      await user.click(screen.getByRole("button", { name: /로그인하기/i }));
+      await act(async () => {
+        await user.type(screen.getByLabelText("아이디"), "wronguser");
+        await user.type(screen.getByLabelText("비밀번호"), "wrongpass");
+        await user.click(screen.getByRole("button", { name: /로그인하기/i }));
+      });
 
       // 에러 메시지 표시 검증
       await waitFor(() => {
@@ -122,7 +741,9 @@ describe("Auth API Integration", () => {
         </div>
       );
 
-      await user.click(screen.getByTestId("logout-button"));
+      await act(async () => {
+        await user.click(screen.getByTestId("logout-button"));
+      });
 
       // NextAuth signOut 호출 검증
       await waitFor(() => {

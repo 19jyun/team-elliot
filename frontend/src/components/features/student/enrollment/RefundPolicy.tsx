@@ -4,7 +4,7 @@ import { CheckboxAgreement } from './CheckboxAgreement'
 import { Button } from './Button'
 import { policyData } from './data'
 import type { PolicySectionData } from '@/types/ui/common'
-import { useApp } from '@/contexts'
+import { useApp } from '@/contexts/AppContext'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 
 interface RefundPolicyProps {

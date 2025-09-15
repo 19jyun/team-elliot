@@ -1,36 +1,190 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Team Elliot Frontend
 
-## Getting Started
+발레 아카데미 관리 시스템의 프론트엔드 애플리케이션입니다. 학생, 강사, 원장의 역할별 대시보드를 제공하며, 수강신청, 수업 관리, 결제 등의 기능을 포함합니다.
 
-First, run the development server:
+## 🏗️ 아키텍처 특징
+
+### SPA + Context 기반 구조
+
+이 프로젝트는 일반적인 Next.js 라우팅 구조가 아닌 **SPA(Single Page Application) + Context 기반** 구조를 사용합니다:
+
+- **실제 라우트**: `/auth`, `/dashboard` 2개만 사용
+- **Context 기반 네비게이션**: `NavigationContext`를 통한 탭 및 서브페이지 관리
+- **커스텀 goBack**: 브라우저 히스토리 대신 커스텀 네비게이션 히스토리 관리
+- **Container 패턴**: 각 기능별 Container 컴포넌트로 모듈화
+
+### 왜 이런 구조를 선택했나요?
+
+1. **복잡한 다단계 프로세스**: 수강신청, 수강변경 등의 다단계 폼 처리에 최적화
+2. **모바일 앱 경험**: 네이티브 앱과 유사한 사용자 경험 제공
+3. **상태 유지**: 탭 간 전환 시 스크롤 위치, 폼 상태 등이 유지됨
+4. **Capacitor 포팅 준비**: 향후 네이티브 앱으로 포팅할 때 유리한 구조
+
+## 🚀 시작하기
+
+### 사전 요구사항
+
+- Node.js 18.0.0 이상
+- npm 또는 yarn
+- 백엔드 API 서버 (포트 3001)
+
+### 설치 및 실행
 
 ```bash
+# 의존성 설치
+npm install
+
+# 환경 변수 설정
+cp env.example .env.local
+
+# 개발 서버 실행
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+브라우저에서 [http://localhost:3000](http://localhost:3000)을 열어 확인하세요.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 환경 변수 설정
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`.env.local` 파일에 다음 변수들을 설정하세요:
 
-## Learn More
+```env
+# API 엔드포인트
+NEXT_PUBLIC_API_URL=http://localhost:3001
 
-To learn more about Next.js, take a look at the following resources:
+# 인증 관련
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-secret-key
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# 기타 설정
+NODE_ENV=development
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📁 프로젝트 구조
 
-## Deploy on Vercel
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── (dashboard)/       # 대시보드 라우트 그룹
+│   │   └── dashboard/     # 메인 대시보드 페이지
+│   ├── auth/              # 인증 페이지
+│   └── api/               # API 라우트
+├── components/            # 재사용 가능한 컴포넌트
+│   ├── dashboard/         # 대시보드 관련 컴포넌트
+│   ├── auth/              # 인증 관련 컴포넌트
+│   └── common/            # 공통 컴포넌트
+├── contexts/              # React Context들
+│   ├── NavigationContext.tsx  # 네비게이션 상태 관리
+│   ├── FormContext.tsx        # 폼 상태 관리
+│   ├── UIContext.tsx          # UI 상태 관리
+│   └── DataContext.tsx        # 데이터 상태 관리
+├── hooks/                 # 커스텀 훅
+├── store/                 # Redux 스토어
+├── types/                 # TypeScript 타입 정의
+└── utils/                 # 유틸리티 함수
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🎯 주요 기능
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 역할별 대시보드
+
+- **학생**: 수강신청, 수강 내역, 프로필 관리
+- **강사**: 수업 관리, 학생 관리, 프로필 관리
+- **원장**: 전체 수업 관리, 인원 관리, 아카데미 관리
+
+### 핵심 기능
+
+- 🔐 **인증 시스템**: NextAuth.js 기반 JWT 인증
+- 📱 **반응형 디자인**: 모바일 우선 설계
+- 💳 **결제 시스템**: 수강료 결제 및 환불 관리
+- 📊 **실시간 업데이트**: Socket.io를 통한 실시간 알림
+- 🎨 **모던 UI**: Tailwind CSS + Radix UI 컴포넌트
+
+## 🛠️ 개발 도구
+
+### 스크립트 명령어
+
+```bash
+# 개발
+npm run dev              # 개발 서버 실행
+npm run build            # 프로덕션 빌드
+npm run start            # 프로덕션 서버 실행
+
+# 코드 품질
+npm run lint             # ESLint 실행
+npm run lint:fix         # ESLint 자동 수정
+npm run type-check       # TypeScript 타입 체크
+
+# 테스트
+npm run test             # 모든 테스트 실행
+npm run test:watch       # 테스트 감시 모드
+npm run test:coverage    # 커버리지 포함 테스트
+
+# 배포
+npm run deploy:preview   # Vercel 프리뷰 배포
+npm run deploy:production # Vercel 프로덕션 배포
+```
+
+### 기술 스택
+
+- **프레임워크**: Next.js 15 (App Router)
+- **언어**: TypeScript
+- **스타일링**: Tailwind CSS
+- **UI 컴포넌트**: Radix UI, Material-UI
+- **상태 관리**: Redux Toolkit, React Context
+- **데이터 페칭**: TanStack Query, Axios
+- **인증**: NextAuth.js
+- **실시간 통신**: Socket.io
+- **애니메이션**: Framer Motion
+- **테스팅**: Jest, Testing Library
+
+## 🔄 Context 기반 상태 관리
+
+### NavigationContext
+
+```typescript
+// 탭 및 서브페이지 관리
+const { activeTab, subPage, navigateToSubPage, goBack } = useNavigation();
+
+// 서브페이지 열기
+navigateToSubPage("enroll");
+
+// 뒤로가기
+goBack();
+```
+
+### FormContext
+
+```typescript
+// 다단계 폼 상태 관리
+const { enrollment, setEnrollmentStep } = useForm();
+
+// 수강신청 단계 설정
+setEnrollmentStep("date-selection");
+```
+
+## 📱 네이티브 앱 포팅 준비
+
+이 프로젝트는 향후 Capacitor를 통해 네이티브 앱으로 포팅될 예정입니다:
+
+- **SPA 구조**: 네이티브 앱에 최적화된 단일 페이지 구조
+- **커스텀 네비게이션**: 브라우저 히스토리 대신 커스텀 히스토리 관리
+- **모바일 우선 설계**: 터치 인터페이스에 최적화된 UI/UX
+
+## 🚀 배포
+
+### Vercel 배포
+
+현재 Vercel을 통한 자동 배포가 설정되어 있습니다:
+
+- **프로덕션**: `main` 브랜치 푸시 시 자동 배포
+- **프리뷰**: Pull Request 시 프리뷰 배포
+
+자세한 배포 가이드는 [DEPLOYMENT.md](./DEPLOYMENT.md)를 참조하세요.
+
+## 🤝 기여하기
+
+1. 이 저장소를 포크하세요
+2. 기능 브랜치를 생성하세요 (`git checkout -b feature/amazing-feature`)
+3. 변경사항을 커밋하세요 (`git commit -m 'Add some amazing feature'`)
+4. 브랜치에 푸시하세요 (`git push origin feature/amazing-feature`)
+5. Pull Request를 생성하세요

@@ -3,7 +3,7 @@ import { CloseIcon } from '@/components/icons'
 import { useEffect } from 'react'
 import { IconButton } from '@/components/ui/IconButton'
 import { LogoutModalProps } from '@/app/(dashboard)/types'
-import { useApp } from '@/contexts'
+import { useApp } from '@/contexts/AppContext'
 
 export function LogoutModal({ onLogout, onClose }: LogoutModalProps) {
   const { ui } = useApp();

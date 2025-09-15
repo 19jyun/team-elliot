@@ -1,12 +1,12 @@
 'use client';
 
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 import Image from 'next/image';
 import { ArrowLeft } from 'lucide-react';
 
 export function AuthHeader() {
-  const { form } = useApp();
-  const { auth, goBackFromAuth } = form;
+  const { form, goBackFromAuth } = useApp();
+  const { auth } = form;
   const { authSubPage } = auth;
 
   return (

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 
 interface SlideUpModalProps {
   isOpen: boolean;

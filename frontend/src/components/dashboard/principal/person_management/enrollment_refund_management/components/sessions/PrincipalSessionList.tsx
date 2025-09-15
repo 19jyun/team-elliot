@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
 
 import { Badge } from '@/components/ui/badge';
@@ -11,12 +11,9 @@ import type { PrincipalEnrollment } from '@/types/api/principal';
 import type { PrincipalSessionListForRequestsVM } from '@/types/view/principal';
 
 export function PrincipalSessionList() {
-  const { 
-    personManagement,
-    setSelectedSessionId, 
-    setPersonManagementStep
-  } = useApp();
-  const { selectedTab, selectedClassId } = personManagement;
+  const { form, setPrincipalSelectedSessionId, setPrincipalPersonManagementStep } = useApp();
+  const { principalPersonManagement } = form;
+  const { selectedTab, selectedClassId } = principalPersonManagement;
 
   // Redux store에서 데이터 가져오기
   const { 
@@ -25,6 +22,7 @@ export function PrincipalSessionList() {
     isLoading, 
     error 
   } = usePrincipalData();
+
 
   // ViewModel 생성
   const sessionListVM: PrincipalSessionListForRequestsVM = toPrincipalSessionListForRequestsVM({
@@ -37,8 +35,8 @@ export function PrincipalSessionList() {
   });
 
   const handleSessionClick = (sessionId: number) => {
-    setSelectedSessionId(sessionId);
-    setPersonManagementStep('request-detail');
+    setPrincipalSelectedSessionId(sessionId);
+    setPrincipalPersonManagementStep('request-detail');
   };
 
   const formatDate = (dateString: string) => {

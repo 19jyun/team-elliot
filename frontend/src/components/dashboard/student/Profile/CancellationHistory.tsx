@@ -6,7 +6,7 @@ import { Card, CardContent} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Calendar, Clock, BookOpen, CheckCircle, XCircle, AlertCircle, Clock as ClockIcon, DollarSign } from 'lucide-react';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 import { useStudentData } from '@/hooks/redux/useStudentData';
 import { toStudentCancellationHistoryVMs } from '@/lib/adapters/student';
 import type { StudentCancellationHistoryVM } from '@/types/view/student';

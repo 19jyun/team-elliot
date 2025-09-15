@@ -1,30 +1,15 @@
 'use client';
 
 import React from 'react';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 
 export function EnrollmentRefundManagementTabs() {
-  const {
-    personManagement,
-    setPersonManagementTab,
-    setPersonManagementStep,
-    setSelectedSessionId,
-    setSelectedRequestId,
-    setSelectedRequestType,
-    setSelectedClassId
-  } = useApp();
-  const { selectedTab } = personManagement;
+  const { form, switchPrincipalPersonManagementTab } = useApp();
+  const { principalPersonManagement } = form;
+  const { selectedTab } = principalPersonManagement;
 
   const handleTabClick = (tab: 'enrollment' | 'refund') => {
-    // 탭 변경 시 컨텍스트 초기화
-    setSelectedClassId(null);
-    setSelectedSessionId(null);
-    setSelectedRequestId(null);
-    setSelectedRequestType(null);
-    
-    // 탭과 단계 설정
-    setPersonManagementTab(tab);
-    setPersonManagementStep('class-list');
+    switchPrincipalPersonManagementTab(tab);
   };
 
   return (

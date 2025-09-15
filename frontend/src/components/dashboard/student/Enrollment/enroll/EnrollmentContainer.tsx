@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 import { EnrollmentAcademyStep } from './EnrollmentAcademyStep';
 import { EnrollmentClassStep } from './EnrollmentClassStep';
 import { EnrollmentDateStep } from './EnrollmentDateStep';

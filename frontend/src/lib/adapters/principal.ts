@@ -370,7 +370,7 @@ export function toPrincipalClassListForRequestsVM({
 
   if (selectedTab === "enrollment") {
     // 수강신청 데이터 처리
-    const pendingEnrollments = enrollments.filter(
+    const pendingEnrollments = (enrollments || []).filter(
       (enrollment) => enrollment.status === "PENDING"
     );
 
@@ -401,12 +401,11 @@ export function toPrincipalClassListForRequestsVM({
       classData.sessions.push(enrollment);
     });
   } else {
-    // 환불신청 데이터 처리
-    const pendingRefunds = refundRequests.filter(
-      (refund) => refund.status === "PENDING"
-    );
+    // 환불신청 데이터 처리 - 모든 상태 표시
+    const allRefunds = refundRequests || [];
+    const allRefundsForDisplay = allRefunds;
 
-    pendingRefunds.forEach((refund) => {
+    allRefundsForDisplay.forEach((refund) => {
       const classId = refund.sessionEnrollment?.session?.class?.id;
       const className = refund.sessionEnrollment?.session?.class?.className;
       const teacherName =
@@ -502,13 +501,14 @@ export function toPrincipalSessionListForRequestsVM({
       session.enrollments!.push(enrollment);
     });
   } else {
-    // 환불신청 데이터 처리
-    const pendingRefunds = refundRequests.filter((refund) => {
+    // 환불신청 데이터 처리 - 모든 상태 표시
+    const allRefunds = refundRequests || [];
+    const allRefundsForDisplay = allRefunds.filter((refund) => {
       const classId = refund.sessionEnrollment?.session?.class?.id;
-      return refund.status === "PENDING" && classId === selectedClassId;
+      return classId === selectedClassId;
     });
 
-    pendingRefunds.forEach((refund) => {
+    allRefundsForDisplay.forEach((refund) => {
       const sessionId = refund.sessionEnrollment?.session?.id;
       if (!sessionId) return;
 

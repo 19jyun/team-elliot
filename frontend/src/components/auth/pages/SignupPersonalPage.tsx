@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
-import { useApp } from '@/contexts'
+import { useApp } from '@/contexts/AppContext'
 
 interface InputFieldProps {
   label: string
@@ -140,8 +140,7 @@ const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
 )
 
 export function SignupPersonalPage() {
-  const { form } = useApp()
-  const { navigateToAuthSubPage } = form
+  const { setSignupStep } = useApp()
   const [currentStep] = useState(2)
   const [formData, setFormData] = useState({
     name: '',
@@ -330,7 +329,7 @@ export function SignupPersonalPage() {
         phoneNumber: formData.phoneNumber, // 숫자만 저장 (하이픈 제거)
       }),
     )
-    navigateToAuthSubPage('signup-account')
+    setSignupStep('account-info')
   }
 
   return (

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 import { CompleteIcon } from '@/components/icons';
 
 interface RefundCompleteStepProps {
@@ -11,8 +11,7 @@ interface RefundCompleteStepProps {
 }
 
 export function RefundCompleteStep({ isModification }: RefundCompleteStepProps) {
-  const { form, navigation } = useApp();
-  const { resetEnrollment } = form;
+  const { navigation, resetEnrollment } = useApp();
   const { clearSubPage } = navigation;
 
   const handleConfirm = () => {

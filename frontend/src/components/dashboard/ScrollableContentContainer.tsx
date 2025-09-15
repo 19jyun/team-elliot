@@ -2,7 +2,7 @@
 
 import React, { ReactNode, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 
 interface ScrollableContentContainerProps {
   children: ReactNode;

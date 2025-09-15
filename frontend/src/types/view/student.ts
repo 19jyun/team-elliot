@@ -160,6 +160,7 @@ export interface StudentCancellationHistoryVM {
 // Enrollment Modification 관련 ViewModel들
 export interface ModificationSessionVM extends SessionCore {
   class: ClassRef & { level?: string };
+  isAlreadyEnrolled?: boolean; // 백엔드에서 계산된 값
   enrollment?: {
     id: number;
     status: StudentEnrollmentCardStatus;
@@ -308,7 +309,7 @@ export interface EnrollmentModificationDateStepVM {
   classId: number;
   existingEnrollments: ModificationSessionVM[];
   month?: number | null;
-  onComplete: (selectedDates: string[], sessionPrice?: number) => void;
+  onComplete: (selectedSessionIds: Set<number>, sessionPrice?: number) => void;
 }
 
 export interface EnrollmentModificationContainerVM {

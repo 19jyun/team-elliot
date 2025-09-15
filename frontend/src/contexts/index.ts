@@ -1,27 +1,33 @@
-// 새로운 통합 컨텍스트 시스템
+// src/contexts/index.ts
+// 메인 AppContext
 export { AppProvider, useApp } from "./AppContext";
+
+// 개별 Context들 (하위 호환성)
+export { useNavigationContext } from "./AppContext";
+export { useEnrollmentFormContext } from "./AppContext";
+export { useCreateClassFormContext } from "./AppContext";
+export { useAuthFormContext } from "./AppContext";
+export { usePersonManagementFormContext } from "./AppContext";
+export { useUIContext } from "./AppContext";
+export { useDataContext } from "./AppContext";
+
+// Navigation
 export {
   NavigationProvider,
   useNavigation,
-  useDashboardNavigation,
-} from "./NavigationContext";
-export {
-  FormProvider,
-  useForm,
-  useAuth,
-  usePrincipalContext,
-  useStudentContext,
-  useTeacherContext,
-} from "./FormContext";
-export { UIProvider, useUI } from "./UIContext";
-export { DataProvider, useData } from "./DataContext";
+} from "./navigation/NavigationContext";
 
-// 타입 정의
-export * from "./types";
+// Forms
+export * from "./forms";
 
-// 기존 컨텍스트와의 호환성을 위한 별칭들
-export { useDashboardNavigation as useDashboardNavigationLegacy } from "./NavigationContext";
-export { useAuth as useAuthLegacy } from "./FormContext";
-export { usePrincipalContext as usePrincipalContextLegacy } from "./FormContext";
-export { useStudentContext as useStudentContextLegacy } from "./FormContext";
-export { useTeacherContext as useTeacherContextLegacy } from "./FormContext";
+// UI
+export { UIContextProvider, useUI } from "./UIContext";
+
+// Data
+export { DataContextProvider, useData } from "./DataContext";
+
+// Events
+export * from "./events";
+
+// Navigation (Core)
+export * from "./navigation";

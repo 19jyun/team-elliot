@@ -25,6 +25,9 @@ const customJestConfig = {
     customExportConditions: ['node', 'node-addons'],
   },
   
+  // 테스트 타임아웃 설정 (통합 테스트용)
+  testTimeout: 30000, // 30초
+  
   // 테스트 파일 패턴
   testMatch: [
     '**/__tests__/**/*.(js|jsx|ts|tsx)',
@@ -51,9 +54,6 @@ const customJestConfig = {
     '^msw/node$': '<rootDir>/node_modules/msw/lib/node/index.js',
     '^@mswjs/interceptors/(.*)$': '<rootDir>/node_modules/@mswjs/interceptors/$1',
   },
-  
-  // 테스트 실행 전 설정 파일
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   
   // 커버리지 설정
   collectCoverageFrom: [

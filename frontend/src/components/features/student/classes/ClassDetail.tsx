@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { ClassDetailsResponse } from '@/types/api/class';
 import { toast } from 'sonner';
 import cn from 'classnames';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 import { TeacherProfileCardForStudent } from '@/components/features/student/classes/TeacherProfileCardForStudent';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
 import type { StudentEnrolledSessionVM, ClassDetailVM, ClassDetailDisplayVM } from '@/types/view/student';

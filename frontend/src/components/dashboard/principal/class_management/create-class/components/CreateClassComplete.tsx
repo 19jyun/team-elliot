@@ -1,20 +1,21 @@
 'use client';
 
 import React from 'react';
-import { useApp } from '@/contexts';
+import { useApp } from '@/contexts/AppContext';
 import { StatusStep } from './StatusStep';
 import { CompleteIcon } from '@/components/icons';
 
 export function CreateClassComplete() {
-  const { form, goBack } = useApp();
+  const { form, resetCreateClass, clearSubPage, clearHistory } = useApp();
   const { createClass } = form;
-  const { resetCreateClass } = form;
   const { classFormData } = createClass;
 
   const handleFinish = () => {
-    // 상태 초기화 후 메인으로 돌아가기
     resetCreateClass();
-    goBack();
+
+    clearHistory();
+
+    clearSubPage();
   };
 
   const statusSteps = [
