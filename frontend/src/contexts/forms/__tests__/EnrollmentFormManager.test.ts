@@ -108,6 +108,16 @@ describe("EnrollmentFormManager", () => {
           startTime: "10:00",
           endTime: "11:00",
           date: "2024-12-01",
+          isAlreadyEnrolled: false,
+          isEnrollable: true,
+          class: {
+            id: 1,
+            className: "Test Class",
+            level: "BEGINNER",
+            tuitionFee: "50000",
+            teacher: { id: 1, name: "Test Teacher" },
+            academy: { id: 1, name: "Test Academy" },
+          },
         },
       ];
 
