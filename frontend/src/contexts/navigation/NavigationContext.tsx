@@ -1,7 +1,7 @@
 // src/contexts/navigation/NavigationContext.tsx
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { VirtualHistoryManager } from './index';
 import { GoBackManager } from './GoBackManager';
@@ -205,8 +205,12 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
       history: history,
     };
     
-    stateSync.publish('navigation', navigationState);
-  }, [activeTab, canGoBack, getNavigationItems, history, isTransitioning, stateSync, subPage]);
+    stateSyncRef.current.publish('navigation', navigationState);
+  }, [activeTab, canGoBack, getNavigationItems, history, isTransitioning, subPage]);
+
+  // stateSync를 ref로 저장하여 최신 참조 유지
+  const stateSyncRef = useRef(stateSync);
+  stateSyncRef.current = stateSync;
 
   // 상태 변경 시 StateSync에 발행
   useEffect(() => {
@@ -219,8 +223,8 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
       history: history,
     };
     
-    stateSync.publish('navigation', navigationState);
-  }, [activeTab, subPage, canGoBack, isTransitioning, getNavigationItems, history, stateSync]);
+    stateSyncRef.current.publish('navigation', navigationState);
+  }, [activeTab, subPage, canGoBack, isTransitioning, getNavigationItems, history]);
 
   // 이벤트 버스 구독
   useEffect(() => {

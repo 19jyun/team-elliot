@@ -1,7 +1,7 @@
 // src/contexts/forms/FormsContext.tsx
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, ReactNode, useRef } from 'react';
 import { useStateSync } from '../state/StateSyncContext';
 import { FormsState } from '../state/StateSyncTypes';
 import { contextEventBus } from '../events/ContextEventBus';
@@ -169,6 +169,10 @@ export const FormsProvider: React.FC<FormsProviderProps> = ({ children }) => {
     return unsubscribe;
   }, [stateSync]);
 
+  // stateSync를 ref로 저장하여 최신 참조 유지
+  const stateSyncRef = useRef(stateSync);
+  stateSyncRef.current = stateSync;
+
   // 초기 폼 상태를 StateSync에 발행
   useEffect(() => {
     const formsState: FormsState = {
@@ -180,8 +184,8 @@ export const FormsProvider: React.FC<FormsProviderProps> = ({ children }) => {
       principalPersonManagement,
     };
     
-    stateSync.publish('forms', formsState);
-  }, [enrollment, createClass, auth, personManagement, principalCreateClass, principalPersonManagement, stateSync]);
+    stateSyncRef.current.publish('forms', formsState);
+  }, [enrollment, createClass, auth, personManagement, principalCreateClass, principalPersonManagement]);
 
   // 폼 상태 업데이트
   const updateForm = useCallback(<T extends keyof FormsState>(
@@ -190,8 +194,8 @@ export const FormsProvider: React.FC<FormsProviderProps> = ({ children }) => {
   ) => {
     const currentForms = { ...forms };
     currentForms[formType] = { ...currentForms[formType], ...updates };
-    stateSync.publish('forms', currentForms);
-  }, [forms, stateSync]);
+    stateSyncRef.current.publish('forms', currentForms);
+  }, [forms]);
 
   // 개별 폼 메서드들
   const setEnrollmentStep = useCallback((step: EnrollmentStep) => {
