@@ -21,9 +21,33 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('발레 수강신청 플랫폼 API')
-    .setDescription('API 문서 자동화 with Swagger')
+    .setDescription(
+      '발레 수강신청 플랫폼의 REST API 문서입니다. 학생, 선생님, 학원 관리자용 API를 제공합니다.',
+    )
     .setVersion('1.0')
-    .addBearerAuth()
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'JWT 토큰을 입력하세요',
+        in: 'header',
+      },
+      'JWT-auth',
+    )
+    .addTag('Auth', '인증 관련 API')
+    .addTag('Student', '학생 관련 API')
+    .addTag('Teacher', '선생님 관련 API')
+    .addTag('Academy', '학원 관련 API')
+    .addTag('Class', '클래스 관련 API')
+    .addTag('ClassSession', '클래스 세션 관련 API')
+    .addTag('Payment', '결제 관련 API')
+    .addTag('Refund', '환불 관련 API')
+    .addTag('BalletPose', '발레 포즈 관련 API')
+    .addTag('SessionContent', '세션 콘텐츠 관련 API')
+    .addTag('Principal', '원장 관련 API')
+    .addTag('SMS', 'SMS 관련 API')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

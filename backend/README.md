@@ -1,159 +1,487 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# 🩰 Team Elliot Backend API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+발레 수강신청 플랫폼의 백엔드 API 서버입니다. NestJS 프레임워크를 기반으로 구축되었으며, 학생, 선생님, 학원 관리자를 위한 종합적인 수강 관리 시스템을 제공합니다.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 📋 목차
 
-## Description
+- [프로젝트 개요](#-프로젝트-개요)
+- [기술 스택](#-기술-스택)
+- [주요 기능](#-주요-기능)
+- [설치 및 실행](#-설치-및-실행)
+- [API 문서](#-api-문서)
+- [데이터베이스](#-데이터베이스)
+- [환경 변수](#-환경-변수)
+- [테스트](#-테스트)
+- [배포](#-배포)
+- [개발 가이드](#-개발-가이드)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 🎯 프로젝트 개요
 
-## Project setup
+Team Elliot은 발레, 필라테스 등의 인도어 운동의 수강신청을 위한 통합 플랫폼으로, 다음과 같은 사용자들을 지원합니다:
+
+- **학생**: 클래스 조회, 수강 신청, 결제 관리
+- **선생님**: 클래스 관리, 수강생 관리, 일정 관리
+- **학원 관리자(원장)**: 전체 시스템 관리, 승인/거부 처리, 강의 개설 등
+
+### 핵심 특징
+
+- 🔐 **JWT 기반 인증 시스템**
+- 📱 **실시간 알림 (Socket.IO)**
+- 📧 **SMS 인증 (Twilio)**
+- 📁 **파일 업로드 (Multer)**
+- 🗄️ **PostgreSQL 데이터베이스**
+- 📚 **자동 API 문서화 (Swagger)**
+
+## 🛠 기술 스택
+
+### Backend Framework
+
+- **NestJS** - Node.js 기반 프레임워크
+- **TypeScript** - 타입 안전성
+- **Prisma** - ORM 및 데이터베이스 관리
+
+### Database
+
+- **PostgreSQL** - 메인 데이터베이스
+- **Prisma Migrate** - 데이터베이스 마이그레이션
+
+### External Services
+
+- **Twilio** - SMS 인증 서비스 (현재 한국 서비스가 중단되어 미사용 중)
+- **Socket.IO** - 실시간 통신
+- **Multer** - 파일 업로드 처리
+- **bcrypt** - 비밀번호 해싱
+
+### Development Tools
+
+- **Jest** - 테스트 프레임워크
+- **ESLint** - 코드 린팅
+- **Prettier** - 코드 포맷팅
+- **Docker** - 컨테이너화
+
+## ✨ 주요 기능
+
+### 🔐 인증 및 권한 관리
+
+- JWT 토큰 기반 인증
+- 역할별 접근 제어 (학생/선생님/원장)
+- 비밀번호 암호화 (bcrypt)
+
+### 👥 사용자 관리
+
+- 학생, 선생님, 원장 프로필 관리
+- 학원 가입/탈퇴 시스템
+- 프로필 사진 업로드
+
+### 📚 클래스 및 수강 관리
+
+- 클래스 생성 및 관리
+- 수강 신청/취소
+- 수강 상태 관리 (대기/승인/거부)
+- 일정 관리 및 캘린더 연동
+
+### 💰 결제 및 환불
+
+- 수강료 결제 관리 (현재는 카드 결제 같은 방식 지원 X, 그저 계좌번호를 복사할 수 있도록 처리)
+- 환불 신청 및 처리
+- 결제 내역 조회
+
+### 📱 실시간 알림
+
+- Socket.IO 기반 실시간 통신 (수강 신청이 승인, 거부되었는지 등)
+- 사용자별/그룹별 알림
+- 수강 신청 상태 변경 알림
+
+### 🩰 발레 포즈 관리 (베타)
+
+- 발레 자세 이미지 업로드
+- 포즈 카테고리 관리
+- 이미지 메타데이터 관리
+- 추후에 기획팀이 회의를 거쳐 수정할 예정
+
+## 🚀 설치 및 실행
+
+### 필수 요구사항
+
+- **Node.js** 18.0.0 이상
+- **PostgreSQL** 15.0 이상
+- **npm** 8.0.0 이상
+
+### 1. 저장소 클론
 
 ```bash
-$ npm install
+git clone <repository-url>
+cd team-elliot/backend
 ```
 
-## Compile and run the project
+### 2. 의존성 설치
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm install
 ```
 
-## Run tests
+### 3. 환경 변수 설정
 
 ```bash
-# unit tests
-$ npm run test
+# 환경 변수 파일 복사 및 변수 편집
+cp .env.example .env
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+nano .env
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### 4. 데이터베이스 설정
 
 ```bash
-$ npm install -g mau
-$ mau deploy
+# 데이터베이스 마이그레이션 실행
+npx prisma migrate dev
+
+# 시드 데이터 삽입 (선택사항)
+npm run seed
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### 5. 개발 서버 시작
 
-## Resources
+```bash
+# 개발 모드 (핫 리로드)
+npm run start:dev
 
-Check out a few resources that may come in handy when working with NestJS:
+# 프로덕션 모드
+npm run start:prod
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+서버가 성공적으로 시작되면 다음 URL에서 접근할 수 있습니다:
 
-## Support
+- **API 서버**: http://localhost:3001
+- **Swagger 문서**: http://localhost:3001/api
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## 📚 API 문서
 
-## Stay in touch
+### Swagger UI
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+프로젝트에는 자동 생성되는 API 문서가 포함되어 있습니다:
 
-## License
+```
+http://localhost:3001/api
+```
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+### 주요 API 엔드포인트
 
-# Backend API
+#### 인증 (Auth)
 
-## 테스트 환경 설정
+- `POST /auth/login` - 로그인
+- `POST /auth/signup` - 회원가입
+- `POST /auth/logout` - 로그아웃
+- `POST /auth/check-userid` - 아이디 중복 체크
 
-### 로컬 테스트 실행
+#### 학생 (Student)
+
+- `GET /student/classes` - 내 수강 클래스 목록
+- `POST /student/classes/:id/enroll` - 클래스 수강 신청
+- `GET /student/profile` - 내 프로필 조회
+
+#### 선생님 (Teacher)
+
+- `GET /teachers/me` - 내 프로필 조회
+- `PUT /teachers/me/profile` - 프로필 수정
+- `GET /teachers/me/classes` - 담당 클래스 목록
+
+#### 학원 (Academy)
+
+- `GET /academy` - 학원 목록 조회
+- `POST /academy/join` - 학원 가입 요청
+
+## 🗄 데이터베이스
+
+### Prisma 스키마
+
+데이터베이스 스키마는 `prisma/schema.prisma` 파일에서 관리됩니다.
+
+### 마이그레이션
+
+```bash
+# 새로운 마이그레이션 생성
+npx prisma migrate dev --name <migration-name>
+
+# 프로덕션 마이그레이션 실행
+npx prisma migrate deploy
+
+# 데이터베이스 리셋 (개발용)
+npm run db:reset
+```
+
+### 데이터베이스 시각화
+
+```bash
+# Prisma Studio 실행
+npx prisma studio
+```
+
+## 🔧 환경 변수
+
+### 필수 환경 변수
+
+```env
+# 데이터베이스
+DATABASE_URL="postgresql://username:password@localhost:5432/team_elliot"
+
+# JWT
+JWT_SECRET="your-jwt-secret-key"
+
+# Twilio (SMS) (미사용되니까 임의의 값 지정)
+TWILIO_ACCOUNT_SID="your-twilio-account-sid"
+TWILIO_AUTH_TOKEN="your-twilio-auth-token"
+TWILIO_VERIFY_SERVICE_SID="your-verify-service-sid"
+
+# 서버
+PORT=3001
+NODE_ENV=development
+```
+
+### 선택적 환경 변수
+
+```env
+# 프론트엔드 URL (CORS)
+FRONTEND_URL="http://localhost:3000"
+
+# 파일 업로드
+MAX_FILE_SIZE=10485760  # 10MB
+```
+
+## 🧪 테스트
+
+### 테스트 실행
+
+```bash
+# 단위 테스트
+npm run test
+
+# 통합 테스트
+npm run test:integration
+
+# E2E 테스트
+npm run test:e2e
+
+# 테스트 커버리지
+npm run test:cov
+```
+
+### 테스트 데이터베이스
 
 ```bash
 # 테스트 데이터베이스 시작
 npm run test:db:start
 
-# 통합 테스트 실행
+# 테스트 실행
 npm run test:integration
 
 # 테스트 데이터베이스 정리
 npm run test:db:stop
 ```
 
-### 환경변수 설정
+## 👨‍💻 개발 가이드
 
-테스트 실행을 위해 다음 환경변수가 필요합니다:
+### 프로젝트 구조
 
-- `DATABASE_URL`: PostgreSQL 연결 문자열
-- `JWT_SECRET`: JWT 토큰 서명용 시크릿 키
-- `NODE_ENV`: 환경 설정 (test)
+```
+src/
+├── auth/                 # 인증 관련
+├── student/             # 학생 관련
+├── teacher/             # 선생님 관련
+├── academy/             # 학원 관련
+├── class/               # 클래스 관련
+├── class-session/       # 클래스 세션 관련
+├── payment/             # 결제 관련
+├── refund/              # 환불 관련
+├── ballet-pose/         # 발레 포즈 관련
+├── socket/              # 실시간 통신
+├── sms/                 # SMS 서비스
+├── common/              # 공통 모듈
+├── prisma/              # 데이터베이스
+└── main.ts              # 애플리케이션 진입점
+```
 
-### GitHub Actions
+### 코딩 컨벤션
 
-GitHub Actions에서는 자동으로 테스트 환경이 설정되며, 다음 단계가 실행됩니다:
+- **TypeScript** 사용 필수
+- **ESLint** 및 **Prettier** 설정 준수
+- **Jest**를 사용한 테스트 작성
+- **Swagger** 데코레이터로 API 문서화
 
-1. PostgreSQL 서비스 컨테이너 시작
-2. 데이터베이스 마이그레이션 실행
-3. 테스트 스키마 생성
-4. 단위 테스트 실행
-5. 통합 테스트 실행
-6. E2E 테스트 실행
+### 새로운 기능 추가
 
-## 개발 환경 설정
+1. **모듈 생성**
 
-### 필수 요구사항
+   ```bash
+   nest generate module <module-name>
+   nest generate controller <module-name>
+   nest generate service <module-name>
+   ```
 
-- Node.js 18+
-- PostgreSQL 15+
-- Docker (선택사항)
+2. **DTO 생성**
 
-### 설치 및 실행
+   ```typescript
+   // dto/create-example.dto.ts
+   export class CreateExampleDto {
+     @ApiProperty()
+     @IsString()
+     name: string;
+   }
+   ```
+
+3. **API 문서화**
+   ```typescript
+   @ApiOperation({ summary: '예시 API' })
+   @ApiResponse({ status: 200, description: '성공' })
+   async example() {
+     // 구현
+   }
+   ```
+
+### Git 워크플로우
+
+#### 브랜치 전략
+
+프로젝트는 **Git Flow** 방식을 사용합니다:
+
+- **`main`** - 프로덕션 배포용 브랜치
+- **`develop`** - 개발 통합 브랜치 (기본 브랜치)
+- **`feature/*`** - 새로운 기능 개발 브랜치
+- **`hotfix/*`** - 긴급 버그 수정 브랜치
+
+#### 브랜치 명명 규칙
 
 ```bash
-# 의존성 설치
-npm install
+# 기능 개발
+feature/기능명-간단설명
+feature/user-authentication
+feature/class-enrollment-system
 
-# 환경변수 설정
-cp .env.example .env
+# 버그 수정
+fix/버그명-간단설명
+fix/login-error-fix
+fix/payment-validation-bug
 
-# 데이터베이스 마이그레이션
-npx prisma migrate dev
-
-# 개발 서버 시작
-npm run start:dev
+# 예시
+feature/student-profile-management
+feature/real-time-notifications
+fix/database-connection-issue
 ```
+
+#### 개발 워크플로우
+
+1. **브랜치 생성 및 체크아웃**
+
+   ```bash
+   # develop 브랜치에서 최신 코드 가져오기
+   git checkout develop
+   git pull origin develop
+
+   # 새 기능 브랜치 생성
+   git checkout -b feature/새로운-기능
+   ```
+
+2. **개발 및 커밋**
+
+   ```bash
+   # 변경사항 스테이징
+   git add .
+
+   # 의미있는 커밋 메시지로 커밋
+   git commit -m "feat: 새로운 기능 추가"
+
+   # 커밋 메시지 컨벤션
+   # feat: 새로운 기능
+   # fix: 버그 수정
+   # docs: 문서 수정
+   # style: 코드 포맷팅
+   # refactor: 코드 리팩토링
+   # test: 테스트 추가/수정
+   # chore: 빌드/설정 관련
+   ```
+
+3. **로컬 테스트 및 빌드 (필수)**
+
+   ```bash
+   # 코드 린팅 및 포맷팅
+   npm run lint
+   npm run format
+
+   # 단위 테스트 실행
+   npm run test:unit
+
+   # 통합 테스트 실행
+   npm run test:integration
+
+   # 빌드 테스트
+   npm run build
+   ```
+
+4. **푸시 및 PR 생성**
+
+   ```bash
+   # 브랜치 푸시
+   git push origin feature/새로운-기능
+
+   # GitHub에서 Pull Request 생성
+   # Base: develop ← Head: feature/새로운-기능
+   ```
+
+#### PR 가이드라인
+
+**PR 생성 전 체크리스트:**
+
+- [ ] 로컬 테스트 통과 (`npm run test`)
+- [ ] 빌드 성공 (`npm run build`)
+- [ ] ESLint 오류 없음 (`npm run lint`)
+- [ ] 의미있는 커밋 메시지
+- [ ] 변경사항에 대한 설명 작성
+
+**PR 템플릿:**
+
+```markdown
+## 📝 변경사항
+
+- [ ] 새로운 기능 추가
+- [ ] 버그 수정
+- [ ] 문서 업데이트
+- [ ] 리팩토링
+
+## 🔍 상세 설명
+
+변경사항에 대한 자세한 설명을 작성해주세요.
+
+## 🧪 테스트
+
+- [ ] 단위 테스트 통과
+- [ ] 통합 테스트 통과 (해당하는 경우)
+- [ ] 수동 테스트 완료
+
+## 📸 스크린샷 (UI 변경사항이 있는 경우)
+
+변경 전/후 스크린샷을 첨부해주세요.
+
+## 🔗 관련 이슈
+
+Closes #이슈번호
+```
+
+#### 브랜치 관리
+
+```bash
+# 브랜치 목록 확인
+git branch -a
+
+# 원격 브랜치 삭제 (PR 머지 후)
+git push origin --delete feature/완료된-기능
+
+# 로컬 브랜치 삭제
+git branch -d feature/완료된-기능
+
+# develop 브랜치로 돌아가서 최신화
+git checkout develop
+git pull origin develop
+```
+
+---
+
+**Team Elliot Backend API** - 발레, 필라테스 등 인도어 운동 수강신청 플랫폼의 핵심 백엔드 서비스 🩰

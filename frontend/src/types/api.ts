@@ -12,6 +12,29 @@ export interface ApiResponse<T = unknown> {
   path?: string;
 }
 
+// 페이지네이션 관련 타입 정의
+export interface PaginationParams {
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  success: boolean;
+  data: T[];
+  meta: PaginationMeta;
+  timestamp: string;
+  path: string;
+}
+
 // 에러 타입 정의
 export enum ErrorType {
   AUTHENTICATION = "AUTHENTICATION",
