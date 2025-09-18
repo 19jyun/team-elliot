@@ -112,6 +112,39 @@ export class AuthService {
     };
   }
 
+  async refreshToken(userId: string) {
+    // 사용자 정보 조회
+    const user = await this.prisma.user.findUnique({
+      where: { userId },
+      select: {
+        id: true,
+        userId: true,
+        name: true,
+        role: true,
+      },
+    });
+
+    if (!user) {
+      throw new Error('사용자를 찾을 수 없습니다.');
+    }
+
+    // 새로운 JWT 토큰 생성
+    const payload = { userId: user.userId, sub: user.id, role: user.role };
+    const access_token = this.jwtService.sign(payload);
+
+    return {
+      access_token,
+      expires_in: 2 * 60 * 60, // 2시간 (초 단위)
+      token_type: 'Bearer',
+      user: {
+        id: user.id,
+        userId: user.userId,
+        name: user.name,
+        role: user.role,
+      },
+    };
+  }
+
   async signup(signupDto: SignupDto) {
     // 아이디 중복 체크 (User 테이블만 확인)
     const existingUser = await this.prisma.user.findUnique({

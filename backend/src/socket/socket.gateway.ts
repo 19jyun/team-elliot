@@ -98,6 +98,35 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       });
     } catch (error) {
       console.error(`❌ 클라이언트 연결 실패: ${client.id}`, error);
+
+      // JWT 토큰 관련 에러 처리
+      if (error.name === 'TokenExpiredError') {
+        console.log(`⏰ 토큰 만료: ${client.id}`);
+        // 토큰 만료 시 클라이언트에게 구체적인 에러 전송
+        client.emit('auth_error', {
+          type: 'TOKEN_EXPIRED',
+          message: '토큰이 만료되었습니다. 다시 로그인해주세요.',
+          code: 'TOKEN_EXPIRED',
+          expiredAt: error.expiredAt,
+        });
+      } else if (error.name === 'JsonWebTokenError') {
+        console.log(`🔒 잘못된 토큰: ${client.id}`);
+        // 잘못된 토큰 시
+        client.emit('auth_error', {
+          type: 'INVALID_TOKEN',
+          message: '유효하지 않은 토큰입니다.',
+          code: 'INVALID_TOKEN',
+        });
+      } else {
+        console.log(`❓ 기타 인증 오류: ${client.id}`, error.message);
+        // 기타 인증 오류
+        client.emit('auth_error', {
+          type: 'AUTH_ERROR',
+          message: '인증 중 오류가 발생했습니다.',
+          code: 'AUTH_ERROR',
+        });
+      }
+
       client.disconnect();
     }
   }

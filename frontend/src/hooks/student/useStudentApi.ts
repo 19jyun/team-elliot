@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { useAppDispatch } from "@/store/hooks";
+import { useSession } from "next-auth/react";
 import {
   addOptimisticCancellation,
   replaceOptimisticCancellation,
@@ -47,6 +48,7 @@ import type {
 export function useStudentApi() {
   const {} = useApiError();
   const dispatch = useAppDispatch();
+  const { data: session, status } = useSession();
   const [isLoading, _setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,8 +76,14 @@ export function useStudentApi() {
     endDate: Date;
   } | null>(null);
 
+  // Student가 아닌 경우 데이터 로드하지 않음
+  const isStudent =
+    status === "authenticated" && session?.user?.role === "STUDENT";
+
   // 학원 목록 로드 함수
   const loadAcademies = useCallback(async () => {
+    if (!isStudent) return;
+
     try {
       const response = await getMyAcademies();
       setAcademies(response.data || []);
@@ -83,55 +91,60 @@ export function useStudentApi() {
       console.error("Failed to load academies:", err);
       setAcademies([]);
     }
-  }, []);
+  }, [isStudent]);
 
   // 수강 가능한 클래스/세션 로드 함수
-  const loadAvailableClasses = useCallback(async (academyId?: number) => {
-    try {
-      if (!academyId) return;
+  const loadAvailableClasses = useCallback(
+    async (academyId?: number) => {
+      if (!isStudent) return;
 
-      const response = await getStudentAvailableSessionsForEnrollment(
-        academyId
-      );
+      try {
+        if (!academyId) return;
 
-      // API 응답 구조: { sessions: [...], calendarRange: {...} }
-      const responseData =
-        response.data as GetStudentAvailableSessionsForEnrollmentResponse;
-      const sessions = responseData?.sessions || [];
+        const response = await getStudentAvailableSessionsForEnrollment(
+          academyId
+        );
 
-      // 세션에서 클래스 정보를 추출하여 중복 제거
-      const classMap = new Map<
-        string,
-        AvailableSessionForEnrollment & {
-          availableSessions: AvailableSessionForEnrollment[];
-        }
-      >();
-      sessions.forEach((session: AvailableSessionForEnrollment) => {
-        const className = session.class.className;
-        if (!classMap.has(className)) {
-          classMap.set(className, {
-            ...session,
-            availableSessions: sessions.filter(
-              (s: AvailableSessionForEnrollment) =>
-                s.class.className === className
-            ),
-          });
-        }
-      });
+        // API 응답 구조: { sessions: [...], calendarRange: {...} }
+        const responseData =
+          response.data as GetStudentAvailableSessionsForEnrollmentResponse;
+        const sessions = responseData?.sessions || [];
 
-      const classes = Array.from(classMap.values());
+        // 세션에서 클래스 정보를 추출하여 중복 제거
+        const classMap = new Map<
+          string,
+          AvailableSessionForEnrollment & {
+            availableSessions: AvailableSessionForEnrollment[];
+          }
+        >();
+        sessions.forEach((session: AvailableSessionForEnrollment) => {
+          const className = session.class.className;
+          if (!classMap.has(className)) {
+            classMap.set(className, {
+              ...session,
+              availableSessions: sessions.filter(
+                (s: AvailableSessionForEnrollment) =>
+                  s.class.className === className
+              ),
+            });
+          }
+        });
 
-      setAvailableClasses(classes);
-      setAvailableSessions(sessions);
-    } catch (err) {
-      console.error("수강 가능한 클래스 로드 실패:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "수강 가능한 클래스를 불러오는데 실패했습니다."
-      );
-    }
-  }, []);
+        const classes = Array.from(classMap.values());
+
+        setAvailableClasses(classes);
+        setAvailableSessions(sessions);
+      } catch (err) {
+        console.error("수강 가능한 클래스 로드 실패:", err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "수강 가능한 클래스를 불러오는데 실패했습니다."
+        );
+      }
+    },
+    [isStudent]
+  );
 
   // 수강 가능한 세션 로드 함수 (별도로 필요할 경우)
   const loadAvailableSessions = useCallback(async (academyId?: number) => {

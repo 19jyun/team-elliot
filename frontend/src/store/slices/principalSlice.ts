@@ -175,6 +175,7 @@ export const {
   setError,
   updatePrincipalEnrollment,
   updatePrincipalRefundRequest,
+  clearPrincipalData,
 } = principalSlice.actions;
 
 export default principalSlice.reducer;

@@ -10,6 +10,7 @@ declare module "next-auth" {
 
   interface Session {
     accessToken?: string;
+    error?: string;
     user: {
       id: string;
       role: string;
@@ -22,6 +23,40 @@ declare module "next-auth/jwt" {
     accessToken?: string;
     role?: string;
     id?: string;
+    expiresAt?: number;
+    error?: string;
+  }
+}
+
+// 토큰 갱신 함수
+async function refreshAccessToken(token: {
+  id?: string;
+  accessToken?: string;
+  expiresAt?: number;
+}) {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: token.id }),
+      }
+    );
+
+    const refreshedTokens = await response.json();
+
+    return {
+      ...token,
+      accessToken: refreshedTokens.access_token,
+      expiresAt: Date.now() + refreshedTokens.expires_in * 1000,
+    };
+  } catch (error) {
+    console.error("토큰 갱신 실패:", error);
+    return {
+      ...token,
+      error: "RefreshAccessTokenError",
+    };
   }
 }
 
@@ -87,18 +122,28 @@ const handler = NextAuth({
   ],
   callbacks: {
     async jwt({ token, user }) {
+      // 초기 로그인 시
       if (user) {
         token.accessToken = user.accessToken;
         token.role = user.role;
         token.id = user.id;
+        token.expiresAt = Date.now() + 2 * 60 * 60 * 1000; // 2시간
       }
-      return token;
+
+      // 토큰 만료 확인 및 갱신
+      if (token.expiresAt && Date.now() < token.expiresAt) {
+        return token;
+      }
+
+      // 토큰 갱신 시도
+      return await refreshAccessToken(token);
     },
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
         session.accessToken = token.accessToken;
+        session.error = token.error;
       }
       return session;
     },
@@ -110,6 +155,13 @@ const handler = NextAuth({
   pages: {
     signIn: "/auth",
     error: "/auth",
+  },
+  session: {
+    strategy: "jwt",
+    maxAge: 14 * 24 * 60 * 60, // 14일 (초 단위)
+  },
+  jwt: {
+    maxAge: 14 * 24 * 60 * 60, // 14일 (초 단위)
   },
 });
 

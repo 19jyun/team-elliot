@@ -29,6 +29,22 @@ export class AuthController {
     return this.authService.login(loginDto.userId, loginDto.password);
   }
 
+  @Post('refresh')
+  @ApiOperation({ summary: '토큰 갱신' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        userId: { type: 'string', description: '사용자 ID' },
+      },
+      required: ['userId'],
+    },
+  })
+  @ApiOkResponse({ description: '토큰 갱신 성공', type: AuthResponseEntity })
+  async refreshToken(@Body() body: { userId: string }) {
+    return this.authService.refreshToken(body.userId);
+  }
+
   @Post('signup')
   @ApiOperation({ summary: '회원가입' })
   @ApiBody({ type: SignupDto })

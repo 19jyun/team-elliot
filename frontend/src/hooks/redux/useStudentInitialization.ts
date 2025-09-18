@@ -21,6 +21,17 @@ export function useStudentInitialization() {
   const { data: session, status } = useSession();
   const initializedRef = useRef(false);
 
+  // 로그아웃 시 초기화 상태 리셋
+  useEffect(() => {
+    const handleLogoutCleanup = () => {
+      initializedRef.current = false;
+    };
+
+    window.addEventListener("logout-cleanup", handleLogoutCleanup);
+    return () =>
+      window.removeEventListener("logout-cleanup", handleLogoutCleanup);
+  }, []);
+
   useEffect(() => {
     const initializeStudentData = async () => {
       // 이미 초기화되었거나 Student 역할이 아니면 초기화하지 않음
@@ -79,10 +90,23 @@ export function useStudentInitialization() {
         );
         dispatch(setError(errorMessage));
 
-        toast.error("Student 데이터 로딩 실패", {
-          description: errorMessage,
-          id: "student-init-error",
-        });
+        // STUDENT_NOT_FOUND 오류인 경우 특별 처리
+        if (
+          error &&
+          typeof error === "object" &&
+          "code" in error &&
+          error.code === "STUDENT_NOT_FOUND"
+        ) {
+          toast.error("학생 정보를 찾을 수 없습니다", {
+            description: "관리자에게 문의하세요. 사용자 ID: " + session.user.id,
+            id: "student-not-found-error",
+          });
+        } else {
+          toast.error("Student 데이터 로딩 실패", {
+            description: errorMessage,
+            id: "student-init-error",
+          });
+        }
       } finally {
         dispatch(setLoading(false));
       }

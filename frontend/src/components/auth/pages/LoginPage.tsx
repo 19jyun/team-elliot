@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
+import { signIn, useSession, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -166,6 +166,7 @@ const InputField: React.FC<InputFieldProps> = ({
 export function LoginPage() {
   const router = useRouter()
   const { setAuthMode, setSignupStep } = useApp()
+  const { data: _session, status: _status } = useSession()
   const [formData, setFormData] = useState({
     userId: '',
     password: '',
@@ -184,6 +185,7 @@ export function LoginPage() {
         userId: formData.userId,
         password: formData.password,
         redirect: false,
+        callbackUrl: '/dashboard',
       })
 
       if (result?.error) {
@@ -200,7 +202,23 @@ export function LoginPage() {
 
       if (result?.ok) {
         toast.success('로그인되었습니다.')
-        router.push('/dashboard')
+        
+        try {
+          const updatedSession = await getSession()
+          
+          if (updatedSession?.user) {
+
+            setTimeout(() => {
+              router.push('/dashboard')
+            }, 100)
+          } else {
+            console.error('세션 인증 실패')
+            toast.error('로그인 후 세션 설정에 실패했습니다.')
+          }
+        } catch (sessionError) {
+          console.error('세션 확인 중 오류:', sessionError)
+          toast.error('세션 확인 중 오류가 발생했습니다.')
+        }
       }
     } catch (error) {
       handleApiError(error)
