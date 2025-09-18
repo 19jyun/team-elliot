@@ -6,6 +6,7 @@ import { Provider } from 'react-redux'
 import { store } from '@/store'
 import { Toaster } from 'sonner'
 import { AppProvider } from '@/contexts/AppContext'
+import { SlidingSessionProvider } from '@/components/auth/SlidingSessionProvider'
 
 const queryClient = new QueryClient()
 
@@ -15,8 +16,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <SessionProvider>
         <QueryClientProvider client={queryClient}>
           <AppProvider>
-            {children}
-            <Toaster position="top-right" />
+            <SlidingSessionProvider>
+              {children}
+              <Toaster position="top-right" />
+            </SlidingSessionProvider>
           </AppProvider>
         </QueryClientProvider>
       </SessionProvider>

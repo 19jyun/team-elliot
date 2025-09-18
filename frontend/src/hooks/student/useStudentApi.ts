@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { useAppDispatch } from "@/store/hooks";
+import { useSession } from "next-auth/react";
 import {
   addOptimisticCancellation,
   replaceOptimisticCancellation,
@@ -47,6 +48,7 @@ import type {
 export function useStudentApi() {
   const {} = useApiError();
   const dispatch = useAppDispatch();
+  const { data: session, status } = useSession();
   const [isLoading, _setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,8 +76,14 @@ export function useStudentApi() {
     endDate: Date;
   } | null>(null);
 
+  // Student가 아닌 경우 데이터 로드하지 않음
+  const isStudent =
+    status === "authenticated" && session?.user?.role === "STUDENT";
+
   // 학원 목록 로드 함수
   const loadAcademies = useCallback(async () => {
+    if (!isStudent) return;
+
     try {
       const response = await getMyAcademies();
       setAcademies(response.data || []);
@@ -83,10 +91,12 @@ export function useStudentApi() {
       console.error("Failed to load academies:", err);
       setAcademies([]);
     }
-  }, []);
+  }, [isStudent]);
 
   // 수강 가능한 클래스/세션 로드 함수
   const loadAvailableClasses = useCallback(async (academyId?: number) => {
+    if (!isStudent) return;
+
     try {
       if (!academyId) return;
 

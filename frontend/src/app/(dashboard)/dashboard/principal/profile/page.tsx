@@ -4,12 +4,11 @@ import * as React from 'react'
 
 
 import { MenuLinks } from '@/components/navigation/MenuLinks'
-import { useSession, signOut } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { toast } from 'sonner'
 import { LogoutModal } from '@/components/user/LogoutModal'
 import { useApp } from '@/contexts/AppContext'
-import { logout } from '@/api/auth'
+import { useLogout } from '@/hooks/auth/useLogout'
 import FooterLinks from '@/components/common/FooterLinks'
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi'
 
@@ -33,23 +32,10 @@ export default function PrincipalProfilePage() {
     loadProfile();
   }, [loadProfile]);
 
+  const { logout } = useLogout()
+
   const handleSignOut = async () => {
-    try {
-      // 백엔드 로그아웃 API 호출
-      await logout()
-
-      // next-auth 로그아웃 처리
-      await signOut({ redirect: false })
-
-      toast.success('로그아웃되었습니다')
-      router.push('/auth')
-    } catch (error) {
-      console.error('Logout error:', error)
-      // API 호출 실패 시에도 next-auth 로그아웃은 진행
-      await signOut({ redirect: false })
-      router.push('/auth')
-      toast.error('로그아웃 중 오류가 발생했습니다')
-    }
+    await logout()
   }
 
   const handleProfileClick = () => {

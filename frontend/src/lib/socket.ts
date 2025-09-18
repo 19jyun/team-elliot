@@ -1,9 +1,63 @@
 import { io, Socket } from "socket.io-client";
 import { getSession } from "next-auth/react";
+import { useTokenRefresh } from "@/hooks/auth/useTokenRefresh";
 
 // Socket.IO 클라이언트 인스턴스
 let socket: Socket | null = null;
 let isInitializing = false;
+
+// 토큰 갱신 처리 함수
+const handleTokenRefresh = async () => {
+  try {
+    const session = await getSession();
+    if (!session?.user?.id) {
+      console.error("토큰 갱신 실패: 사용자 정보 없음");
+      window.location.href = "/auth";
+      return;
+    }
+
+    console.log("🔄 토큰 갱신 API 호출");
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: session.user.id, // NextAuth에서 id를 userId로 사용
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      console.error("토큰 갱신 API 실패");
+      window.location.href = "/auth";
+      return;
+    }
+
+    const data = await response.json();
+    console.log("✅ 토큰 갱신 성공 - 소켓 재연결 시도");
+
+    // 소켓 재연결
+    if (socket) {
+      socket.disconnect();
+      socket = null;
+    }
+
+    // 새 토큰으로 재연결
+    setTimeout(async () => {
+      try {
+        await initializeSocket();
+      } catch (error) {
+        console.error("토큰 갱신 후 소켓 재연결 실패:", error);
+      }
+    }, 1000);
+  } catch (error) {
+    console.error("토큰 갱신 중 오류:", error);
+    window.location.href = "/auth";
+  }
+};
 
 // Socket.IO 연결 설정
 export const initializeSocket = async (): Promise<Socket> => {
@@ -20,6 +74,13 @@ export const initializeSocket = async (): Promise<Socket> => {
   }
 
   isInitializing = true;
+
+  // 기존 소켓이 있으면 완전히 정리
+  if (socket) {
+    socket.removeAllListeners();
+    socket.disconnect();
+    socket = null;
+  }
 
   try {
     // 세션에서 JWT 토큰 가져오기
@@ -65,6 +126,28 @@ export const initializeSocket = async (): Promise<Socket> => {
 
     socket.on("connect_error", (error) => {
       console.error("❌ Socket.IO 연결 오류:", error);
+    });
+
+    // 인증 에러 처리
+    socket.on("auth_error", (error) => {
+      console.error("🔐 소켓 인증 오류:", error);
+
+      if (error.type === "TOKEN_EXPIRED") {
+        console.log("⏰ 토큰 만료 감지 - 자동 갱신 시도");
+        handleTokenRefresh();
+      } else if (error.type === "INVALID_TOKEN") {
+        console.log("🔒 잘못된 토큰 - 로그아웃 필요");
+        // 잘못된 토큰 시 즉시 로그아웃
+        window.location.href = "/auth";
+      } else {
+        console.log("❓ 기타 인증 오류");
+        // 기타 인증 오류 시 재연결 시도
+        setTimeout(() => {
+          if (socket) {
+            socket.connect();
+          }
+        }, 5000);
+      }
     });
 
     socket.on("reconnect", (attemptNumber) => {

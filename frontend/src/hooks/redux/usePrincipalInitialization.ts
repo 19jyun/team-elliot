@@ -19,6 +19,17 @@ export function usePrincipalInitialization() {
   const { data: session, status } = useSession();
   const initializedRef = useRef(false);
 
+  // 로그아웃 시 초기화 상태 리셋
+  useEffect(() => {
+    const handleLogoutCleanup = () => {
+      initializedRef.current = false;
+    };
+
+    window.addEventListener("logout-cleanup", handleLogoutCleanup);
+    return () =>
+      window.removeEventListener("logout-cleanup", handleLogoutCleanup);
+  }, []);
+
   useEffect(() => {
     const initializePrincipalData = async () => {
       // 이미 초기화되었거나 Principal 역할이 아니면 초기화하지 않음

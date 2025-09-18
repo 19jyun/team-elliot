@@ -402,14 +402,10 @@ export const {
   setError,
   updateStudentEnrollmentHistory,
   updateStudentCancellationHistory,
-  
-  
-  
+  clearStudentData,
   updateCalendarSession,
   removeCalendarSession,
-  
-  
-  
+
   addOptimisticEnrollment,
   replaceOptimisticEnrollment,
   removeOptimisticEnrollment,
@@ -419,10 +415,6 @@ export const {
   addOptimisticCalendarSession,
   replaceOptimisticCalendarSession,
   removeOptimisticCalendarSession,
-  
-  
-  
-  
 } = studentSlice.actions;
 
 export default studentSlice.reducer;
