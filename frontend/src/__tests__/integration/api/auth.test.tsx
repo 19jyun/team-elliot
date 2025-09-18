@@ -10,6 +10,7 @@ jest.mock("next-auth/react", () => ({
   signIn: jest.fn(),
   signOut: jest.fn(),
   useSession: jest.fn(() => ({ data: null, status: "unauthenticated" })),
+  getSession: jest.fn(() => Promise.resolve(null)),
 }));
 
 // Next.js router mock
@@ -682,12 +683,13 @@ describe("Auth API Integration", () => {
         await user.click(screen.getByRole("button", { name: /로그인하기/i }));
       });
 
-      // NextAuth signIn 호출 검증
+      // NextAuth signIn 호출 검증 (callbackUrl 포함)
       await waitFor(() => {
         expect(signIn).toHaveBeenCalledWith("credentials", {
           userId: "testuser",
           password: "password123",
           redirect: false,
+          callbackUrl: "/dashboard",
         });
       });
     });

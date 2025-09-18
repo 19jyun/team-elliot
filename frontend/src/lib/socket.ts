@@ -1,6 +1,5 @@
 import { io, Socket } from "socket.io-client";
 import { getSession } from "next-auth/react";
-import { useTokenRefresh } from "@/hooks/auth/useTokenRefresh";
 
 // Socket.IO 클라이언트 인스턴스
 let socket: Socket | null = null;
@@ -36,7 +35,7 @@ const handleTokenRefresh = async () => {
       return;
     }
 
-    const data = await response.json();
+    await response.json();
     console.log("✅ 토큰 갱신 성공 - 소켓 재연결 시도");
 
     // 소켓 재연결

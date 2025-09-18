@@ -9,7 +9,7 @@ interface SlidingSessionProviderProps {
 }
 
 export function SlidingSessionProvider({ children }: SlidingSessionProviderProps) {
-  const { data: session } = useSession()
+  const { data: _session } = useSession()
   
   // 항상 훅을 호출하되, 로그인된 사용자에게만 기능 적용
   useSlidingSession()

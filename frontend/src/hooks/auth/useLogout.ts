@@ -7,6 +7,7 @@ import { useAppDispatch } from "@/store/hooks";
 import { clearPrincipalData } from "@/store/slices/principalSlice";
 import { clearStudentData } from "@/store/slices/studentSlice";
 import { clearApiClientSessionCache } from "@/api/apiClient";
+import { logger } from "@/lib/logger";
 
 export const useLogout = () => {
   const router = useRouter();
@@ -60,7 +61,9 @@ export const useLogout = () => {
         router.replace("/auth");
       }, 500);
     } catch (error) {
-      console.error("Logout error:", error);
+      logger.error("Logout failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
 
       // API 호출 실패 시에도 cleanup은 진행
       try {
@@ -68,7 +71,12 @@ export const useLogout = () => {
         dispatch(clearStudentData());
         await signOut({ redirect: false });
       } catch (cleanupError) {
-        console.error("Cleanup error:", cleanupError);
+        logger.error("Cleanup failed", {
+          error:
+            cleanupError instanceof Error
+              ? cleanupError.message
+              : String(cleanupError),
+        });
       }
 
       toast.error("로그아웃 중 오류가 발생했습니다");

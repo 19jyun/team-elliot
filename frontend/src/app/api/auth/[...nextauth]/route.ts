@@ -29,7 +29,11 @@ declare module "next-auth/jwt" {
 }
 
 // 토큰 갱신 함수
-async function refreshAccessToken(token: any) {
+async function refreshAccessToken(token: {
+  id?: string;
+  accessToken?: string;
+  expiresAt?: number;
+}) {
   try {
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
@@ -117,7 +121,7 @@ const handler = NextAuth({
     }),
   ],
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       // 초기 로그인 시
       if (user) {
         token.accessToken = user.accessToken;

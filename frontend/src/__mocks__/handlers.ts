@@ -20,6 +20,21 @@ export const handlers = [
     return HttpResponse.json({ message: "Logged out successfully" });
   }),
 
+  // 토큰 갱신 API
+  http.post("*/auth/refresh", () => {
+    return HttpResponse.json({
+      access_token: "new-refreshed-token",
+      expires_in: 3600,
+      token_type: "Bearer",
+      user: {
+        id: 1,
+        userId: "1",
+        name: "Test User",
+        role: "STUDENT",
+      },
+    });
+  }),
+
   // 학생 관련 API
   http.get("/api/students/profile", () => {
     return HttpResponse.json({

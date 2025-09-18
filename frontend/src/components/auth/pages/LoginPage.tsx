@@ -166,7 +166,7 @@ const InputField: React.FC<InputFieldProps> = ({
 export function LoginPage() {
   const router = useRouter()
   const { setAuthMode, setSignupStep } = useApp()
-  const { data: session, status } = useSession()
+  const { data: _session, status: _status } = useSession()
   const [formData, setFormData] = useState({
     userId: '',
     password: '',
