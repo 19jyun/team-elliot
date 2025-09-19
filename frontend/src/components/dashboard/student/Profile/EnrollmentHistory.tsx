@@ -15,7 +15,7 @@ import type { StudentEnrollmentHistoryVM } from '@/types/view/student';
 export function EnrollmentHistory() {
   const { ui } = useApp();
   const { pushFocus, popFocus } = ui;
-  const { enrollmentHistory, isLoading, error } = useStudentData();
+  const { enrollmentHistory, isLoading, error, clearErrorState } = useStudentData();
   const [selectedFilter, setSelectedFilter] = useState<string>('ALL');
 
   // API 응답을 뷰모델로 변환
@@ -26,17 +26,19 @@ export function EnrollmentHistory() {
     return () => popFocus();
   }, [pushFocus, popFocus]);
 
-  // 에러 처리
-  if (error) {
+  // 에러 처리 - AcademyManagement와 동일한 패턴 적용
+  if (error && enrollmentHistory.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">수강 내역을 불러오는데 실패했습니다.</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
+        <Button
+          onClick={() => {
+            clearErrorState();
+          }}
+          className="mt-4"
         >
           다시 시도
-        </button>
+        </Button>
       </div>
     );
   }
