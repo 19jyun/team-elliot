@@ -99,11 +99,11 @@ describe("Socket Authentication Flow", () => {
 
     // Mock socket.io to return our mock socket
     const { io } = await import("socket.io-client");
-    io.mockReturnValue(mockSocket);
+    (io as jest.Mock).mockReturnValue(mockSocket);
 
     // Mock getSession to return our mock session
     const { getSession } = await import("next-auth/react");
-    getSession.mockResolvedValue(mockSession);
+    (getSession as jest.Mock).mockResolvedValue(mockSession);
 
     const TestComponent: React.FC = () => {
       return <div data-testid="socket-status">Socket connection test</div>;
@@ -173,11 +173,11 @@ describe("Socket Authentication Flow", () => {
 
     // Mock socket.io to return our mock socket
     const { io } = await import("socket.io-client");
-    io.mockReturnValue(mockSocket);
+    (io as jest.Mock).mockReturnValue(mockSocket);
 
     // Mock getSession to return our mock session
     const { getSession } = await import("next-auth/react");
-    getSession.mockResolvedValue(mockSession);
+    (getSession as jest.Mock).mockResolvedValue(mockSession);
 
     const TestComponent: React.FC = () => {
       return <div data-testid="socket-status">Socket connection test</div>;
