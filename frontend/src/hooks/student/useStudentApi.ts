@@ -85,10 +85,16 @@ export function useStudentApi() {
     if (!isStudent) return;
 
     try {
+      setError(null); // 에러 상태 초기화
       const response = await getMyAcademies();
       setAcademies(response.data || []);
     } catch (err) {
       console.error("Failed to load academies:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "학원 정보를 불러오는데 실패했습니다."
+      );
       setAcademies([]);
     }
   }, [isStudent]);
@@ -99,6 +105,7 @@ export function useStudentApi() {
       if (!isStudent) return;
 
       try {
+        setError(null); // 에러 상태 초기화
         if (!academyId) return;
 
         const response = await getStudentAvailableSessionsForEnrollment(
@@ -141,6 +148,8 @@ export function useStudentApi() {
             ? err.message
             : "수강 가능한 클래스를 불러오는데 실패했습니다."
         );
+        setAvailableClasses([]);
+        setAvailableSessions([]);
       }
     },
     [isStudent]
@@ -628,5 +637,8 @@ export function useStudentApi() {
 
     // 선생님 프로필
     getTeacherProfileForStudent,
+
+    // 에러 관리
+    clearErrors: () => setError(null),
   };
 }

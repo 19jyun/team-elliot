@@ -1,6 +1,5 @@
 import { useCallback } from "react";
 import { useAppDispatch } from "@/store/hooks";
-import { toast } from "sonner";
 import {
   addOptimisticEnrollment,
   replaceOptimisticEnrollment,
@@ -12,7 +11,6 @@ import {
 import { batchEnrollSessions } from "@/api/student";
 import type { EnrollmentHistory } from "@/types/api/student";
 import type { StudentClass } from "@/types/store/student";
-import { extractErrorMessage } from "@/types/api/error";
 import type { ClassSession } from "@/types/api/class";
 
 export const useEnrollment = () => {
@@ -21,8 +19,7 @@ export const useEnrollment = () => {
   const enrollSessions = useCallback(
     async (sessionIds: number[], availableSessions?: ClassSession[]) => {
       if (!sessionIds.length) {
-        toast.error("수강신청할 세션을 선택해주세요.");
-        return;
+        throw new Error("수강신청할 세션을 선택해주세요.");
       }
 
       // 실제 세션 데이터에서 선택된 세션들 찾기
@@ -86,6 +83,7 @@ export const useEnrollment = () => {
       }));
 
       try {
+        // 낙관적 업데이트 추가
         optimisticEnrollments.forEach((enrollment) => {
           dispatch(addOptimisticEnrollment(enrollment));
         });
@@ -95,100 +93,114 @@ export const useEnrollment = () => {
           dispatch(addOptimisticCalendarSession(session));
         });
 
-        toast.success("수강신청을 처리하고 있습니다...", {
-          description: "잠시만 기다려주세요.",
-        });
-
         const response = await batchEnrollSessions({ sessionIds });
 
-        if (response.data && response.data.success) {
-          const enrolledSessionIds = response.data.enrolledSessions || [];
+        // 백엔드 응답 구조: { success: boolean, enrolledSessions: [], failedSessions: [] }
+        if (response.data) {
+          const { success, enrolledSessions, failedSessions } = response.data;
 
-          optimisticEnrollments.forEach((optimisticEnrollment, index) => {
-            const enrolledSessionId = enrolledSessionIds[index];
-            if (enrolledSessionId) {
-              // 실제 enrollment 객체 생성 (API 응답의 실제 세션 ID 사용)
-              const realEnrollment: EnrollmentHistory = {
-                id: enrolledSessionId, // 실제 세션 ID 사용
-                sessionId: enrolledSessionId,
-                session: optimisticEnrollment.session,
-                enrolledAt: new Date().toISOString(),
-                status: "PENDING",
-                description: "수강신청 완료",
-              };
+          // 성공한 수강신청들 처리
+          if (success && enrolledSessions && enrolledSessions.length > 0) {
+            enrolledSessions.forEach(
+              (enrolledSessionId: number, index: number) => {
+                const optimisticEnrollment = optimisticEnrollments[index];
+                if (optimisticEnrollment) {
+                  // 실제 enrollment 객체 생성
+                  const realEnrollment: EnrollmentHistory = {
+                    id: enrolledSessionId,
+                    sessionId: enrolledSessionId,
+                    session: optimisticEnrollment.session,
+                    enrolledAt: new Date().toISOString(),
+                    status: "PENDING",
+                    description: "수강신청 완료",
+                  };
 
-              dispatch(
-                replaceOptimisticEnrollment({
-                  optimisticId: optimisticEnrollment.id,
-                  realEnrollment: realEnrollment, // isOptimistic 제거, 실제 데이터만 사용
-                })
-              );
-            }
-          });
-
-          // 실제 캘린더 세션으로 교체 (API 응답에서 세션 정보 추출)
-          optimisticCalendarSessions.forEach((optimisticSession, index) => {
-            const enrolledSessionId = enrolledSessionIds[index];
-            if (enrolledSessionId) {
-              // 원본 세션 데이터에서 해당 세션 찾기
-              const originalSession = selectedSessions.find(
-                (session) => session.id === enrolledSessionId
-              );
-
-              if (originalSession) {
-                // 실제 세션 데이터로 캘린더 세션 생성
-                const realCalendarSession: StudentClass = {
-                  id: enrolledSessionId,
-                  name: originalSession.class?.className || "수강 중",
-                  teacherName: originalSession.class?.teacher?.name || "선생님",
-                  dayOfWeek: "월", // TODO: API에서 받아와야 함
-                  startTime: originalSession.startTime,
-                  endTime: originalSession.endTime,
-                  location: "수강 중", // TODO: API에서 받아와야 함
-                  date: originalSession.date,
-                  currentStudents: 1, // TODO: API에서 받아와야 함
-                  maxStudents: 10, // TODO: API에서 받아와야 함
-                  classId: enrolledSessionId,
-                  class: {
-                    id: originalSession.class?.id || 0,
-                    className: originalSession.class?.className || "수강 중",
-                    level: originalSession.class?.level || "BEGINNER",
-                    tuitionFee: originalSession.class?.tuitionFee
-                      ? parseInt(originalSession.class.tuitionFee)
-                      : 50000,
-                    teacher: {
-                      id: originalSession.class?.teacher?.id || 0,
-                      name: originalSession.class?.teacher?.name || "선생님",
-                    },
-                  },
-                };
-
-                dispatch(
-                  replaceOptimisticCalendarSession({
-                    optimisticId: optimisticSession.id,
-                    realSession: realCalendarSession, // 실제 숫자 ID 포함된 세션 데이터
-                  })
-                );
+                  dispatch(
+                    replaceOptimisticEnrollment({
+                      optimisticId: optimisticEnrollment.id,
+                      realEnrollment: realEnrollment,
+                    })
+                  );
+                }
               }
-            }
-          });
+            );
 
-          const successCount = enrolledSessionIds.length;
-          const failedCount = response.data.failedSessions?.length || 0;
+            // 성공한 캘린더 세션들 처리
+            enrolledSessions.forEach(
+              (enrolledSessionId: number, index: number) => {
+                const optimisticSession = optimisticCalendarSessions[index];
+                if (optimisticSession) {
+                  const originalSession = selectedSessions.find(
+                    (session) => session.id === sessionIds[index]
+                  );
 
-          if (successCount > 0) {
-            toast.success(`${successCount}개 수강신청이 완료되었습니다!`, {
-              description:
-                failedCount > 0
-                  ? `${failedCount}개는 처리에 실패했습니다.`
-                  : "승인 대기 중입니다.",
-            });
+                  if (originalSession) {
+                    const realCalendarSession: StudentClass = {
+                      id: enrolledSessionId,
+                      name: originalSession.class?.className || "수강 중",
+                      teacherName:
+                        originalSession.class?.teacher?.name || "선생님",
+                      dayOfWeek: "월", // TODO: API에서 받아와야 함
+                      startTime: originalSession.startTime,
+                      endTime: originalSession.endTime,
+                      location: "수강 중", // TODO: API에서 받아와야 함
+                      date: originalSession.date,
+                      currentStudents: 1, // TODO: API에서 받아와야 함
+                      maxStudents: 10, // TODO: API에서 받아와야 함
+                      classId: enrolledSessionId,
+                      class: {
+                        id: originalSession.class?.id || 0,
+                        className:
+                          originalSession.class?.className || "수강 중",
+                        level: originalSession.class?.level || "BEGINNER",
+                        tuitionFee: originalSession.class?.tuitionFee
+                          ? parseInt(originalSession.class.tuitionFee)
+                          : 50000,
+                        teacher: {
+                          id: originalSession.class?.teacher?.id || 0,
+                          name:
+                            originalSession.class?.teacher?.name || "선생님",
+                        },
+                      },
+                    };
+
+                    dispatch(
+                      replaceOptimisticCalendarSession({
+                        optimisticId: optimisticSession.id,
+                        realSession: realCalendarSession,
+                      })
+                    );
+                  }
+                }
+              }
+            );
           }
 
-          if (failedCount > 0) {
-            toast.error(`${failedCount}개 수강신청이 실패했습니다.`, {
-              description: "다시 시도해주세요.",
-            });
+          // 실패한 세션들 처리
+          if (failedSessions && failedSessions.length > 0) {
+            // 실패한 세션들의 낙관적 업데이트 롤백
+            failedSessions.forEach(
+              (failedSession: { sessionId: number; reason: string }) => {
+                const failedIndex = sessionIds.indexOf(failedSession.sessionId);
+                if (failedIndex !== -1) {
+                  const optimisticEnrollment =
+                    optimisticEnrollments[failedIndex];
+                  const optimisticSession =
+                    optimisticCalendarSessions[failedIndex];
+
+                  if (optimisticEnrollment) {
+                    dispatch(
+                      removeOptimisticEnrollment(optimisticEnrollment.id)
+                    );
+                  }
+                  if (optimisticSession) {
+                    dispatch(
+                      removeOptimisticCalendarSession(optimisticSession.id)
+                    );
+                  }
+                }
+              }
+            );
           }
 
           return response.data;
@@ -196,7 +208,7 @@ export const useEnrollment = () => {
           throw new Error("수강신청 처리에 실패했습니다.");
         }
       } catch (error: unknown) {
-        // 4. 실패 시 낙관적 업데이트 롤백
+        // 실패 시 낙관적 업데이트 롤백
         optimisticEnrollments.forEach((enrollment) => {
           dispatch(removeOptimisticEnrollment(enrollment.id));
         });
@@ -206,7 +218,7 @@ export const useEnrollment = () => {
           dispatch(removeOptimisticCalendarSession(session.id));
         });
 
-        toast.error(extractErrorMessage(error, "수강신청에 실패했습니다."));
+        // 에러 메시지는 컴포넌트에서 처리하도록 제거
         throw error;
       }
     },

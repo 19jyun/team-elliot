@@ -328,3 +328,83 @@ export interface BankInfoVM {
   accountNumber: string;
   accountHolder: string;
 }
+
+// ============= 수강신청 결제 단계용 ViewModel들 =============
+
+/**
+ * 수강신청에서 선택된 세션을 나타내는 ViewModel
+ * 백엔드 API 응답과 Context 데이터를 통합하여 UI에서 사용
+ */
+export interface SelectedSessionVM extends SessionCore {
+  sessionId: number; // 원본 세션 ID (API에서 사용)
+  isEnrollable: boolean;
+  isAlreadyEnrolled: boolean;
+  isFull?: boolean;
+  isPastStartTime?: boolean;
+  studentEnrollmentStatus?: EnrollmentStatus | null;
+  class: {
+    id: number;
+    className: string;
+    level: string;
+    tuitionFee: string;
+    teacher: {
+      id: number;
+      name: string;
+    };
+  };
+  academy?: {
+    id: number;
+    name: string;
+  };
+}
+
+/**
+ * 원장별 결제 정보를 나타내는 ViewModel
+ */
+export interface PrincipalPaymentInfoVM {
+  principalId: number;
+  principalName: string;
+  bankName: string;
+  accountNumber: string;
+  accountHolder: string;
+  classFees: ClassFeeVM[];
+  totalAmount: number;
+  sessions: SelectedSessionVM[];
+}
+
+/**
+ * 클래스별 수강료 정보를 나타내는 ViewModel
+ */
+export interface ClassFeeVM {
+  name: string;
+  count: number;
+  price: number;
+}
+
+/**
+ * 수강신청 결제 단계의 전체 상태를 나타내는 ViewModel
+ */
+export interface EnrollmentPaymentStepStateVM {
+  selectedSessions: SelectedSessionVM[];
+  paymentInfos: PrincipalPaymentInfoVM[];
+  isLoadingPaymentInfo: boolean;
+  confirmed: boolean;
+  isProcessing: boolean;
+  error: string | null;
+}
+
+/**
+ * 수강신청 에러 처리를 위한 ViewModel
+ */
+export interface EnrollmentErrorVM {
+  message: string;
+  shouldGoBack: boolean;
+  errorType: "VALIDATION" | "API" | "NETWORK" | "UNKNOWN";
+  details?: {
+    failedSessions?: Array<{
+      sessionId: number;
+      reason: string;
+    }>;
+    fieldErrors?: Record<string, string>;
+  };
+}

@@ -4,11 +4,21 @@ import { StatusStep } from '@/components/features/student/enrollment/month/Statu
 import { toast } from 'sonner';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
 import { useEnrollment } from '@/hooks/student/useEnrollment';
+import { useEnrollmentErrorHandler } from '@/hooks/student/useEnrollmentErrorHandler';
+import { 
+  filterValidSessionsFromContext,
+  filterValidSessions, 
+  extractSessionIds 
+} from '@/lib/adapters/student';
 import { PrincipalPaymentBox } from '@/components/features/student/enrollment/month/date/payment/PrincipalPaymentBox';
 import { PaymentConfirmFooter } from '@/components/features/student/enrollment/month/date/payment/PaymentConfirmFooter';
-import { SelectedSession, PrincipalPaymentInfo } from '@/components/features/student/enrollment/month/date/payment/types';
 import { useApp } from '@/contexts/AppContext';
-import type { EnrollmentPaymentStepVM } from '@/types/view/student';
+import type { 
+  EnrollmentPaymentStepVM, 
+  SelectedSessionVM, 
+  PrincipalPaymentInfoVM,
+  ClassFeeVM 
+} from '@/types/view/student';
 
 // 새로운 수강신청 플로우 전용 결제 페이지
 export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
@@ -17,8 +27,9 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
   const { selectedSessions: contextSessions } = enrollment;
   const { loadSessionPaymentInfo } = useStudentApi();
   const { enrollSessions } = useEnrollment();
-  const [selectedSessions, setSelectedSessions] = useState<SelectedSession[]>([]);
-  const [principalPayment, setPrincipalPayment] = useState<PrincipalPaymentInfo | null>(null);
+  const { handlePartialFailure, handleError } = useEnrollmentErrorHandler({ setEnrollmentStep });
+  const [selectedSessions, setSelectedSessions] = useState<SelectedSessionVM[]>([]);
+  const [principalPayment, setPrincipalPayment] = useState<PrincipalPaymentInfoVM | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoadingPaymentInfo, setIsLoadingPaymentInfo] = useState(false);
@@ -51,24 +62,30 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
   ]
 
   // 세션별 결제 정보 로드 - 원장 기준으로 통합
-  const loadPaymentInfoForSessions = useCallback(async (sessions: SelectedSession[]) => {
+  const loadPaymentInfoForSessions = useCallback(async (sessions: SelectedSessionVM[]) => {
     setIsLoadingPaymentInfo(true);
     
     try {
+      // 어댑터를 사용하여 유효한 세션만 필터링
+      const validSessions = filterValidSessions(sessions);
+      
+      if (validSessions.length === 0) {
+        console.error('유효한 세션 ID가 없습니다:', sessions);
+        toast.error('선택한 세션 정보가 올바르지 않습니다. 다시 선택해주세요.');
+        setEnrollmentStep('date-selection');
+        return;
+      }
+      
       let principalInfo: {
         bankName: string;
         accountNumber: string;
         accountHolder: string;
       } | null = null;
-      const classFees: Array<{
-        name: string;
-        count: number;
-        price: number;
-      }> = [];
+      const classFees: ClassFeeVM[] = [];
       let totalAmount = 0;
       
              // 각 세션별로 결제 정보를 가져옴
-       for (const session of sessions) {
+       for (const session of validSessions) {
          try {
            const paymentInfo = await loadSessionPaymentInfo(session.id);
            
@@ -137,7 +154,7 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
           accountHolder: principalInfo.accountHolder || '계좌주 없음',
           classFees,
           totalAmount: Number(totalAmount), // 확실히 숫자로 변환
-          sessions,
+          sessions: validSessions,
         });
       }
     } catch (error) {
@@ -152,10 +169,11 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
 
     
     // Context에서 세션 정보를 우선 사용하고, 없으면 localStorage에서 가져옴
-    let sessions: SelectedSession[] = [];
+    let sessions: SelectedSessionVM[] = [];
     
     if (contextSessions && contextSessions.length > 0) {
-      sessions = contextSessions as unknown as SelectedSession[];
+      // 어댑터를 사용하여 ExtendedSessionData를 SelectedSessionVM으로 변환하고 유효성 검증
+      sessions = filterValidSessionsFromContext(contextSessions);
 
     } else if (typeof window !== 'undefined') {
       const sessionsData = localStorage.getItem('selectedSessions');
@@ -169,8 +187,18 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
 
     
     if (sessions.length > 0) {
+      // 어댑터를 사용하여 유효한 세션만 필터링
+      const validSessions = filterValidSessions(sessions);
+      
+      if (validSessions.length === 0) {
+        console.error('유효한 세션 ID가 없습니다:', sessions);
+        toast.error('선택한 세션 정보가 올바르지 않습니다. 다시 선택해주세요.');
+        setEnrollmentStep('date-selection');
+        return;
+      }
+      
       // 이미 수강 신청한 세션이 있는지 확인
-      const alreadyEnrolledSessions = sessions.filter(session => 
+      const alreadyEnrolledSessions = validSessions.filter(session => 
         session.isAlreadyEnrolled || !session.isEnrollable
       );
       
@@ -181,9 +209,9 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
         return;
       }
       
-      setSelectedSessions(sessions);
+      setSelectedSessions(validSessions);
       // 실제 결제 정보 로드
-      loadPaymentInfoForSessions(sessions);
+      loadPaymentInfoForSessions(validSessions);
     } else {
       console.warn('🔍 세션 데이터가 없습니다!');
     }
@@ -201,19 +229,41 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
     setIsProcessing(true);
     
     try {
+      // 어댑터를 사용하여 유효한 세션만 필터링
+      const validSessions = filterValidSessions(selectedSessions);
+      
+      if (validSessions.length === 0) {
+        toast.error('선택한 세션 정보가 올바르지 않습니다. 다시 선택해주세요.');
+        setEnrollmentStep('date-selection');
+        return;
+      }
+      
       // 새로운 수강 신청 모드: 실제 세션 데이터 기반
-      const sessionIds = selectedSessions.map(session => session.id);
+      const sessionIds = extractSessionIds(validSessions);
       
       // 백엔드에 세션별 수강 신청 요청 (낙관적 업데이트 포함)
-      // 실제 세션 데이터를 전달하여 정확한 낙관적 업데이트 수행
-      await enrollSessions(sessionIds, selectedSessions);
+      const result = await enrollSessions(sessionIds, validSessions);
       
-      // 성공 시 완료 페이지로 이동
-      setEnrollmentStep('complete');
-      onComplete?.();
+      // 부분 실패 처리
+      if (result && typeof result === 'object' && 'failedSessions' in result) {
+        const shouldProceed = handlePartialFailure(result, validSessions);
+        if (shouldProceed.shouldProceed) {
+          setEnrollmentStep('complete');
+          onComplete?.();
+        }
+      } else {
+        // 기존 방식 (성공으로 간주)
+        toast.success('수강신청이 완료되었습니다!', {
+          description: '승인 대기 중입니다.',
+        });
+        setEnrollmentStep('complete');
+        onComplete?.();
+      }
     } catch (error) {
-      console.error('Enrollment error:', error);
-      toast.error(error instanceof Error ? error.message : '처리 중 오류가 발생했습니다.');
+      const shouldProceed = handleError(error);
+      if (!shouldProceed) {
+        return; // 에러 발생 시 진행하지 않음
+      }
     } finally {
       setIsProcessing(false);
     }
