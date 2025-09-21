@@ -10,8 +10,6 @@ import { useStudentApi } from '@/hooks/student/useStudentApi';
 import { useModificationErrorHandler } from '@/hooks/student/useModificationErrorHandler';
 import { 
   filterValidModificationSessions,
-  extractCancellationSessionIds,
-  extractNewEnrollmentSessionIds,
   validateModificationData
 } from '@/lib/adapters/student';
 import type { ModificationSessionVM } from '@/types/view/student';

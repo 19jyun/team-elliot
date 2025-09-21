@@ -38,7 +38,7 @@ function formatTimeForCalendar(date: string | Date) {
 }
 
 export function EnrollmentClassStep() {
-  const { form, goBack, setEnrollmentStep, setSelectedClassIds } = useApp();
+  const { form, setEnrollmentStep, setSelectedClassIds } = useApp();
   const { enrollment } = form;
   const { selectedAcademyId } = enrollment;
   const { status } = useSession({

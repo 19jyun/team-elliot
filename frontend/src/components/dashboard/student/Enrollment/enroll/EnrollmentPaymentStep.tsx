@@ -163,7 +163,7 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
     } finally {
       setIsLoadingPaymentInfo(false);
     }
-  }, [loadSessionPaymentInfo]);
+  }, [loadSessionPaymentInfo, setEnrollmentStep]);
 
   useEffect(() => {
 

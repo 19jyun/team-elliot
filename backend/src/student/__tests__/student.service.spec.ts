@@ -10,7 +10,6 @@ describe('StudentService', () => {
   let service: StudentService;
   let prismaService: PrismaService;
   let classService: ClassService;
-  let academyService: AcademyService;
 
   const mockPrismaService = {
     student: {
@@ -53,7 +52,6 @@ describe('StudentService', () => {
     service = module.get<StudentService>(StudentService);
     prismaService = module.get<PrismaService>(PrismaService);
     classService = module.get<ClassService>(ClassService);
-    academyService = module.get<AcademyService>(AcademyService);
   });
 
   afterEach(() => {
