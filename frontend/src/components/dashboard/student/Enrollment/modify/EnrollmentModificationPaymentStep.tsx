@@ -7,6 +7,11 @@ import { PaymentConfirmFooter } from '@/components/features/student/enrollment/m
 import { SelectedSession, PrincipalPaymentInfo } from '@/components/features/student/enrollment/month/date/payment/types';
 import { useApp } from '@/contexts/AppContext';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
+import { useModificationErrorHandler } from '@/hooks/student/useModificationErrorHandler';
+import { 
+  filterValidModificationSessions,
+  validateModificationData
+} from '@/lib/adapters/student';
 import type { ModificationSessionVM } from '@/types/view/student';
 
 interface EnrollmentModificationPaymentStepProps {
@@ -22,6 +27,11 @@ export function EnrollmentModificationPaymentStep({
   const { enrollment } = form;
   const { selectedSessions: contextSessions } = enrollment;
   const { modifyEnrollments } = useStudentApi();
+  
+  // 에러 핸들러 훅 사용
+  const { handleModificationError, handlePartialModificationFailure } = useModificationErrorHandler({
+    setEnrollmentStep,
+  });
   const [_selectedSessions, setSelectedSessions] = useState<SelectedSession[]>([]);
   const [principalPayment, setPrincipalPayment] = useState<PrincipalPaymentInfo | null>(null);
   const [confirmed, setConfirmed] = useState(false);
@@ -171,10 +181,16 @@ export function EnrollmentModificationPaymentStep({
       const existingEnrollments = JSON.parse(existingEnrollmentsData);
       const selectedSessions = JSON.parse(selectedSessionsData);
 
+      // 어댑터를 사용하여 유효한 세션만 필터링
+      const validExistingEnrollments = filterValidModificationSessions(existingEnrollments);
+      const validSelectedSessions = filterValidModificationSessions(selectedSessions);
       
+      if (validExistingEnrollments.length === 0 && validSelectedSessions.length === 0) {
+        throw new Error('유효한 세션 정보가 없습니다.');
+      }
 
       // 기존에 신청된 세션들 (활성 상태)
-      const originalEnrolledSessions = existingEnrollments.filter(
+      const originalEnrolledSessions = validExistingEnrollments.filter(
         (enrollment: ModificationSessionVM) =>
           enrollment.enrollment &&
           (enrollment.enrollment.status === "CONFIRMED" ||
@@ -188,46 +204,61 @@ export function EnrollmentModificationPaymentStep({
       );
 
       // 선택된 세션의 날짜들
-      const selectedDates = selectedSessions.map(
+      const selectedDates = validSelectedSessions.map(
         (session: ModificationSessionVM) => new Date(session.date).toISOString().split("T")[0]
       );
 
-
-      // 취소할 세션들의 enrollment ID
+      // 어댑터를 사용하여 취소할 세션 ID 추출
       const cancellations = originalEnrolledSessions
         .filter((enrollment: ModificationSessionVM) => {
           const enrollmentDate = new Date(enrollment.date).toISOString().split("T")[0];
           return !selectedDates.includes(enrollmentDate);
         })
-        .map((enrollment: ModificationSessionVM) => enrollment.enrollment?.id);
+        .map((enrollment: ModificationSessionVM) => enrollment.enrollment?.id)
+        .filter((id): id is number => id !== undefined);
 
-      // 새로 신청할 세션들의 session ID
-      const newEnrollments = selectedSessions
+      // 어댑터를 사용하여 신청할 세션 ID 추출
+      const newEnrollments = validSelectedSessions
         .filter((session: ModificationSessionVM) => {
           const sessionDate = new Date(session.date).toISOString().split("T")[0];
           return !originalDates.includes(sessionDate);
         })
         .map((session: ModificationSessionVM) => session.id);
 
-      console.log('수강 변경 요청 데이터:', {
+      // 수강 변경 데이터 유효성 검증
+      const modificationData = {
         cancellations,
         newEnrollments,
         reason: '수강 변경'
-      });
+      };
+
+      if (!validateModificationData(modificationData)) {
+        throw new Error('수강 변경 데이터가 올바르지 않습니다.');
+      }
+
+      console.log('수강 변경 요청 데이터:', modificationData);
 
       // batchModifyEnrollments API 호출
-      await modifyEnrollments({
-        cancellations,
-        newEnrollments,
-        reason: '수강 변경'
-      });
+      const result = await modifyEnrollments(modificationData);
 
-      toast.success('수강 변경이 완료되었습니다.');
-      setEnrollmentStep('complete');
-      onComplete?.(); // 수강 변경 완료 시 콜백 호출
+      // 부분 실패 처리
+      if (result && result.data && typeof result.data === 'object' && 'failedOperations' in result.data) {
+        const shouldProceed = handlePartialModificationFailure(result.data, validSelectedSessions);
+        if (shouldProceed.shouldProceed) {
+          setEnrollmentStep('complete');
+          onComplete?.();
+        }
+      } else {
+        // 완전 성공
+        toast.success('수강 변경이 완료되었습니다.');
+        setEnrollmentStep('complete');
+        onComplete?.();
+      }
     } catch (error) {
-      console.error('Modification error:', error);
-      toast.error(error instanceof Error ? error.message : '처리 중 오류가 발생했습니다.');
+      const shouldProceed = handleModificationError(error);
+      if (!shouldProceed) {
+        return; // 에러 발생 시 진행하지 않음
+      }
     } finally {
       setIsProcessing(false);
     }

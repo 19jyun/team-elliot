@@ -8,7 +8,6 @@ import {
   Query,
   UseGuards,
   ParseIntPipe,
-  NotFoundException,
 } from '@nestjs/common';
 import { RefundService } from './refund.service';
 import { RefundRequestDto } from './dto/refund-request.dto';

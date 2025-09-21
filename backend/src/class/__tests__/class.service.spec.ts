@@ -2,11 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ClassService } from '../class.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateClassDto, DayOfWeek } from '../../types/class.types';
-import {
-  NotFoundException,
-  BadRequestException,
-  ConflictException,
-} from '@nestjs/common';
+import { NotFoundException, ConflictException } from '@nestjs/common';
 
 describe('ClassService', () => {
   let service: ClassService;

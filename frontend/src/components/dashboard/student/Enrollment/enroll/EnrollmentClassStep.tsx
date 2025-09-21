@@ -38,7 +38,7 @@ function formatTimeForCalendar(date: string | Date) {
 }
 
 export function EnrollmentClassStep() {
-  const { form, goBack, setEnrollmentStep, setSelectedClassIds } = useApp();
+  const { form, setEnrollmentStep, setSelectedClassIds } = useApp();
   const { enrollment } = form;
   const { selectedAcademyId } = enrollment;
   const { status } = useSession({
@@ -48,7 +48,7 @@ export function EnrollmentClassStep() {
   });
 
   // API에서 수강 가능한 클래스 데이터 가져오기
-  const { availableClasses, isLoading, error, loadAvailableClasses } = useStudentApi();
+  const { availableClasses, isLoading, error, loadAvailableClasses, clearErrors } = useStudentApi();
 
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showClassDetailModal, setShowClassDetailModal] = useState(false);
@@ -157,19 +157,20 @@ export function EnrollmentClassStep() {
     setEnrollmentStep('date-selection');
   };
 
-  // 에러 처리
-  if (error) {
+  // 에러 처리 - AcademyManagement와 동일한 패턴 적용
+  if (error && availableClasses.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-red-500 mb-4">클래스 정보를 불러오는데 실패했습니다.</p>
-          <button
-            onClick={goBack}
-            className="px-4 py-2 bg-[#AC9592] text-white rounded-lg hover:bg-[#8B7A77] transition-colors"
-          >
-            뒤로가기
-          </button>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-full">
+        <p className="text-red-500">클래스 정보를 불러오는데 실패했습니다.</p>
+        <button
+          onClick={() => {
+            clearErrors();
+            loadAvailableClasses(selectedAcademyId || undefined);
+          }}
+          className="mt-4 px-4 py-2 bg-[#AC9592] text-white rounded-lg hover:bg-[#8B7A77] transition-colors"
+        >
+          다시 시도
+        </button>
       </div>
     );
   }

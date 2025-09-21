@@ -7,7 +7,9 @@ import { useState } from 'react'
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep'
 import { useApp } from '@/contexts/AppContext'
 import { useStudentApi } from '@/hooks/student/useStudentApi'
+import { useModificationErrorHandler } from '@/hooks/student/useModificationErrorHandler'
 import { ExtendedSessionData } from '@/contexts/forms/EnrollmentFormManager'
+import { toast } from 'sonner'
 import type { ClassSessionForModification } from '@/types/api/class'
 import type { ClassSession } from '@/types/api/class'
 import type { EnrollmentModificationDateStepVM } from '@/types/view/student'
@@ -18,70 +20,88 @@ export function EnrollmentModificationDateStep({
   onComplete 
 }: EnrollmentModificationDateStepVM) {
   const { setSelectedSessions } = useApp()
-  const { loadModificationSessions } = useStudentApi();
+  const { loadModificationSessions, clearErrors } = useStudentApi();
+  
+  // 에러 핸들러 훅 사용
+  const { handleError, handleRetry } = useModificationErrorHandler({
+    onRetry: () => {
+      clearErrors();
+      setError(null);
+      loadSessions();
+    }
+  });
+  
+  // 수강 변경용 세션 데이터 로드 함수
+  const loadSessions = React.useCallback(async () => {
+    setIsLoadingSessions(true);
+    setError(null);
+    
+    try {
+      const response = await loadModificationSessions(classId);
+      
+      if (response) {
+        setModificationSessions(response.sessions);
+        setCalendarRange(response.calendarRange);
+        toast.success('수강 변경 세션을 성공적으로 불러왔습니다.');
+      }
+      
+      // 세션 데이터가 로드된 후 미리 선택 로직 실행
+      if (response) {
+        const preSelectedSessionIds = new Set<number>();
+        
+        // 1. 기존 수강 신청 세션 미리 선택
+        if (existingEnrollments && existingEnrollments.length > 0) {
+          const activeEnrollmentDates = existingEnrollments
+            .filter((enrollment) => {
+              return enrollment.enrollment &&
+                (enrollment.enrollment.status === "CONFIRMED" ||
+                  enrollment.enrollment.status === "PENDING" ||
+                  enrollment.enrollment.status === "REFUND_REJECTED_CONFIRMED");
+            })
+            .map((enrollment) => {
+              return new Date(enrollment.date).toISOString().split("T")[0];
+            });
+
+          response.sessions.forEach((session: ClassSessionForModification) => {
+            const sessionDate = new Date(session.date).toISOString().split("T")[0];
+            
+            if (activeEnrollmentDates.includes(sessionDate)) {
+              preSelectedSessionIds.add(session.id);
+            }
+          });
+        }
+        
+        // 2. 취소 가능한 세션 미리 선택
+        response.sessions.forEach((session: ClassSessionForModification) => {
+          if (session.canBeCancelled && !preSelectedSessionIds.has(session.id)) {
+            preSelectedSessionIds.add(session.id);
+          }
+        });
+        
+        setSelectedSessionIds(preSelectedSessionIds);
+      }
+    } catch (error) {
+      const shouldContinue = handleError(error);
+      if (!shouldContinue) {
+        setError('수강 변경 세션을 불러올 수 없습니다.');
+      }
+    } finally {
+      setIsLoadingSessions(false);
+    }
+  }, [classId, loadModificationSessions, existingEnrollments, handleError]);
+
   const [selectedCount, setSelectedCount] = useState(0);
   const [_selectedClasses, setSelectedClasses] = useState<Array<{ id: number; sessions: ClassSessionForModification[] }>>([]);
   const [modificationSessions, setModificationSessions] = useState<ClassSessionForModification[]>([]);
   const [calendarRange, setCalendarRange] = useState<{startDate: string, endDate: string} | null>(null);
   const [isLoadingSessions, setIsLoadingSessions] = useState(false);
   const [selectedSessionIds, setSelectedSessionIds] = useState<Set<number>>(new Set());
+  const [error, setError] = useState<string | null>(null);
   
   // 수강 변경용 세션 데이터 로드
   React.useEffect(() => {
-    const loadSessions = async () => {
-      setIsLoadingSessions(true);
-      try {
-        const response = await loadModificationSessions(classId);
-        
-        if (response) {
-          setModificationSessions(response.sessions);
-          setCalendarRange(response.calendarRange);
-        }
-        
-        // 세션 데이터가 로드된 후 미리 선택 로직 실행
-        if (response) {
-          const preSelectedSessionIds = new Set<number>();
-          
-          // 1. 기존 수강 신청 세션 미리 선택
-          if (existingEnrollments && existingEnrollments.length > 0) {
-            const activeEnrollmentDates = existingEnrollments
-              .filter((enrollment) => {
-                return enrollment.enrollment &&
-                  (enrollment.enrollment.status === "CONFIRMED" ||
-                    enrollment.enrollment.status === "PENDING" ||
-                    enrollment.enrollment.status === "REFUND_REJECTED_CONFIRMED");
-              })
-              .map((enrollment) => {
-                return new Date(enrollment.date).toISOString().split("T")[0];
-              });
-
-            response.sessions.forEach((session: ClassSessionForModification) => {
-              const sessionDate = new Date(session.date).toISOString().split("T")[0];
-              
-              if (activeEnrollmentDates.includes(sessionDate)) {
-                preSelectedSessionIds.add(session.id);
-              }
-            });
-          }
-          
-          // 2. 취소 가능한 세션 미리 선택
-          response.sessions.forEach((session: ClassSessionForModification) => {
-            if (session.canBeCancelled && !preSelectedSessionIds.has(session.id)) {
-              preSelectedSessionIds.add(session.id);
-            }
-          });
-          
-          setSelectedSessionIds(preSelectedSessionIds);
-        }
-      } catch (error) {
-        console.error('수강 변경용 세션 데이터 로드 실패:', error);
-      } finally {
-        setIsLoadingSessions(false);
-      }
-    };
-
     loadSessions();
-  }, [classId, loadModificationSessions, existingEnrollments]);
+  }, [loadSessions]);
 
   // existingEnrollments가 변경될 때 미리 선택 로직 재실행
   React.useEffect(() => {
@@ -271,6 +291,21 @@ export function EnrollmentModificationDateStep({
       // onComplete 콜백 호출 (세션 ID와 수강료 정보 전달)
       onComplete(selectedSessionIds, actualSessionPrice);
     }
+  }
+
+  // 에러 처리 - 기본적인 패턴
+  if (error && modificationSessions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-full">
+        <p className="text-red-500">수강 변경 세션을 불러오는데 실패했습니다.</p>
+        <button
+          onClick={handleRetry}
+          className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
+        >
+          다시 시도
+        </button>
+      </div>
+    );
   }
     
   return (

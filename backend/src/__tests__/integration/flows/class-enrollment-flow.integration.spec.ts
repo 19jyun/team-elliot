@@ -15,7 +15,6 @@ describe('Class Enrollment Flow Integration Tests', () => {
 
   describe('1. 수강신청 플로우', () => {
     it('should allow students to enroll in sessions', async () => {
-      ``;
       // 1. Principal, Teacher, Student 생성
       const { token: principalToken, academy } =
         await createAuthenticatedUser('PRINCIPAL');

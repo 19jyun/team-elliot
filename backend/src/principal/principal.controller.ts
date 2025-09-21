@@ -54,9 +54,6 @@ export class PrincipalController {
   // Principal의 클래스 생성
   @Post('classes')
   async createClass(@GetUser() user: any, @Body() createClassDto: any) {
-    // Principal의 ID를 가져와서 클래스 생성
-    const principal = await this.principalService.getPrincipalInfo(user.id);
-
     // Principal의 학원 ID를 자동으로 설정
     const principalWithAcademy = await this.principalService.getPrincipalData(
       user.id,

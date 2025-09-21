@@ -1,6 +1,7 @@
 import { ClassSession } from "@/types/api/class";
 
 export interface SelectedSession extends ClassSession {
+  sessionId?: number; // 실제 세션 ID (API에서 사용)
   class?: {
     id: number;
     className: string;

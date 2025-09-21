@@ -22,7 +22,7 @@ export function EnrollmentDateStep() {
   });
 
   // API에서 수강 가능한 세션 데이터 가져오기
-  const { availableSessions, isLoading, error, loadAvailableClasses } = useStudentApi();
+  const { availableSessions, isLoading, error, loadAvailableClasses, clearErrors } = useStudentApi();
 
   const [selectedSessionIds, setSelectedSessionIds] = React.useState<Set<number>>(new Set());
 
@@ -153,19 +153,20 @@ export function EnrollmentDateStep() {
     setEnrollmentStep('payment');
   };
 
-  // 에러 처리
-  if (error) {
+  // 에러 처리 - AcademyManagement와 동일한 패턴 적용
+  if (error && (!availableSessions || availableSessions.length === 0)) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-red-500 mb-4">세션 정보를 불러오는데 실패했습니다.</p>
-          <button
-            onClick={goBack}
-            className="px-4 py-2 bg-[#AC9592] text-white rounded-lg hover:bg-[#8B7A77] transition-colors"
-          >
-            뒤로가기
-          </button>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-full">
+        <p className="text-red-500">세션 정보를 불러오는데 실패했습니다.</p>
+        <button
+          onClick={() => {
+            clearErrors();
+            loadAvailableClasses(selectedAcademyId || undefined);
+          }}
+          className="mt-4 px-4 py-2 bg-[#AC9592] text-white rounded-lg hover:bg-[#8B7A77] transition-colors"
+        >
+          다시 시도
+        </button>
       </div>
     );
   }

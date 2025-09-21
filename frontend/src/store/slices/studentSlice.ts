@@ -36,6 +36,10 @@ const studentSlice = createSlice({
       state.error = action.payload;
     },
 
+    clearError: (state) => {
+      state.error = null;
+    },
+
     // 3. 수강 신청/결제 내역 업데이트
     updateStudentEnrollmentHistory: (state, action) => {
       if (state.data) {
@@ -400,6 +404,7 @@ export const {
   setStudentData,
   setLoading,
   setError,
+  clearError,
   updateStudentEnrollmentHistory,
   updateStudentCancellationHistory,
   clearStudentData,

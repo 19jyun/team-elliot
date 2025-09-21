@@ -18,30 +18,6 @@ describe('AuthService', () => {
   // let prismaService: PrismaService;
   // let jwtService: JwtService;
 
-  const mockPrincipal = {
-    id: 1,
-    userId: 'principal123',
-    password: 'hashed_principal123_password',
-    name: 'Principal User',
-    role: 'PRINCIPAL',
-  };
-
-  const mockTeacher = {
-    id: 2,
-    userId: 'teacher123',
-    password: 'hashed_teacher123_password',
-    name: 'Teacher User',
-    role: 'TEACHER',
-  };
-
-  const mockStudent = {
-    id: 3,
-    userId: 'student123',
-    password: 'hashed_student123_password',
-    name: 'Student User',
-    role: 'STUDENT',
-  };
-
   const mockNewStudent = {
     id: 10,
     userId: 'newstudent',

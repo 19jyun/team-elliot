@@ -8,8 +8,6 @@ import { AcademyService } from '../../academy/academy.service';
 describe('TeacherService', () => {
   let service: TeacherService;
   let prismaService: PrismaService;
-  let classService: ClassService;
-  let academyService: AcademyService;
 
   const mockPrismaService = {
     teacher: {
@@ -49,8 +47,6 @@ describe('TeacherService', () => {
 
     service = module.get<TeacherService>(TeacherService);
     prismaService = module.get<PrismaService>(PrismaService);
-    classService = module.get<ClassService>(ClassService);
-    academyService = module.get<AcademyService>(AcademyService);
   });
 
   afterEach(() => {

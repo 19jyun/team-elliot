@@ -1,5 +1,6 @@
-import { useAppSelector } from "@/store/hooks";
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { useMemo, useCallback } from "react";
+import { clearError } from "@/store/slices/studentSlice";
 import type {
   EnrollmentHistory,
   CancellationHistory,
@@ -7,6 +8,7 @@ import type {
 
 // Student 대시보드에서 사용할 데이터 훅 (Redux에서 관리하는 데이터만)
 export function useStudentData() {
+  const dispatch = useAppDispatch();
   const {
     data: studentData,
     isLoading,
@@ -43,6 +45,11 @@ export function useStudentData() {
     [studentData?.cancellationHistory]
   );
 
+  // 에러 초기화 함수
+  const clearErrorState = useCallback(() => {
+    dispatch(clearError());
+  }, [dispatch]);
+
   return {
     // 기본 데이터
     enrollmentHistory,
@@ -55,5 +62,6 @@ export function useStudentData() {
     // 헬퍼 함수들
     getEnrollmentById,
     getCancellationById,
+    clearErrorState,
   };
 }

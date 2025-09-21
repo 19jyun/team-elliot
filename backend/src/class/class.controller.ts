@@ -101,11 +101,6 @@ export class ClassController {
   @Post()
   @Roles(Role.PRINCIPAL)
   async createClass(@Body() data: CreateClassDto, @CurrentUser() user: any) {
-    // JWT sub (User.id)를 통해 Principal의 ID를 가져오기
-    const principal = await this.classService.findPrincipalByUserId(
-      user.userId,
-    );
-
     // Principal의 ID를 사용하여 클래스 생성
     return this.classService.createClass(data, user.id);
   }
