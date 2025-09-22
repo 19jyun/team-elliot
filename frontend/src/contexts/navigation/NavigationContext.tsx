@@ -333,6 +333,13 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
   const clearSubPage = useCallback(() => {
     setSubPageState(null);
     
+    // 서브페이지를 닫을 때 virtual history에서 subpage 엔트리 제거
+    const currentEntry = virtualHistory.getCurrentEntry();
+    if (currentEntry && currentEntry.type === 'subpage') {
+      // 현재 엔트리가 subpage이면 virtual history에서 제거
+      virtualHistory.goBack();
+    }
+    
     // StateSync에 상태 발행
     const navigationState: NavigationState = {
       activeTab,

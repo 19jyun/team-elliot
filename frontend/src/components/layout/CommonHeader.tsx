@@ -45,8 +45,8 @@ export function CommonHeader() {
 
   // 뒤로가기 버튼이 표시되어야 하는지 확인
   const shouldShowBackButton = () => {
-    if (subPage !== null) return true;
-    return canGoBack;
+    // 항상 뒤로가기 버튼 표시
+    return true;
   };
 
   // 통합된 뒤로가기 함수
