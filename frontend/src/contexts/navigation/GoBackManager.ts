@@ -110,11 +110,17 @@ export class GoBackManager {
     context: GoBackContext,
     formsState: FormsState
   ): Promise<GoBackResult> {
-    // 1. Virtual History 우선 확인 (모든 경우에 적용)
+    // 1. Virtual History 우선 확인 (subpage와 form-step만)
     if (this.virtualHistory.canGoBack()) {
       const previousEntry = this.virtualHistory.getPreviousEntry();
       if (previousEntry) {
-        return await this.handleVirtualHistoryBack(previousEntry, formsState);
+        // subpage와 form-step만 virtual history에서 처리
+        if (
+          previousEntry.type === "subpage" ||
+          previousEntry.type === "form-step"
+        ) {
+          return await this.handleVirtualHistoryBack(previousEntry, formsState);
+        }
       }
     }
 
@@ -128,10 +134,8 @@ export class GoBackManager {
       };
     }
 
-    // 3. 탭 변경 가능한지 확인
-    if (context.activeTab > 0) {
-      return await this.handleTabGoBack(context);
-    }
+    // 3. 대시보드 탭 변경은 뒤로가기로 처리하지 않음
+    // (대시보드 내 탭 변경은 virtual history에 저장되지 않음)
 
     // 4. 더 이상 뒤로갈 수 없음
     return {
@@ -270,19 +274,6 @@ export class GoBackManager {
       action: "close" as const,
       data: { subPage: null },
       message: `SubPage: ${subPage}`,
-    };
-  }
-
-  // 🔑 탭 뒤로가기 처리
-  private async handleTabGoBack(context: GoBackContext): Promise<GoBackResult> {
-    const { activeTab } = context;
-    const previousTab = Math.max(0, activeTab - 1);
-
-    return {
-      success: true,
-      action: "navigate",
-      data: { activeTab: previousTab },
-      message: `Tab: ${activeTab} → ${previousTab}`,
     };
   }
 
