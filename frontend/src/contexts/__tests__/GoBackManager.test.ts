@@ -216,14 +216,15 @@ describe("ImprovedGoBackManager", () => {
         subPage: null,
       };
 
-      // Add some history entries to make canGoBack() return true
+      // Add subpage history entries to make canGoBack() return true
+      // (navigation type은 더 이상 virtual history에 추가되지 않음)
       virtualHistory.push({
-        type: "navigation",
-        data: { title: "First Page" },
+        type: "subpage",
+        data: { title: "First SubPage" },
       });
       virtualHistory.push({
-        type: "navigation",
-        data: { title: "Second Page" },
+        type: "subpage",
+        data: { title: "Second SubPage" },
       });
 
       const result = await goBackManager.executeGoBackWithState(
@@ -232,10 +233,10 @@ describe("ImprovedGoBackManager", () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.action).toBe("navigate");
+      expect(result.action).toBe("close"); // subpage 타입이므로 close 액션
     });
 
-    it("should handle tab goBack when no subPage and no history", async () => {
+    it("should return no action when no subPage, no history, and activeTab > 0", async () => {
       const tabNavigationState = {
         ...mockNavigationState,
         subPage: null,
@@ -247,9 +248,10 @@ describe("ImprovedGoBackManager", () => {
         mockFormsState
       );
 
-      expect(result.success).toBe(true);
-      expect(result.action).toBe("navigate");
-      expect(result.data?.activeTab).toBe(0);
+      // 탭 뒤로가기 로직이 제거되었으므로 더 이상 뒤로갈 수 없음
+      expect(result.success).toBe(false);
+      expect(result.action).toBe("none");
+      expect(result.message).toBe("더 이상 뒤로갈 수 없습니다.");
     });
 
     it("should return no action when nothing to go back to", async () => {

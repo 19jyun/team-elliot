@@ -181,6 +181,16 @@ const TestComponent = () => {
     setResult('history-pushed');
   };
 
+  const handlePushSubpageHistory = () => {
+    navigation.pushHistory({
+      id: 'test-subpage-history',
+      timestamp: Date.now(),
+      type: 'subpage',
+      data: { test: 'subpage-data' },
+    });
+    setResult('subpage-history-pushed');
+  };
+
   return (
     <div>
       <button onClick={handleGoBack} data-testid="go-back-button">
@@ -200,6 +210,9 @@ const TestComponent = () => {
       </button>
       <button onClick={handlePushHistory} data-testid="push-history-button">
         Push History
+      </button>
+      <button onClick={handlePushSubpageHistory} data-testid="push-subpage-history-button">
+        Push Subpage History
       </button>
       <div data-testid="result">{result}</div>
       <div data-testid="active-tab">{navigation.activeTab}</div>
@@ -311,7 +324,28 @@ describe('ImprovedNavigationContext', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('result')).toHaveTextContent('history-pushed');
-      expect(screen.getByTestId('history-count')).toHaveTextContent('2'); // 초기 상태 + pushHistory
+      // navigation 타입은 더 이상 virtual history에 추가되지 않으므로 history-count는 0
+      expect(screen.getByTestId('history-count')).toHaveTextContent('0');
+    });
+  });
+
+  it('should handle subpage history operations', async () => {
+    render(
+      <SessionProvider session={mockSession}>
+        <StateSyncProvider>
+          <NavigationProvider formsState={mockFormsState}>
+            <TestComponent />
+          </NavigationProvider>
+        </StateSyncProvider>
+      </SessionProvider>
+    );
+
+    fireEvent.click(screen.getByTestId('push-subpage-history-button'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('result')).toHaveTextContent('subpage-history-pushed');
+      // subpage 타입은 virtual history에 추가되므로 history-count는 1
+      expect(screen.getByTestId('history-count')).toHaveTextContent('1');
     });
   });
 

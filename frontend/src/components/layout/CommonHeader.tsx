@@ -12,7 +12,6 @@ export function CommonHeader() {
   const { 
     activeTab, 
     subPage, 
-    canGoBack, 
     handleTabChange, 
     goBack
   } = useApp();
