@@ -169,10 +169,14 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
   // 가상 히스토리 상태 구독
   useEffect(() => {
     const unsubscribe = virtualHistory.subscribe((historyState) => {
-      setCanGoBack(historyState.currentIndex > 0);
+      // subpage와 form-step만 canGoBack에 영향
+      const navigableEntries = historyState.entries.filter(entry => 
+        entry.type === 'subpage' || entry.type === 'form-step'
+      );
+      setCanGoBack(navigableEntries.length > 0);
       
-      // 가상 히스토리를 실제 history로 변환
-      const historyItems: NavigationHistoryItem[] = historyState.entries.map((entry, index) => ({
+      // 가상 히스토리를 실제 history로 변환 (subpage와 form-step만)
+      const historyItems: NavigationHistoryItem[] = navigableEntries.map((entry, index) => ({
         id: entry.id,
         timestamp: entry.timestamp,
         type: entry.type as 'navigation' | 'subpage' | 'form-step',
@@ -268,24 +272,13 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
       history: history,
     };
     stateSync.publish('navigation', navigationState);
-    
-    // 히스토리에 추가
-    virtualHistory.push({
-      type: 'navigation',
-      data: {
-        activeTab: tab,
-        subPage: null,
-        title: `Tab ${tab}`,
-        description: `Switched to tab ${tab}`,
-      },
-    });
 
     // 이벤트 발생
     contextEventBus.emit('navigationChanged', {
       subPage: null,
       activeTab: tab,
     });
-  }, [virtualHistory, getNavigationItems, history, stateSync]);
+  }, [getNavigationItems, history, stateSync, virtualHistory]);
 
   const handleTabChange = useCallback((tab: number) => {
     if (tab === activeTab) return;
