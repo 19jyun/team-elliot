@@ -23,6 +23,7 @@ export interface SignupRequest {
   name: string;
   phoneNumber: string;
   role: UserRole;
+  marketing: boolean;
 }
 
 export interface SignupResponse {
@@ -54,4 +55,23 @@ export interface CheckUserIdRequest {
 
 export interface CheckUserIdResponse {
   available: boolean;
+}
+
+export interface SendVerificationRequest {
+  phoneNumber: string;
+}
+
+export interface SendVerificationResponse {
+  success: boolean;
+  message?: string;
+}
+
+export interface VerifyCodeRequest {
+  phoneNumber: string;
+  code: string;
+}
+
+export interface VerifyCodeResponse {
+  success: boolean;
+  message?: string;
 }

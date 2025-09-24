@@ -4,22 +4,25 @@ import { clearSessionCache } from "@/lib/axios";
 import {
   // LoginRequest,
   // LoginResponse,
-  // SignupRequest,
-  // SignupResponse,
+  SignupRequest,
+  SignupResponse,
   LogoutResponse,
   // WithdrawalRequest,
   // WithdrawalResponse,
   CheckUserIdRequest,
   CheckUserIdResponse,
+  SendVerificationRequest,
+  SendVerificationResponse,
+  VerifyCodeRequest,
+  VerifyCodeResponse,
 } from "../types/api/auth";
 
 // const _login = (data: LoginRequest): Promise<LoginResponse> =>
 //   post<LoginResponse>("/auth/login", data);
 
-// const _signup = (data: SignupRequest): Promise<SignupResponse> =>
-//   post<SignupResponse>("/auth/signup", data);
-
-// 미사용 메서드들 주석처리
+// 회원가입
+export const signup = (data: SignupRequest): Promise<SignupResponse> =>
+  post<SignupResponse>("/auth/signup", data);
 
 export const logout = async (): Promise<LogoutResponse> => {
   // 세션 캐시 클리어
@@ -39,3 +42,15 @@ export const checkDuplicateUserId = (
   post<CheckUserIdResponse>("/auth/check-userid", {
     userId,
   } as CheckUserIdRequest);
+
+// 인증번호 발송
+export const sendVerification = (
+  data: SendVerificationRequest
+): Promise<SendVerificationResponse> =>
+  post<SendVerificationResponse>("/auth/send-verification", data);
+
+// 인증번호 검증
+export const verifyCode = (
+  data: VerifyCodeRequest
+): Promise<VerifyCodeResponse> =>
+  post<VerifyCodeResponse>("/auth/verify-code", data);

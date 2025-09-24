@@ -4,7 +4,7 @@ import * as React from 'react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import axios from 'axios'
+import { signup } from '@/api/auth'
 import Image from 'next/image'
 
 
@@ -66,7 +66,7 @@ export function SignupTermsPage() {
       )
 
       // API 호출
-      const response = await axios.post('/api/auth/signup', {
+      const response = await signup({
         name: signupData.name,
         userId: signupData.userId,
         password: signupData.password,
@@ -75,18 +75,15 @@ export function SignupTermsPage() {
         marketing: agreements.marketing,
       })
 
-      if (response.status === 200) {
+      if (response) {
         toast.success('회원가입이 완료되었습니다')
         sessionStorage.removeItem('signupData') // 세션 데이터 삭제
         // 로그인 페이지로 이동 (기본 페이지)
         window.location.href = '/auth'
       }
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        toast.error(error.response?.data?.message || '회원가입에 실패했습니다')
-      } else {
-        toast.error('알 수 없는 오류가 발생했습니다')
-      }
+      console.error('회원가입 오류:', error)
+      toast.error('회원가입에 실패했습니다')
     } finally {
       setIsLoading(false)
     }
