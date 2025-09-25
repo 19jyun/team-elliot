@@ -1,8 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useSession } from '@/lib/auth/AuthProvider'
 import { useQuery } from '@tanstack/react-query'
 
 import { getMyAcademy } from '@/api/teacher'
@@ -58,13 +57,7 @@ const ClassManagementCard: React.FC<{
 )
 
 export default function TeacherClassManagementPage() {
-  const router = useRouter()
-  const { status } = useSession({
-    required: true,
-    onUnauthenticated() {
-      router.push('/auth')
-    },
-  })
+  const { status } = useSession()
 
   // 선생님의 학원 정보 조회
   const { isLoading: isAcademyLoading } = useQuery({

@@ -34,6 +34,43 @@ export const handlers = [
     });
   }),
 
+  // 세션 정보 조회 API
+  http.get("*/auth/session", () => {
+    return HttpResponse.json({
+      success: true,
+      data: {
+        user: {
+          id: 1,
+          userId: "testuser",
+          name: "Test User",
+          role: "STUDENT",
+        },
+        accessToken: "mock-access-token",
+        expiresAt: Date.now() + 3600000,
+      },
+      timestamp: new Date().toISOString(),
+      path: "/auth/session",
+    });
+  }),
+
+  // 토큰 유효성 검증 API
+  http.get("*/auth/verify", () => {
+    return HttpResponse.json({
+      success: true,
+      data: {
+        valid: true,
+        user: {
+          id: 1,
+          userId: "testuser",
+          name: "Test User",
+          role: "STUDENT",
+        },
+      },
+      timestamp: new Date().toISOString(),
+      path: "/auth/verify",
+    });
+  }),
+
   // 학생 관련 API
   http.get("/api/students/profile", () => {
     return HttpResponse.json({

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useSession, signOut } from 'next-auth/react'
+import { useSession, useSignOut } from '@/lib/auth/AuthProvider'
 import { toast } from 'sonner'
 import axios from 'axios'
 
@@ -31,12 +31,8 @@ const cancellationOptions = [
 
 export default function WithdrawalPage() {
   const router = useRouter()
-  const { data: session } = useSession({
-    required: true,
-    onUnauthenticated() {
-      router.push('/auth')
-    },
-  })
+  const signOut = useSignOut()
+  const { data: session } = useSession()
   const [selectedReason, setSelectedReason] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 

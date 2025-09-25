@@ -3,7 +3,7 @@
 import { useApp } from '@/contexts/AppContext';
 import { CommonHeader } from '@/components/layout/CommonHeader';
 import { DashboardContainer } from './DashboardContainer';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import PrincipalClassPage from '@/app/(dashboard)/dashboard/principal/class/page';

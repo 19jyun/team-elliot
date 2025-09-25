@@ -1,8 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
-import { login, logout, getSession as apiGetSession, verifyToken, refreshToken } from "@/api/auth";
-import type { SessionResponse, VerifyResponse } from "@/types/api/auth";
+import { login, logout, getSession as apiGetSession, refreshToken } from "@/api/auth";
 
 // NextAuth와 호환되는 타입 정의
 interface User {
@@ -12,26 +11,36 @@ interface User {
   email?: string;     // NextAuth에 있는 필드 추가
 }
 
-interface Session {
+export interface Session {
   user: User;
   accessToken?: string;  // NextAuth와 일치하도록 옵셔널로 변경
   error?: string;        // NextAuth에 있는 에러 필드 추가
   expiresAt?: number;    // 추가 필드는 옵셔널로 유지
 }
 
+interface SignInOptions {
+  userId: string;
+  password: string;
+}
+
+interface SignOutOptions {
+  redirect?: boolean;
+  callbackUrl?: string;
+}
+
 interface AuthContextType {
   data: Session | null;
   status: 'loading' | 'authenticated' | 'unauthenticated';
-  update: (data?: any) => Promise<void>;
-  signIn: (provider: string, options?: any) => Promise<any>;
-  signOut: (options?: any) => Promise<void>;
+  update: (data?: Partial<Session>) => Promise<void>;
+  signIn: (provider: string, options?: SignInOptions) => Promise<{ ok: boolean; error: string | null }>;
+  signOut: (options?: SignOutOptions) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   data: null,
   status: 'unauthenticated',
   update: async () => {},
-  signIn: async () => null,
+  signIn: async () => ({ ok: false, error: "Not initialized" }),
   signOut: async () => {},
 });
 
@@ -56,7 +65,7 @@ const TokenManager = {
 };
 
 // 세션 정보 저장/조회 유틸리티
-const SessionManager = {
+export const SessionManager = {
   get: (): Session | null => {
     if (typeof window === 'undefined') return null;
     try {
@@ -110,7 +119,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
                 }
                 setSession(newSession);
               }
-            } catch (error) {
+            } catch (_error) {
               // 갱신 실패 시 로그아웃
               SessionManager.remove();
               TokenManager.remove();
@@ -130,13 +139,14 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // 로그인 함수 (NextAuth signIn과 호환)
-  const signIn = useCallback(async (provider: string, options?: any) => {
+  const signIn = useCallback(async (provider: string, options?: SignInOptions) => {
     if (provider !== 'credentials' || !options) {
       throw new Error("Unsupported provider");
     }
 
     try {
       setLoading(true);
+      
       const response = await login({
         userId: options.userId,
         password: options.password,
@@ -145,10 +155,10 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       if (response.data) {
         const newSession: Session = {
           user: {
-            id: response.data.user.id.toString(), // 문자열로 변환
+            id: response.data.user.id.toString(),
             name: response.data.user.name,
             role: response.data.user.role,
-            email: undefined, // 이메일 필드는 백엔드에서 제공하지 않음
+            email: undefined,
           },
           accessToken: response.data.access_token,
           expiresAt: Date.now() + 2 * 60 * 60 * 1000, // 2시간
@@ -165,14 +175,14 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       return { ok: false, error: "로그인 실패" };
     } catch (error) {
       console.error("로그인 실패:", error);
-      return { ok: false, error: "로그인 실패" };
+      return { ok: false, error: error instanceof Error ? error.message : "로그인 실패" };
     } finally {
       setLoading(false);
     }
   }, []);
 
   // 로그아웃 함수 (NextAuth signOut과 호환)
-  const signOut = useCallback(async (options?: any) => {
+  const signOut = useCallback(async (_options?: SignOutOptions) => {
     try {
       await logout();
     } catch (error) {
@@ -185,7 +195,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // 세션 업데이트 함수 (NextAuth update와 호환)
-  const update = useCallback(async (data?: any) => {
+  const update = useCallback(async (data?: Partial<Session>) => {
     if (session && data) {
       const updatedSession = { ...session, ...data };
       SessionManager.set(updatedSession);
@@ -264,19 +274,27 @@ export const useSession = () => {
 };
 
 // NextAuth와 호환되는 signIn, signOut 함수들
-export const signIn = async (provider: string, options?: any) => {
-  const { signIn: authSignIn } = useContext(AuthContext);
-  return await authSignIn(provider, options);
+// 이 함수들은 컴포넌트 내부에서만 사용해야 합니다
+export const useSignIn = () => {
+  const { signIn } = useContext(AuthContext);
+  return signIn;
 };
 
-export const signOut = async (options?: any) => {
-  const { signOut: authSignOut } = useContext(AuthContext);
-  return await authSignOut(options);
+export const useSignOut = () => {
+  const { signOut } = useContext(AuthContext);
+  return signOut;
 };
 
 // NextAuth와 호환되는 getSession 함수
 export const getSession = async () => {
   try {
+    // 먼저 로컬 세션 확인
+    const localSession = SessionManager.get();
+    if (localSession?.accessToken) {
+      return localSession;
+    }
+    
+    // 로컬 세션이 없으면 API 호출
     const response = await apiGetSession();
     return response.data;
   } catch (error) {

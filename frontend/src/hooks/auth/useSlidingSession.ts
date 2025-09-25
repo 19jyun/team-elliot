@@ -1,4 +1,4 @@
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/AuthProvider";
 import { useCallback, useEffect, useRef } from "react";
 
 // 사용자 활동 감지 및 토큰 연장 훅

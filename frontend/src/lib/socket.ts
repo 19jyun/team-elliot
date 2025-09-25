@@ -1,5 +1,5 @@
 import { io, Socket } from "socket.io-client";
-import { getSession } from "next-auth/react";
+import { getSession } from "@/lib/auth/AuthProvider";
 
 // Socket.IO 클라이언트 인스턴스
 let socket: Socket | null = null;

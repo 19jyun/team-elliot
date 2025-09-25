@@ -1,8 +1,7 @@
 'use client'
 
-import { useSession, signOut } from 'next-auth/react'
+import { useSession, useSignOut } from '@/lib/auth/AuthProvider'
 import { useState, useMemo, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 
 import { usePrincipalCalendarApi } from '@/hooks/calendar/usePrincipalCalendarApi'
 import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessionModal'
@@ -64,13 +63,10 @@ const CreateClassCard: React.FC<{
 )
 
 export default function PrincipalClassPage() {
-  const router = useRouter()
-  const { data: session, status } = useSession({
-    required: true,
-    onUnauthenticated() {
-      router.push('/auth')
-    },
-  })
+  const signOut = useSignOut()
+
+  const { data: session, status } = useSession()
+
 
   const { navigation } = useApp()
   const { navigateToSubPage } = navigation

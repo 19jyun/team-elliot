@@ -1,20 +1,13 @@
 'use client';
 
 import React from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useSession } from '@/lib/auth/AuthProvider';
 import { useApp } from '@/contexts/AppContext';
 
 export function EnrollmentMainStep() {
-  const router = useRouter();
   const { navigation, setEnrollmentStep } = useApp();
   const { navigateToSubPage } = navigation;
-  const { status } = useSession({
-    required: true,
-    onUnauthenticated() {
-      router.push('/auth');
-    },
-  });
+  const { status } = useSession()
 
   const handleEnrollmentClick = () => {
     // 새로운 수강신청 플로우 시작

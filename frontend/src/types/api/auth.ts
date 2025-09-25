@@ -92,6 +92,7 @@ export interface SessionResponse {
     name: string;
     role: UserRole;
   };
+  accessToken: string;
   expiresAt: number;
 }
 

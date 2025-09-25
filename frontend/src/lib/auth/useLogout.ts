@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useSession, signOut } from "./AuthProvider";
+import { useSession, useSignOut } from "./AuthProvider";
 import { toast } from "sonner";
 import { logout as apiLogout } from "@/api/auth";
 import { useAppDispatch } from "@/store/hooks";
@@ -12,6 +12,7 @@ import { logger } from "@/lib/logger";
 export const useLogout = () => {
   const router = useRouter();
   const { data: session } = useSession();
+  const signOut = useSignOut();
   const dispatch = useAppDispatch();
 
   const logout = useCallback(async () => {
@@ -90,7 +91,7 @@ export const useLogout = () => {
         timestamp: new Date().toISOString(),
       });
     }
-  }, [session, dispatch, router]);
+  }, [session, signOut, dispatch, router]);
 
   return { logout };
 };

@@ -1,8 +1,7 @@
 'use client'
 
-import { useSession, signOut } from 'next-auth/react'
+import { useSession, useSignOut } from '@/lib/auth/AuthProvider'
 import { useState, useMemo, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 
 import { useRoleCalendarApi } from '@/hooks/calendar/useRoleCalendarApi'
 import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessionModal'
@@ -16,13 +15,8 @@ import type { TeacherSession } from '@/types/api/teacher'
 import type { ClassSession } from '@/types/api/class'
 
 export default function TeacherDashboardPage() {
-  const router = useRouter()
-  const { data: session, status } = useSession({
-    required: true,
-    onUnauthenticated() {
-      router.push('/auth')
-    },
-  })
+  const { data: session, status } = useSession()
+  const signOut = useSignOut()
 
   const { navigation } = useApp()
   const { navigateToSubPage } = navigation

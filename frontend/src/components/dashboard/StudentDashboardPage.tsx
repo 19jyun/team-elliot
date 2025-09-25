@@ -13,7 +13,7 @@ import { EnrollmentHistory } from './student/Profile/EnrollmentHistory';
 import { CancellationHistory } from './student/Profile/CancellationHistory';
 import { EnrolledClassesContainer } from './student/EnrolledClasses/EnrolledClassesContainer';
 import { DashboardContainer } from './DashboardContainer';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useStudentInitialization } from '@/hooks/redux/useStudentInitialization';

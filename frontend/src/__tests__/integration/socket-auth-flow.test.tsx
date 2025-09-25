@@ -1,10 +1,10 @@
 import React from "react";
 import { render, waitFor } from "@/__tests__/utils/test-utils";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/AuthProvider";
 import { initializeSocket } from "@/lib/socket";
 
-// Mock next-auth
-jest.mock("next-auth/react", () => ({
+// Mock AuthProvider
+jest.mock("@/lib/auth/AuthProvider", () => ({
   useSession: jest.fn(),
   getSession: jest.fn(),
 }));
@@ -101,8 +101,12 @@ describe("Socket Authentication Flow", () => {
     const { io } = await import("socket.io-client");
     (io as jest.Mock).mockReturnValue(mockSocket);
 
+    // Mock localStorage with session data
+    localStorage.setItem("session", JSON.stringify(mockSession));
+    localStorage.setItem("accessToken", mockSession.accessToken);
+
     // Mock getSession to return our mock session
-    const { getSession } = await import("next-auth/react");
+    const { getSession } = await import("@/lib/auth/AuthProvider");
     (getSession as jest.Mock).mockResolvedValue(mockSession);
 
     const TestComponent: React.FC = () => {
@@ -175,8 +179,12 @@ describe("Socket Authentication Flow", () => {
     const { io } = await import("socket.io-client");
     (io as jest.Mock).mockReturnValue(mockSocket);
 
+    // Mock localStorage with session data
+    localStorage.setItem("session", JSON.stringify(mockSession));
+    localStorage.setItem("accessToken", mockSession.accessToken);
+
     // Mock getSession to return our mock session
-    const { getSession } = await import("next-auth/react");
+    const { getSession } = await import("@/lib/auth/AuthProvider");
     (getSession as jest.Mock).mockResolvedValue(mockSession);
 
     const TestComponent: React.FC = () => {

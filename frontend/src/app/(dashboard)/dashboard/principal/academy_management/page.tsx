@@ -8,20 +8,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Settings, Edit, Save, X } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useSession } from '@/lib/auth/AuthProvider';
 import { UpdatePrincipalAcademyRequest } from '@/types/api/principal';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 
 export default function PrincipalAcademyManagementPage() {
-  const router = useRouter();
-  const { status } = useSession({
-    required: true,
-    onUnauthenticated() {
-      router.push('/auth');
-    },
-  });
-
+  const { status } = useSession()
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<UpdatePrincipalAcademyRequest>({
     name: '',

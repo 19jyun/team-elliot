@@ -1,8 +1,8 @@
 'use client'
 
 import * as React from 'react'
-import { useState } from 'react'
-import { signIn, useSession, getSession } from '@/lib/auth/AuthProvider'
+import { useState, useEffect } from 'react'
+import { useSignIn, useSession } from '@/lib/auth/AuthProvider'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -166,7 +166,8 @@ const InputField: React.FC<InputFieldProps> = ({
 export function LoginPage() {
   const router = useRouter()
   const { setAuthMode, setSignupStep } = useApp()
-  const { data: _session, status: _status } = useSession()
+  const { data: session, status } = useSession()
+  const signIn = useSignIn()
   const [formData, setFormData] = useState({
     userId: '',
     password: '',
@@ -174,6 +175,13 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const { fieldErrors, clearErrors, handleApiError } = useApiError()
+
+  // 세션 상태가 변경될 때 리디렉션 처리
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user) {
+      router.push('/dashboard');
+    }
+  }, [status, session, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -184,8 +192,6 @@ export function LoginPage() {
       const result = await signIn('credentials', {
         userId: formData.userId,
         password: formData.password,
-        redirect: false,
-        callbackUrl: '/dashboard',
       })
 
       if (result?.error) {
@@ -203,24 +209,13 @@ export function LoginPage() {
       if (result?.ok) {
         toast.success('로그인되었습니다.')
         
-        try {
-          const updatedSession = await getSession()
-          
-          if (updatedSession?.user) {
-
-            setTimeout(() => {
-              router.push('/dashboard')
-            }, 100)
-          } else {
-            console.error('세션 인증 실패')
-            toast.error('로그인 후 세션 설정에 실패했습니다.')
-          }
-        } catch (sessionError) {
-          console.error('세션 확인 중 오류:', sessionError)
-          toast.error('세션 확인 중 오류가 발생했습니다.')
-        }
+        // 세션 상태가 업데이트될 때까지 잠시 대기
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 100);
       }
     } catch (error) {
+      console.error('로그인 오류:', error)
       handleApiError(error)
     } finally {
       setIsLoading(false)

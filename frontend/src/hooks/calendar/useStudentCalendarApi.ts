@@ -1,5 +1,5 @@
 import { useMemo, useCallback } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/AuthProvider";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/store/index";
 import type { ClassSession as Session } from "@/types/api/class";

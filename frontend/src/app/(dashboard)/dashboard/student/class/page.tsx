@@ -1,8 +1,7 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
+import { useSession } from '@/lib/auth/AuthProvider'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useSelector } from 'react-redux'
 
 import { CalendarProvider } from '@/contexts/CalendarContext'
@@ -16,13 +15,7 @@ import type { ClassSession } from '@/types/api/class'
 import { toStudentCalendarSessionVM, toStudentCalendarRangeVM } from '@/lib/adapters/student'
 
 export default function StudentDashboard() {
-  const router = useRouter()
-  const { data: session, status } = useSession({
-    required: true,
-    onUnauthenticated() {
-      router.push('/auth')
-    },
-  })
+  const { data: session, status } = useSession()
 
   const { navigation } = useApp()
   const { navigateToSubPage } = navigation

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/AuthProvider";
 import { initializeSocket, disconnectSocket, getSocket } from "@/lib/socket";
 import type {
   SocketEventName,

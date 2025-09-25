@@ -2,7 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode, useRef } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/auth/AuthProvider';
 import { VirtualHistoryManager } from './index';
 import { GoBackManager } from './GoBackManager';
 import { contextEventBus } from '../events/ContextEventBus';

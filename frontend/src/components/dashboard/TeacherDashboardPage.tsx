@@ -10,7 +10,7 @@ import { TeacherPersonalInfoManagement } from './teacher/profile/TeacherPersonal
 import AcademyManagementContainer from './teacher/profile/AcademyManagement/AcademyManagementContainer';
 import { TeacherClassesContainer } from '../features/teacher/classes/TeacherClasses/TeacherClassesContainer';
 import { DashboardContainer } from './DashboardContainer';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSocketListener';

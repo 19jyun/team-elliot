@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/AuthProvider";
 import { getTeacherClassesWithSessions } from "@/api/teacher";
 import type { TeacherSession } from "@/types/api/teacher";
 
