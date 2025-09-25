@@ -2,13 +2,12 @@ import { http, HttpResponse } from "msw";
 
 // API 모킹 핸들러들
 export const handlers = [
-  // 인증 관련 API
-  http.post("/api/auth/login", () => {
+  // 인증 관련 API (백엔드 엔드포인트로 변경)
+  http.post("*/auth/login", () => {
     return HttpResponse.json({
-      accessToken: "mock-access-token",
-      refreshToken: "mock-refresh-token",
+      access_token: "mock-access-token",
       user: {
-        id: "1",
+        id: 1,
         userId: "testuser",
         name: "Test User",
         role: "STUDENT",
@@ -16,8 +15,8 @@ export const handlers = [
     });
   }),
 
-  http.post("/api/auth/logout", () => {
-    return HttpResponse.json({ message: "Logged out successfully" });
+  http.post("*/auth/logout", () => {
+    return HttpResponse.json({ message: "로그아웃되었습니다" });
   }),
 
   // 토큰 갱신 API
@@ -173,8 +172,8 @@ export const handlers = [
     ]);
   }),
 
-  // 학생 수강신청 가능한 클래스 세션 API
-  http.get("/api/class-sessions/student/available-enrollment", () => {
+  // 학생 수강신청 가능한 클래스 세션 API (백엔드 엔드포인트로 변경)
+  http.get("*/class-sessions/student/available-enrollment", () => {
     return HttpResponse.json({
       sessions: [
         {

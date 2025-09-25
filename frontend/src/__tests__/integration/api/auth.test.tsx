@@ -661,10 +661,9 @@ describe("Auth API Integration", () => {
       server.use(
         http.post("/api/auth/signin/credentials", () => {
           return HttpResponse.json({
-            accessToken: "mock-access-token",
-            refreshToken: "mock-refresh-token",
+            access_token: "mock-access-token",
             user: {
-              id: "1",
+              id: 1,
               userId: "testuser",
               name: "Test User",
               role: "STUDENT",

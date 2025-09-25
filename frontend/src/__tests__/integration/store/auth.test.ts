@@ -103,9 +103,9 @@ describe("Auth Store Integration", () => {
       };
 
       server.use(
-        http.post("/api/auth/login", () => {
+        http.post("*/auth/login", () => {
           return HttpResponse.json({
-            accessToken: "mock-token",
+            access_token: "mock-token",
             user: mockUser,
           });
         })

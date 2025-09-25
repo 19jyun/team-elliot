@@ -7,8 +7,19 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  accessToken: string;
-  refreshToken?: string;
+  access_token: string;
+  user: {
+    id: number;
+    userId: string;
+    name: string;
+    role: UserRole;
+  };
+}
+
+export interface RefreshTokenResponse {
+  access_token: string;
+  expires_in: number;
+  token_type: string;
   user: {
     id: number;
     userId: string;
@@ -23,12 +34,10 @@ export interface SignupRequest {
   name: string;
   phoneNumber: string;
   role: UserRole;
-  marketing: boolean;
 }
 
 export interface SignupResponse {
-  accessToken: string;
-  refreshToken?: string;
+  access_token: string;
   user: {
     id: number;
     userId: string;
@@ -62,8 +71,7 @@ export interface SendVerificationRequest {
 }
 
 export interface SendVerificationResponse {
-  success: boolean;
-  message?: string;
+  message: string;
 }
 
 export interface VerifyCodeRequest {
@@ -72,6 +80,6 @@ export interface VerifyCodeRequest {
 }
 
 export interface VerifyCodeResponse {
-  success: boolean;
-  message?: string;
+  verified: boolean;
+  message: string;
 }
