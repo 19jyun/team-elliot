@@ -1,4 +1,4 @@
-import { post } from "./apiClient";
+import { post, get } from "./apiClient";
 import type { ApiResponse } from "@/types/api";
 import type {
   LoginRequest,
@@ -13,6 +13,8 @@ import type {
   VerifyCodeResponse,
   SignupRequest,
   SignupResponse,
+  SessionResponse,
+  VerifyResponse,
 } from "@/types/api/auth";
 
 // 로그인
@@ -63,4 +65,14 @@ export const signup = (
   data: SignupRequest
 ): Promise<ApiResponse<SignupResponse>> => {
   return post<ApiResponse<SignupResponse>>("/auth/signup", data);
+};
+
+// 현재 세션 정보 조회
+export const getSession = (): Promise<ApiResponse<SessionResponse>> => {
+  return get<ApiResponse<SessionResponse>>("/auth/session");
+};
+
+// 토큰 유효성 검증
+export const verifyToken = (): Promise<ApiResponse<VerifyResponse>> => {
+  return get<ApiResponse<VerifyResponse>>("/auth/verify");
 };

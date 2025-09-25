@@ -83,3 +83,24 @@ export interface VerifyCodeResponse {
   verified: boolean;
   message: string;
 }
+
+// 새로운 API 응답 타입들
+export interface SessionResponse {
+  user: {
+    id: number;
+    userId: string;
+    name: string;
+    role: UserRole;
+  };
+  expiresAt: number;
+}
+
+export interface VerifyResponse {
+  valid: boolean;
+  user: {
+    id: number;
+    userId: string;
+    name: string;
+    role: UserRole;
+  };
+}
