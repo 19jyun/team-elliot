@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useState } from 'react'
-import { signIn, useSession, getSession } from 'next-auth/react'
+import { signIn, useSession, getSession } from '@/lib/auth/AuthProvider'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
