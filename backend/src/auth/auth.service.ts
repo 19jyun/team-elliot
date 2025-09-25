@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuthenticatedUser } from './types/auth.types';
 import * as bcrypt from 'bcrypt';
 import { SignupDto } from './dto/signup.dto';
 
@@ -373,6 +374,59 @@ export class AuthService {
 
     return {
       available: !existingUser, // existingUser가 null이면 true (사용 가능), 아니면 false (사용 불가)
+    };
+  }
+
+  async getSession(user: AuthenticatedUser) {
+    // 사용자 정보를 데이터베이스에서 조회하여 name 필드 포함
+    const userInfo = await this.prisma.user.findUnique({
+      where: { id: parseInt(user.id) },
+      select: { id: true, userId: true, name: true, role: true },
+    });
+
+    if (!userInfo) {
+      throw new UnauthorizedException('사용자를 찾을 수 없습니다.');
+    }
+
+    // 새로운 JWT 토큰 생성 (현재 토큰과 동일한 구조)
+    const payload = {
+      userId: userInfo.userId,
+      sub: userInfo.id,
+      role: userInfo.role,
+    };
+    const accessToken = this.jwtService.sign(payload);
+
+    return {
+      user: {
+        id: userInfo.id,
+        userId: userInfo.userId,
+        name: userInfo.name,
+        role: userInfo.role,
+      },
+      accessToken,
+      expiresAt: Date.now() + 2 * 60 * 60 * 1000, // 2시간 후 만료
+    };
+  }
+
+  async verifyToken(user: AuthenticatedUser) {
+    // 사용자 정보를 데이터베이스에서 조회하여 name 필드 포함
+    const userInfo = await this.prisma.user.findUnique({
+      where: { id: parseInt(user.id) },
+      select: { id: true, userId: true, name: true, role: true },
+    });
+
+    if (!userInfo) {
+      throw new UnauthorizedException('사용자를 찾을 수 없습니다.');
+    }
+
+    return {
+      valid: true,
+      user: {
+        id: userInfo.id,
+        userId: userInfo.userId,
+        name: userInfo.name,
+        role: userInfo.role,
+      },
     };
   }
 }
