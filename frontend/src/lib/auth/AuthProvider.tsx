@@ -87,12 +87,23 @@ export const SessionManager = {
   }
 };
 
-export const SessionProvider = ({ children }: { children: ReactNode }) => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+interface SessionProviderProps {
+  children: ReactNode;
+  session?: Session | null; // 테스트를 위한 옵셔널 session prop
+}
+
+export const SessionProvider = ({ children, session: initialSession }: SessionProviderProps) => {
+  const [session, setSession] = useState<Session | null>(initialSession || null);
+  const [loading, setLoading] = useState(!initialSession);
 
   // 초기 세션 로드
   useEffect(() => {
+    // 테스트에서 초기 세션이 제공된 경우 초기화 건너뛰기
+    if (initialSession) {
+      setLoading(false);
+      return;
+    }
+
     const initializeSession = async () => {
       try {
         const savedSession = SessionManager.get();
@@ -136,7 +147,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     };
 
     initializeSession();
-  }, []);
+  }, [initialSession]);
 
   // 로그인 함수 (NextAuth signIn과 호환)
   const signIn = useCallback(async (provider: string, options?: SignInOptions) => {

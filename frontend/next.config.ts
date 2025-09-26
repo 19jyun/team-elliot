@@ -4,8 +4,15 @@ const nextConfig: NextConfig = {
   // 워크스페이스 루트 설정 (경고 해결)
   outputFileTracingRoot: __dirname,
 
+  // Capacitor 앱을 위한 설정
+  output: "export",
+  trailingSlash: true,
+  skipTrailingSlashRedirect: true,
+  distDir: "dist",
+
   // 이미지 최적화 설정
   images: {
+    unoptimized: true, // Capacitor 앱을 위해 이미지 최적화 비활성화
     remotePatterns: [
       {
         protocol: "https",

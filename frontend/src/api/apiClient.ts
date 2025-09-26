@@ -4,7 +4,7 @@ import { ErrorHandler } from "@/lib/errorHandler";
 import { ApiResponse } from "@/types/api";
 
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "/api",
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001",
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
