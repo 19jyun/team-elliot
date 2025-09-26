@@ -122,6 +122,16 @@ npm run test:coverage    # 커버리지 포함 테스트
 # 배포
 npm run deploy:preview   # Vercel 프리뷰 배포
 npm run deploy:production # Vercel 프로덕션 배포
+
+# Capacitor (네이티브 앱)
+npm run build:capacitor        # 웹앱 빌드 + Capacitor sync
+npm run build:capacitor:android # Android용 빌드 + Android Studio 열기
+npm run build:capacitor:ios     # iOS용 빌드 + Xcode 열기
+npm run cap:sync               # Capacitor sync만 실행
+npm run cap:sync:android       # Android만 sync
+npm run cap:sync:ios           # iOS만 sync
+npm run cap:open:android       # Android Studio 열기
+npm run cap:open:ios           # Xcode 열기
 ```
 
 ### 기술 스택
@@ -162,13 +172,49 @@ const { enrollment, setEnrollmentStep } = useForm();
 setEnrollmentStep("date-selection");
 ```
 
-## 📱 네이티브 앱 포팅 준비
+## 📱 네이티브 앱 (Capacitor)
 
-이 프로젝트는 향후 Capacitor를 통해 네이티브 앱으로 포팅될 예정입니다:
+이 프로젝트는 Capacitor를 통해 Android와 iOS 네이티브 앱으로 빌드할 수 있습니다:
+
+### Capacitor 설정
 
 - **SPA 구조**: 네이티브 앱에 최적화된 단일 페이지 구조
 - **커스텀 네비게이션**: 브라우저 히스토리 대신 커스텀 히스토리 관리
 - **모바일 우선 설계**: 터치 인터페이스에 최적화된 UI/UX
+
+### 네이티브 앱 빌드
+
+```bash
+# 웹앱 빌드 + Capacitor sync
+npm run build:capacitor
+
+# Android 앱 빌드 (Android Studio 필요)
+npm run build:capacitor:android
+
+# iOS 앱 빌드 (Xcode 필요)
+npm run build:capacitor:ios
+```
+
+### 개발 워크플로우
+
+1. **웹 개발**: `npm run dev`로 웹에서 개발
+2. **네이티브 테스트**: `npm run build:capacitor`로 빌드 후 네이티브 앱에서 테스트
+3. **플랫폼별 개발**: Android Studio 또는 Xcode에서 네이티브 기능 추가
+
+### macOS 환경 설정
+
+macOS에서 CocoaPods 인코딩 오류가 발생하는 경우:
+
+```bash
+# 터미널 인코딩 설정 (일시적)
+export LANG=en_US.UTF-8
+
+# 또는 영구적으로 설정
+echo 'export LANG=en_US.UTF-8' >> ~/.zshrc
+source ~/.zshrc
+```
+
+스크립트에는 이미 인코딩 설정이 포함되어 있어 별도 설정 없이도 사용 가능합니다.
 
 ## 🚀 배포
 
