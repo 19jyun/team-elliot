@@ -104,7 +104,7 @@ export default function PrincipalPersonManagementPage() {
       ? (error as { response?: { status?: number } })
       : null;
     if (errorResponse?.response?.status === 401) {
-      signOut({ redirect: true, callbackUrl: '/auth' });
+      signOut({ redirect: true, callbackUrl: '/' });
       return null;
     }
     

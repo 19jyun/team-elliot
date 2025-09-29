@@ -75,7 +75,7 @@ axiosInstance.interceptors.response.use(
       // localStorage에서 세션 제거
       localStorage.removeItem("session");
       localStorage.removeItem("accessToken");
-      window.location.href = "/auth";
+      window.location.href = "/";
     }
     return Promise.reject(error);
   }

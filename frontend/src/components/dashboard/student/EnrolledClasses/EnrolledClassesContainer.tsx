@@ -59,7 +59,7 @@ export function EnrolledClassesContainer() {
   if (error) {
     const apiError = error as ApiError;
     if (apiError?.response?.status === 401) {
-      signOut({ redirect: true, callbackUrl: '/auth' });
+      signOut({ redirect: true, callbackUrl: '/' });
       return null;
     }
     

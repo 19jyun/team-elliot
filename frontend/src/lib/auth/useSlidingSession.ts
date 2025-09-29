@@ -89,7 +89,7 @@ export const useSlidingSession = () => {
 
       if (timeSinceLastActivity > twoWeeks) {
         console.log("🚪 2주 이상 비활성 - 자동 로그아웃");
-        window.location.href = "/auth";
+        window.location.href = "/";
       }
     };
 

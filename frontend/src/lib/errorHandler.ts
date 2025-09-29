@@ -108,7 +108,7 @@ export class ErrorHandler {
             // 로그아웃 처리
             if (typeof window !== "undefined") {
               localStorage.removeItem("session");
-              window.location.href = "/auth";
+              window.location.href = "/";
             }
           },
         };

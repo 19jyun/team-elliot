@@ -78,7 +78,7 @@ export function SignupTermsPage() {
         toast.success('회원가입이 완료되었습니다')
         sessionStorage.removeItem('signupData') // 세션 데이터 삭제
         // 로그인 페이지로 이동 (기본 페이지)
-        window.location.href = '/auth'
+        window.location.href = '/'
       }
     } catch (error) {
       console.error('회원가입 오류:', error)

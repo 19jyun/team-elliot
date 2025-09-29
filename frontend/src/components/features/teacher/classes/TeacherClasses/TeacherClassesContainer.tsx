@@ -77,7 +77,7 @@ export function TeacherClassesContainer() {
   if (classListVM.error) {
     const errorResponse = error as { response?: { status?: number } }
     if (errorResponse?.response?.status === 401) {
-      signOut({ redirect: true, callbackUrl: '/auth' });
+      signOut({ redirect: true, callbackUrl: '/' });
       return null;
     }
     

@@ -71,7 +71,7 @@ export default function WithdrawalPage() {
 
       await signOut({ redirect: false })
       toast.success('회원 탈퇴가 완료되었습니다')
-      router.push('/auth')
+      router.push('/')
     } catch (error) {
       if (axios.isAxiosError(error)) {
         toast.error(

@@ -5,10 +5,9 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: __dirname,
 
   // Capacitor 앱을 위한 설정
-  output: "export",
+  // output: "export",
   trailingSlash: true,
   skipTrailingSlashRedirect: true,
-  distDir: "dist",
 
   // 이미지 최적화 설정
   images: {

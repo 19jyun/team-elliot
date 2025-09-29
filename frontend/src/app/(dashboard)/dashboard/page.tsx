@@ -14,7 +14,7 @@ export default function DashboardPage() {
   useEffect(() => {
     // 클라이언트 사이드 인증 체크 (Capacitor 호환)
     if (status === 'unauthenticated') {
-      router.push('/auth');
+      router.push('/');
     }
   }, [status, router]);
 

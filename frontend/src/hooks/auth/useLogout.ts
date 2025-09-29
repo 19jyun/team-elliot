@@ -19,7 +19,7 @@ export const useLogout = () => {
     try {
       // 세션이 없으면 이미 로그아웃된 상태
       if (!session?.user) {
-        router.replace("/auth");
+        router.replace("/");
         return;
       }
 
@@ -59,7 +59,7 @@ export const useLogout = () => {
 
       // 6. 세션 정리 완료 후 리디렉션
       setTimeout(() => {
-        router.replace("/auth");
+        router.replace("/");
       }, 500);
     } catch (error) {
       logger.error("Logout failed", {
@@ -83,7 +83,7 @@ export const useLogout = () => {
       toast.error("로그아웃 중 오류가 발생했습니다");
 
       setTimeout(() => {
-        router.replace("/auth");
+        router.replace("/");
       }, 500);
     }
   }, [router, session, signOut, dispatch]);

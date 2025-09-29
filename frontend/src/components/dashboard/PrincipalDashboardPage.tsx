@@ -107,7 +107,7 @@ export function PrincipalDashboardPage() {
 
   useEffect(() => {
     if (status !== 'loading' && !session?.user) {
-      router.push('/auth');
+      router.push('/');
     }
   }, [session, status, router]);
 
