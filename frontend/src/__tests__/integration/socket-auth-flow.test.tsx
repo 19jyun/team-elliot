@@ -205,7 +205,7 @@ describe("Socket Authentication Flow", () => {
 
     // Wait for redirect
     await waitFor(() => {
-      expect(mockLocation.href).toBe("/auth");
+      expect(mockLocation.href).toBe("/");
     });
   });
 });
