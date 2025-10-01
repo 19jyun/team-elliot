@@ -156,8 +156,6 @@ export const SessionProvider = ({ children, session: initialSession }: SessionPr
     }
 
     try {
-      setLoading(true);
-      
       const response = await login({
         userId: options.userId,
         password: options.password,
@@ -187,9 +185,8 @@ export const SessionProvider = ({ children, session: initialSession }: SessionPr
     } catch (error) {
       console.error("로그인 실패:", error);
       return { ok: false, error: error instanceof Error ? error.message : "로그인 실패" };
-    } finally {
-      setLoading(false);
     }
+    // finally 블록 제거 - 로딩 상태는 LoginPage에서 관리
   }, []);
 
   // 로그아웃 함수 (NextAuth signOut과 호환)

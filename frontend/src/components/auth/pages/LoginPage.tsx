@@ -185,8 +185,7 @@ export function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
-    clearErrors()
+    clearErrors() // 로딩 상태 설정을 제거하고 에러만 클리어
 
     try {
       const result = await signIn('credentials', {
@@ -195,7 +194,6 @@ export function LoginPage() {
       })
 
       if (result?.error) {
-        // NextAuth 에러 처리
         handleApiError({
           type: 'AUTHENTICATION',
           code: 'INVALID_CREDENTIALS',
@@ -207,6 +205,7 @@ export function LoginPage() {
       }
 
       if (result?.ok) {
+        setIsLoading(true)
         toast.success('로그인되었습니다.')
         
         // 세션 상태가 업데이트될 때까지 잠시 대기
@@ -217,9 +216,8 @@ export function LoginPage() {
     } catch (error) {
       console.error('로그인 오류:', error)
       handleApiError(error)
-    } finally {
-      setIsLoading(false)
     }
+    // finally 블록 제거 - 로딩 상태는 성공 시에만 관리
   }
 
   return (

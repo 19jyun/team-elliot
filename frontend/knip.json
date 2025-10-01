@@ -6,8 +6,7 @@
     "src/app/(dashboard)/dashboard/student/**/page.tsx",
     "src/app/(dashboard)/dashboard/teacher/**/page.tsx", 
     "src/app/(dashboard)/dashboard/principal/**/page.tsx",
-    "src/app/api/**/*.ts",
-    "src/middleware.ts"
+    "src/app/api/**/*.ts"
   ],
   "project": [
     "src/**/*.{ts,tsx}",

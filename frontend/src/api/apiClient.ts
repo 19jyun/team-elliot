@@ -2,6 +2,11 @@ import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import { SessionService } from "@/lib/services/SessionService";
 import { ErrorHandler } from "@/lib/errorHandler";
 import { ApiResponse } from "@/types/api";
+import {
+  showNetworkErrorToast,
+  showServerErrorToast,
+  showConnectionTimeoutToast,
+} from "@/hooks/useToast";
 
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001",
@@ -62,15 +67,18 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error) => {
-    console.error("응답 인터셉터 오류:", {
-      url: error.config?.url,
-      status: error.response?.status,
-      message: error.message,
-      code: error.code,
-      response: error.response?.data,
-    });
+    // 개발 환경에서만 상세 로그 출력
+    if (process.env.NODE_ENV === "development") {
+      console.error("응답 인터셉터 오류:", {
+        url: error.config?.url,
+        status: error.response?.status,
+        message: error.message,
+        code: error.code,
+        response: error.response?.data,
+      });
+    }
 
-    // 에러 응답 처리
+    // 서버 응답이 있는 경우 (HTTP 에러)
     if (error.response?.data) {
       const apiError = error.response.data as ApiResponse;
       const appError = ErrorHandler.handle(apiError);
@@ -86,12 +94,40 @@ apiClient.interceptors.response.use(
           }
         }
 
+        // 서버 에러에 대한 Toast 알림
+        if (
+          appError.type === "SYSTEM" &&
+          appError.code === "INTERNAL_SERVER_ERROR"
+        ) {
+          showServerErrorToast("서버 오류가 발생했습니다.");
+        }
+
         return Promise.reject(appError);
       }
     }
 
-    // 네트워크 에러 등 처리
+    // 네트워크 에러 처리
     const networkError = ErrorHandler.handleNetworkError(error);
+
+    // 네트워크 에러에 대한 Toast 알림
+    if (networkError.type === "NETWORK") {
+      switch (networkError.code) {
+        case "NETWORK_OFFLINE":
+          showNetworkErrorToast("인터넷 연결을 확인해주세요.");
+          break;
+        case "REQUEST_TIMEOUT":
+          showConnectionTimeoutToast();
+          break;
+        case "CONNECTION_REFUSED":
+          showServerErrorToast("서버와의 연결이 거부되었습니다.");
+          break;
+        case "NETWORK_ERROR":
+        default:
+          showNetworkErrorToast("서버와의 연결이 지연되고 있습니다.");
+          break;
+      }
+    }
+
     return Promise.reject(networkError);
   }
 );
