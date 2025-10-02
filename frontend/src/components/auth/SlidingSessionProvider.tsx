@@ -1,7 +1,7 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
-import { useSlidingSession } from '@/hooks/auth/useSlidingSession'
+import { useSession } from '@/lib/auth/AuthProvider'
+import { useSlidingSession } from '@/lib/auth/useSlidingSession'
 import { ReactNode } from 'react'
 
 interface SlidingSessionProviderProps {

@@ -41,6 +41,10 @@ if (typeof global.Response === 'undefined') {
     text() {
       return Promise.resolve(this.body)
     }
+    
+    arrayBuffer() {
+      return Promise.resolve(new ArrayBuffer(0))
+    }
   }
 }
 
@@ -50,6 +54,21 @@ if (typeof global.Request === 'undefined') {
       this.url = url
       this.method = init.method || 'GET'
       this.headers = new Map(Object.entries(init.headers || {}))
+      this.body = init.body
+      this.signal = init.signal
+    }
+    
+    clone() {
+      return new Request(this.url, {
+        method: this.method,
+        headers: new Map(this.headers),
+        body: this.body,
+        signal: this.signal
+      })
+    }
+    
+    arrayBuffer() {
+      return Promise.resolve(new ArrayBuffer(0))
     }
   }
 }

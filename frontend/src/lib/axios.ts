@@ -1,6 +1,5 @@
 import axios from "axios";
-import { getSession } from "next-auth/react";
-import { signOut } from "next-auth/react";
+import { getSession } from "@/lib/auth/AuthProvider";
 
 const axiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -73,8 +72,10 @@ axiosInstance.interceptors.response.use(
       !shouldIgnoreAuth
     ) {
       // 세션 만료 또는 권한 없음 (무시할 엔드포인트 제외)
-      await signOut({ redirect: false });
-      window.location.href = "/auth";
+      // localStorage에서 세션 제거
+      localStorage.removeItem("session");
+      localStorage.removeItem("accessToken");
+      window.location.href = "/";
     }
     return Promise.reject(error);
   }

@@ -102,6 +102,14 @@ jspm_packages/
 .out
 .storybook-out
 
+# Capacitor native platforms
+android/
+ios/
+
+# Build outputs
+dist/
+out/
+
 # Temporary folders
 tmp/
 temp/

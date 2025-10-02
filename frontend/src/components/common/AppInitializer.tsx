@@ -1,6 +1,6 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
+import { useSession } from '@/lib/auth/AuthProvider'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
@@ -12,10 +12,10 @@ export function AppInitializer({ children }: AppInitializerProps) {
   const { status } = useSession()
   const router = useRouter()
 
-  // 인증되지 않은 사용자는 로그인 페이지로 리다이렉트
+  // 인증되지 않은 사용자는 루트 페이지로 리다이렉트
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.replace('/auth')
+      router.replace('/')
     }
   }, [status, router])
 

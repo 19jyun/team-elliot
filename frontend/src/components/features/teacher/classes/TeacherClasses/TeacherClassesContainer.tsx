@@ -1,8 +1,7 @@
 'use client'
 
-import { useSession, signOut } from 'next-auth/react'
+import { useSession, useSignOut } from '@/lib/auth/AuthProvider'
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 
 import { ClassList } from '@/components/common/ClassContainer/ClassList'
 import { ClassSessionModal } from '@/components/common/ClassContainer/ClassSessionModal'
@@ -38,13 +37,8 @@ function toClassFromTeacherClassCardVM(classCardVM: TeacherClassCardVM): Class {
 }
 
 export function TeacherClassesContainer() {
-  const router = useRouter()
-  const { status } = useSession({
-    required: true,
-    onUnauthenticated() {
-      router.push('/auth')
-    },
-  })
+  const { status } = useSession()
+  const signOut = useSignOut()
 
   const [selectedClass, setSelectedClass] = useState<TeacherClassCardVM | null>(null)
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false)
@@ -83,7 +77,7 @@ export function TeacherClassesContainer() {
   if (classListVM.error) {
     const errorResponse = error as { response?: { status?: number } }
     if (errorResponse?.response?.status === 401) {
-      signOut({ redirect: true, callbackUrl: '/auth' });
+      signOut({ redirect: true, callbackUrl: '/' });
       return null;
     }
     

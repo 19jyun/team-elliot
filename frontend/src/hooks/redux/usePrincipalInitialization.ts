@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useRef } from "react";
 import { useAppDispatch } from "@/store/hooks";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/AuthProvider";
 import {
   setPrincipalData,
   setLoading,

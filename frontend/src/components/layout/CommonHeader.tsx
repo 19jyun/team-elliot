@@ -1,6 +1,6 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/auth/AuthProvider';
 
 import Image from 'next/image';
 import { ArrowLeft } from 'lucide-react';

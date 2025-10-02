@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useSession } from '@/lib/auth/AuthProvider'
 
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi'
 import { useApiError } from '@/hooks/useApiError'
@@ -14,13 +13,7 @@ import { DayOfWeek } from '@/types/api/common'
 import { toClassSessionForCalendar } from '@/lib/adapters/principal'
 
 export const PrincipalClassesContainer = () => {
-  const router = useRouter()
-  const { status } = useSession({
-    required: true,
-    onUnauthenticated() {
-      router.push('/auth')
-    },
-  })
+  const { status } = useSession()
 
   // 클래스 선택 상태
   const [selectedClass, setSelectedClass] = useState<Class | null>(null)

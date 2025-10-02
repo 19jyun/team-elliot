@@ -1,5 +1,5 @@
 import { io, Socket } from "socket.io-client";
-import { getSession } from "next-auth/react";
+import { getSession } from "@/lib/auth/AuthProvider";
 
 // Socket.IO 클라이언트 인스턴스
 let socket: Socket | null = null;
@@ -11,7 +11,7 @@ const handleTokenRefresh = async () => {
     const session = await getSession();
     if (!session?.user?.id) {
       console.error("토큰 갱신 실패: 사용자 정보 없음");
-      window.location.href = "/auth";
+      window.location.href = "/";
       return;
     }
 
@@ -31,7 +31,7 @@ const handleTokenRefresh = async () => {
 
     if (!response.ok) {
       console.error("토큰 갱신 API 실패");
-      window.location.href = "/auth";
+      window.location.href = "/";
       return;
     }
 
@@ -137,7 +137,7 @@ export const initializeSocket = async (): Promise<Socket> => {
       } else if (error.type === "INVALID_TOKEN") {
         console.log("🔒 잘못된 토큰 - 로그아웃 필요");
         // 잘못된 토큰 시 즉시 로그아웃
-        window.location.href = "/auth";
+        window.location.href = "/";
       } else {
         console.log("❓ 기타 인증 오류");
         // 기타 인증 오류 시 재연결 시도

@@ -1,58 +1,63 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
-import { getSession } from "next-auth/react";
-import type { Session } from "next-auth";
+import { SessionService } from "@/lib/services/SessionService";
 import { ErrorHandler } from "@/lib/errorHandler";
 import { ApiResponse } from "@/types/api";
+import {
+  showNetworkErrorToast,
+  showServerErrorToast,
+  showConnectionTimeoutToast,
+} from "@/hooks/useToast";
 
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "/api",
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001",
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// 세션 캐싱을 위한 변수
-let cachedSession: Session | null = null;
-let sessionCacheTime = 0;
-const SESSION_CACHE_DURATION = 5 * 60 * 1000; // 5분
+// SessionService 인스턴스
+const sessionService = new SessionService();
 
 // 세션을 가져오는 함수 (캐싱 적용)
-const getCachedSession = async (): Promise<Session | null> => {
-  const now = Date.now();
-
-  // 캐시가 유효한 경우 캐시된 세션 반환
-  if (cachedSession && now - sessionCacheTime < SESSION_CACHE_DURATION) {
-    return cachedSession;
-  }
-
-  // 캐시가 만료되었거나 없는 경우 새로 가져오기
+// 무한 루프 방지를 위해 직접 localStorage에서 세션을 가져옴
+const getCachedSession = async () => {
   try {
-    const session = await getSession();
-    cachedSession = session;
-    sessionCacheTime = now;
-    return cachedSession;
+    // SessionManager에서 직접 세션 가져오기 (API 호출 없이)
+    const { SessionManager } = await import("@/lib/auth/AuthProvider");
+    const session = SessionManager.get();
+    return session;
   } catch (error) {
-    console.error("세션 가져오기 실패:", error);
+    console.error("세션 조회 실패:", error);
     return null;
   }
 };
 
 // 세션 캐시 클리어 함수
 export const clearApiClientSessionCache = () => {
-  cachedSession = null;
-  sessionCacheTime = 0;
+  sessionService.clearSession();
 };
 
 apiClient.interceptors.request.use(
   async (config) => {
+    // 세션 조회 API는 토큰을 추가하지 않음 (무한 루프 방지)
+    if (
+      config.url?.includes("/auth/session") ||
+      config.url?.includes("/auth/verify")
+    ) {
+      return config;
+    }
+
     const session = await getCachedSession();
     if (session?.accessToken && config.headers) {
       config.headers["Authorization"] = `Bearer ${session.accessToken}`;
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    console.error("요청 인터셉터 오류:", error);
+    return Promise.reject(error);
+  }
 );
 
 // 응답 인터셉터 - 에러 처리만 담당 (백엔드에서 이미 표준화된 응답 제공)
@@ -62,7 +67,18 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error) => {
-    // 에러 응답 처리
+    // 개발 환경에서만 상세 로그 출력
+    if (process.env.NODE_ENV === "development") {
+      console.error("응답 인터셉터 오류:", {
+        url: error.config?.url,
+        status: error.response?.status,
+        message: error.message,
+        code: error.code,
+        response: error.response?.data,
+      });
+    }
+
+    // 서버 응답이 있는 경우 (HTTP 에러)
     if (error.response?.data) {
       const apiError = error.response.data as ApiResponse;
       const appError = ErrorHandler.handle(apiError);
@@ -78,12 +94,40 @@ apiClient.interceptors.response.use(
           }
         }
 
+        // 서버 에러에 대한 Toast 알림
+        if (
+          appError.type === "SYSTEM" &&
+          appError.code === "INTERNAL_SERVER_ERROR"
+        ) {
+          showServerErrorToast("서버 오류가 발생했습니다.");
+        }
+
         return Promise.reject(appError);
       }
     }
 
-    // 네트워크 에러 등 처리
+    // 네트워크 에러 처리
     const networkError = ErrorHandler.handleNetworkError(error);
+
+    // 네트워크 에러에 대한 Toast 알림
+    if (networkError.type === "NETWORK") {
+      switch (networkError.code) {
+        case "NETWORK_OFFLINE":
+          showNetworkErrorToast("인터넷 연결을 확인해주세요.");
+          break;
+        case "REQUEST_TIMEOUT":
+          showConnectionTimeoutToast();
+          break;
+        case "CONNECTION_REFUSED":
+          showServerErrorToast("서버와의 연결이 거부되었습니다.");
+          break;
+        case "NETWORK_ERROR":
+        default:
+          showNetworkErrorToast("서버와의 연결이 지연되고 있습니다.");
+          break;
+      }
+    }
+
     return Promise.reject(networkError);
   }
 );

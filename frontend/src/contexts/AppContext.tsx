@@ -2,7 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useCallback, ReactNode, useMemo, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/auth/AuthProvider';
 import { StateSyncProvider, useStateSync } from './state/StateSyncContext';
 import { NavigationProvider, useNavigation } from './navigation/NavigationContext';
 import { FormsProvider, useForms } from './forms/FormsContext';

@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { checkDuplicateUserId as checkDuplicateUserIdApi } from "@/api/auth";
+import { checkUserId } from "@/api/auth";
 
 export function useCheckDuplicateUserId() {
   const [loading, setLoading] = useState(false);
@@ -11,12 +11,10 @@ export function useCheckDuplicateUserId() {
     setError(null);
 
     try {
-      const response = await checkDuplicateUserIdApi(userId);
+      const response = await checkUserId({ userId });
 
       // apiClient 인터셉터에 의해 래핑된 응답에서 data.available에 접근
-      const available =
-        (response as { data?: { available?: boolean } }).data?.available ??
-        false;
+      const available = response.data?.available ?? false;
       setIsDuplicate(!available);
       setLoading(false);
       return available;

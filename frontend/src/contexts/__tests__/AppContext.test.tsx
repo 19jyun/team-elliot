@@ -1,7 +1,7 @@
 // src/contexts/__tests__/AppContext.test.tsx
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { SessionProvider } from 'next-auth/react';
+import { SessionProvider } from '@/lib/auth/AuthProvider';
 import { AppProvider, useApp } from '../AppContext';
 
 // Context 모킹 - 무한 루프 방지

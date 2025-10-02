@@ -3,12 +3,12 @@ import { server } from "@/__mocks__/server";
 import { render, screen, waitFor, act } from "@/__tests__/utils/test-utils";
 import userEvent from "@testing-library/user-event";
 import { LoginPage } from "@/components/auth/pages/LoginPage";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { useSignIn, useSignOut, useSession } from "@/lib/auth/AuthProvider";
 
-// NextAuth mock
-jest.mock("next-auth/react", () => ({
-  signIn: jest.fn(),
-  signOut: jest.fn(),
+// AuthProvider mock
+jest.mock("@/lib/auth/AuthProvider", () => ({
+  useSignIn: jest.fn(),
+  useSignOut: jest.fn(),
   useSession: jest.fn(() => ({ data: null, status: "unauthenticated" })),
   getSession: jest.fn(() => Promise.resolve(null)),
 }));
@@ -654,17 +654,17 @@ describe("Auth API Integration", () => {
     it("should handle successful login", async () => {
       const user = userEvent.setup();
 
-      // NextAuth signIn mock 설정
-      (signIn as jest.Mock).mockResolvedValue({ ok: true, error: null });
+      // AuthProvider useSignIn mock 설정
+      const mockSignIn = jest.fn().mockResolvedValue({ ok: true, error: null });
+      (useSignIn as jest.Mock).mockReturnValue(mockSignIn);
 
       // MSW 핸들러 오버라이드 (NextAuth API 경로)
       server.use(
         http.post("/api/auth/signin/credentials", () => {
           return HttpResponse.json({
-            accessToken: "mock-access-token",
-            refreshToken: "mock-refresh-token",
+            access_token: "mock-access-token",
             user: {
-              id: "1",
+              id: 1,
               userId: "testuser",
               name: "Test User",
               role: "STUDENT",
@@ -683,13 +683,11 @@ describe("Auth API Integration", () => {
         await user.click(screen.getByRole("button", { name: /로그인하기/i }));
       });
 
-      // NextAuth signIn 호출 검증 (callbackUrl 포함)
+      // AuthProvider useSignIn 호출 검증
       await waitFor(() => {
-        expect(signIn).toHaveBeenCalledWith("credentials", {
+        expect(mockSignIn).toHaveBeenCalledWith("credentials", {
           userId: "testuser",
           password: "password123",
-          redirect: false,
-          callbackUrl: "/dashboard",
         });
       });
     });
@@ -697,11 +695,12 @@ describe("Auth API Integration", () => {
     it("should handle login error", async () => {
       const user = userEvent.setup();
 
-      // NextAuth signIn mock 설정 (에러 반환)
-      (signIn as jest.Mock).mockResolvedValue({ 
-        ok: false, 
-        error: "CredentialsSignin" 
+      // AuthProvider useSignIn mock 설정 (에러 반환)
+      const mockSignIn = jest.fn().mockResolvedValue({
+        ok: false,
+        error: "CredentialsSignin"
       });
+      (useSignIn as jest.Mock).mockReturnValue(mockSignIn);
 
       // 실제 LoginPage 컴포넌트 렌더링
       render(<LoginPage />);
@@ -723,8 +722,9 @@ describe("Auth API Integration", () => {
     it("should handle successful logout", async () => {
       const user = userEvent.setup();
 
-      // NextAuth signOut mock 설정
-      (signOut as jest.Mock).mockResolvedValue({ ok: true });
+      // AuthProvider useSignOut mock 설정
+      const mockSignOut = jest.fn().mockResolvedValue({ ok: true });
+      (useSignOut as jest.Mock).mockReturnValue(mockSignOut);
 
       server.use(
         http.post("/api/auth/logout", () => {
@@ -732,24 +732,29 @@ describe("Auth API Integration", () => {
         })
       );
 
-      render(
-        <div>
-          <button 
-            data-testid="logout-button" 
-            onClick={() => signOut()}
-          >
-            로그아웃
-          </button>
-        </div>
-      );
+      const TestComponent = () => {
+        const signOut = useSignOut();
+        return (
+          <div>
+            <button 
+              data-testid="logout-button" 
+              onClick={() => signOut()}
+            >
+              로그아웃
+            </button>
+          </div>
+        );
+      };
+
+      render(<TestComponent />);
 
       await act(async () => {
         await user.click(screen.getByTestId("logout-button"));
       });
 
-      // NextAuth signOut 호출 검증
+      // AuthProvider useSignOut 호출 검증
       await waitFor(() => {
-        expect(signOut).toHaveBeenCalled();
+        expect(mockSignOut).toHaveBeenCalled();
       });
     });
   });

@@ -1,4 +1,4 @@
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/AuthProvider";
 import { useCallback } from "react";
 
 interface RefreshTokenResponse {
@@ -53,6 +53,7 @@ export const useTokenRefresh = () => {
         user: {
           ...session.user,
           ...data.user,
+          id: data.user.id.toString(), // number를 string으로 변환
         },
       });
 

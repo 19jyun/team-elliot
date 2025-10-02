@@ -1,7 +1,7 @@
 // src/contexts/__tests__/ImprovedNavigationContext.test.tsx
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { SessionProvider } from 'next-auth/react';
+import { SessionProvider } from '@/lib/auth/AuthProvider';
 import { NavigationProvider, useNavigation } from '../navigation/NavigationContext';
 import { StateSyncProvider } from '../state/StateSyncContext';
 import { FormsState } from '../state/StateSyncTypes';

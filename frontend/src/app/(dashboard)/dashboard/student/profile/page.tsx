@@ -4,24 +4,17 @@ import * as React from 'react'
 
 
 import { MenuLinks } from '@/components/navigation/MenuLinks'
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useSession } from '@/lib/auth/AuthProvider'
 import { LogoutModal } from '@/components/user/LogoutModal'
 import { useApp } from '@/contexts/AppContext'
 import { useLogout } from '@/hooks/auth/useLogout'
 import FooterLinks from '@/components/common/FooterLinks'
 
 export default function ProfilePage() {
-  const router = useRouter()
   const [showLogoutModal, setShowLogoutModal] = React.useState(false)
   const { navigation } = useApp()
   const { navigateToSubPage } = navigation
-  const { data: session, status } = useSession({
-    required: true,
-    onUnauthenticated() {
-      router.push('/auth')
-    },
-  })
+  const { data: session, status } = useSession()
 
   const { logout } = useLogout()
 

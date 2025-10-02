@@ -1,18 +1,11 @@
 'use client'
 
 import * as React from 'react'
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useSession } from '@/lib/auth/AuthProvider'
 import { EnrollmentMainStep } from '@/components/dashboard/student/Enrollment/EnrollmentMainStep'
 
 export default function EnrollPage() {
-  const router = useRouter()
-  const { status } = useSession({
-    required: true,
-    onUnauthenticated() {
-      router.push('/auth')
-    },
-  })
+  const { status } = useSession()
 
   if (status === 'loading') {
     return (

@@ -1,8 +1,7 @@
 'use client'
 
-import { useSession, signOut } from 'next-auth/react'
+import { useSession, useSignOut } from '@/lib/auth/AuthProvider'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import React from 'react'
 
 import { EnrolledClassesList } from '@/components/features/student/classes/EnrolledClassesList'
@@ -14,13 +13,8 @@ import type { ApiError } from '@/types/ui/common'
 import { toEnrolledClassVMs, toClassDataVM } from '@/lib/adapters/student'
 
 export function EnrolledClassesContainer() {
-  const router = useRouter()
-  const { status } = useSession({
-    required: true,
-    onUnauthenticated() {
-      router.push('/auth')
-    },
-  })
+  const { status } = useSession()
+  const signOut = useSignOut()
 
   const [selectedClass, setSelectedClass] = useState<EnrolledClassVM | null>(null)
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false)
@@ -65,7 +59,7 @@ export function EnrolledClassesContainer() {
   if (error) {
     const apiError = error as ApiError;
     if (apiError?.response?.status === 401) {
-      signOut({ redirect: true, callbackUrl: '/auth' });
+      signOut({ redirect: true, callbackUrl: '/' });
       return null;
     }
     

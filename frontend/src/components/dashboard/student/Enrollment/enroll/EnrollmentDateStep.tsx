@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/auth/AuthProvider';
 import { toast } from 'sonner';
 import { useApp } from '@/contexts/AppContext';
 import { ExtendedSessionData } from '@/contexts/forms/EnrollmentFormManager';
@@ -14,12 +14,7 @@ export function EnrollmentDateStep() {
   const { form, goBack, setEnrollmentStep, setSelectedSessions } = useApp();
   const { enrollment } = form;
   const { selectedAcademyId, selectedClassIds } = enrollment;
-  const { status } = useSession({
-    required: true,
-    onUnauthenticated() {
-      // 로그인 페이지로 리다이렉트는 상위에서 처리
-    },
-  });
+  const { status } = useSession()
 
   // API에서 수강 가능한 세션 데이터 가져오기
   const { availableSessions, isLoading, error, loadAvailableClasses, clearErrors } = useStudentApi();

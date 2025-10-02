@@ -1,6 +1,6 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { StudentDashboard } from '@/components/dashboard/StudentDashboard';
@@ -12,9 +12,9 @@ export default function DashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // 인증되지 않은 사용자는 미들웨어에서 처리되지만 이중 체크
+    // 클라이언트 사이드 인증 체크 (Capacitor 호환)
     if (status === 'unauthenticated') {
-      router.push('/auth');
+      router.push('/');
     }
   }, [status, router]);
 

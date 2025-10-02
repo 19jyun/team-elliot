@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
@@ -8,6 +8,7 @@ import { AuthResponseEntity } from './entities/auth-response.entity';
 import { CheckUserIdResponseEntity } from './entities/check-userid-response.entity';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetUser } from './decorators/get-user.decorator';
+import { AuthenticatedUser } from './types/auth.types';
 import {
   ApiTags,
   ApiOperation,
@@ -76,10 +77,10 @@ export class AuthController {
     schema: { example: { message: '회원 탈퇴가 완료되었습니다.' } },
   })
   async withdrawal(
-    @GetUser() user: any,
+    @GetUser() user: AuthenticatedUser,
     @Body() body: WithdrawalReasonDto,
   ): Promise<{ message: string }> {
-    await this.authService.withdrawal(user.id, body.reason);
+    await this.authService.withdrawal(parseInt(user.id), body.reason);
     return { message: '회원 탈퇴가 완료되었습니다.' };
   }
 
@@ -94,5 +95,47 @@ export class AuthController {
     @Body() body: CheckUserIdDto,
   ): Promise<{ available: boolean }> {
     return this.authService.checkUserId(body.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('session')
+  @ApiOperation({ summary: '현재 세션 정보 조회' })
+  @ApiOkResponse({
+    description: '세션 정보 조회 성공',
+    schema: {
+      example: {
+        user: {
+          id: 1,
+          userId: 'testuser',
+          name: '테스트 사용자',
+          role: 'student',
+        },
+        expiresAt: 1704067200000,
+      },
+    },
+  })
+  async getSession(@GetUser() user: AuthenticatedUser) {
+    return this.authService.getSession(user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('verify')
+  @ApiOperation({ summary: '토큰 유효성 검증' })
+  @ApiOkResponse({
+    description: '토큰 검증 성공',
+    schema: {
+      example: {
+        valid: true,
+        user: {
+          id: 1,
+          userId: 'testuser',
+          name: '테스트 사용자',
+          role: 'student',
+        },
+      },
+    },
+  })
+  async verifyToken(@GetUser() user: AuthenticatedUser) {
+    return this.authService.verifyToken(user);
   }
 }

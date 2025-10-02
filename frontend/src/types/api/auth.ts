@@ -7,8 +7,19 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  accessToken: string;
-  refreshToken?: string;
+  access_token: string;
+  user: {
+    id: number;
+    userId: string;
+    name: string;
+    role: UserRole;
+  };
+}
+
+export interface RefreshTokenResponse {
+  access_token: string;
+  expires_in: number;
+  token_type: string;
   user: {
     id: number;
     userId: string;
@@ -26,8 +37,7 @@ export interface SignupRequest {
 }
 
 export interface SignupResponse {
-  accessToken: string;
-  refreshToken?: string;
+  access_token: string;
   user: {
     id: number;
     userId: string;
@@ -54,4 +64,44 @@ export interface CheckUserIdRequest {
 
 export interface CheckUserIdResponse {
   available: boolean;
+}
+
+export interface SendVerificationRequest {
+  phoneNumber: string;
+}
+
+export interface SendVerificationResponse {
+  message: string;
+}
+
+export interface VerifyCodeRequest {
+  phoneNumber: string;
+  code: string;
+}
+
+export interface VerifyCodeResponse {
+  verified: boolean;
+  message: string;
+}
+
+// 새로운 API 응답 타입들
+export interface SessionResponse {
+  user: {
+    id: number;
+    userId: string;
+    name: string;
+    role: UserRole;
+  };
+  accessToken: string;
+  expiresAt: number;
+}
+
+export interface VerifyResponse {
+  valid: boolean;
+  user: {
+    id: number;
+    userId: string;
+    name: string;
+    role: UserRole;
+  };
 }

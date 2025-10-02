@@ -31,7 +31,8 @@ export class ErrorHandler {
    * 네트워크 에러 처리
    */
   static handleNetworkError(error: unknown): AppError {
-    if (!navigator.onLine) {
+    // 오프라인 상태 확인
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
       return {
         type: ErrorType.NETWORK,
         code: "NETWORK_OFFLINE",
@@ -40,6 +41,7 @@ export class ErrorHandler {
       };
     }
 
+    // 타임아웃 에러 확인
     if (
       (error &&
         typeof error === "object" &&
@@ -59,6 +61,40 @@ export class ErrorHandler {
       };
     }
 
+    // 연결 거부 에러 (서버가 실행되지 않은 경우)
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "ECONNREFUSED"
+    ) {
+      return {
+        type: ErrorType.NETWORK,
+        code: "CONNECTION_REFUSED",
+        message: "서버와의 연결이 거부되었습니다. 서버 상태를 확인해주세요.",
+        recoverable: true,
+      };
+    }
+
+    // 네트워크 에러 (일반적인 연결 문제)
+    if (
+      error &&
+      typeof error === "object" &&
+      "message" in error &&
+      typeof error.message === "string" &&
+      (error.message.includes("Network Error") ||
+        error.message.includes("ERR_NETWORK") ||
+        error.message.includes("fetch"))
+    ) {
+      return {
+        type: ErrorType.NETWORK,
+        code: "NETWORK_ERROR",
+        message: "서버와의 연결이 지연되고 있습니다.",
+        recoverable: true,
+      };
+    }
+
+    // 기본 네트워크 에러
     return {
       type: ErrorType.NETWORK,
       code: "NETWORK_ERROR",
@@ -108,7 +144,7 @@ export class ErrorHandler {
             // 로그아웃 처리
             if (typeof window !== "undefined") {
               localStorage.removeItem("session");
-              window.location.href = "/auth";
+              window.location.href = "/";
             }
           },
         };

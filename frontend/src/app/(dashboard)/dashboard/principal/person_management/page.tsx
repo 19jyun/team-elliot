@@ -1,7 +1,6 @@
 'use client'
 
-import { useSession, signOut } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useSession, useSignOut } from '@/lib/auth/AuthProvider'
 import { toast } from 'sonner'
 import { useApp } from '@/contexts/AppContext'
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi'
@@ -57,13 +56,8 @@ const PersonManagementCard: React.FC<{
 )
 
 export default function PrincipalPersonManagementPage() {
-  const router = useRouter()
-  const { status } = useSession({
-    required: true,
-    onUnauthenticated() {
-      router.push('/auth')
-    },
-  })
+  const { status } = useSession()
+  const signOut = useSignOut()
   const { navigation } = useApp()
   const { navigateToSubPage } = navigation
 
@@ -110,7 +104,7 @@ export default function PrincipalPersonManagementPage() {
       ? (error as { response?: { status?: number } })
       : null;
     if (errorResponse?.response?.status === 401) {
-      signOut({ redirect: true, callbackUrl: '/auth' });
+      signOut({ redirect: true, callbackUrl: '/' });
       return null;
     }
     

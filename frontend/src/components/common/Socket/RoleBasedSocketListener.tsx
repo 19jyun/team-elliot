@@ -1,6 +1,6 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
+import { useSession } from '@/lib/auth/AuthProvider'
 import { PrincipalSocketListener } from './PrincipalSocketListener'
 import { TeacherSocketListener } from './TeacherSocketListener'
 import { StudentSocketListener } from './StudentSocketListener'

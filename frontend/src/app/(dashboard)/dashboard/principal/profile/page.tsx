@@ -4,8 +4,7 @@ import * as React from 'react'
 
 
 import { MenuLinks } from '@/components/navigation/MenuLinks'
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useSession } from '@/lib/auth/AuthProvider'
 import { LogoutModal } from '@/components/user/LogoutModal'
 import { useApp } from '@/contexts/AppContext'
 import { useLogout } from '@/hooks/auth/useLogout'
@@ -13,16 +12,10 @@ import FooterLinks from '@/components/common/FooterLinks'
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi'
 
 export default function PrincipalProfilePage() {
-  const router = useRouter()
   const [showLogoutModal, setShowLogoutModal] = React.useState(false)
   const { navigation } = useApp()
   const { navigateToSubPage } = navigation
-  const { status } = useSession({
-    required: true,
-    onUnauthenticated() {
-      router.push('/auth')
-    },
-  })
+  const { status } = useSession()
 
   // API 기반 데이터 관리
   const { profile, loadProfile, isLoading, error } = usePrincipalApi()
