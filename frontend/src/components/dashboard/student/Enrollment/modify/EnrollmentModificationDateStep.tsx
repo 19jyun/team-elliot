@@ -140,10 +140,14 @@ export function EnrollmentModificationDateStep({
   }, [existingEnrollments, modificationSessions]);
 
   React.useEffect(() => {
-    const selectedClassCards = [{
-      id: classId,
-    }];
-    localStorage.setItem('selectedClassCards', JSON.stringify(selectedClassCards));
+    const saveClassCards = async () => {
+      const selectedClassCards = [{
+        id: classId,
+      }];
+      const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
+      SyncStorage.setItem('selectedClassCards', JSON.stringify(selectedClassCards));
+    };
+    saveClassCards();
   }, [classId]);
     
   const statusSteps = [
@@ -238,7 +242,7 @@ export function EnrollmentModificationDateStep({
 
 
   // 수강 변경 완료 처리
-  const handleModificationComplete = () => {
+  const handleModificationComplete = async () => {
     if (typeof window !== 'undefined') {
       // 선택된 세션 정보 저장
       const selectedSessions = modificationSessions.filter(session => 
@@ -247,12 +251,14 @@ export function EnrollmentModificationDateStep({
       
       // 기존 수강 신청 정보도 저장 (Payment Step에서 비교용)
       if (existingEnrollments) {
-        localStorage.setItem('existingEnrollments', JSON.stringify(existingEnrollments));
+        const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
+        SyncStorage.setItem('existingEnrollments', JSON.stringify(existingEnrollments));
       }
       
       // 선택된 세션 정보도 저장 (환불 시 필요할 수 있음)
-      localStorage.setItem('selectedSessions', JSON.stringify(selectedSessions));
-      localStorage.setItem('selectedClasses', JSON.stringify([{
+      const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
+      SyncStorage.setItem('selectedSessions', JSON.stringify(selectedSessions));
+      SyncStorage.setItem('selectedClasses', JSON.stringify([{
         id: classId,
         sessions: selectedSessions
       }]));

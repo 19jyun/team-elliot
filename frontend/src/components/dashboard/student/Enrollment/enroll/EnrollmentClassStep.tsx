@@ -80,12 +80,16 @@ export function EnrollmentClassStep() {
   // localStorage 확인하여 이전에 동의했다면 정책 건너뛰기
   // selectedAcademyId가 변경될 때마다 다시 확인 (다른 학원을 선택했을 때)
   React.useEffect(() => {
-    const hasAgreed = localStorage.getItem('refundPolicyAgreed') === 'true';
-    if (hasAgreed) {
-      setShowPolicy(false);
-    } else {
-      setShowPolicy(true);
-    }
+    const checkAgreement = async () => {
+      const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
+      const hasAgreed = SyncStorage.getItem('refundPolicyAgreed') === 'true';
+      if (hasAgreed) {
+        setShowPolicy(false);
+      } else {
+        setShowPolicy(true);
+      }
+    };
+    checkAgreement();
   }, [selectedAcademyId]);
 
   const statusSteps = [

@@ -44,23 +44,25 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
 });
 
+import { SyncStorage } from '@/lib/storage/StorageAdapter';
+
 // 토큰 저장/조회 유틸리티
 const TokenManager = {
   get: () => {
     if (typeof window === 'undefined') return null;
-    return localStorage.getItem("accessToken");
+    return SyncStorage.getItem("accessToken");
   },
   
   set: (token: string) => {
     if (typeof window === 'undefined') return;
-    localStorage.setItem("accessToken", token);
+    SyncStorage.setItem("accessToken", token);
   },
   
   remove: () => {
     if (typeof window === 'undefined') return;
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("next-auth.session-token");
-    localStorage.removeItem("next-auth.csrf-token");
+    SyncStorage.removeItem("accessToken");
+    SyncStorage.removeItem("next-auth.session-token");
+    SyncStorage.removeItem("next-auth.csrf-token");
   }
 };
 
@@ -69,7 +71,7 @@ export const SessionManager = {
   get: (): Session | null => {
     if (typeof window === 'undefined') return null;
     try {
-      const sessionData = localStorage.getItem("session");
+      const sessionData = SyncStorage.getItem("session");
       return sessionData ? JSON.parse(sessionData) : null;
     } catch {
       return null;
@@ -78,12 +80,12 @@ export const SessionManager = {
   
   set: (session: Session) => {
     if (typeof window === 'undefined') return;
-    localStorage.setItem("session", JSON.stringify(session));
+    SyncStorage.setItem("session", JSON.stringify(session));
   },
   
   remove: () => {
     if (typeof window === 'undefined') return;
-    localStorage.removeItem("session");
+    SyncStorage.removeItem("session");
   }
 };
 

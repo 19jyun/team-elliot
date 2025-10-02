@@ -73,8 +73,9 @@ axiosInstance.interceptors.response.use(
     ) {
       // 세션 만료 또는 권한 없음 (무시할 엔드포인트 제외)
       // localStorage에서 세션 제거
-      localStorage.removeItem("session");
-      localStorage.removeItem("accessToken");
+      const { SyncStorage } = await import("@/lib/storage/StorageAdapter");
+      SyncStorage.removeItem("session");
+      SyncStorage.removeItem("accessToken");
       window.location.href = "/";
     }
     return Promise.reject(error);

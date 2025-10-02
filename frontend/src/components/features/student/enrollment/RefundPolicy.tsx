@@ -41,13 +41,14 @@ export const RefundPolicy: React.FC<RefundPolicyProps> = ({ isOpen, onClose }) =
     setIsChecked(checked)
   }
 
-  const handleButtonClick = () => {
+  const handleButtonClick = async () => {
     if (!isBottom) {
       scrollToBottom()
     } else {
       if (isChecked) {
         // 동의하고 수강신청 진행 - RefundPolicy를 닫음
-        localStorage.setItem('refundPolicyAgreed', 'true')
+        const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
+        SyncStorage.setItem('refundPolicyAgreed', 'true')
         onClose()
       } else {
         // 체크하지 않고 닫기
@@ -56,9 +57,10 @@ export const RefundPolicy: React.FC<RefundPolicyProps> = ({ isOpen, onClose }) =
     }
   }
 
-  const handleXButtonClick = () => {
+  const handleXButtonClick = async () => {
     // X버튼으로 닫을 때는 동의하지 않은 것으로 간주하여 환불 동의 상태 초기화
-    localStorage.removeItem('refundPolicyAgreed')
+    const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
+    SyncStorage.removeItem('refundPolicyAgreed')
     // SubPage를 닫음
     goBack()
   }

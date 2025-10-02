@@ -69,11 +69,13 @@ export function EnrollmentModificationPaymentStep({
 
   // 최초 1회만 modificationInfo 세팅
   useEffect(() => {
-    if (typeof window !== 'undefined' && modificationInfo === null) {
-      const changeAmount = localStorage.getItem('modificationChangeAmount');
-      const changeType = localStorage.getItem('modificationChangeType');
-      const netChangeCount = localStorage.getItem('modificationNetChangeCount');
-      const newSessionsCount = localStorage.getItem('modificationNewSessionsCount');
+    const loadModificationInfo = async () => {
+      if (typeof window !== 'undefined' && modificationInfo === null) {
+        const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
+        const changeAmount = SyncStorage.getItem('modificationChangeAmount');
+        const changeType = SyncStorage.getItem('modificationChangeType');
+        const netChangeCount = SyncStorage.getItem('modificationNetChangeCount');
+      const newSessionsCount = SyncStorage.getItem('modificationNewSessionsCount');
       
       if (changeAmount && changeType && netChangeCount) {
         setModificationInfo({
@@ -85,17 +87,21 @@ export function EnrollmentModificationPaymentStep({
         });
       }
     }
+    };
+    loadModificationInfo();
     // eslint-disable-next-line
   }, []);
 
   useEffect(() => {
-    // Context에서 세션 정보를 우선 사용하고, 없으면 localStorage에서 가져옴
-    let sessions: SelectedSession[] = [];
-    
-    if (contextSessions && contextSessions.length > 0) {
-      sessions = contextSessions as unknown as SelectedSession[];
-    } else if (typeof window !== 'undefined') {
-      const sessionsData = localStorage.getItem('selectedSessions');
+    const loadSessions = async () => {
+      // Context에서 세션 정보를 우선 사용하고, 없으면 localStorage에서 가져옴
+      let sessions: SelectedSession[] = [];
+      
+      if (contextSessions && contextSessions.length > 0) {
+        sessions = contextSessions as unknown as SelectedSession[];
+      } else if (typeof window !== 'undefined') {
+        const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
+        const sessionsData = SyncStorage.getItem('selectedSessions');
       
       if (sessionsData) {
         sessions = JSON.parse(sessionsData);
@@ -156,6 +162,8 @@ export function EnrollmentModificationPaymentStep({
         });
       }
     }
+    };
+    loadSessions();
   }, [contextSessions, modificationInfo]);
 
   // 복사 버튼 클릭 시 toast
@@ -171,8 +179,9 @@ export function EnrollmentModificationPaymentStep({
     
     try {
       // 수강 변경 모드: batchModifyEnrollments API 호출
-      const existingEnrollmentsData = localStorage.getItem('existingEnrollments');
-      const selectedSessionsData = localStorage.getItem('selectedSessions');
+      const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
+      const existingEnrollmentsData = SyncStorage.getItem('existingEnrollments');
+      const selectedSessionsData = SyncStorage.getItem('selectedSessions');
       
       if (!existingEnrollmentsData || !selectedSessionsData) {
         throw new Error('수강 변경 정보를 찾을 수 없습니다.');

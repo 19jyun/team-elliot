@@ -140,10 +140,13 @@ export class ErrorHandler {
           code,
           message,
           recoverable: false,
-          action: () => {
+          action: async () => {
             // 로그아웃 처리
             if (typeof window !== "undefined") {
-              localStorage.removeItem("session");
+              const { SyncStorage } = await import(
+                "@/lib/storage/StorageAdapter"
+              );
+              SyncStorage.removeItem("session");
               window.location.href = "/";
             }
           },

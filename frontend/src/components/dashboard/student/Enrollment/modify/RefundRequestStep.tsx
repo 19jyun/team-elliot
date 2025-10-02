@@ -125,8 +125,9 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
     }
     
     // localStorage에서 기존 수강 신청 정보와 선택된 세션 정보 가져오기
-    const existingEnrollmentsData = localStorage.getItem('existingEnrollments');
-    const selectedSessionsData = localStorage.getItem('selectedSessions');
+    const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
+    const existingEnrollmentsData = SyncStorage.getItem('existingEnrollments');
+    const selectedSessionsData = SyncStorage.getItem('selectedSessions');
     
     if (!existingEnrollmentsData || !selectedSessionsData) {
       toast.error('수강 변경 정보를 찾을 수 없습니다.');
@@ -233,7 +234,8 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
 
       // 계좌 정보 저장 (선택사항)
       if (saveAccount) {
-        localStorage.setItem('savedAccountInfo', JSON.stringify(accountInfo));
+        const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
+        SyncStorage.setItem('savedAccountInfo', JSON.stringify(accountInfo));
       }
       
       toast.success(`${refundRequests.length}개 세션의 환불 신청이 완료되었습니다.`);

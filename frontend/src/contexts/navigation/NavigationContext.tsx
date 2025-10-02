@@ -409,7 +409,8 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
 
         // 특수 처리
         if (result.data?.clearRefundPolicy) {
-          localStorage.removeItem('refundPolicyAgreed');
+          const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
+          SyncStorage.removeItem('refundPolicyAgreed');
         }
         if (result.data?.clearRequestSelection) {
           // principalPersonManagement?.setSelectedRequestId(null);

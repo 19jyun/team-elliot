@@ -1,5 +1,6 @@
 import '@/app/globals.css'
 import Providers from '@/components/common/Providers'
+import { AppInitializer } from '@/components/common/AppInitializer'
 
 export default function RootLayout({
   children,
@@ -9,7 +10,9 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className="min-h-screen bg-gray-50">
-        <Providers>{children}</Providers>
+        <AppInitializer>
+          <Providers>{children}</Providers>
+        </AppInitializer>
       </body>
     </html>
   )

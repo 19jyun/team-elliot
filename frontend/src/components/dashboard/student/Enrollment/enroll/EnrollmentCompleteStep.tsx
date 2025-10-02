@@ -7,27 +7,28 @@ export function EnrollmentCompleteStep() {
   const { navigation, resetEnrollment } = useApp();
   const { clearSubPage } = navigation;
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     // localStorage에서 모든 enrollment 관련 데이터 삭제
     if (typeof window !== 'undefined') {
+      const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
       // 새로운 enrollment 관련 데이터
-      localStorage.removeItem('selectedSessions');
-      localStorage.removeItem('selectedClassCards');
-      localStorage.removeItem('selectedClasses');
-      localStorage.removeItem('existingEnrollments');
+      SyncStorage.removeItem('selectedSessions');
+      SyncStorage.removeItem('selectedClassCards');
+      SyncStorage.removeItem('selectedClasses');
+      SyncStorage.removeItem('existingEnrollments');
       
       // 새로운 수강신청 관련 데이터
-      localStorage.removeItem('selectedAcademyId');
-      localStorage.removeItem('selectedClassIds');
+      SyncStorage.removeItem('selectedAcademyId');
+      SyncStorage.removeItem('selectedClassIds');
       
       // 기존 enrollment 관련 데이터들
-      localStorage.removeItem('modificationChangeAmount');
-      localStorage.removeItem('modificationChangeType');
-      localStorage.removeItem('modificationNetChangeCount');
-      localStorage.removeItem('modificationNewSessionsCount');
-      localStorage.removeItem('refundPolicyAgreed');
-      localStorage.removeItem('enrollmentStep');
-      localStorage.removeItem('selectedMonth');
+      SyncStorage.removeItem('modificationChangeAmount');
+      SyncStorage.removeItem('modificationChangeType');
+      SyncStorage.removeItem('modificationNetChangeCount');
+      SyncStorage.removeItem('modificationNewSessionsCount');
+      SyncStorage.removeItem('refundPolicyAgreed');
+      SyncStorage.removeItem('enrollmentStep');
+      SyncStorage.removeItem('selectedMonth');
     }
     
     // 수강신청 상태 초기화
