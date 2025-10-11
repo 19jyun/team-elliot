@@ -1,9 +1,9 @@
 'use client'
 
 import * as React from 'react'
-import { useState, useEffect } from 'react'
-import { useSignIn, useSession } from '@/lib/auth/AuthProvider'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { useSignIn } from '@/lib/auth/AuthProvider'
+import { AuthRouter } from '@/lib/auth/AuthRouter'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { cva } from 'class-variance-authority'
@@ -164,9 +164,7 @@ const InputField: React.FC<InputFieldProps> = ({
 }
 
 export function LoginPage() {
-  const router = useRouter()
   const { setAuthMode, setSignupStep } = useApp()
-  const { data: session, status } = useSession()
   const signIn = useSignIn()
   const [formData, setFormData] = useState({
     userId: '',
@@ -175,13 +173,6 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const { fieldErrors, clearErrors, handleApiError } = useApiError()
-
-  // 세션 상태가 변경될 때 리디렉션 처리
-  useEffect(() => {
-    if (status === 'authenticated' && session?.user) {
-      router.push('/dashboard');
-    }
-  }, [status, session, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -208,10 +199,10 @@ export function LoginPage() {
         setIsLoading(true)
         toast.success('로그인되었습니다.')
         
-        // 세션 상태가 업데이트될 때까지 잠시 대기
+        // AuthRouter를 통한 SPA 리디렉션
         setTimeout(() => {
-          router.push('/dashboard');
-        }, 100);
+          AuthRouter.redirectToDashboard()
+        }, 100) // 세션 상태 업데이트를 위한 짧은 지연
       }
     } catch (error) {
       console.error('로그인 오류:', error)

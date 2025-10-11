@@ -1,6 +1,6 @@
 import { useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { useSession, useSignOut } from "@/lib/auth/AuthProvider";
+import { AuthRouter } from "@/lib/auth/AuthRouter";
 import { toast } from "sonner";
 import { logout as apiLogout } from "@/api/auth";
 import { useAppDispatch } from "@/store/hooks";
@@ -10,7 +10,6 @@ import { clearApiClientSessionCache } from "@/api/apiClient";
 import { logger } from "@/lib/logger";
 
 export const useLogout = () => {
-  const router = useRouter();
   const { data: session } = useSession();
   const signOut = useSignOut();
   const dispatch = useAppDispatch();
@@ -19,7 +18,7 @@ export const useLogout = () => {
     try {
       // 세션이 없으면 이미 로그아웃된 상태
       if (!session?.user) {
-        router.replace("/");
+        AuthRouter.redirectToLogin();
         return;
       }
 
@@ -41,8 +40,9 @@ export const useLogout = () => {
 
       // 3-1-1. 브라우저 캐시 클리어
       if (typeof window !== "undefined") {
-        localStorage.removeItem("next-auth.session-token");
-        localStorage.removeItem("next-auth.csrf-token");
+        const { SyncStorage } = await import("@/lib/storage/StorageAdapter");
+        SyncStorage.removeItem("next-auth.session-token");
+        SyncStorage.removeItem("next-auth.csrf-token");
         sessionStorage.clear();
       }
 
@@ -59,7 +59,7 @@ export const useLogout = () => {
 
       // 6. 세션 정리 완료 후 리디렉션
       setTimeout(() => {
-        router.replace("/");
+        AuthRouter.redirectToLogin();
       }, 500);
     } catch (error) {
       logger.error("Logout failed", {
@@ -83,10 +83,10 @@ export const useLogout = () => {
       toast.error("로그아웃 중 오류가 발생했습니다");
 
       setTimeout(() => {
-        router.replace("/");
+        AuthRouter.redirectToLogin();
       }, 500);
     }
-  }, [router, session, signOut, dispatch]);
+  }, [session, signOut, dispatch]);
 
   return { logout };
 };

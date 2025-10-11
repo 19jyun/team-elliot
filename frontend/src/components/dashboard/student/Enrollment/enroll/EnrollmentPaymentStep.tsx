@@ -166,17 +166,17 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
   }, [loadSessionPaymentInfo, setEnrollmentStep]);
 
   useEffect(() => {
+    const loadSessions = async () => {
+      // Context에서 세션 정보를 우선 사용하고, 없으면 localStorage에서 가져옴
+      let sessions: SelectedSessionVM[] = [];
+      
+      if (contextSessions && contextSessions.length > 0) {
+        // 어댑터를 사용하여 ExtendedSessionData를 SelectedSessionVM으로 변환하고 유효성 검증
+        sessions = filterValidSessionsFromContext(contextSessions);
 
-    
-    // Context에서 세션 정보를 우선 사용하고, 없으면 localStorage에서 가져옴
-    let sessions: SelectedSessionVM[] = [];
-    
-    if (contextSessions && contextSessions.length > 0) {
-      // 어댑터를 사용하여 ExtendedSessionData를 SelectedSessionVM으로 변환하고 유효성 검증
-      sessions = filterValidSessionsFromContext(contextSessions);
-
-    } else if (typeof window !== 'undefined') {
-      const sessionsData = localStorage.getItem('selectedSessions');
+      } else if (typeof window !== 'undefined') {
+        const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
+        const sessionsData = SyncStorage.getItem('selectedSessions');
       
       if (sessionsData) {
         sessions = JSON.parse(sessionsData);
@@ -215,6 +215,8 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
     } else {
       console.warn('🔍 세션 데이터가 없습니다!');
     }
+    };
+    loadSessions();
   }, [contextSessions, loadSessionPaymentInfo, setEnrollmentStep, loadPaymentInfoForSessions]);
 
   // 복사 버튼 클릭 시 toast

@@ -132,29 +132,31 @@ export function EnrollmentModificationContainer({ classId, month }: EnrollmentMo
   };
 
   // 환불 신청 완료 시 처리
-  const handleRefundComplete = () => {
+  const handleRefundComplete = async () => {
     // localStorage 정리
-    localStorage.removeItem('modificationChangeAmount');
-    localStorage.removeItem('modificationChangeType');
-    localStorage.removeItem('modificationNetChangeCount');
-    localStorage.removeItem('modificationNewSessionsCount');
-    localStorage.removeItem('existingEnrollments');
-    localStorage.removeItem('selectedSessions');
-    localStorage.removeItem('selectedClasses');
+    const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
+    SyncStorage.removeItem('modificationChangeAmount');
+    SyncStorage.removeItem('modificationChangeType');
+    SyncStorage.removeItem('modificationNetChangeCount');
+    SyncStorage.removeItem('modificationNewSessionsCount');
+    SyncStorage.removeItem('existingEnrollments');
+    SyncStorage.removeItem('selectedSessions');
+    SyncStorage.removeItem('selectedClasses');
     
     setEnrollmentStep('refund-complete');
   };
 
   // 수강 변경 완료 시 처리
-  const handleModificationComplete = () => {
+  const handleModificationComplete = async () => {
     // localStorage 정리
-    localStorage.removeItem('modificationChangeAmount');
-    localStorage.removeItem('modificationChangeType');
-    localStorage.removeItem('modificationNetChangeCount');
-    localStorage.removeItem('modificationNewSessionsCount');
-    localStorage.removeItem('existingEnrollments');
-    localStorage.removeItem('selectedSessions');
-    localStorage.removeItem('selectedClasses');
+    const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
+    SyncStorage.removeItem('modificationChangeAmount');
+    SyncStorage.removeItem('modificationChangeType');
+    SyncStorage.removeItem('modificationNetChangeCount');
+    SyncStorage.removeItem('modificationNewSessionsCount');
+    SyncStorage.removeItem('existingEnrollments');
+    SyncStorage.removeItem('selectedSessions');
+    SyncStorage.removeItem('selectedClasses');
     
     setEnrollmentStep('refund-complete');
   };

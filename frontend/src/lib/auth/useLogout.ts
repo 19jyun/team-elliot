@@ -41,10 +41,11 @@ export const useLogout = () => {
 
       // 3-1-1. 브라우저 캐시 클리어
       if (typeof window !== "undefined") {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("session");
-        localStorage.removeItem("next-auth.session-token");
-        localStorage.removeItem("next-auth.csrf-token");
+        const { SyncStorage } = await import("@/lib/storage/StorageAdapter");
+        SyncStorage.removeItem("accessToken");
+        SyncStorage.removeItem("session");
+        SyncStorage.removeItem("next-auth.session-token");
+        SyncStorage.removeItem("next-auth.csrf-token");
         sessionStorage.clear();
       }
 
@@ -77,7 +78,8 @@ export const useLogout = () => {
       clearApiClientSessionCache();
 
       if (typeof window !== "undefined") {
-        localStorage.clear();
+        const { SyncStorage } = await import("@/lib/storage/StorageAdapter");
+        SyncStorage.clear();
         sessionStorage.clear();
       }
 

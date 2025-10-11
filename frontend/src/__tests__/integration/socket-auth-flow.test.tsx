@@ -102,8 +102,9 @@ describe("Socket Authentication Flow", () => {
     (io as jest.Mock).mockReturnValue(mockSocket);
 
     // Mock localStorage with session data
-    localStorage.setItem("session", JSON.stringify(mockSession));
-    localStorage.setItem("accessToken", mockSession.accessToken);
+    const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
+    SyncStorage.setItem("session", JSON.stringify(mockSession));
+    SyncStorage.setItem("accessToken", mockSession.accessToken);
 
     // Mock getSession to return our mock session
     const { getSession } = await import("@/lib/auth/AuthProvider");
@@ -180,8 +181,9 @@ describe("Socket Authentication Flow", () => {
     (io as jest.Mock).mockReturnValue(mockSocket);
 
     // Mock localStorage with session data
-    localStorage.setItem("session", JSON.stringify(mockSession));
-    localStorage.setItem("accessToken", mockSession.accessToken);
+    const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
+    SyncStorage.setItem("session", JSON.stringify(mockSession));
+    SyncStorage.setItem("accessToken", mockSession.accessToken);
 
     // Mock getSession to return our mock session
     const { getSession } = await import("@/lib/auth/AuthProvider");
