@@ -300,56 +300,6 @@ export interface PrincipalPersonalInfoManagementVM {
   academyDisplayValue: string;
 }
 
-// Principal 클래스 목록 ViewModel (수강신청/환불 관리용)
-export interface PrincipalClassListForRequestsVM {
-  classes: PrincipalClassData[];
-  selectedTab: "enrollment" | "refund";
-  isLoading: boolean;
-  error: string | null;
-  // UI 표시용 계산된 필드들
-  hasClasses: boolean;
-  emptyMessage: string;
-}
-
-// Principal 클래스 데이터 (내부 사용)
-export interface PrincipalClassData {
-  id: number;
-  name: string;
-  pendingCount: number;
-  sessions: (PrincipalEnrollment | RefundRequestResponse)[];
-  teacherName: string;
-  level: string;
-}
-
-// Principal 세션 목록 ViewModel (수강신청/환불 관리용)
-export interface PrincipalSessionListForRequestsVM {
-  sessions: PrincipalSessionData[];
-  selectedTab: "enrollment" | "refund";
-  selectedClassId: number | null;
-  isLoading: boolean;
-  error: string | null;
-  // UI 표시용 계산된 필드들
-  hasSessions: boolean;
-  emptyMessage: string;
-  showClassSelectionMessage: boolean;
-}
-
-// Principal 세션 데이터 (내부 사용)
-export interface PrincipalSessionData {
-  sessionId: number;
-  className: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  level: string;
-  teacherName: string;
-  currentStudents: number;
-  maxStudents: number;
-  pendingCount: number;
-  enrollments?: PrincipalEnrollment[];
-  refundRequests?: RefundRequestResponse[];
-}
-
 // Principal 학생 세션 히스토리 모달 ViewModel
 export interface PrincipalStudentSessionHistoryModalVM {
   student: {
@@ -375,4 +325,40 @@ export interface PrincipalStudentSessionHistoryItem {
       className: string;
     };
   };
+}
+
+// ============= 통합된 요청 관리용 타입들 =============
+
+// 통합된 요청 타입 (수강신청/환불신청 공통)
+export interface UnifiedRequest {
+  id: number;
+  type: "enrollment" | "refund";
+  studentName: string;
+  studentPhoneNumber?: string;
+  status: string;
+  amount: number;
+  sessionInfo: {
+    date: string;
+    startTime: string;
+    endTime: string;
+    className: string;
+    level: string;
+    teacherName: string;
+  };
+  requestedAt: string;
+  // 환불 요청의 경우 추가 정보
+  bankInfo?: {
+    bankName: string;
+    accountNumber: string;
+    accountHolder: string;
+  };
+  reason?: string;
+  // UI 표시용 계산된 필드들
+  displayRequestedAt: string;
+  displaySessionDate: string;
+  displaySessionTime: string;
+  displayAmount: string;
+  statusColor: string;
+  canApprove: boolean;
+  canReject: boolean;
 }
