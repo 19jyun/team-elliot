@@ -10,9 +10,9 @@ import { toast } from 'sonner';
 import { useAppDispatch } from '@/store/hooks';
 import { updatePrincipalEnrollment, updatePrincipalRefundRequest } from '@/store/slices/principalSlice';
 import { extractErrorMessage } from '@/types/api/error';
-import { toPrincipalRequestDetailVM } from '@/lib/adapters/principal';
+import { toPrincipalRequestDetailVM, toUnifiedRequestVM } from '@/lib/adapters/principal';
 import type { PrincipalEnrollment } from '@/types/api/principal';
-import type { PrincipalRequestDetailVM } from '@/types/view/principal';
+import type { PrincipalRequestDetailVM, UnifiedRequest } from '@/types/view/principal';
 
 export function PrincipalRequestDetail() {
   const { form } = useApp();
@@ -40,16 +40,21 @@ export function PrincipalRequestDetail() {
   } = usePrincipalData();
 
   // 선택된 세션의 요청 목록
-  const requests = selectedSessionId 
+  const rawRequests = selectedSessionId 
     ? selectedTab === 'enrollment'
       ? (getSessionEnrollments(selectedSessionId) as unknown as PrincipalEnrollment[])
       : getSessionRefundRequests(selectedSessionId)
     : [];
 
+  // 통합된 요청 데이터로 변환
+  const requests: UnifiedRequest[] = rawRequests.map(request => 
+    toUnifiedRequestVM(request, selectedTab)
+  );
+
 
   // ViewModel 생성
   const requestDetailVM: PrincipalRequestDetailVM = toPrincipalRequestDetailVM({
-    requests,
+    requests: rawRequests,
     selectedTab,
     selectedSessionId,
     isLoading,
@@ -162,14 +167,14 @@ export function PrincipalRequestDetail() {
             </p>
           </div>
         ) : (
-          requestDetailVM.requests.map((request) => (
+          requests.map((request) => (
             <PrincipalRequestCard
               key={request.id}
               request={request}
-              requestType={requestDetailVM.selectedTab}
+              requestType={selectedTab}
               onApprove={handleApprove}
               onReject={handleReject}
-              isProcessing={requestDetailVM.isProcessing}
+              isProcessing={isProcessing}
             />
           ))
         )}

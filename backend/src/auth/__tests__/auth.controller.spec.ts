@@ -12,10 +12,10 @@ describe('AuthController', () => {
   let service: AuthService;
 
   const mockUser = {
-    id: 123,
+    id: '123',
     userId: 'testuser',
     name: 'Test User',
-    role: 'STUDENT',
+    role: 'student' as const,
   };
 
   const mockLoginDto: LoginDto = {
@@ -152,7 +152,7 @@ describe('AuthController', () => {
       );
 
       expect(service.withdrawal).toHaveBeenCalledWith(
-        mockUser.id,
+        parseInt(mockUser.id),
         mockWithdrawalReasonDto.reason,
       );
       expect(result).toEqual({ message: '회원 탈퇴가 완료되었습니다.' });
@@ -166,7 +166,7 @@ describe('AuthController', () => {
         controller.withdrawal(mockUser, mockWithdrawalReasonDto),
       ).rejects.toThrow('Withdrawal failed');
       expect(service.withdrawal).toHaveBeenCalledWith(
-        mockUser.id,
+        parseInt(mockUser.id),
         mockWithdrawalReasonDto.reason,
       );
     });

@@ -2416,6 +2416,8 @@ export class ClassSessionService {
               select: {
                 id: true,
                 className: true,
+                level: true,
+                tuitionFee: true,
                 teacher: {
                   select: {
                     name: true,

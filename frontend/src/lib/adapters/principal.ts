@@ -18,13 +18,10 @@ import type {
   PrincipalRefundRequestVM,
   PrincipalRequestDetailVM,
   PrincipalPersonalInfoManagementVM,
-  PrincipalClassListForRequestsVM,
-  PrincipalClassData,
-  PrincipalSessionListForRequestsVM,
-  PrincipalSessionData,
   PrincipalStudentSessionHistoryModalVM,
   PrincipalStudentSessionHistoryItem,
   PrincipalRequestCardVM,
+  UnifiedRequest,
 } from "@/types/view/principal";
 
 // ============= 공통 유틸리티 함수들 =============
@@ -351,207 +348,6 @@ export function toPrincipalPersonalInfoManagementVM({
     phoneDisplayValue: profile?.phoneNumber || "전화번호가 없습니다.",
     academyDisplayValue: profile?.academy?.name || "소속 학원이 없습니다.",
   };
-} // Principal 클래스 목록 ViewModel 생성 (수강신청/환불 관리용)
-export function toPrincipalClassListForRequestsVM({
-  enrollments,
-  refundRequests,
-  selectedTab,
-  isLoading,
-  error,
-}: {
-  enrollments: PrincipalEnrollment[];
-  refundRequests: RefundRequestResponse[];
-  selectedTab: "enrollment" | "refund";
-  isLoading: boolean;
-  error: string | null;
-}): PrincipalClassListForRequestsVM {
-  // 클래스별로 그룹화
-  const classMap = new Map<number, PrincipalClassData>();
-
-  if (selectedTab === "enrollment") {
-    // 수강신청 데이터 처리
-    const pendingEnrollments = (enrollments || []).filter(
-      (enrollment) => enrollment.status === "PENDING"
-    );
-
-    pendingEnrollments.forEach((enrollment) => {
-      const classId = enrollment.session?.class?.id;
-      const className = enrollment.session?.class?.className;
-      const teacherName = enrollment.session?.class?.teacher?.name;
-      const level = enrollment.session?.class?.level || "BEGINNER";
-
-      if (!classId) {
-        console.warn("Enrollment without classId:", enrollment);
-        return;
-      }
-
-      if (!classMap.has(classId)) {
-        classMap.set(classId, {
-          id: classId,
-          name: className || `클래스 ${classId}`,
-          pendingCount: 0,
-          sessions: [],
-          teacherName: teacherName || "미지정",
-          level,
-        });
-      }
-
-      const classData = classMap.get(classId)!;
-      classData.pendingCount++;
-      classData.sessions.push(enrollment);
-    });
-  } else {
-    // 환불신청 데이터 처리 - 모든 상태 표시
-    const allRefunds = refundRequests || [];
-    const allRefundsForDisplay = allRefunds;
-
-    allRefundsForDisplay.forEach((refund) => {
-      const classId = refund.sessionEnrollment?.session?.class?.id;
-      const className = refund.sessionEnrollment?.session?.class?.className;
-      const teacherName =
-        refund.sessionEnrollment?.session?.class?.teacher?.name;
-      const level =
-        refund.sessionEnrollment?.session?.class?.level || "BEGINNER";
-
-      if (!classId) {
-        console.warn("Refund without classId:", refund);
-        return;
-      }
-
-      if (!classMap.has(classId)) {
-        classMap.set(classId, {
-          id: classId,
-          name: className || `클래스 ${classId}`,
-          pendingCount: 0,
-          sessions: [],
-          teacherName: teacherName || "미지정",
-          level,
-        });
-      }
-
-      const classData = classMap.get(classId)!;
-      classData.pendingCount++;
-      classData.sessions.push(refund);
-    });
-  }
-
-  const classes = Array.from(classMap.values()).filter(
-    (classData) => classData.id
-  );
-
-  return {
-    classes,
-    selectedTab,
-    isLoading,
-    error,
-    // UI 표시용 계산된 필드들
-    hasClasses: classes.length > 0,
-    emptyMessage:
-      selectedTab === "enrollment"
-        ? "수강 신청이 대기 중인 클래스가 없습니다."
-        : "환불 요청이 대기 중인 클래스가 없습니다.",
-  };
-}
-
-// Principal 세션 목록 ViewModel 생성 (수강신청/환불 관리용)
-export function toPrincipalSessionListForRequestsVM({
-  enrollments,
-  refundRequests,
-  selectedTab,
-  selectedClassId,
-  isLoading,
-  error,
-}: {
-  enrollments: PrincipalEnrollment[];
-  refundRequests: RefundRequestResponse[];
-  selectedTab: "enrollment" | "refund";
-  selectedClassId: number | null;
-  isLoading: boolean;
-  error: string | null;
-}): PrincipalSessionListForRequestsVM {
-  // 선택된 클래스의 세션만 필터링하고 세션별로 그룹화
-  const sessionMap = new Map<number, PrincipalSessionData>();
-
-  if (selectedTab === "enrollment") {
-    // 수강신청 데이터 처리
-    const pendingEnrollments = enrollments.filter((enrollment) => {
-      const classId = enrollment.session?.class?.id;
-      return enrollment.status === "PENDING" && classId === selectedClassId;
-    });
-
-    pendingEnrollments.forEach((enrollment) => {
-      const sessionId = enrollment.sessionId;
-      if (!sessionMap.has(sessionId)) {
-        sessionMap.set(sessionId, {
-          sessionId,
-          className: enrollment.session?.class?.className || "클래스명 없음",
-          date: enrollment.session?.date || "",
-          startTime: enrollment.session?.startTime || "",
-          endTime: enrollment.session?.endTime || "",
-          level: enrollment.session?.class?.level || "BEGINNER",
-          teacherName: enrollment.session?.class?.teacher?.name || "미지정",
-          currentStudents: 0,
-          maxStudents: 0,
-          pendingCount: 0,
-          enrollments: [],
-        });
-      }
-      const session = sessionMap.get(sessionId)!;
-      session.pendingCount++;
-      session.enrollments!.push(enrollment);
-    });
-  } else {
-    // 환불신청 데이터 처리 - 모든 상태 표시
-    const allRefunds = refundRequests || [];
-    const allRefundsForDisplay = allRefunds.filter((refund) => {
-      const classId = refund.sessionEnrollment?.session?.class?.id;
-      return classId === selectedClassId;
-    });
-
-    allRefundsForDisplay.forEach((refund) => {
-      const sessionId = refund.sessionEnrollment?.session?.id;
-      if (!sessionId) return;
-
-      if (!sessionMap.has(sessionId)) {
-        sessionMap.set(sessionId, {
-          sessionId,
-          className:
-            refund.sessionEnrollment?.session?.class?.className ||
-            "클래스명 없음",
-          date: refund.sessionEnrollment?.session?.date || "",
-          startTime: refund.sessionEnrollment?.session?.startTime || "",
-          endTime: refund.sessionEnrollment?.session?.endTime || "",
-          level: refund.sessionEnrollment?.session?.class?.level || "BEGINNER",
-          teacherName:
-            refund.sessionEnrollment?.session?.class?.teacher?.name || "미지정",
-          currentStudents: 0,
-          maxStudents: 0,
-          pendingCount: 0,
-          refundRequests: [],
-        });
-      }
-      const session = sessionMap.get(sessionId)!;
-      session.pendingCount++;
-      session.refundRequests!.push(refund);
-    });
-  }
-
-  const sessions = Array.from(sessionMap.values());
-
-  return {
-    sessions,
-    selectedTab,
-    selectedClassId,
-    isLoading,
-    error,
-    // UI 표시용 계산된 필드들
-    hasSessions: sessions.length > 0,
-    emptyMessage:
-      selectedTab === "enrollment"
-        ? "수강 신청이 대기 중인 세션이 없습니다."
-        : "환불 요청이 대기 중인 세션이 없습니다.",
-    showClassSelectionMessage: !selectedClassId,
-  };
 }
 
 // Principal 학생 세션 히스토리 모달 ViewModel 생성
@@ -574,5 +370,166 @@ export function toPrincipalStudentSessionHistoryModalVM({
     // UI 표시용 계산된 필드들
     hasHistory: history.length > 0,
     emptyMessage: "수강 기록이 없습니다.",
+  };
+}
+
+// ============= 통합된 요청 관리용 어댑터 함수들 =============
+
+// 통합된 요청 ViewModel 생성 (수강신청/환불신청 공통)
+export function toUnifiedRequestVM(
+  request: PrincipalEnrollment | RefundRequestResponse,
+  type: "enrollment" | "refund"
+): UnifiedRequest {
+  const isEnrollment = type === "enrollment";
+  const enrollment = request as PrincipalEnrollment;
+  const refund = request as RefundRequestResponse;
+
+  // 공통 정보 추출
+  const studentName = isEnrollment
+    ? enrollment.student?.name || "알 수 없음"
+    : refund.student?.name || "알 수 없음";
+
+  const studentPhoneNumber = isEnrollment
+    ? enrollment.student?.phoneNumber
+    : refund.student?.phoneNumber;
+
+  const status = isEnrollment ? enrollment.status : refund.status;
+  const requestedAt = isEnrollment ? enrollment.enrolledAt : refund.requestedAt;
+
+  // 세션 정보 추출
+  const sessionInfo = isEnrollment
+    ? {
+        date: enrollment.session?.date || "",
+        startTime: enrollment.session?.startTime || "",
+        endTime: enrollment.session?.endTime || "",
+        className: enrollment.session?.class?.className || "클래스명 없음",
+        level: enrollment.session?.class?.level || "BEGINNER",
+        teacherName: enrollment.session?.class?.teacher?.name || "미지정",
+      }
+    : {
+        date: refund.sessionEnrollment?.session?.date || "",
+        startTime: refund.sessionEnrollment?.session?.startTime || "",
+        endTime: refund.sessionEnrollment?.session?.endTime || "",
+        className:
+          refund.sessionEnrollment?.session?.class?.className ||
+          "클래스명 없음",
+        level: refund.sessionEnrollment?.session?.class?.level || "BEGINNER",
+        teacherName:
+          refund.sessionEnrollment?.session?.class?.teacher?.name || "미지정",
+      };
+
+  // 금액 정보
+  let amount = 0;
+  if (isEnrollment) {
+    // 수강신청의 경우 API에서 직접 수업료 조회
+    amount = enrollment.session?.class?.tuitionFee || 0;
+  } else {
+    // 환불신청의 경우 환불 금액 사용
+    amount = refund.refundAmount || 0;
+  }
+
+  // 환불 요청의 경우 은행 정보
+  const bankInfo =
+    !isEnrollment && refund.bankName
+      ? {
+          bankName: refund.bankName,
+          accountNumber: refund.accountNumber || "",
+          accountHolder: refund.accountHolder || "",
+        }
+      : undefined;
+
+  // 날짜 포맷팅
+  const formatDateDisplay = (dateString: string): string => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "날짜 없음";
+      return date.toLocaleDateString("ko-KR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        weekday: "long",
+      });
+    } catch {
+      return "날짜 없음";
+    }
+  };
+
+  const formatTimeDisplay = (timeString: string): string => {
+    try {
+      // ISO 시간 문자열인 경우 시간 부분만 추출
+      if (timeString.includes("T")) {
+        const date = new Date(timeString);
+        if (isNaN(date.getTime())) return timeString;
+        return date.toLocaleTimeString("ko-KR", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
+      }
+      // 이미 HH:MM 형식인 경우 그대로 반환
+      return timeString;
+    } catch {
+      return timeString;
+    }
+  };
+
+  const formatDateTimeDisplay = (dateString: string): string => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "날짜 없음";
+      return date.toLocaleString("ko-KR", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+    } catch {
+      return "날짜 없음";
+    }
+  };
+
+  // 상태별 색상
+  const getStatusColor = (status: string): string => {
+    switch (status) {
+      case "PENDING":
+        return "bg-yellow-100 text-yellow-800";
+      case "CONFIRMED":
+      case "APPROVED":
+        return "bg-green-100 text-green-800";
+      case "REJECTED":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  return {
+    id: request.id,
+    type,
+    studentName,
+    studentPhoneNumber,
+    status,
+    amount,
+    sessionInfo,
+    requestedAt,
+    bankInfo,
+    reason: !isEnrollment ? refund.reason : undefined,
+    // UI 표시용 계산된 필드들
+    displayRequestedAt: formatDateTimeDisplay(requestedAt),
+    displaySessionDate: formatDateDisplay(sessionInfo.date),
+    displaySessionTime: `${formatTimeDisplay(
+      sessionInfo.startTime
+    )}~${formatTimeDisplay(sessionInfo.endTime)}`,
+    displayAmount:
+      amount > 0
+        ? `${amount.toLocaleString()}원`
+        : isEnrollment
+        ? "수업료 정보 없음"
+        : "금액 없음",
+    statusColor: getStatusColor(status),
+    canApprove: status === "PENDING",
+    canReject: status === "PENDING",
   };
 }

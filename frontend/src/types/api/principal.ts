@@ -174,6 +174,7 @@ export interface PrincipalEnrollment {
       id: number;
       className: string;
       level: string;
+      tuitionFee: number;
       teacher: {
         name: string;
       };
