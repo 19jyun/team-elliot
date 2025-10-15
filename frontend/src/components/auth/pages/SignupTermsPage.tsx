@@ -4,7 +4,7 @@ import * as React from 'react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { signup } from '@/api/auth'
+import { signup, signupPrincipal } from '@/api/auth'
 import Image from 'next/image'
 
 
@@ -65,14 +65,33 @@ export function SignupTermsPage() {
         sessionStorage.getItem('signupData') || '{}',
       )
 
-      // API 호출
-      const response = await signup({
-        name: signupData.name,
-        userId: signupData.userId,
-        password: signupData.password,
-        phoneNumber: signupData.phoneNumber,
-        role: signupData.role,
-      })
+      let response
+
+      // Principal인 경우 별도 API 호출
+      if (signupData.role === 'PRINCIPAL') {
+        if (!signupData.academyInfo) {
+          toast.error('학원 정보가 없습니다. 다시 시도해주세요.')
+          return
+        }
+
+        response = await signupPrincipal({
+          name: signupData.name,
+          userId: signupData.userId,
+          password: signupData.password,
+          phoneNumber: signupData.phoneNumber,
+          role: 'PRINCIPAL',
+          academyInfo: signupData.academyInfo,
+        })
+      } else {
+        // Student, Teacher는 기존 API 사용
+        response = await signup({
+          name: signupData.name,
+          userId: signupData.userId,
+          password: signupData.password,
+          phoneNumber: signupData.phoneNumber,
+          role: signupData.role,
+        })
+      }
 
       if (response) {
         toast.success('회원가입이 완료되었습니다')

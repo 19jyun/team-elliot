@@ -140,7 +140,8 @@ const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
 )
 
 export function SignupPersonalPage() {
-  const { setSignupStep } = useApp()
+  const { navigation } = useApp()
+  const { navigateToSubPage } = navigation
   const [currentStep] = useState(2)
   const [formData, setFormData] = useState({
     name: '',
@@ -326,10 +327,13 @@ export function SignupPersonalPage() {
       JSON.stringify({
         ...existingData,
         name: formData.name,
-        phoneNumber: formData.phoneNumber, // 숫자만 저장 (하이픈 제거)
+        phoneNumber: formatPhoneNumber(formData.phoneNumber), 
       }),
     )
-    setSignupStep('account-info')
+    
+    // 모든 역할은 동일하게 account-info 단계로 진행
+    sessionStorage.setItem('currentSignupStep', 'account-info')
+    navigateToSubPage('signup-account')
   }
 
   return (

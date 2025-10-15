@@ -6,11 +6,12 @@ export type SignupStep =
   | "role-selection"
   | "personal-info"
   | "account-info"
+  | "academy-info" // Principal 전용
   | "terms";
 
 export interface SignupData {
   step: SignupStep;
-  role: "STUDENT" | "TEACHER" | null;
+  role: "STUDENT" | "TEACHER" | "PRINCIPAL" | null;
   personalInfo: {
     name: string;
     phoneNumber: string;
@@ -19,6 +20,13 @@ export interface SignupData {
     userId: string;
     password: string;
     confirmPassword: string;
+  };
+  academyInfo?: {
+    // Principal 전용
+    name: string;
+    phoneNumber: string;
+    address: string;
+    description: string;
   };
   terms: {
     age: boolean;
@@ -73,7 +81,7 @@ export class AuthFormManager {
     this.notifyListeners();
   }
 
-  setRole(role: "STUDENT" | "TEACHER"): void {
+  setRole(role: "STUDENT" | "TEACHER" | "PRINCIPAL"): void {
     this.state.signup.role = role;
     this.emitStateChange();
     this.notifyListeners();

@@ -73,8 +73,20 @@ describe('Auth Flow Integration Tests', () => {
 
         const response = await testApp
           .request()
-          .post('/auth/signup')
-          .send(principalData);
+          .post('/auth/signup/principal')
+          .send({
+            userId: principalData.userId,
+            password: principalData.password,
+            name: principalData.name,
+            phoneNumber: principalData.phoneNumber,
+            role: 'PRINCIPAL',
+            academyInfo: {
+              name: `${principalData.name}의 발레 학원`,
+              phoneNumber: principalData.phoneNumber,
+              address: '주소를 설정해주세요',
+              description: '발레 학원입니다.',
+            },
+          });
 
         console.log(
           'Principal signup response:',
@@ -234,7 +246,22 @@ describe('Auth Flow Integration Tests', () => {
         const principalData = testData.users.principal();
 
         // Principal 회원가입
-        await testApp.request().post('/auth/signup').send(principalData);
+        await testApp
+          .request()
+          .post('/auth/signup/principal')
+          .send({
+            userId: principalData.userId,
+            password: principalData.password,
+            name: principalData.name,
+            phoneNumber: principalData.phoneNumber,
+            role: 'PRINCIPAL',
+            academyInfo: {
+              name: `${principalData.name}의 발레 학원`,
+              phoneNumber: principalData.phoneNumber,
+              address: '주소를 설정해주세요',
+              description: '발레 학원입니다.',
+            },
+          });
 
         // Principal 로그인
         const response = await testApp
@@ -331,8 +358,20 @@ describe('Auth Flow Integration Tests', () => {
       // Principal 회원가입
       const signupResponse = await testApp
         .request()
-        .post('/auth/signup')
-        .send(principalData)
+        .post('/auth/signup/principal')
+        .send({
+          userId: principalData.userId,
+          password: principalData.password,
+          name: principalData.name,
+          phoneNumber: principalData.phoneNumber,
+          role: 'PRINCIPAL',
+          academyInfo: {
+            name: `${principalData.name}의 발레 학원`,
+            phoneNumber: principalData.phoneNumber,
+            address: '주소를 설정해주세요',
+            description: '발레 학원입니다.',
+          },
+        })
         .expect(201);
 
       const token = signupResponse.body.access_token;

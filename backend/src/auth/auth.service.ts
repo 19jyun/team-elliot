@@ -10,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from './types/auth.types';
 import * as bcrypt from 'bcrypt';
 import { SignupDto } from './dto/signup.dto';
+import { PrincipalSignupDto } from './dto/principal-signup.dto';
 
 @Injectable()
 export class AuthService {
@@ -257,68 +258,117 @@ export class AuthService {
           role: 'TEACHER',
         },
       };
-    } else if (signupDto.role === 'PRINCIPAL') {
-      // 트랜잭션으로 Principal 회원가입 처리
-      const result = await this.prisma.$transaction(async (prisma) => {
-        // Principal이 회원가입할 때 자동으로 학원 생성
-        const academy = await prisma.academy.create({
-          data: {
-            name: `${signupDto.name}의 발레 학원`,
-            phoneNumber: signupDto.phoneNumber,
-            address: '주소를 설정해주세요',
-            description: '발레 학원입니다.',
-            code: `ACADEMY_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${Math.random().toString(36).substr(2, 5)}_${Math.random().toString(36).substr(2, 3)}`,
-          },
-        });
+    } else {
+      throw new BadRequestException(
+        '지원하지 않는 역할입니다. Principal 회원가입은 /auth/signup/principal 엔드포인트를 사용하세요.',
+      );
+    }
+  }
 
-        // User 테이블에 먼저 생성
-        const user = await prisma.user.create({
-          data: {
-            userId: signupDto.userId,
-            password: hashedPassword,
-            name: signupDto.name,
-            role: 'PRINCIPAL',
-          },
-        });
+  /**
+   * Principal 전용 회원가입 (학원 정보 포함)
+   */
+  async signupPrincipal(signupDto: PrincipalSignupDto) {
+    // 아이디 중복 체크 (User 테이블만 확인)
+    const existingUser = await this.prisma.user.findUnique({
+      where: { userId: signupDto.userId },
+    });
 
-        // Principal 생성 (userRefId 연결)
-        const principal = await prisma.principal.create({
-          data: {
-            userId: signupDto.userId,
-            password: hashedPassword,
-            name: signupDto.name,
-            phoneNumber: signupDto.phoneNumber,
-            userRefId: user.id,
-            academyId: academy.id,
-          },
-        });
-
-        return { academy, principal, user };
+    if (existingUser) {
+      throw new ConflictException({
+        code: 'USER_ID_ALREADY_EXISTS',
+        message: '이미 사용중인 아이디입니다.',
       });
+    }
 
-      if (!result || !result.user || !result.principal || !result.academy) {
-        throw new Error('Principal 회원가입 중 오류가 발생했습니다.');
-      }
+    // 학원 코드 중복 체크
+    const academyCode = this.generateAcademyCode();
+    const existingAcademy = await this.prisma.academy.findUnique({
+      where: { code: academyCode },
+    });
 
-      // JWT 토큰 생성 (User 테이블의 id 사용)
-      const token = this.jwtService.sign({
-        sub: result.user.id,
-        userId: result.principal.userId,
-        role: 'PRINCIPAL',
-      });
+    if (existingAcademy) {
+      // 매우 낮은 확률이지만 중복 시 재시도
+      return this.signupPrincipal(signupDto);
+    }
 
-      return {
-        access_token: token,
-        user: {
-          id: result.user.id,
-          userId: result.principal.userId,
-          name: result.principal.name,
+    // 비밀번호 해싱
+    const hashedPassword = await bcrypt.hash(signupDto.password, 10);
+
+    // 트랜잭션으로 Principal + Academy 생성
+    const result = await this.prisma.$transaction(async (prisma) => {
+      // 1. User 테이블에 먼저 생성
+      const user = await prisma.user.create({
+        data: {
+          userId: signupDto.userId,
+          password: hashedPassword,
+          name: signupDto.name,
           role: 'PRINCIPAL',
         },
-      };
-    } else {
-      throw new BadRequestException('지원하지 않는 역할입니다.');
+      });
+
+      // 2. Academy 생성 (사용자 입력 정보 사용)
+      const academy = await prisma.academy.create({
+        data: {
+          name: signupDto.academyInfo.name,
+          phoneNumber: signupDto.academyInfo.phoneNumber,
+          address: signupDto.academyInfo.address,
+          description: signupDto.academyInfo.description,
+          code: academyCode,
+        },
+      });
+
+      // 3. Principal 생성 (userRefId와 academyId 연결)
+      const principal = await prisma.principal.create({
+        data: {
+          userId: signupDto.userId,
+          password: hashedPassword,
+          name: signupDto.name,
+          phoneNumber: signupDto.phoneNumber,
+          userRefId: user.id,
+          academyId: academy.id,
+        },
+      });
+
+      return { user, academy, principal };
+    });
+
+    if (!result || !result.user || !result.principal || !result.academy) {
+      throw new Error('Principal 회원가입 중 오류가 발생했습니다.');
     }
+
+    // JWT 토큰 생성 (User 테이블의 id 사용)
+    const token = this.jwtService.sign({
+      sub: result.user.id,
+      userId: result.principal.userId,
+      role: 'PRINCIPAL',
+    });
+
+    return {
+      access_token: token,
+      user: {
+        id: result.user.id,
+        userId: result.principal.userId,
+        name: result.principal.name,
+        role: 'PRINCIPAL',
+      },
+      academy: {
+        id: result.academy.id,
+        name: result.academy.name,
+        code: result.academy.code,
+      },
+    };
+  }
+
+  /**
+   * 고유한 학원 코드 생성
+   */
+  private generateAcademyCode(): string {
+    const timestamp = Date.now();
+    const random1 = Math.random().toString(36).substr(2, 9);
+    const random2 = Math.random().toString(36).substr(2, 5);
+    const random3 = Math.random().toString(36).substr(2, 3);
+    return `ACADEMY_${timestamp}_${random1}_${random2}_${random3}`;
   }
 
   async withdrawal(userId: number, reason: string) {

@@ -271,9 +271,9 @@ export class GoBackManager {
 
     return {
       success: true,
-      action: "close" as const,
-      data: { subPage: null },
-      message: `SubPage: ${subPage}`,
+      action: "navigate" as const,
+      data: { subPage },
+      message: `Navigating to SubPage: ${subPage}`,
     };
   }
 

@@ -99,7 +99,7 @@ interface AppContextType {
   goBackFromAuth: () => void;
   clearAuthSubPage: () => void;
   setSignupStep: (step: SignupStep) => void;
-  setRole: (role: 'STUDENT' | 'TEACHER') => void;
+  setRole: (role: 'STUDENT' | 'TEACHER' | 'PRINCIPAL') => void;
   setPersonalInfo: (info: SignupData['personalInfo']) => void;
   setAccountInfo: (info: SignupData['accountInfo']) => void;
   setTerms: (terms: SignupData['terms']) => void;
@@ -187,8 +187,9 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
       // 통합된 goBack 사용 (GoBackManager를 통해 단계별 로직 처리)
       const success = await goBack();
       
-      // 뒤로갈 수 없으면 히스토리에 현재 상태 추가
-      if (!success) {
+      // 뒤로갈 수 없거나 signup-roles에서 뒤로가기한 경우 로그인 페이지로
+      if (!success || navigation.subPage === 'signup-roles') {
+        forms.setAuthMode('login');
         window.history.pushState(null, '', window.location.href);
       }
     };
@@ -202,7 +203,7 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     return () => {
       window.removeEventListener('popstate', handleBrowserBackButton);
     };
-  }, [goBack]); 
+  }, [goBack, forms, navigation.subPage]); 
 
   // 메모이제이션된 value 객체
   const contextValue = useMemo(() => ({
@@ -275,7 +276,7 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     goBackFromAuth: () => forms.setAuthData({ authSubPage: null }),
     clearAuthSubPage: () => forms.setAuthData({ authSubPage: null }),
     setSignupStep: forms.setAuthStep,
-    setRole: (role: 'STUDENT' | 'TEACHER') => forms.setAuthData({ signup: { ...forms.auth.signup, role } }),
+    setRole: (role: 'STUDENT' | 'TEACHER' | 'PRINCIPAL') => forms.setAuthData({ signup: { ...forms.auth.signup, role } }),
     setPersonalInfo: (info: SignupData['personalInfo']) => forms.setAuthData({ signup: { ...forms.auth.signup, personalInfo: info } }),
     setAccountInfo: (info: SignupData['accountInfo']) => forms.setAuthData({ signup: { ...forms.auth.signup, accountInfo: info } }),
     setTerms: (terms: SignupData['terms']) => forms.setAuthData({ signup: { ...forms.auth.signup, terms: terms } }),

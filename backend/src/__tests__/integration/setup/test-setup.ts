@@ -156,8 +156,20 @@ export const createAuthenticatedUser = async (
       // Principal 회원가입 (API가 자동으로 Academy 생성)
       const principalResponse = await testApp
         .request()
-        .post('/auth/signup')
-        .send(userData);
+        .post('/auth/signup/principal')
+        .send({
+          userId: userData.userId,
+          password: userData.password,
+          name: userData.name,
+          phoneNumber: userData.phoneNumber,
+          role: 'PRINCIPAL',
+          academyInfo: {
+            name: `${userData.name}의 발레 학원`,
+            phoneNumber: userData.phoneNumber,
+            address: '주소를 설정해주세요',
+            description: '발레 학원입니다.',
+          },
+        });
 
       console.log(
         'Principal signup response:',
