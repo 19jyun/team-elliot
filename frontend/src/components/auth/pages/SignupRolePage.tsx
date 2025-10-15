@@ -19,7 +19,7 @@ export function SignupRolePage() {
   const { navigation } = useApp()
   const { navigateToSubPage } = navigation
   const [currentStep] = useState(1)
-  const [selectedRole, setSelectedRole] = useState<'STUDENT' | 'TEACHER' | 'PRINCIPAL' | null>(null)
+  const [_selectedRole, setSelectedRole] = useState<'STUDENT' | 'TEACHER' | 'PRINCIPAL' | null>(null)
 
   useEffect(() => {
     const savedData = JSON.parse(sessionStorage.getItem('signupData') || '{}')

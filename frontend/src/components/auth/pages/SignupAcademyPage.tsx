@@ -2,7 +2,6 @@
 
 import * as React from 'react'
 import { useState, useEffect } from 'react'
-import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 import { useApp } from '@/contexts/AppContext'

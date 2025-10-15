@@ -203,7 +203,7 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     return () => {
       window.removeEventListener('popstate', handleBrowserBackButton);
     };
-  }, [goBack]); 
+  }, [goBack, forms, navigation.subPage]); 
 
   // 메모이제이션된 value 객체
   const contextValue = useMemo(() => ({

@@ -12,7 +12,7 @@ interface AuthFormContextType {
   authSubPage: string | null;
   signup: {
     step: SignupStep;
-    role: 'STUDENT' | 'TEACHER' | null;
+    role: 'STUDENT' | 'TEACHER' | 'PRINCIPAL' | null;
     personalInfo: { name: string; phoneNumber: string };
     accountInfo: { userId: string; password: string; confirmPassword: string };
     terms: { age: boolean; terms1: boolean; terms2: boolean; marketing: boolean };
@@ -24,7 +24,7 @@ interface AuthFormContextType {
   
   // 회원가입 관리
   setSignupStep: (step: SignupStep) => void;
-  setRole: (role: 'STUDENT' | 'TEACHER') => void;
+  setRole: (role: 'STUDENT' | 'TEACHER' | 'PRINCIPAL') => void;
   setPersonalInfo: (info: { name: string; phoneNumber: string }) => void;
   setAccountInfo: (info: { userId: string; password: string; confirmPassword: string }) => void;
   setTerms: (terms: { age: boolean; terms1: boolean; terms2: boolean; marketing: boolean }) => void;
@@ -100,7 +100,7 @@ export const AuthFormProvider: React.FC<AuthFormProviderProps> = ({ children }) 
     manager.setSignupStep(step);
   }, [manager]);
 
-  const setRole = useCallback((role: 'STUDENT' | 'TEACHER') => {
+  const setRole = useCallback((role: 'STUDENT' | 'TEACHER' | 'PRINCIPAL') => {
     manager.setRole(role);
   }, [manager]);
 
