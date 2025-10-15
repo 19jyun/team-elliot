@@ -113,7 +113,8 @@ const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
 )
 
 export function SignupAcademyPage() {
-  const { setSignupStep } = useApp()
+  const { navigation } = useApp()
+  const { navigateToSubPage } = navigation
   const [currentStep] = useState(4) // academy-info는 4단계
   const [formData, setFormData] = useState({
     name: '',
@@ -250,7 +251,7 @@ export function SignupAcademyPage() {
       }),
     )
     
-    setSignupStep('terms')
+    navigateToSubPage('signup-terms')
   }
 
   return (

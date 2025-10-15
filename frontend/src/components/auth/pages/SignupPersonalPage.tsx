@@ -140,7 +140,8 @@ const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
 )
 
 export function SignupPersonalPage() {
-  const { setSignupStep } = useApp()
+  const { navigation } = useApp()
+  const { navigateToSubPage } = navigation
   const [currentStep] = useState(2)
   const [formData, setFormData] = useState({
     name: '',
@@ -332,7 +333,7 @@ export function SignupPersonalPage() {
     
     // 모든 역할은 동일하게 account-info 단계로 진행
     sessionStorage.setItem('currentSignupStep', 'account-info')
-    setSignupStep('account-info')
+    navigateToSubPage('signup-account')
   }
 
   return (

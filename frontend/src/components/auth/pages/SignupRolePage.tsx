@@ -16,7 +16,8 @@ const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
 )
 
 export function SignupRolePage() {
-  const { setSignupStep } = useApp()
+  const { navigation } = useApp()
+  const { navigateToSubPage } = navigation
   const [currentStep] = useState(1)
   const [selectedRole, setSelectedRole] = useState<'STUDENT' | 'TEACHER' | 'PRINCIPAL' | null>(null)
 
@@ -35,7 +36,7 @@ export function SignupRolePage() {
         role: role,
       }),
     )
-    setSignupStep('personal-info')
+    navigateToSubPage('signup-personal')
   }
 
   return (
@@ -68,48 +69,31 @@ export function SignupRolePage() {
       </div>
 
       <div className="flex flex-col gap-4 mt-16 w-full">
-        <div className="flex gap-4 w-full">
-          <button 
-            onClick={() => handleRoleSelect('STUDENT')}
-            className={cn(
-              'flex-1 p-6 border rounded-lg transition-colors text-left',
-              selectedRole === 'STUDENT' 
-                ? 'border-stone-700 bg-stone-50' 
-                : 'border-stone-300 hover:border-stone-400'
-            )}
-          >
-            <div className="flex flex-col items-start">
-              <h3 className="font-semibold text-lg mb-2 text-stone-700">학생</h3>
-              <p className="text-sm text-stone-600">수강생으로 가입</p>
-            </div>
-          </button>
-          
-          <button 
-            onClick={() => handleRoleSelect('TEACHER')}
-            className={cn(
-              'flex-1 p-6 border rounded-lg transition-colors text-left',
-              selectedRole === 'TEACHER' 
-                ? 'border-stone-700 bg-stone-50' 
-                : 'border-stone-300 hover:border-stone-400'
-            )}
-          >
-            <div className="flex flex-col items-start">
-              <h3 className="font-semibold text-lg mb-2 text-stone-700">선생님</h3>
-              <p className="text-sm text-stone-600">강사로 가입</p>
-            </div>
-          </button>
-        </div>
+        <button 
+          onClick={() => handleRoleSelect('STUDENT')}
+          className="w-full p-6 border border-stone-300 rounded-lg transition-colors text-center bg-white hover:border-stone-400"
+        >
+          <div className="flex flex-col items-center">
+            <h3 className="font-semibold text-lg mb-2 text-stone-700">학생</h3>
+            <p className="text-sm text-stone-600">수강생으로 가입</p>
+          </div>
+        </button>
+        
+        <button 
+          onClick={() => handleRoleSelect('TEACHER')}
+          className="w-full p-6 border border-stone-300 rounded-lg transition-colors text-center bg-white hover:border-stone-400"
+        >
+          <div className="flex flex-col items-center">
+            <h3 className="font-semibold text-lg mb-2 text-stone-700">선생님</h3>
+            <p className="text-sm text-stone-600">강사로 가입</p>
+          </div>
+        </button>
         
         <button 
           onClick={() => handleRoleSelect('PRINCIPAL')}
-          className={cn(
-            'w-full p-6 border rounded-lg transition-colors text-left',
-            selectedRole === 'PRINCIPAL' 
-              ? 'border-stone-700 bg-stone-50' 
-              : 'border-stone-300 hover:border-stone-400'
-          )}
+          className="w-full p-6 border border-stone-300 rounded-lg transition-colors text-center bg-white hover:border-stone-400"
         >
-          <div className="flex flex-col items-start">
+          <div className="flex flex-col items-center">
             <h3 className="font-semibold text-lg mb-2 text-stone-700">원장</h3>
             <p className="text-sm text-stone-600">학원 운영자로 가입</p>
           </div>

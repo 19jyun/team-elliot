@@ -146,7 +146,8 @@ const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
 )
 
 export function SignupAccountPage() {
-  const { setSignupStep } = useApp()
+  const { navigation } = useApp()
+  const { navigateToSubPage } = navigation
   const [currentStep] = useState(3)
   
   const [formData, setFormData] = useState({
@@ -237,9 +238,9 @@ export function SignupAccountPage() {
     
     // Principal인 경우 academy-info 단계로, 그 외는 terms로
     if (prevData.role === 'PRINCIPAL') {
-      setSignupStep('academy-info')
+      navigateToSubPage('signup-academy')
     } else {
-      setSignupStep('terms')
+      navigateToSubPage('signup-terms')
     }
   }
 

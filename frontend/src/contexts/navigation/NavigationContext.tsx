@@ -112,6 +112,11 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
 
   // 역할별 서브페이지 접근 권한 확인
   const canAccessSubPage = useCallback((page: string): boolean => {
+    // 회원가입 관련 SubPage는 모든 사용자가 접근 가능 (로그인하지 않은 사용자 포함)
+    if (page.startsWith('signup-')) {
+      return true;
+    }
+    
     switch (userRole) {
       case 'STUDENT':
         return [

@@ -164,7 +164,8 @@ const InputField: React.FC<InputFieldProps> = ({
 }
 
 export function LoginPage() {
-  const { setAuthMode, setSignupStep } = useApp()
+  const { setAuthMode, navigation } = useApp()
+  const { navigateToSubPage } = navigation
   const signIn = useSignIn()
   const [formData, setFormData] = useState({
     userId: '',
@@ -310,7 +311,7 @@ export function LoginPage() {
           <Button
             onClick={() => {
               setAuthMode('signup');
-              setSignupStep('role-selection');
+              navigateToSubPage('signup-roles');
             }}
             sx={{
               fontSize: '16px',

@@ -12,8 +12,29 @@ import { SignupAcademyPage } from './pages/SignupAcademyPage';
 import { SignupTermsPage } from './pages/SignupTermsPage';
 
 export function AuthContainer() {
-  const { form } = useApp();
-  const { authMode, signup } = form.auth;
+  const { form, navigation } = useApp();
+  const { authMode } = form.auth;
+  const { subPage } = navigation;
+
+  // SubPage 렌더링 함수 (Dashboard 방식)
+  const renderSubPage = () => {
+    if (!subPage) return null;
+    
+    switch (subPage) {
+      case 'signup-roles':
+        return <SignupRolePage />;
+      case 'signup-personal':
+        return <SignupPersonalPage />;
+      case 'signup-account':
+        return <SignupAccountPage />;
+      case 'signup-academy':
+        return <SignupAcademyPage />;
+      case 'signup-terms':
+        return <SignupTermsPage />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <AuthGuard requireAuth={false}>
@@ -24,11 +45,7 @@ export function AuthContainer() {
           <>
             <AuthHeader />
             <div className="flex flex-col px-5 w-full flex-1 overflow-hidden">
-              {signup.step === 'role-selection' && <SignupRolePage />}
-              {signup.step === 'personal-info' && <SignupPersonalPage />}
-              {signup.step === 'account-info' && <SignupAccountPage />}
-              {signup.step === 'academy-info' && <SignupAcademyPage />}
-              {signup.step === 'terms' && <SignupTermsPage />}
+              {renderSubPage()}
             </div>
           </>
         )}
