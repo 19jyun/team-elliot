@@ -409,6 +409,10 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
             if (result.data?.activeTab !== undefined) {
               setActiveTabState(result.data.activeTab);
             }
+            // SubPage 변경
+            if (result.data?.subPage !== undefined) {
+              setSubPageState(result.data.subPage);
+            }
             break;
         }
 

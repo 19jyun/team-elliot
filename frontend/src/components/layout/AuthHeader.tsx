@@ -13,8 +13,8 @@ export function AuthHeader() {
       // Dashboard의 통합된 goBack 시스템 사용
       const success = await goBack();
       
-      // goBack이 실패한 경우 (첫 번째 단계) 로그인 페이지로
-      if (!success && subPage === 'signup-roles') {
+      // goBack이 실패했거나, signup-roles에서 뒤로가기한 경우 로그인 페이지로
+      if (!success || subPage === 'signup-roles') {
         setAuthMode('login');
       }
     } catch (error) {

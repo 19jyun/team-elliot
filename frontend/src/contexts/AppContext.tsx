@@ -187,8 +187,9 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
       // 통합된 goBack 사용 (GoBackManager를 통해 단계별 로직 처리)
       const success = await goBack();
       
-      // 뒤로갈 수 없으면 히스토리에 현재 상태 추가
-      if (!success) {
+      // 뒤로갈 수 없거나 signup-roles에서 뒤로가기한 경우 로그인 페이지로
+      if (!success || navigation.subPage === 'signup-roles') {
+        forms.setAuthMode('login');
         window.history.pushState(null, '', window.location.href);
       }
     };
