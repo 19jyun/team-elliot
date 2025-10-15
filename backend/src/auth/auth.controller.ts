@@ -1,11 +1,13 @@
 import { Controller, Post, Body, UseGuards, Get } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
+import { PrincipalSignupDto } from './dto/principal-signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { CheckUserIdDto } from './dto/check-userid.dto';
 import { WithdrawalReasonDto } from './dto/withdrawal-reason.dto';
 import { AuthResponseEntity } from './entities/auth-response.entity';
 import { CheckUserIdResponseEntity } from './entities/check-userid-response.entity';
+import { PrincipalSignupResponseEntity } from './entities/principal-signup-response.entity';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetUser } from './decorators/get-user.decorator';
 import { AuthenticatedUser } from './types/auth.types';
@@ -47,7 +49,7 @@ export class AuthController {
   }
 
   @Post('signup')
-  @ApiOperation({ summary: '회원가입' })
+  @ApiOperation({ summary: '회원가입 (Student, Teacher)' })
   @ApiBody({ type: SignupDto })
   @ApiCreatedResponse({
     description: '회원가입 성공',
@@ -55,6 +57,20 @@ export class AuthController {
   })
   async signup(@Body() signupDto: SignupDto) {
     return this.authService.signup(signupDto);
+  }
+
+  @Post('signup/principal')
+  @ApiOperation({
+    summary: 'Principal 회원가입 (학원 정보 포함)',
+    description: '원장 회원가입 시 학원 정보를 함께 입력받아 처리합니다.',
+  })
+  @ApiBody({ type: PrincipalSignupDto })
+  @ApiCreatedResponse({
+    description: 'Principal 회원가입 성공',
+    type: PrincipalSignupResponseEntity,
+  })
+  async signupPrincipal(@Body() signupDto: PrincipalSignupDto) {
+    return this.authService.signupPrincipal(signupDto);
   }
 
   @UseGuards(JwtAuthGuard)

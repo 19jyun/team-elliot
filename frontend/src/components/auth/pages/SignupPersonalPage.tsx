@@ -326,9 +326,12 @@ export function SignupPersonalPage() {
       JSON.stringify({
         ...existingData,
         name: formData.name,
-        phoneNumber: formData.phoneNumber, // 숫자만 저장 (하이픈 제거)
+        phoneNumber: formatPhoneNumber(formData.phoneNumber), 
       }),
     )
+    
+    // 모든 역할은 동일하게 account-info 단계로 진행
+    sessionStorage.setItem('currentSignupStep', 'account-info')
     setSignupStep('account-info')
   }
 

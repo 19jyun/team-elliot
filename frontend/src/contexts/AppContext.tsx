@@ -99,7 +99,7 @@ interface AppContextType {
   goBackFromAuth: () => void;
   clearAuthSubPage: () => void;
   setSignupStep: (step: SignupStep) => void;
-  setRole: (role: 'STUDENT' | 'TEACHER') => void;
+  setRole: (role: 'STUDENT' | 'TEACHER' | 'PRINCIPAL') => void;
   setPersonalInfo: (info: SignupData['personalInfo']) => void;
   setAccountInfo: (info: SignupData['accountInfo']) => void;
   setTerms: (terms: SignupData['terms']) => void;
@@ -275,7 +275,7 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     goBackFromAuth: () => forms.setAuthData({ authSubPage: null }),
     clearAuthSubPage: () => forms.setAuthData({ authSubPage: null }),
     setSignupStep: forms.setAuthStep,
-    setRole: (role: 'STUDENT' | 'TEACHER') => forms.setAuthData({ signup: { ...forms.auth.signup, role } }),
+    setRole: (role: 'STUDENT' | 'TEACHER' | 'PRINCIPAL') => forms.setAuthData({ signup: { ...forms.auth.signup, role } }),
     setPersonalInfo: (info: SignupData['personalInfo']) => forms.setAuthData({ signup: { ...forms.auth.signup, personalInfo: info } }),
     setAccountInfo: (info: SignupData['accountInfo']) => forms.setAuthData({ signup: { ...forms.auth.signup, accountInfo: info } }),
     setTerms: (terms: SignupData['terms']) => forms.setAuthData({ signup: { ...forms.auth.signup, terms: terms } }),

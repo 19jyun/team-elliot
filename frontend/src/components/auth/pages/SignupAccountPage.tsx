@@ -148,6 +148,7 @@ const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
 export function SignupAccountPage() {
   const { setSignupStep } = useApp()
   const [currentStep] = useState(3)
+  
   const [formData, setFormData] = useState({
     userId: '',
     password: '',
@@ -171,6 +172,7 @@ export function SignupAccountPage() {
         confirmPassword: savedData.confirmPassword || '',
       })
     }
+    
   }, [])
 
   const handleNextStep = async () => {
@@ -232,7 +234,13 @@ export function SignupAccountPage() {
         confirmPassword: formData.confirmPassword,
       }),
     )
-    setSignupStep('terms')
+    
+    // Principal인 경우 academy-info 단계로, 그 외는 terms로
+    if (prevData.role === 'PRINCIPAL') {
+      setSignupStep('academy-info')
+    } else {
+      setSignupStep('terms')
+    }
   }
 
   return (

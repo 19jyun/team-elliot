@@ -33,7 +33,7 @@ export interface SignupRequest {
   password: string;
   name: string;
   phoneNumber: string;
-  role: UserRole;
+  role: "STUDENT" | "TEACHER"; // PRINCIPAL 제거
 }
 
 export interface SignupResponse {
@@ -43,6 +43,38 @@ export interface SignupResponse {
     userId: string;
     name: string;
     role: UserRole;
+  };
+}
+
+// Principal 전용 회원가입 타입들
+export interface AcademyInfo {
+  name: string;
+  phoneNumber: string;
+  address: string;
+  description: string;
+}
+
+export interface PrincipalSignupRequest {
+  userId: string;
+  password: string;
+  name: string;
+  phoneNumber: string;
+  role: "PRINCIPAL";
+  academyInfo: AcademyInfo;
+}
+
+export interface PrincipalSignupResponse {
+  access_token: string;
+  user: {
+    id: number;
+    userId: string;
+    name: string;
+    role: "PRINCIPAL";
+  };
+  academy: {
+    id: number;
+    name: string;
+    code: string;
   };
 }
 

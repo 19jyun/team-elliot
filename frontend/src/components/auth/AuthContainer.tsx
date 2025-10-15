@@ -8,6 +8,7 @@ import { LoginPage } from './pages/LoginPage';
 import { SignupRolePage } from './pages/SignupRolePage';
 import { SignupPersonalPage } from './pages/SignupPersonalPage';
 import { SignupAccountPage } from './pages/SignupAccountPage';
+import { SignupAcademyPage } from './pages/SignupAcademyPage';
 import { SignupTermsPage } from './pages/SignupTermsPage';
 
 export function AuthContainer() {
@@ -26,6 +27,7 @@ export function AuthContainer() {
               {signup.step === 'role-selection' && <SignupRolePage />}
               {signup.step === 'personal-info' && <SignupPersonalPage />}
               {signup.step === 'account-info' && <SignupAccountPage />}
+              {signup.step === 'academy-info' && <SignupAcademyPage />}
               {signup.step === 'terms' && <SignupTermsPage />}
             </div>
           </>

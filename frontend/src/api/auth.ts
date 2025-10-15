@@ -13,6 +13,8 @@ import type {
   VerifyCodeResponse,
   SignupRequest,
   SignupResponse,
+  PrincipalSignupRequest,
+  PrincipalSignupResponse,
   SessionResponse,
   VerifyResponse,
 } from "@/types/api/auth";
@@ -60,11 +62,21 @@ export const verifyCode = (
   return post<ApiResponse<VerifyCodeResponse>>("/sms/verify-code", data);
 };
 
-// 회원가입
+// 회원가입 (Student, Teacher)
 export const signup = (
   data: SignupRequest
 ): Promise<ApiResponse<SignupResponse>> => {
   return post<ApiResponse<SignupResponse>>("/auth/signup", data);
+};
+
+// Principal 회원가입 (학원 정보 포함)
+export const signupPrincipal = (
+  data: PrincipalSignupRequest
+): Promise<ApiResponse<PrincipalSignupResponse>> => {
+  return post<ApiResponse<PrincipalSignupResponse>>(
+    "/auth/signup/principal",
+    data
+  );
 };
 
 // 현재 세션 정보 조회

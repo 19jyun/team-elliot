@@ -31,9 +31,9 @@ export class SignupDto {
 
   @ApiProperty({
     example: 'STUDENT',
-    enum: ['STUDENT', 'TEACHER', 'PRINCIPAL'],
+    enum: ['STUDENT', 'TEACHER'],
   })
   @IsString()
-  @IsIn(['STUDENT', 'TEACHER', 'PRINCIPAL'])
-  role: 'STUDENT' | 'TEACHER' | 'PRINCIPAL';
+  @IsIn(['STUDENT', 'TEACHER'])
+  role: 'STUDENT' | 'TEACHER';
 }
