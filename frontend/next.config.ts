@@ -56,28 +56,8 @@ const nextConfig: NextConfig = {
   // 압축 설정
   compress: true,
 
-  // 보안 헤더
-  async headers() {
-    return [
-      {
-        source: "/(.*)",
-        headers: [
-          {
-            key: "X-Frame-Options",
-            value: "DENY",
-          },
-          {
-            key: "X-Content-Type-Options",
-            value: "nosniff",
-          },
-          {
-            key: "Referrer-Policy",
-            value: "strict-origin-when-cross-origin",
-          },
-        ],
-      },
-    ];
-  },
+  // Static Export에서는 headers() 사용 불가
+  // 보안 헤더는 Capacitor 설정에서 처리
 
   // 리다이렉트 설정 제거 (미들웨어에서 처리)
   // async redirects() {
