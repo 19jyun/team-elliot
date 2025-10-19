@@ -36,6 +36,7 @@ async function bootstrap() {
     'https://team-elliot-eight.vercel.app',
     'https://team-elliot-pvv8c9z07-junghun-yuns-projects.vercel.app',
     'capacitor://localhost',
+    'https://localhost',
     process.env.FRONTEND_URL, // 환경변수로 설정된 URL
   ].filter(Boolean); // undefined 값 제거
 
