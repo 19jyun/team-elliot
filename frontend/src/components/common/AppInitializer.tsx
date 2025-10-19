@@ -4,6 +4,7 @@ import { useSession } from '@/lib/auth/AuthProvider'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { AuthRouter } from '@/lib/auth/AuthRouter'
+import { StatusBarHandler } from './StatusBarHandler'
 
 interface AppInitializerProps {
   children: React.ReactNode
@@ -46,5 +47,10 @@ export function AppInitializer({ children }: AppInitializerProps) {
   }
 
   // 초기화가 완료되면 자식 컴포넌트 렌더링
-  return <>{children}</>
+  return (
+    <>
+      <StatusBarHandler />
+      {children}
+    </>
+  )
 } 
