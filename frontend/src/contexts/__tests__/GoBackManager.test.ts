@@ -233,7 +233,7 @@ describe("ImprovedGoBackManager", () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.action).toBe("close"); // subpage 타입이므로 close 액션
+      expect(result.action).toBe("navigate"); // subpage 타입이므로 navigate 액션
     });
 
     it("should return no action when no subPage, no history, and activeTab > 0", async () => {

@@ -27,12 +27,12 @@ export class AuthRouter {
    */
   static redirectToDashboard(): void {
     if (AuthRouter.router) {
-      AuthRouter.router.replace("/dashboard");
+      AuthRouter.router.replace("/dashboard/");
     } else {
       // 폴백: window.location 사용
       if (typeof window !== "undefined") {
         console.log("🔄 window.location.href = /dashboard 실행됨");
-        window.location.href = "/dashboard";
+        window.location.href = "/dashboard/";
       }
     }
   }
