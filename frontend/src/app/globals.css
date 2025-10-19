@@ -264,4 +264,40 @@
   .mr-safe {
     margin-right: env(safe-area-inset-right, 0);
   }
+
+  /* 강화된 Safe Area 헤더 스타일 */
+  .header-safe {
+    padding-top: max(env(safe-area-inset-top, 0), 20px);
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
+  }
+
+  /* iOS Dynamic Island 대응 */
+  .ios-safe-top {
+    padding-top: max(env(safe-area-inset-top, 0), 44px);
+  }
+
+  /* Android 상태표시줄 대응 */
+  .android-safe-top {
+    padding-top: max(env(safe-area-inset-top, 0), 24px);
+  }
+
+  /* 강제 Safe Area 적용 (최후의 수단) */
+  .force-safe-top {
+    padding-top: max(env(safe-area-inset-top, 0), 44px) !important;
+  }
+
+  /* iOS Safari 대응 */
+  @supports (padding: max(0px)) {
+    .ios-safari-safe {
+      padding-top: max(env(safe-area-inset-top, 0), 44px);
+    }
+  }
+
+  /* Capacitor 앱에서의 추가 보정 */
+  .capacitor-safe {
+    padding-top: max(env(safe-area-inset-top, 0), 20px);
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
+  }
 }

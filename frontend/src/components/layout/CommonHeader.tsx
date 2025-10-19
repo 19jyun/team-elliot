@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { ArrowLeft } from 'lucide-react';
 
 import { useApp } from '@/contexts/AppContext';
+import { useDeviceInfo } from '@/hooks/useDeviceInfo';
 
 export function CommonHeader() {
   const { data: session } = useSession();
@@ -15,6 +16,7 @@ export function CommonHeader() {
     handleTabChange, 
     goBack
   } = useApp();
+  const deviceInfo = useDeviceInfo();
 
   const userRole = session?.user?.role || 'STUDENT';
   
@@ -57,8 +59,17 @@ export function CommonHeader() {
     }
   };
 
+  // 디바이스별 safe area 클래스 결정
+  const getSafeAreaClass = () => {
+    if (!deviceInfo.isNative) return 'pt-safe';
+    if (deviceInfo.hasDynamicIsland) return 'ios-safe-top';
+    if (deviceInfo.hasNotch) return 'pt-safe';
+    if (deviceInfo.platform === 'android') return 'android-safe-top';
+    return 'pt-safe';
+  };
+
   return (
-    <div className="sticky top-0 left-0 right-0 z-50 bg-white shadow-sm border-b border-gray-200 flex-shrink-0 pt-safe">
+    <div className={`sticky top-0 left-0 right-0 z-50 bg-white shadow-sm border-b border-gray-200 flex-shrink-0 ${getSafeAreaClass()}`}>
       {/* 로고 섹션 */}
       <div className="flex items-center justify-between px-2.5 py-4 w-full min-h-[60px]">
         {/* 뒤로가기 버튼 (SubPage가 있을 때만 표시) */}
