@@ -230,4 +230,38 @@
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
   }
+
+  /* Safe Area 유틸리티 클래스 */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  .pl-safe {
+    padding-left: env(safe-area-inset-left, 0);
+  }
+  .pr-safe {
+    padding-right: env(safe-area-inset-right, 0);
+  }
+  .p-safe {
+    padding-top: env(safe-area-inset-top, 0);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
+  }
+  
+  /* Safe Area 마진 유틸리티 */
+  .mt-safe {
+    margin-top: env(safe-area-inset-top, 0);
+  }
+  .mb-safe {
+    margin-bottom: env(safe-area-inset-bottom, 0);
+  }
+  .ml-safe {
+    margin-left: env(safe-area-inset-left, 0);
+  }
+  .mr-safe {
+    margin-right: env(safe-area-inset-right, 0);
+  }
 }
