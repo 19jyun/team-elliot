@@ -7,6 +7,18 @@ const config: CapacitorConfig = {
   server: {
     errorPath: "/",
   },
+  plugins: {
+    StatusBar: {
+      style: "default",
+      backgroundColor: "#ffffff",
+      overlaysWebView: false,
+    },
+    SplashScreen: {
+      launchShowDuration: 2000,
+      backgroundColor: "#ffffff",
+      showSpinner: false,
+    },
+  },
 };
 
 export default config;

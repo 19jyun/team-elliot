@@ -67,7 +67,7 @@ function StudentDashboardContent() {
   ];
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-screen bg-gray-50 pb-safe">
       <CommonHeader />
       <main className="flex-1 overflow-hidden relative">
         {/* DashboardContainer - 항상 렌더링 */}

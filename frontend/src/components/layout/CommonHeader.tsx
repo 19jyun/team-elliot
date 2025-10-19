@@ -58,7 +58,7 @@ export function CommonHeader() {
   };
 
   return (
-    <div className="sticky top-0 left-0 right-0 z-50 bg-white shadow-sm border-b border-gray-200 flex-shrink-0">
+    <div className="sticky top-0 left-0 right-0 z-50 bg-white shadow-sm border-b border-gray-200 flex-shrink-0 pt-safe">
       {/* 로고 섹션 */}
       <div className="flex items-center justify-between px-2.5 py-4 w-full min-h-[60px]">
         {/* 뒤로가기 버튼 (SubPage가 있을 때만 표시) */}
