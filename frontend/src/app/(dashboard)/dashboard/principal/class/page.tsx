@@ -8,6 +8,7 @@ import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessi
 import { SessionDetailModal } from '@/components/common/Session/SessionDetailModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
+import { CalendarSyncInitializer } from '@/components/calendar/CalendarSyncInitializer'
 import { useApp } from '@/contexts/AppContext'
 import { toClassSessionForCalendar } from '@/lib/adapters/principal'
 import type { PrincipalClassSession } from '@/types/api/principal'
@@ -205,8 +206,13 @@ export default function PrincipalClassPage() {
           </div>
         </div>
 
+        {/* 캘린더 동기화 상태 */}
+        <div className="px-5 py-2">
+          <CalendarSyncInitializer role="PRINCIPAL" />
+        </div>
+
         {/* 캘린더 섹션 - 기존 크기 복원 */}
-        <div className="flex flex-col w-full bg-white text-stone-700" style={{ height: 'calc(100vh - 450px)' }}>
+        <div className="flex flex-col w-full bg-white text-stone-700" style={{ height: 'calc(100vh - 500px)' }}>
           <CalendarProvider
             mode="teacher-view"
             sessions={calendarSessions.map(toClassSessionForCalendar)}

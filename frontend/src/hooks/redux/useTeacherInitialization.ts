@@ -10,7 +10,7 @@ import {
 import { extractErrorMessage } from "@/types/api/error";
 import { getTeacherClassesWithSessions } from "@/api/teacher";
 import { toast } from "sonner";
-
+import type { TeacherSession } from "@/types/api/teacher";
 export function useTeacherInitialization() {
   const dispatch = useAppDispatch();
   const { data: session, status } = useSession();
@@ -48,7 +48,7 @@ export function useTeacherInitialization() {
         // 캘린더 데이터 로드
         const response = await getTeacherClassesWithSessions();
         const data = response.data;
-        const calendarSessions = (data?.sessions || []) as any[];
+        const calendarSessions = (data?.sessions || []) as TeacherSession[];
 
         // 캘린더 범위 설정 (현재 월부터 3개월)
         const now = new Date();

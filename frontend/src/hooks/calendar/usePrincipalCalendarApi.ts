@@ -17,7 +17,6 @@ export function usePrincipalCalendarApi() {
     isLoading,
     error,
     setSessions,
-    setRange,
     getSessionsByDate,
     getSessionsByMonth,
     getSessionsByClassId,

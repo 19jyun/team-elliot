@@ -55,3 +55,15 @@ export const getDefaultCalendar = async () => {
   const { result } = await calendar.getDefaultCalendar();
   return result;
 };
+
+// 권한 확인
+export const checkAllPermissions = async () => {
+  const { result } = await calendar.checkAllPermissions();
+  return result;
+};
+
+// 권한 요청
+export const requestAllPermissions = async () => {
+  const { result } = await calendar.requestAllPermissions();
+  return result;
+};

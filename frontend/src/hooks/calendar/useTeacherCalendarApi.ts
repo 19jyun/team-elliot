@@ -4,6 +4,7 @@ import { getTeacherClassesWithSessions } from "@/api/teacher";
 import { useTeacherCalendarData } from "@/hooks/redux/useTeacherCalendarData";
 import { useAppDispatch } from "@/store/hooks";
 import { setLoading, setError } from "@/store/slices/teacherSlice";
+import type { TeacherSession } from "@/types/api/teacher";
 
 // Teacher Calendar API 훅 - Redux 기반으로 수정
 export function useTeacherCalendarApi() {
@@ -17,7 +18,6 @@ export function useTeacherCalendarApi() {
     isLoading,
     error,
     setSessions,
-    setRange,
     getSessionsByDate,
     getSessionsByMonth,
     getSessionsByClassId,
@@ -38,7 +38,7 @@ export function useTeacherCalendarApi() {
       // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
       const data = response.data;
       if (data) {
-        setSessions((data.sessions || []) as any[]);
+        setSessions((data.sessions || []) as TeacherSession[]);
       }
     } catch (err: unknown) {
       const errorMessage =

@@ -6,8 +6,6 @@ import {
   setPrincipalData,
   setLoading,
   setError,
-  setCalendarSessions,
-  setCalendarRange,
 } from "@/store/slices/principalSlice";
 import { extractErrorMessage } from "@/types/api/error";
 import {

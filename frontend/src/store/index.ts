@@ -4,6 +4,7 @@ import principalReducer from "./slices/principalSlice";
 import studentReducer from "./slices/studentSlice";
 import teacherReducer from "./slices/teacherSlice";
 import uiReducer from "./slices/uiSlice";
+import { calendarSyncMiddleware } from "./middleware/calendarSyncMiddleware";
 
 export const store = configureStore({
   reducer: {
@@ -19,7 +20,7 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: ["persist/PERSIST"],
       },
-    }),
+    }).concat(calendarSyncMiddleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;
