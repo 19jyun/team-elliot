@@ -2,11 +2,14 @@ import { createSlice } from "@reduxjs/toolkit";
 import type { PrincipalState } from "@/types/store/principal";
 import type { SocketEventData } from "@/types/socket";
 import { RefundStatus } from "@/types/api/refund";
+import type { PrincipalClassSession } from "@/types/api/principal";
 
 const initialState: PrincipalState = {
   data: {
     enrollments: [],
     refundRequests: [],
+    calendarSessions: [],
+    calendarRange: null,
   },
   isLoading: false,
   error: null,
@@ -158,10 +161,86 @@ const principalSlice = createSlice({
       state.error = action.payload;
     },
 
+    // === 캘린더 세션 관련 액션들 ===
+
+    // 캘린더 세션 데이터 설정
+    setCalendarSessions: (state, action) => {
+      if (state.data) {
+        state.data.calendarSessions = action.payload;
+      }
+    },
+
+    // 캘린더 범위 설정
+    setCalendarRange: (state, action) => {
+      if (state.data) {
+        state.data.calendarRange = action.payload;
+      }
+    },
+
+    // 개별 캘린더 세션 추가
+    addCalendarSession: (state, action) => {
+      if (state.data) {
+        state.data.calendarSessions.push(action.payload);
+      }
+    },
+
+    // 개별 캘린더 세션 업데이트
+    updateCalendarSession: (state, action) => {
+      if (state.data?.calendarSessions) {
+        const index = state.data.calendarSessions.findIndex(
+          (s: PrincipalClassSession) => s.id === action.payload.id
+        );
+        if (index !== -1) {
+          state.data.calendarSessions[index] = action.payload;
+        }
+      }
+    },
+
+    // 개별 캘린더 세션 제거
+    removeCalendarSession: (state, action) => {
+      if (state.data?.calendarSessions) {
+        state.data.calendarSessions = state.data.calendarSessions.filter(
+          (s: PrincipalClassSession) => s.id !== action.payload
+        );
+      }
+    },
+
+    // 세션 정보 업데이트 (소켓용)
+    updateSessionInfoFromSocket: (state, action) => {
+      const { sessionId, updates } = action.payload;
+      if (state.data?.calendarSessions) {
+        const sessionIndex = state.data.calendarSessions.findIndex(
+          (s: PrincipalClassSession) => s.id === sessionId
+        );
+        if (sessionIndex !== -1) {
+          state.data.calendarSessions[sessionIndex] = {
+            ...state.data.calendarSessions[sessionIndex],
+            ...updates,
+          };
+        }
+      }
+    },
+
+    // 새로운 세션 추가 (소켓용)
+    addNewSessionFromSocket: (state, action) => {
+      const newSession = action.payload;
+      if (state.data?.calendarSessions) {
+        // 중복 체크
+        const existingIndex = state.data.calendarSessions.findIndex(
+          (s: PrincipalClassSession) => s.id === newSession.id
+        );
+        if (existingIndex === -1) {
+          state.data.calendarSessions.push(newSession);
+        }
+      }
+    },
+
     clearPrincipalData: (state) => {
       state.data = {
         enrollments: [],
         refundRequests: [],
+        calendarSessions: [],
+        calendarRange: null,
       };
       state.isLoading = false;
       state.error = null;
@@ -175,6 +254,13 @@ export const {
   setError,
   updatePrincipalEnrollment,
   updatePrincipalRefundRequest,
+  setCalendarSessions,
+  setCalendarRange,
+  addCalendarSession,
+  updateCalendarSession,
+  removeCalendarSession,
+  updateSessionInfoFromSocket,
+  addNewSessionFromSocket,
   clearPrincipalData,
 } = principalSlice.actions;
 

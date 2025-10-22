@@ -1,14 +1,28 @@
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import { useSession } from "@/lib/auth/AuthProvider";
 import { getTeacherClassesWithSessions } from "@/api/teacher";
-import type { TeacherSession } from "@/types/api/teacher";
+import { useTeacherCalendarData } from "@/hooks/redux/useTeacherCalendarData";
+import { useAppDispatch } from "@/store/hooks";
+import { setLoading, setError } from "@/store/slices/teacherSlice";
 
-// Teacher Calendar API 훅
+// Teacher Calendar API 훅 - Redux 기반으로 수정
 export function useTeacherCalendarApi() {
   const { data: session, status } = useSession();
-  const [sessions, setSessions] = useState<TeacherSession[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
+
+  // Redux 기반 캘린더 데이터 훅 사용
+  const {
+    calendarSessions,
+    calendarRange,
+    isLoading,
+    error,
+    setSessions,
+    setRange,
+    getSessionsByDate,
+    getSessionsByMonth,
+    getSessionsByClassId,
+    getSessionById,
+  } = useTeacherCalendarData();
 
   // Teacher가 아닌 경우 데이터 로드하지 않음
   const isTeacher =
@@ -18,13 +32,13 @@ export function useTeacherCalendarApi() {
     if (!isTeacher) return;
 
     try {
-      setIsLoading(true);
-      setError(null);
+      dispatch(setLoading(true));
+      dispatch(setError(null));
       const response = await getTeacherClassesWithSessions();
       // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
       const data = response.data;
       if (data) {
-        setSessions((data.sessions || []) as TeacherSession[]);
+        setSessions((data.sessions || []) as any[]);
       }
     } catch (err: unknown) {
       const errorMessage =
@@ -32,43 +46,20 @@ export function useTeacherCalendarApi() {
           ? (err as { response?: { data?: { message?: string } } }).response
               ?.data?.message
           : "세션 로드 실패";
-      setError(errorMessage || "세션 로드 실패");
+      dispatch(setError(errorMessage || "세션 로드 실패"));
     } finally {
-      setIsLoading(false);
+      dispatch(setLoading(false));
     }
-  }, [isTeacher]);
+  }, [isTeacher, dispatch, setSessions]);
 
-  const getSessionsByDate = (date: Date) => {
-    return sessions.filter((session) => {
-      const sessionDate = new Date(session.date);
-      return sessionDate.toDateString() === date.toDateString();
-    });
-  };
-
-  const getSessionsByMonth = (year: number, month: number) => {
-    return sessions.filter((session) => {
-      const sessionDate = new Date(session.date);
-      return (
-        sessionDate.getFullYear() === year && sessionDate.getMonth() === month
-      );
-    });
-  };
-
-  const getSessionsByClassId = (classId: number) => {
-    return sessions.filter((session) => session.class.id === classId);
-  };
-
-  const getSessionById = (sessionId: number) => {
-    return sessions.find((session) => session.id === sessionId);
-  };
-
-  // 캘린더용 세션 데이터 변환 (TeacherSession 구조 그대로 사용)
-  const calendarSessions = sessions;
+  // 캘린더용 세션 데이터 (이미 TeacherSession 타입이므로 그대로 사용)
+  const sessions = calendarSessions;
 
   return {
     // 데이터
     sessions,
     calendarSessions,
+    calendarRange,
     isLoading,
     error,
     isTeacher,

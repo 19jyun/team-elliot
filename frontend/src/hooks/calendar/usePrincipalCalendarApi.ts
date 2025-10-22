@@ -1,14 +1,28 @@
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import { useSession } from "@/lib/auth/AuthProvider";
 import { getPrincipalAllSessions } from "@/api/principal";
-import type { PrincipalClassSession } from "@/types/api/principal";
+import { usePrincipalCalendarData } from "@/hooks/redux/usePrincipalCalendarData";
+import { useAppDispatch } from "@/store/hooks";
+import { setLoading, setError } from "@/store/slices/principalSlice";
 
-// Principal Calendar API 훅
+// Principal Calendar API 훅 - Redux 기반으로 수정
 export function usePrincipalCalendarApi() {
   const { data: session, status } = useSession();
-  const [sessions, setSessions] = useState<PrincipalClassSession[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
+
+  // Redux 기반 캘린더 데이터 훅 사용
+  const {
+    calendarSessions,
+    calendarRange,
+    isLoading,
+    error,
+    setSessions,
+    setRange,
+    getSessionsByDate,
+    getSessionsByMonth,
+    getSessionsByClassId,
+    getSessionById,
+  } = usePrincipalCalendarData();
 
   // Principal이 아닌 경우 데이터 로드하지 않음
   const isPrincipal =
@@ -18,8 +32,8 @@ export function usePrincipalCalendarApi() {
     if (!isPrincipal) return;
 
     try {
-      setIsLoading(true);
-      setError(null);
+      dispatch(setLoading(true));
+      dispatch(setError(null));
       const response = await getPrincipalAllSessions();
       setSessions(response.data || []);
     } catch (err: unknown) {
@@ -28,43 +42,20 @@ export function usePrincipalCalendarApi() {
           ? (err as { response?: { data?: { message?: string } } }).response
               ?.data?.message
           : "세션 로드 실패";
-      setError(errorMessage || "세션 로드 실패");
+      dispatch(setError(errorMessage || "세션 로드 실패"));
     } finally {
-      setIsLoading(false);
+      dispatch(setLoading(false));
     }
-  }, [isPrincipal]);
+  }, [isPrincipal, dispatch, setSessions]);
 
-  const getSessionsByDate = (date: Date) => {
-    return sessions.filter((session) => {
-      const sessionDate = new Date(session.date);
-      return sessionDate.toDateString() === date.toDateString();
-    });
-  };
-
-  const getSessionsByMonth = (year: number, month: number) => {
-    return sessions.filter((session) => {
-      const sessionDate = new Date(session.date);
-      return (
-        sessionDate.getFullYear() === year && sessionDate.getMonth() === month
-      );
-    });
-  };
-
-  const getSessionsByClassId = (classId: number) => {
-    return sessions.filter((session) => session.classId === classId);
-  };
-
-  const getSessionById = (sessionId: number) => {
-    return sessions.find((session) => session.id === sessionId);
-  };
-
-  // 캘린더용 세션 데이터 변환 (이미 PrincipalClassSession 타입이므로 그대로 사용)
-  const calendarSessions = sessions;
+  // 캘린더용 세션 데이터 (이미 PrincipalClassSession 타입이므로 그대로 사용)
+  const sessions = calendarSessions;
 
   return {
     // 데이터
     sessions,
     calendarSessions,
+    calendarRange,
     isLoading,
     error,
     isPrincipal,

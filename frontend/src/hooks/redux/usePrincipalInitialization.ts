@@ -6,11 +6,14 @@ import {
   setPrincipalData,
   setLoading,
   setError,
+  setCalendarSessions,
+  setCalendarRange,
 } from "@/store/slices/principalSlice";
 import { extractErrorMessage } from "@/types/api/error";
 import {
   getPrincipalAllEnrollments,
   getPrincipalAllRefundRequests,
+  getPrincipalAllSessions,
 } from "@/api/principal";
 import { toast } from "sonner";
 
@@ -48,13 +51,17 @@ export function usePrincipalInitialization() {
         dispatch(setLoading(true));
         dispatch(setError(null));
 
-        // 실시간 업데이트가 필요한 데이터만 로드
-        const [enrollmentsResponse, refundRequestsResponse] = await Promise.all(
-          [getPrincipalAllEnrollments(), getPrincipalAllRefundRequests()]
-        );
+        // 실시간 업데이트가 필요한 데이터와 캘린더 데이터 로드
+        const [enrollmentsResponse, refundRequestsResponse, sessionsResponse] =
+          await Promise.all([
+            getPrincipalAllEnrollments(),
+            getPrincipalAllRefundRequests(),
+            getPrincipalAllSessions(),
+          ]);
 
         const enrollments = enrollmentsResponse.data || [];
         const refundRequests = refundRequestsResponse.data || [];
+        const calendarSessions = sessionsResponse.data || [];
 
         // 디버깅: 환불 요청 데이터 확인
         console.log("환불 요청 API 응답:", refundRequests);
@@ -66,11 +73,28 @@ export function usePrincipalInitialization() {
           );
         }
 
-        // Redux 상태 업데이트 (실시간 데이터만)
+        // 캘린더 범위 설정 (현재 월부터 3개월)
+        const now = new Date();
+        const calendarRange = {
+          startDate: new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            1
+          ).toISOString(),
+          endDate: new Date(
+            now.getFullYear(),
+            now.getMonth() + 2,
+            0
+          ).toISOString(),
+        };
+
+        // Redux 상태 업데이트 (실시간 데이터 + 캘린더 데이터)
         dispatch(
           setPrincipalData({
             enrollments,
             refundRequests,
+            calendarSessions,
+            calendarRange,
           })
         );
 

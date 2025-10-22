@@ -71,8 +71,8 @@ export default function PrincipalClassPage() {
   const { navigation } = useApp()
   const { navigateToSubPage } = navigation
   
-  // API 기반 데이터 관리
-  const { calendarSessions, loadSessions, isLoading, error } = usePrincipalCalendarApi()
+  // API 기반 데이터 관리 (Redux 기반)
+  const { calendarSessions, calendarRange, loadSessions, isLoading, error } = usePrincipalCalendarApi()
   
   // 날짜 클릭 관련 상태 추가
   const [clickedDate, setClickedDate] = useState<Date | null>(null)
@@ -87,15 +87,21 @@ export default function PrincipalClassPage() {
     loadSessions();
   }, [loadSessions]);
 
-  // 백엔드에서 받은 캘린더 범위 사용 (새로운 정책 적용)
-  const calendarRange = useMemo(() => {
-    // 백엔드에서 범위를 받지 못한 경우 기본값 사용 (현재 월부터 3개월)
+  // Redux에서 가져온 캘린더 범위를 Date 객체로 변환
+  const calendarRangeForCalendar = useMemo(() => {
+    if (calendarRange) {
+      return {
+        startDate: new Date(calendarRange.startDate),
+        endDate: new Date(calendarRange.endDate),
+      };
+    }
+    // 기본값 사용 (현재 월부터 3개월)
     const now = new Date();
     return {
       startDate: new Date(now.getFullYear(), now.getMonth(), 1),
-      endDate: new Date(now.getFullYear(), now.getMonth() + 2, 0), // 현재 월 + 2개월 = 3개월 범위
+      endDate: new Date(now.getFullYear(), now.getMonth() + 2, 0),
     };
-  }, []);
+  }, [calendarRange]);
 
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {
@@ -207,7 +213,7 @@ export default function PrincipalClassPage() {
             selectedSessionIds={new Set()}
             onSessionSelect={() => {}} // principal-view에서는 선택 기능 없음
             onDateClick={handleDateClick}
-            calendarRange={calendarRange}
+            calendarRange={calendarRangeForCalendar}
           >
             <ConnectedCalendar />
           </CalendarProvider>

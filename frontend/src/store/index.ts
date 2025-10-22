@@ -2,6 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import commonReducer from "./slices/commonSlice";
 import principalReducer from "./slices/principalSlice";
 import studentReducer from "./slices/studentSlice";
+import teacherReducer from "./slices/teacherSlice";
 import uiReducer from "./slices/uiSlice";
 
 export const store = configureStore({
@@ -9,6 +10,7 @@ export const store = configureStore({
     common: commonReducer,
     principal: principalReducer,
     student: studentReducer,
+    teacher: teacherReducer,
     // admin 제거됨
     ui: uiReducer,
   },
