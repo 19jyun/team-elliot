@@ -6,12 +6,14 @@ import { useSelector } from 'react-redux'
 
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
+import { CalendarSyncInitializer } from '@/components/calendar/CalendarSyncInitializer'
 import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessionModal'
 import { StudentSessionDetailModal } from '@/components/features/student/classes/StudentSessionDetailModal'
 import { useApp } from '@/contexts/AppContext'
 import type { RootState } from '@/store/index'
 import type { StudentCalendarSessionVM, StudentCalendarRangeVM } from '@/types/view/student'
 import type { ClassSession } from '@/types/api/class'
+import type { ClassSession as Session } from '@/types/api/class-session'
 import { toStudentCalendarSessionVM, toStudentCalendarRangeVM } from '@/lib/adapters/student'
 
 export default function StudentDashboard() {
@@ -27,8 +29,8 @@ export default function StudentDashboard() {
   
   // StudentClass를 StudentCalendarSessionVM으로 변환 (어댑터 사용)
   const calendarSessions: StudentCalendarSessionVM[] = rawCalendarSessions
-    .filter(session => session.date) // 날짜가 있는 세션만
-    .map(session => toStudentCalendarSessionVM({
+    .filter((session: Session) => session.date) // 날짜가 있는 세션만
+    .map((session: Session) => toStudentCalendarSessionVM({
       id: session.id,
       date: session.date!,
       startTime: session.startTime,
@@ -153,8 +155,13 @@ export default function StudentDashboard() {
           </div>
         </div>
 
+        {/* 캘린더 동기화 상태 */}
+        <div className="px-5 py-2">
+          <CalendarSyncInitializer role="STUDENT" />
+        </div>
+
         {/* 캘린더 섹션 - 기존 크기 복원 */}
-        <div className="flex flex-col w-full bg-white text-stone-700" style={{ height: 'calc(100vh - 450px)' }}>
+        <div className="flex flex-col w-full bg-white text-stone-700" style={{ height: 'calc(100vh - 500px)' }}>
           <CalendarProvider
             mode="student-view"
             sessions={calendarSessions}

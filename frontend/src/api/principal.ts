@@ -25,6 +25,9 @@ import {
   RemoveStudentResponse,
   StudentSessionHistory,
   CreatePrincipalClassRequest,
+  TeacherJoinRequestsResponse,
+  TeacherJoinRequestResponse,
+  RejectTeacherJoinRequestRequest,
 } from "../types/api/principal";
 import { CreateClassResponse } from "../types/api/class";
 import { GetSessionEnrollmentsResponse } from "../types/api/class-session";
@@ -266,5 +269,36 @@ export const getPrincipalStudentSessionHistory = (
 ): Promise<ApiResponse<StudentSessionHistory[]>> => {
   return get<ApiResponse<StudentSessionHistory[]>>(
     `/principal/students/${studentId}/sessions`
+  );
+};
+
+// === 선생님 가입 신청 관리 API ===
+
+// 선생님 가입 신청 목록 조회
+export const getTeacherJoinRequests = (): Promise<
+  ApiResponse<TeacherJoinRequestsResponse>
+> => {
+  return get<ApiResponse<TeacherJoinRequestsResponse>>(
+    "/principal/teacher-join-requests"
+  );
+};
+
+// 선생님 가입 신청 승인
+export const approveTeacherJoinRequest = (
+  requestId: number
+): Promise<ApiResponse<TeacherJoinRequestResponse>> => {
+  return post<ApiResponse<TeacherJoinRequestResponse>>(
+    `/principal/teacher-join-requests/${requestId}/approve`
+  );
+};
+
+// 선생님 가입 신청 거절
+export const rejectTeacherJoinRequest = (
+  requestId: number,
+  data: RejectTeacherJoinRequestRequest
+): Promise<ApiResponse<TeacherJoinRequestResponse>> => {
+  return post<ApiResponse<TeacherJoinRequestResponse>>(
+    `/principal/teacher-join-requests/${requestId}/reject`,
+    data
   );
 };

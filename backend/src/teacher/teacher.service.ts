@@ -823,4 +823,68 @@ export class TeacherService {
 
     return removedTeacher;
   }
+
+  // Teacher의 학원 가입 상태 조회
+  async getTeacherAcademyStatus(userId: number) {
+    const teacher = await this.prisma.teacher.findUnique({
+      where: { userRefId: userId },
+      include: {
+        academy: true,
+        joinRequests: {
+          where: { status: 'PENDING' },
+          include: { academy: true },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    if (!teacher) {
+      throw new NotFoundException({
+        code: 'TEACHER_NOT_FOUND',
+        message: '선생님을 찾을 수 없습니다.',
+        details: { userId },
+      });
+    }
+
+    // 이미 학원에 가입된 경우
+    if (teacher.academy) {
+      return {
+        status: 'JOINED' as const,
+        academy: {
+          id: teacher.academy.id,
+          name: teacher.academy.name,
+          code: teacher.academy.code,
+          phoneNumber: teacher.academy.phoneNumber,
+          address: teacher.academy.address,
+          description: teacher.academy.description,
+        },
+        joinRequest: null,
+      };
+    }
+
+    // 가입 신청이 있는 경우
+    if (teacher.joinRequests.length > 0) {
+      const joinRequest = teacher.joinRequests[0];
+      return {
+        status: 'PENDING' as const,
+        academy: null,
+        joinRequest: {
+          id: joinRequest.id,
+          academyId: joinRequest.academyId,
+          academyName: joinRequest.academy.name,
+          message: joinRequest.message,
+          status: joinRequest.status,
+          createdAt: joinRequest.createdAt.toISOString(),
+        },
+      };
+    }
+
+    // 가입도 안되어 있고 신청도 없는 경우
+    return {
+      status: 'NOT_JOINED' as const,
+      academy: null,
+      joinRequest: null,
+    };
+  }
 }

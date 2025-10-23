@@ -782,4 +782,234 @@ export class PrincipalService {
       principal.id,
     );
   }
+
+  // Principal의 학원 가입 신청 대기 선생님 목록 조회
+  async getTeacherJoinRequests(principalId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+      include: {
+        academy: {
+          include: {
+            joinRequests: {
+              where: { status: 'PENDING' },
+              include: {
+                teacher: true,
+              },
+              orderBy: { createdAt: 'desc' },
+            },
+            teachers: {
+              include: {
+                classes: {
+                  include: {
+                    classSessions: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!principal) {
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { principalId },
+      });
+    }
+
+    // 가입 신청 대기 중인 선생님들
+    const pendingRequests = principal.academy.joinRequests.map((request) => ({
+      id: request.id,
+      teacherId: request.teacher.id,
+      teacherName: request.teacher.name,
+      teacherPhoneNumber: request.teacher.phoneNumber,
+      teacherIntroduction: request.teacher.introduction,
+      teacherPhotoUrl: request.teacher.photoUrl,
+      message: request.message,
+      status: request.status,
+      createdAt: request.createdAt.toISOString(),
+    }));
+
+    // 이미 가입된 선생님들
+    const joinedTeachers = principal.academy.teachers.map((teacher) => ({
+      id: teacher.id,
+      teacherId: teacher.id,
+      teacherName: teacher.name,
+      teacherPhoneNumber: teacher.phoneNumber,
+      teacherIntroduction: teacher.introduction,
+      teacherPhotoUrl: teacher.photoUrl,
+      message: null,
+      status: 'APPROVED' as const,
+      createdAt: teacher.createdAt.toISOString(),
+    }));
+
+    return {
+      pendingRequests,
+      joinedTeachers,
+    };
+  }
+
+  // Principal이 선생님 가입 신청 승인
+  async approveTeacherJoinRequest(requestId: number, principalId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { principalId },
+      });
+    }
+
+    // 가입 신청 조회
+    const joinRequest = await this.prisma.academyJoinRequest.findFirst({
+      where: {
+        id: requestId,
+        academyId: principal.academyId,
+        status: 'PENDING',
+      },
+      include: {
+        teacher: true,
+        academy: true,
+      },
+    });
+
+    if (!joinRequest) {
+      throw new NotFoundException({
+        code: 'JOIN_REQUEST_NOT_FOUND',
+        message: '해당 가입 신청을 찾을 수 없습니다.',
+        details: { requestId },
+      });
+    }
+
+    // 트랜잭션으로 승인 처리
+    const result = await this.prisma.$transaction(async (tx) => {
+      // 가입 신청 상태를 APPROVED로 변경
+      await tx.academyJoinRequest.update({
+        where: { id: requestId },
+        data: { status: 'APPROVED' },
+      });
+
+      // 선생님을 학원에 추가
+      const updatedTeacher = await tx.teacher.update({
+        where: { id: joinRequest.teacherId },
+        data: { academyId: principal.academyId },
+        include: {
+          academy: true,
+        },
+      });
+
+      return updatedTeacher;
+    });
+
+    return result;
+  }
+
+  // Principal이 선생님 가입 신청 거절
+  async rejectTeacherJoinRequest(
+    requestId: number,
+    principalId: number,
+    reason?: string,
+  ) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { id: principalId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { principalId },
+      });
+    }
+
+    // 가입 신청 조회
+    const joinRequest = await this.prisma.academyJoinRequest.findFirst({
+      where: {
+        id: requestId,
+        academyId: principal.academyId,
+        status: 'PENDING',
+      },
+    });
+
+    if (!joinRequest) {
+      throw new NotFoundException({
+        code: 'JOIN_REQUEST_NOT_FOUND',
+        message: '해당 가입 신청을 찾을 수 없습니다.',
+        details: { requestId },
+      });
+    }
+
+    // 가입 신청 상태를 REJECTED로 변경
+    const updatedRequest = await this.prisma.academyJoinRequest.update({
+      where: { id: requestId },
+      data: {
+        status: 'REJECTED',
+        message: reason
+          ? `${joinRequest.message}\n\n거절 사유: ${reason}`
+          : joinRequest.message,
+      },
+    });
+
+    return updatedRequest;
+  }
+
+  // Principal의 학원 가입 신청 대기 선생님 목록 조회 (userId로)
+  async getTeacherJoinRequestsByUserId(userId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userId },
+      });
+    }
+
+    return this.getTeacherJoinRequests(principal.id);
+  }
+
+  // Principal이 선생님 가입 신청 승인 (userId로)
+  async approveTeacherJoinRequestByUserId(requestId: number, userId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userId },
+      });
+    }
+
+    return this.approveTeacherJoinRequest(requestId, principal.id);
+  }
+
+  // Principal이 선생님 가입 신청 거절 (userId로)
+  async rejectTeacherJoinRequestByUserId(
+    requestId: number,
+    userId: number,
+    reason?: string,
+  ) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userId },
+      });
+    }
+
+    return this.rejectTeacherJoinRequest(requestId, principal.id, reason);
+  }
 }

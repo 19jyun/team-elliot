@@ -15,6 +15,7 @@ import { usePhoneVerification } from '@/hooks/usePhoneVerification';
 import { WithdrawalConfirmModal } from './WithdrawalConfirmModal';
 import { AcademyCard } from '@/components/common/AcademyCard';
 import { JoinAcademyCard } from './JoinAcademyCard';
+import { PendingAcademyCard } from '../PendingAcademyCard';
 
 export default function AcademyManagement() {
   const { ui } = useApp();
@@ -30,10 +31,12 @@ export default function AcademyManagement() {
     withdrawalModal,
     setWithdrawalModal,
     withdrawalType,
+    academyStatus,
+    isLoadingStatus,
     loadCurrentAcademy,
+    loadAcademyStatus,
     handleJoinAcademy,
     handleWithdrawalConfirm,
-
     handleLeaveAcademy,
   } = useTeacherAcademyManagement();
 
@@ -50,28 +53,43 @@ export default function AcademyManagement() {
     originalPhoneNumber: editingAcademy?.phoneNumber || ''
   });
 
+
   useEffect(() => {
     pushFocus('subpage');
     
     loadCurrentAcademy();
+    loadAcademyStatus();
     
     return () => {
       popFocus();
     };
-  }, [pushFocus, popFocus, loadCurrentAcademy]);
+  }, [pushFocus, popFocus, loadCurrentAcademy, loadAcademyStatus]);
 
   return (
     <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px] py-2 relative">
 
-      {/* 새 학원 가입 섹션 */}
-      <div className="px-5 py-2">
-        <JoinAcademyCard
-          joinCode={joinCode}
-          setJoinCode={setJoinCode}
-          isJoining={isJoining}
-          onJoin={handleJoinAcademy}
-        />
-      </div>
+      {/* 가입 신청 대기 중인 학원 카드 */}
+      {academyStatus?.status === 'PENDING' && academyStatus.joinRequest && (
+        <div className="px-5 py-2">
+          <PendingAcademyCard
+            academyName={academyStatus.joinRequest.academyName}
+            message={academyStatus.joinRequest.message}
+            createdAt={academyStatus.joinRequest.createdAt}
+          />
+        </div>
+      )}
+
+      {/* 새 학원 가입 섹션 - 가입 신청이 없을 때만 표시 */}
+      {academyStatus?.status !== 'PENDING' && (
+        <div className="px-5 py-2">
+          <JoinAcademyCard
+            joinCode={joinCode}
+            setJoinCode={setJoinCode}
+            isJoining={isJoining}
+            onJoin={handleJoinAcademy}
+          />
+        </div>
+      )}
 
       {/* 내 학원 섹션 */}
       <div className="px-5 pb-6 py-2">
@@ -82,13 +100,22 @@ export default function AcademyManagement() {
               내 학원
             </CardTitle>
             <CardDescription>
-              현재 소속되어 있는 학원 정보입니다.
+              {academyStatus?.status === 'PENDING' 
+                ? '가입 신청이 진행 중입니다.' 
+                : '현재 소속되어 있는 학원 정보입니다.'
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
+            {isLoading || isLoadingStatus ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            ) : academyStatus?.status === 'PENDING' ? (
+              <div className="text-center py-8 text-[#AC9592]">
+                <Building2 className="h-12 w-12 mx-auto mb-4 text-[#AC9592]/60" />
+                <p>가입 신청이 진행 중입니다.</p>
+                <p className="text-sm">위에서 신청 상태를 확인할 수 있습니다.</p>
               </div>
             ) : !currentAcademy ? (
               <div className="text-center py-8 text-gray-500">

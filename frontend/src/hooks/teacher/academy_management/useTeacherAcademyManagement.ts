@@ -1,8 +1,13 @@
 import { useState, useCallback } from "react";
 import { useTeacherApi } from "@/hooks/teacher/useTeacherApi";
 import { toast } from "sonner";
-import { leaveAcademy, requestJoinAcademy } from "@/api/teacher";
+import {
+  leaveAcademy,
+  requestJoinAcademy,
+  getTeacherAcademyStatus,
+} from "@/api/teacher";
 import { extractErrorMessage } from "@/types/api/error";
+import { TeacherAcademyStatusResponse } from "@/types/api/teacher";
 
 export function useTeacherAcademyManagement() {
   const { academy: currentAcademy, loadAcademy, isLoading } = useTeacherApi();
@@ -14,6 +19,9 @@ export function useTeacherAcademyManagement() {
     "leave"
   );
   const [pendingJoinCode, setPendingJoinCode] = useState("");
+  const [academyStatus, setAcademyStatus] =
+    useState<TeacherAcademyStatusResponse | null>(null);
+  const [isLoadingStatus, setIsLoadingStatus] = useState(false);
 
   const loadCurrentAcademy = useCallback(async () => {
     try {
@@ -23,6 +31,19 @@ export function useTeacherAcademyManagement() {
       toast.error("학원 정보를 불러오는데 실패했습니다.");
     }
   }, [loadAcademy]);
+
+  const loadAcademyStatus = useCallback(async () => {
+    try {
+      setIsLoadingStatus(true);
+      const response = await getTeacherAcademyStatus();
+      setAcademyStatus(response.data || null);
+    } catch (error) {
+      console.error("학원 상태 로드 실패:", error);
+      toast.error("학원 상태를 불러오는데 실패했습니다.");
+    } finally {
+      setIsLoadingStatus(false);
+    }
+  }, []);
 
   const handleJoinAcademy = async () => {
     if (!joinCode.trim()) {
@@ -48,6 +69,8 @@ export function useTeacherAcademyManagement() {
       await requestJoinAcademy({ code });
       setJoinCode("");
       setPendingJoinCode("");
+      // 가입 요청 후 상태 다시 로드
+      await loadAcademyStatus();
       toast.success("학원 가입 요청이 완료되었습니다.");
     } catch (error: unknown) {
       console.error("학원 가입 요청 실패:", error);
@@ -80,6 +103,7 @@ export function useTeacherAcademyManagement() {
         toast.success("학원에서 탈퇴되었습니다.");
         // 데이터 재로드
         await loadAcademy();
+        await loadAcademyStatus();
       } catch (error: unknown) {
         console.error("학원 탈퇴 실패:", error);
         toast.error(extractErrorMessage(error, "학원 탈퇴에 실패했습니다."));
@@ -101,7 +125,10 @@ export function useTeacherAcademyManagement() {
     withdrawalModal,
     setWithdrawalModal,
     withdrawalType,
+    academyStatus,
+    isLoadingStatus,
     loadCurrentAcademy,
+    loadAcademyStatus,
     handleJoinAcademy,
     handleWithdrawalConfirm,
     handleLeaveAcademy,

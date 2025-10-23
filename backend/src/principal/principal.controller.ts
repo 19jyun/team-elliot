@@ -23,6 +23,7 @@ import { UpdateAcademyDto } from './dto/update-academy.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { principalProfileConfig } from '../config/multer.config';
 import { ClassService } from '../class/class.service';
+import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @Controller('principal')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -259,5 +260,43 @@ export class PrincipalController {
     @GetUser() user: any,
   ) {
     return this.principalService.getStudentSessionHistory(studentId, user.id);
+  }
+
+  // 선생님 가입 신청 목록 조회
+  @Get('teacher-join-requests')
+  @ApiOperation({ summary: '선생님 가입 신청 목록 조회' })
+  @ApiResponse({ status: 200, description: '가입 신청 목록 조회 성공' })
+  async getTeacherJoinRequests(@GetUser() user: any) {
+    return this.principalService.getTeacherJoinRequestsByUserId(user.id);
+  }
+
+  // 선생님 가입 신청 승인
+  @Post('teacher-join-requests/:requestId/approve')
+  @ApiOperation({ summary: '선생님 가입 신청 승인' })
+  @ApiResponse({ status: 200, description: '가입 신청 승인 성공' })
+  async approveTeacherJoinRequest(
+    @Param('requestId', ParseIntPipe) requestId: number,
+    @GetUser() user: any,
+  ) {
+    return this.principalService.approveTeacherJoinRequestByUserId(
+      requestId,
+      user.id,
+    );
+  }
+
+  // 선생님 가입 신청 거절
+  @Post('teacher-join-requests/:requestId/reject')
+  @ApiOperation({ summary: '선생님 가입 신청 거절' })
+  @ApiResponse({ status: 200, description: '가입 신청 거절 성공' })
+  async rejectTeacherJoinRequest(
+    @Param('requestId', ParseIntPipe) requestId: number,
+    @GetUser() user: any,
+    @Body() body: { reason?: string },
+  ) {
+    return this.principalService.rejectTeacherJoinRequestByUserId(
+      requestId,
+      user.id,
+      body.reason,
+    );
   }
 }
