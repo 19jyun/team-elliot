@@ -5,6 +5,7 @@ import {
   checkAllPermissions,
   requestAllPermissions,
 } from "@/capacitor/calendar/calendarService";
+import { calendarIdMapper } from "./calendarIdMapper";
 import type { ClassSession } from "@/types/api/class";
 import type { PrincipalClassSession } from "@/types/api/principal";
 import type { TeacherSession } from "@/types/api/teacher";
@@ -216,11 +217,26 @@ class CalendarSyncService {
       }
 
       const event = this.sessionToCalendarEvent(session);
-      const result = await createEvent(event);
 
-      console.log("기기 캘린더에 세션 추가 성공:", result);
-      this.syncStatus.error = null; // 성공 시 에러 초기화
-      return true;
+      // createEvent가 반환하는 네이티브 ID를 받음
+      // (플러그인 반환값이 { eventId: string } 형태라고 가정)
+      // 만약 { result: string } 형태라면 result를 사용하세요.
+      const { id: nativeEventId } = await createEvent(event);
+
+      if (nativeEventId) {
+        // [핵심] 앱 ID와 네이티브 ID를 매핑하여 저장
+        calendarIdMapper.setMapping(session.id.toString(), nativeEventId);
+        console.log(
+          "세션 추가 및 ID 매핑 성공:",
+          session.id,
+          "->",
+          nativeEventId
+        );
+        this.syncStatus.error = null;
+        return true;
+      } else {
+        throw new Error("네이티브 이벤트 ID를 반환받지 못했습니다.");
+      }
     } catch (error) {
       console.error("기기 캘린더에 세션 추가 실패:", error);
       this.syncStatus.error = `세션 추가 실패: ${
@@ -244,9 +260,20 @@ class CalendarSyncService {
         return false;
       }
 
-      // 기기 캘린더에서 해당 세션 제거
-      const result = await deleteEvent(sessionId);
-      console.log("기기 캘린더에서 세션 제거 성공:", result);
+      // [핵심] 앱 ID로 저장된 네이티브 ID를 조회
+      const nativeEventId = calendarIdMapper.getNativeId(sessionId);
+
+      if (!nativeEventId) {
+        console.log("매핑된 네이티브 ID가 없어 삭제를 건너뜁니다:", sessionId);
+        return true; // 이미 없으므로 성공으로 간주
+      }
+
+      // [핵심] 네이티브 ID로 삭제 요청
+      await deleteEvent(nativeEventId);
+
+      // 매핑 정보 제거
+      calendarIdMapper.removeMapping(sessionId);
+      console.log("기기 캘린더에서 세션 제거 성공:", nativeEventId);
       return true;
     } catch (error) {
       console.error("기기 캘린더에서 세션 제거 실패:", error);
@@ -278,13 +305,27 @@ class CalendarSyncService {
         return false;
       }
 
+      // [핵심] 앱 ID로 저장된 네이티브 ID를 조회
+      const nativeEventId = calendarIdMapper.getNativeId(session.id.toString());
+
+      if (!nativeEventId) {
+        console.warn(
+          "업데이트할 네이티브 ID가 없습니다. 새로 추가합니다.",
+          session.id
+        );
+        // ID가 없으면 '추가' 로직을 대신 실행
+        return this.addSessionToDevice(session);
+      }
+
       const event = this.sessionToCalendarEvent(session);
-      const result = await modifyEvent({
-        id: session.id.toString(),
+
+      // [핵심] 네이티브 ID로 수정 요청
+      await modifyEvent({
+        id: nativeEventId,
         ...event,
       });
 
-      console.log("기기 캘린더에서 세션 업데이트 성공:", result);
+      console.log("기기 캘린더에서 세션 업데이트 성공:", nativeEventId);
       this.syncStatus.error = null;
       return true;
     } catch (error) {
