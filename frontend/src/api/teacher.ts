@@ -13,6 +13,7 @@ import {
   LeaveAcademyResponse,
   UpdateClassDetailsRequest,
   UpdateClassDetailsResponse,
+  TeacherAcademyStatusResponse,
 } from "@/types/api/teacher";
 import type { Academy } from "@/types/api/common";
 
@@ -107,4 +108,14 @@ export const getMyAcademy = (): Promise<ApiResponse<Academy | null>> => {
 
 export const leaveAcademy = (): Promise<ApiResponse<LeaveAcademyResponse>> => {
   return post<ApiResponse<LeaveAcademyResponse>>("/teachers/me/leave-academy");
+};
+
+// === 학원 가입 상태 관련 API ===
+
+export const getTeacherAcademyStatus = (): Promise<
+  ApiResponse<TeacherAcademyStatusResponse>
+> => {
+  return get<ApiResponse<TeacherAcademyStatusResponse>>(
+    "/teachers/me/academy-status"
+  );
 };

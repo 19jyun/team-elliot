@@ -73,6 +73,28 @@ export interface LeaveAcademyResponse {
   message: string;
 }
 
+// === 학원 가입 상태 관련 타입들 ===
+
+export interface TeacherAcademyStatusResponse {
+  status: "NOT_JOINED" | "JOINED" | "PENDING";
+  academy?: {
+    id: number;
+    name: string;
+    code: string;
+    phoneNumber: string;
+    address: string;
+    description: string;
+  };
+  joinRequest?: {
+    id: number;
+    academyId: number;
+    academyName: string;
+    message?: string;
+    status: "PENDING" | "APPROVED" | "REJECTED";
+    createdAt: string;
+  };
+}
+
 // === 프로필 수정 관련 타입들 ===
 
 export interface UpdateTeacherProfileRequest {

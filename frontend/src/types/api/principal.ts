@@ -383,3 +383,37 @@ export interface CreateSessionContentRequest {
   order?: number;
   notes?: string;
 }
+
+// === 선생님 가입 신청 관리 관련 타입들 ===
+
+export interface TeacherJoinRequest {
+  id: number;
+  teacherId: number;
+  teacherName: string;
+  teacherPhoneNumber: string;
+  teacherIntroduction?: string;
+  teacherPhotoUrl?: string;
+  message?: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  createdAt: string;
+}
+
+export interface TeacherJoinRequestsResponse {
+  pendingRequests: TeacherJoinRequest[];
+  joinedTeachers: TeacherJoinRequest[];
+}
+
+export interface TeacherJoinRequestResponse {
+  success: boolean;
+  message: string;
+  teacher?: {
+    id: number;
+    name: string;
+    phoneNumber: string;
+    academyId: number;
+  };
+}
+
+export interface RejectTeacherJoinRequestRequest {
+  reason?: string;
+}
