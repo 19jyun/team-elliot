@@ -198,20 +198,16 @@ function getCurrentSessions(
 // 캘린더 동기화 미들웨어
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const calendarSyncMiddleware: any =
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (store: { getState: () => RootState }) =>
+  (next: (action: { type: string; payload?: unknown }) => unknown) =>
+  (action: { type: string; payload?: unknown }) => {
+    const result = next(action);
 
-    (store: any) =>
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (next: any) =>
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (action: any) => {
-      const result = next(action);
+    // 캘린더 관련 액션인지 확인
+    if (isCalendarAction(action)) {
+      // 비동기로 동기화 처리 (UI 블로킹 방지)
+      handleCalendarAction(action, store.getState());
+    }
 
-      // 캘린더 관련 액션인지 확인
-      if (isCalendarAction(action)) {
-        // 비동기로 동기화 처리 (UI 블로킹 방지)
-        handleCalendarAction(action, store.getState());
-      }
-
-      return result;
-    };
+    return result;
+  };

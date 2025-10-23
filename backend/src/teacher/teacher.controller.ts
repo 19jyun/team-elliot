@@ -114,4 +114,16 @@ export class TeacherController {
   async leaveAcademy(@GetUser() user: any) {
     return this.teacherService.leaveAcademy(user.id);
   }
+
+  // 선생님의 학원 가입 상태 조회
+  @Get('me/academy-status')
+  @Roles(Role.TEACHER)
+  @ApiOperation({ summary: '학원 가입 상태 조회' })
+  @ApiResponse({
+    status: 200,
+    description: '학원 가입 상태를 반환합니다.',
+  })
+  async getAcademyStatus(@GetUser() user: any) {
+    return this.teacherService.getTeacherAcademyStatus(user.id);
+  }
 }
