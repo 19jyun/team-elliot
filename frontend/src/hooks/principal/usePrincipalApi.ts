@@ -26,6 +26,9 @@ import {
   removePrincipalStudent,
   getPrincipalStudentSessionHistory,
   updatePrincipalAcademy,
+  getTeacherJoinRequests,
+  approveTeacherJoinRequest,
+  rejectTeacherJoinRequest,
 } from "@/api/principal";
 import type {
   PrincipalProfile,
@@ -41,6 +44,7 @@ import type {
   UpdateSessionContentRequest,
   RejectEnrollmentRequest,
   RejectRefundRequest,
+  TeacherJoinRequestsResponse,
 } from "@/types/api/principal";
 import type { BalletPose, PoseDifficulty } from "@/types/api/ballet-pose";
 import { getBalletPoses, getBalletPose } from "@/api/ballet-pose";
@@ -56,6 +60,8 @@ export function usePrincipalApi() {
   const [teachers, setTeachers] = useState<PrincipalTeacher[]>([]);
   const [students, setStudents] = useState<PrincipalStudent[]>([]);
   const [sessions, setSessions] = useState<PrincipalClassSession[]>([]);
+  const [joinRequests, setJoinRequests] =
+    useState<TeacherJoinRequestsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -287,6 +293,61 @@ export function usePrincipalApi() {
     return getPrincipalStudentSessionHistory(studentId);
   }, []);
 
+  // 가입 신청 목록 로드
+  const loadJoinRequests = useCallback(async () => {
+    if (!isPrincipal) return;
+
+    try {
+      setError(null);
+      setIsLoading(true);
+      const response = await getTeacherJoinRequests();
+      setJoinRequests(response.data || null);
+    } catch (error) {
+      handleApiError(error);
+      setError("가입 신청 목록을 불러오는데 실패했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isPrincipal, handleApiError]);
+
+  // 가입 신청 승인
+  const approveJoinRequest = useCallback(
+    async (requestId: number) => {
+      if (!isPrincipal) return;
+
+      try {
+        setError(null);
+        await approveTeacherJoinRequest(requestId);
+        // 승인 후 데이터 재로드
+        await Promise.all([loadTeachers(), loadJoinRequests()]);
+      } catch (error) {
+        handleApiError(error);
+        setError("가입 신청 승인에 실패했습니다.");
+        throw error;
+      }
+    },
+    [isPrincipal, handleApiError, loadTeachers, loadJoinRequests]
+  );
+
+  // 가입 신청 거절
+  const rejectJoinRequest = useCallback(
+    async (requestId: number, reason?: string) => {
+      if (!isPrincipal) return;
+
+      try {
+        setError(null);
+        await rejectTeacherJoinRequest(requestId, { reason });
+        // 거절 후 가입 신청 목록만 재로드
+        await loadJoinRequests();
+      } catch (error) {
+        handleApiError(error);
+        setError("가입 신청 거절에 실패했습니다.");
+        throw error;
+      }
+    },
+    [isPrincipal, handleApiError, loadJoinRequests]
+  );
+
   // 학원 정보 업데이트
   const updateAcademy = useCallback(
     async (data: UpdatePrincipalAcademyRequest) => {
@@ -506,5 +567,10 @@ export function usePrincipalApi() {
     removeTeacher,
     removeStudent,
     getStudentSessionHistory,
+    // 가입 신청 관리 관련
+    joinRequests,
+    loadJoinRequests,
+    approveJoinRequest,
+    rejectJoinRequest,
   };
 }
