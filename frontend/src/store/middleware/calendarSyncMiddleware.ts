@@ -50,6 +50,12 @@ async function handleCalendarAction(
   const { type, payload } = action;
 
   try {
+    // 사용자 설정 확인
+    if (!calendarSyncService.isUserEnabled()) {
+      console.log("사용자가 캘린더 동기화를 비활성화했습니다.");
+      return;
+    }
+
     // 권한 확인
     const hasPermission = await calendarSyncService.checkPermissions();
     if (!hasPermission) {

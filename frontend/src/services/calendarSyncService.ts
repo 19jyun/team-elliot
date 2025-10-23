@@ -32,8 +32,67 @@ class CalendarSyncService {
     error: null,
   };
 
+  // 사용자 설정 상태 관리
+  private userSettings = {
+    isUserEnabled: false,
+    hasRequestedPermission: false,
+  };
+
   constructor() {
     // Capacitor 플러그인은 calendarService에서 관리
+    // 로컬 스토리지에서 사용자 설정 로드
+    this.loadUserSettings();
+  }
+
+  // 사용자 설정 로드
+  private loadUserSettings(): void {
+    try {
+      const stored = localStorage.getItem("calendarSyncSettings");
+      if (stored) {
+        const settings = JSON.parse(stored);
+        this.userSettings = {
+          isUserEnabled: settings.isUserEnabled || false,
+          hasRequestedPermission: settings.hasRequestedPermission || false,
+        };
+        this.syncStatus.isEnabled = this.userSettings.isUserEnabled;
+      }
+    } catch (error) {
+      console.error("사용자 설정 로드 실패:", error);
+    }
+  }
+
+  // 사용자 설정 저장
+  private saveUserSettings(): void {
+    try {
+      localStorage.setItem(
+        "calendarSyncSettings",
+        JSON.stringify(this.userSettings)
+      );
+    } catch (error) {
+      console.error("사용자 설정 저장 실패:", error);
+    }
+  }
+
+  // 사용자가 설정에서 활성화했는지 확인
+  isUserEnabled(): boolean {
+    return this.userSettings.isUserEnabled;
+  }
+
+  // 사용자가 권한을 요청했는지 확인
+  hasUserRequestedPermission(): boolean {
+    return this.userSettings.hasRequestedPermission;
+  }
+
+  // 사용자 설정에서 동기화 활성화/비활성화
+  setUserEnabled(enabled: boolean): void {
+    this.userSettings.isUserEnabled = enabled;
+    this.syncStatus.isEnabled = enabled;
+    this.saveUserSettings();
+
+    if (!enabled) {
+      // 비활성화 시 에러 초기화
+      this.syncStatus.error = null;
+    }
   }
 
   // 권한 확인
@@ -53,9 +112,14 @@ class CalendarSyncService {
   async requestPermissions(): Promise<boolean> {
     try {
       const result = await requestAllPermissions();
-      return (
-        result.readCalendar === "granted" && result.writeCalendar === "granted"
-      );
+      const granted =
+        result.readCalendar === "granted" && result.writeCalendar === "granted";
+
+      // 권한 요청 시도 기록
+      this.userSettings.hasRequestedPermission = true;
+      this.saveUserSettings();
+
+      return granted;
     } catch (error) {
       console.error("캘린더 권한 요청 실패:", error);
       return false;
@@ -133,6 +197,12 @@ class CalendarSyncService {
   // 기기 캘린더에 세션 추가
   async addSessionToDevice(session: UnifiedCalendarSession): Promise<boolean> {
     try {
+      // 사용자 설정 확인
+      if (!this.isUserEnabled()) {
+        console.log("사용자가 캘린더 동기화를 비활성화했습니다.");
+        return false;
+      }
+
       if (!this.syncStatus.isEnabled) {
         console.log("캘린더 동기화가 비활성화되어 있습니다.");
         return false;
@@ -163,6 +233,12 @@ class CalendarSyncService {
   // 기기 캘린더에서 세션 제거
   async removeSessionFromDevice(sessionId: string): Promise<boolean> {
     try {
+      // 사용자 설정 확인
+      if (!this.isUserEnabled()) {
+        console.log("사용자가 캘린더 동기화를 비활성화했습니다.");
+        return false;
+      }
+
       if (!this.syncStatus.isEnabled) {
         console.log("캘린더 동기화가 비활성화되어 있습니다.");
         return false;
@@ -184,6 +260,12 @@ class CalendarSyncService {
     session: UnifiedCalendarSession
   ): Promise<boolean> {
     try {
+      // 사용자 설정 확인
+      if (!this.isUserEnabled()) {
+        console.log("사용자가 캘린더 동기화를 비활성화했습니다.");
+        return false;
+      }
+
       if (!this.syncStatus.isEnabled) {
         console.log("캘린더 동기화가 비활성화되어 있습니다.");
         return false;
@@ -217,6 +299,12 @@ class CalendarSyncService {
     sessions: UnifiedCalendarSession[]
   ): Promise<boolean> {
     try {
+      // 사용자 설정 확인
+      if (!this.isUserEnabled()) {
+        console.log("사용자가 캘린더 동기화를 비활성화했습니다.");
+        return false;
+      }
+
       this.syncStatus.syncInProgress = true;
       this.syncStatus.error = null;
 

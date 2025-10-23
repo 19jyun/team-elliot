@@ -2,7 +2,6 @@
 
 import * as React from 'react'
 
-
 import { MenuLinks } from '@/components/navigation/MenuLinks'
 import { useSession } from '@/lib/auth/AuthProvider'
 import { LogoutModal } from '@/components/user/LogoutModal'
@@ -43,6 +42,10 @@ export default function TeacherProfilePage() {
     navigateToSubPage('academy-management')
   }
 
+  const handleSettingsClick = () => {
+    navigateToSubPage('settings')
+  }
+
   const menuLinks = [
     {
       label: '내 프로필 관리',
@@ -58,6 +61,11 @@ export default function TeacherProfilePage() {
       label: '내 학원 관리',
       icon: '/icons/group.svg',
       onClick: handleAcademyManagementClick,
+    },
+    {
+      label: '설정',
+      icon: '/icons/group.svg',
+      onClick: handleSettingsClick,
     },
   ]
 

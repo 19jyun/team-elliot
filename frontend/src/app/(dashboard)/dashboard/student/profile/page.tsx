@@ -2,7 +2,6 @@
 
 import * as React from 'react'
 
-
 import { MenuLinks } from '@/components/navigation/MenuLinks'
 import { useSession } from '@/lib/auth/AuthProvider'
 import { LogoutModal } from '@/components/user/LogoutModal'
@@ -38,6 +37,10 @@ export default function ProfilePage() {
     navigateToSubPage('cancellation-history')
   }
 
+  const handleSettingsClick = () => {
+    navigateToSubPage('settings')
+  }
+
   const menuLinks = [
     {
       label: '내 학원 관리',
@@ -58,6 +61,11 @@ export default function ProfilePage() {
       label: '환불/취소 내역',
       icon: '/icons/group.svg',
       onClick: handleRefundHistoryClick,
+    },
+    {
+      label: '설정',
+      icon: '/icons/group.svg',
+      onClick: handleSettingsClick,
     },
   ]
 

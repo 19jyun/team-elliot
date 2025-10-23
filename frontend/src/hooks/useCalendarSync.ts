@@ -55,9 +55,10 @@ export function useCalendarSync(role: "STUDENT" | "PRINCIPAL" | "TEACHER") {
     }
   }, [sessions, updateSyncStatus]);
 
-  // 세션 변경 시 자동 동기화
+  // 세션 변경 시 자동 동기화 (사용자 설정 확인)
   useEffect(() => {
-    if (sessions.length > 0 && syncStatus.isEnabled) {
+    const isUserEnabled = calendarSyncService.isUserEnabled();
+    if (sessions.length > 0 && syncStatus.isEnabled && isUserEnabled) {
       console.log(
         `${role} 캘린더 세션 변경 감지, 동기화 시작:`,
         sessions.length,
