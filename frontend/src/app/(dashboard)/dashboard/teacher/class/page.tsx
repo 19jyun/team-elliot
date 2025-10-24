@@ -1,6 +1,6 @@
 'use client'
 
-import { useSession, useSignOut } from '@/lib/auth/AuthProvider'
+import { Session, useSession, useSignOut } from '@/lib/auth/AuthProvider'
 import { useState, useMemo, useEffect } from 'react'
 
 import { useTeacherCalendarApi } from '@/hooks/calendar/useTeacherCalendarApi'
@@ -22,7 +22,7 @@ export default function TeacherDashboardPage() {
   const { navigateToSubPage } = navigation
   
   // API 기반 데이터 관리 (Redux 기반)
-  const { calendarSessions, calendarRange, loadSessions, isLoading, error } = useTeacherCalendarApi()
+  const { calendarSessions, calendarRange, loadSessions, isLoading, error } = useTeacherCalendarApi(session as Session)
   
   // 날짜 클릭 관련 상태 추가
   const [clickedDate, setClickedDate] = useState<Date | null>(null)
@@ -177,6 +177,7 @@ export default function TeacherDashboardPage() {
         onClose={closeDateModal}
         onSessionClick={handleSessionClick}
         role="teacher"
+        session={session}
       />
 
       {/* Session Detail Modal - API 방식 */}

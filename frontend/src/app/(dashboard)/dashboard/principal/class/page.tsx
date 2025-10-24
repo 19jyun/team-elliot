@@ -12,6 +12,7 @@ import { useApp } from '@/contexts/AppContext'
 import { toClassSessionForCalendar } from '@/lib/adapters/principal'
 import type { PrincipalClassSession } from '@/types/api/principal'
 import type { ClassSession } from '@/types/api/class'
+import { Session } from '@/lib/auth/AuthProvider'
 
 // 강의 개설 카드 컴포넌트
 const CreateClassCard: React.FC<{
@@ -72,7 +73,7 @@ export default function PrincipalClassPage() {
   const { navigateToSubPage } = navigation
   
   // API 기반 데이터 관리 (Redux 기반)
-  const { calendarSessions, calendarRange, loadSessions, isLoading, error } = usePrincipalCalendarApi()
+  const { calendarSessions, calendarRange, loadSessions, isLoading, error } = usePrincipalCalendarApi(session as Session)
   
   // 날짜 클릭 관련 상태 추가
   const [clickedDate, setClickedDate] = useState<Date | null>(null)
@@ -239,6 +240,7 @@ export default function PrincipalClassPage() {
         onClose={closeDateModal}
         onSessionClick={handleSessionClick}
         role="principal"
+        session={session}
       />
 
       {/* Session Detail Modal - API 방식 */}
