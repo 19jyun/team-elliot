@@ -1,11 +1,15 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'
+import { useSessionContents } from '@/hooks/useSessionContents'
+import { checkAttendance } from '@/api/session-content'
 import { TeacherSessionEnrollment } from '@/types/api/teacher'
 import type { ClassSessionWithCounts } from '@/types/api/class'
 import type { AttendanceStatus, EnrollmentStatus } from '@/types/api/common'
 import { Checkbox } from '@mui/material'
+import { toast } from 'sonner'
 
 interface AttendanceDetailComponentProps {
   session: ClassSessionWithCounts | null
@@ -16,6 +20,25 @@ export function AttendanceDetailComponent({ session, onBack }: AttendanceDetailC
   const { loadSessionEnrollments } = useTeacherApi()
   const [enrollments, setEnrollments] = useState<TeacherSessionEnrollment[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  
+  // useSessionContents 훅 사용
+  const sessionId = session?.id || 0
+  const { data: sessionContents, isLoading: contentsLoading } = useSessionContents(sessionId)
+  
+  // 출석 체크를 위한 단일 뮤테이션 (enrollmentId를 동적으로 전달)
+  const checkAttendanceMutation = useMutation({
+    mutationFn: async ({ enrollmentId, status }: { enrollmentId: number; status: "ATTENDED" | "ABSENT" }) => {
+      const response = await checkAttendance(enrollmentId, { status });
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success("출석 정보가 저장되었습니다.");
+    },
+    onError: (error) => {
+      console.error("출석 체크 실패:", error);
+      toast.error("출석 체크에 실패했습니다.");
+    },
+  });
 
   // 수강생 정보 로드
   const loadEnrollments = useCallback(async () => {
@@ -51,22 +74,26 @@ export function AttendanceDetailComponent({ session, onBack }: AttendanceDetailC
   // 출석 정보 일괄 저장
   const handleSaveAttendance = async () => {
     try {
-      // TODO: 실제 API 호출 구현
-      console.log('출석 정보 저장:', enrollments.map(e => ({
-        id: e.id,
-        studentName: e.student.name,
-        status: e.status
-      })))
+      // 각 출석 정보를 개별적으로 업데이트
+      const updatePromises = enrollments.map(enrollment => {
+        const attendanceStatus = (enrollment.status as string) === 'PRESENT' ? 'ATTENDED' : 'ABSENT'
+        
+        return checkAttendanceMutation.mutateAsync({
+          enrollmentId: enrollment.id,
+          status: attendanceStatus
+        })
+      })
       
-      // 임시 알림 (실제 API 연동 시 제거)
-      alert('출석 정보가 저장되었습니다.')
+      await Promise.all(updatePromises)
+      
+      // 성공 시 뒤로가기
+      onBack()
     } catch (error) {
       console.error('출석 정보 저장 실패:', error)
-      alert('출석 정보 저장에 실패했습니다.')
     }
   }
 
-  if (isLoading) {
+  if (isLoading || contentsLoading) {
     return (
       <div className="flex flex-col h-full bg-white p-4 font-pretendard">
         <div className="bg-white border border-[#AC9592] rounded-lg p-4">

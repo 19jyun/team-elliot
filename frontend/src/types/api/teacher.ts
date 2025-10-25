@@ -164,6 +164,7 @@ export interface TeacherSession extends SessionCore {
   };
   enrollmentCount: number;
   confirmedCount: number;
+  sessionSummary?: string | null;
 }
 
 // === 수강신청 관련 타입들 ===

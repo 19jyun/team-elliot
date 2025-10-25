@@ -110,6 +110,7 @@ export default function TeacherDashboardPage() {
           ...session,
           enrollmentCount: session.enrollmentCount || 0,
           confirmedCount: session.confirmedCount || 0,
+          sessionSummary: session.sessionSummary || null,
           class: {
             ...session.class,
             tuitionFee: '50000', // 기본값 설정
@@ -121,6 +122,7 @@ export default function TeacherDashboardPage() {
         ...session,
         enrollmentCount: 0,
         confirmedCount: 0,
+        sessionSummary: null,
         class: {
           id: session.classId || 0,
           className: 'Unknown Class',

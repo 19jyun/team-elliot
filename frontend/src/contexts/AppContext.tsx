@@ -1,7 +1,7 @@
 // src/contexts/AppContext.tsx
 'use client';
 
-import React, { createContext, useContext, useCallback, ReactNode, useMemo, useEffect } from 'react';
+import React, { createContext, useContext, useCallback, ReactNode, useMemo, useEffect, useState } from 'react';
 import { useSession } from '@/lib/auth/AuthProvider';
 import { StateSyncProvider, useStateSync } from './state/StateSyncContext';
 import { NavigationProvider, useNavigation } from './navigation/NavigationContext';
@@ -14,6 +14,9 @@ import { CreateClassStep, ClassFormData } from './forms/CreateClassFormManager';
 import { AuthMode, SignupStep, SignupData, LoginData } from './forms/AuthFormManager';
 import { PrincipalPersonManagementStep } from './forms/PersonManagementFormManager';
 import { PrincipalCreateClassStep, PrincipalClassFormData } from './forms/PrincipalCreateClassFormManager';
+
+// SessionDetail 단계 타입 정의
+export type SessionDetailStep = 'main' | 'attendance' | 'content' | 'pose';
 
 // 통합된 AppContext 타입
 interface AppContextType {
@@ -67,6 +70,13 @@ interface AppContextType {
     auth: ReturnType<typeof useForms>['auth'];
     personManagement: ReturnType<typeof useForms>['personManagement'];
     principalPersonManagement: ReturnType<typeof useForms>['principalPersonManagement'];
+  };
+  
+  // SessionDetail 상태 관리
+  sessionDetail: {
+    currentStep: SessionDetailStep;
+    setCurrentStep: (step: SessionDetailStep) => void;
+    goBack: () => Promise<boolean>;
   };
   
   // 하위 호환성을 위한 직접 메서드들
@@ -158,10 +168,35 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     principalPersonManagement: forms.principalPersonManagement,
   }), [forms.enrollment, forms.createClass, forms.auth, forms.personManagement, forms.principalCreateClass, forms.principalPersonManagement]);
 
+  // SessionDetail 상태 관리
+  const [sessionDetailCurrentStep, setSessionDetailCurrentStep] = useState<SessionDetailStep>('main');
+  
+  const sessionDetailGoBack = useCallback(async (): Promise<boolean> => {
+    if (sessionDetailCurrentStep === 'main') {
+      // 메인 단계에서는 navigation의 goBack 사용
+      return await navigation.goBackWithForms(formsState);
+    } else {
+      // 하위 단계에서는 이전 단계로 이동
+      setSessionDetailCurrentStep('main');
+      return true;
+    }
+  }, [sessionDetailCurrentStep, navigation, formsState]);
+
   // 통합된 goBack (하위 호환성)
-  const goBack = useCallback(async (): Promise<boolean> => {
+  const unifiedGoBack = useCallback(async (): Promise<boolean> => {
+    // session-detail 서브페이지인 경우 sessionDetail 단계별 처리
+    if (navigation.subPage === 'session-detail') {
+      return await sessionDetailGoBack();
+    }
+    
+    // 기존 navigation goBack 사용
     return await navigation.goBackWithForms(formsState);
-  }, [navigation, formsState]);
+  }, [navigation, sessionDetailGoBack, formsState]);
+
+  // 하위 호환성을 위한 goBack (기존 코드와의 호환성)
+  const goBack = useCallback(async (): Promise<boolean> => {
+    return await unifiedGoBack();
+  }, [unifiedGoBack]);
 
   // 통합 폼 관리 메서드들 (Legacy 호환)
   const updateForm = useCallback(<T extends keyof FormsState>(
@@ -216,7 +251,7 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     stateSync,
     
     // 통합된 goBack (하위 호환성)
-    goBack,
+    goBack: unifiedGoBack,
     
     // 통합 폼 관리 (Legacy 호환)
     updateForm,
@@ -244,6 +279,13 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
       auth: forms.auth,
       personManagement: forms.personManagement,
       principalPersonManagement: forms.principalPersonManagement,
+    },
+    
+    // SessionDetail 상태 관리
+    sessionDetail: {
+      currentStep: sessionDetailCurrentStep,
+      setCurrentStep: setSessionDetailCurrentStep,
+      goBack: sessionDetailGoBack,
     },
     
     // 하위 호환성을 위한 직접 메서드들

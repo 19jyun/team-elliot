@@ -133,3 +133,5 @@ export const updateSessionSummary = (
     data
   );
 };
+
+// === 출석 체크 API ===
