@@ -14,6 +14,8 @@ import {
   UpdateClassDetailsRequest,
   UpdateClassDetailsResponse,
   TeacherAcademyStatusResponse,
+  UpdateSessionSummaryRequest,
+  UpdateSessionSummaryResponse,
 } from "@/types/api/teacher";
 import type { Academy } from "@/types/api/common";
 
@@ -117,5 +119,17 @@ export const getTeacherAcademyStatus = (): Promise<
 > => {
   return get<ApiResponse<TeacherAcademyStatusResponse>>(
     "/teachers/me/academy-status"
+  );
+};
+
+// === 세션 요약 관련 API ===
+
+export const updateSessionSummary = (
+  sessionId: number,
+  data: UpdateSessionSummaryRequest
+): Promise<ApiResponse<UpdateSessionSummaryResponse>> => {
+  return put<ApiResponse<UpdateSessionSummaryResponse>>(
+    `/teachers/sessions/${sessionId}/summary`,
+    data
   );
 };

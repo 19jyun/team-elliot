@@ -4,6 +4,8 @@ import {
   Post,
   Put,
   Body,
+  Param,
+  ParseIntPipe,
   UseGuards,
   UseInterceptors,
   UploadedFile,
@@ -20,6 +22,7 @@ import { Role } from '@prisma/client';
 // import { UpdateAcademyDto } from '../academy/dto/update-academy.dto';
 import { JoinAcademyRequestDto } from '../academy/dto/join-academy-request.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdateSessionSummaryDto } from './dto/update-session-summary.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @ApiTags('Teacher')
@@ -125,5 +128,24 @@ export class TeacherController {
   })
   async getAcademyStatus(@GetUser() user: any) {
     return this.teacherService.getTeacherAcademyStatus(user.id);
+  }
+
+  @Put('sessions/:sessionId/summary')
+  @Roles(Role.TEACHER)
+  @ApiOperation({ summary: '세션 요약 업데이트' })
+  @ApiResponse({
+    status: 200,
+    description: '세션 요약이 성공적으로 업데이트되었습니다.',
+  })
+  async updateSessionSummary(
+    @Param('sessionId', ParseIntPipe) sessionId: number,
+    @Body() updateSessionSummaryDto: UpdateSessionSummaryDto,
+    @GetUser() user: any,
+  ) {
+    return this.teacherService.updateSessionSummary(
+      sessionId,
+      updateSessionSummaryDto.sessionSummary,
+      user.id,
+    );
   }
 }

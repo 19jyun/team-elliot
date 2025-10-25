@@ -324,3 +324,49 @@ export interface UpdateClassDetailsResponse {
     updatedAt: string;
   };
 }
+
+// === 세션 요약 관련 타입들 ===
+
+export interface UpdateSessionSummaryRequest {
+  sessionSummary: string;
+}
+
+export interface UpdateSessionSummaryResponse {
+  id: number;
+  classId: number;
+  date: string;
+  startTime: string;
+  endTime: string;
+  sessionSummary: string | null;
+  class: {
+    id: number;
+    className: string;
+    level: string;
+    maxStudents: number;
+  };
+  contents: Array<{
+    id: number;
+    sessionId: number;
+    poseId: number;
+    order: number;
+    pose: {
+      id: number;
+      name: string;
+      description?: string;
+      difficulty: string;
+      imageUrl?: string;
+    };
+  }>;
+  enrollments: Array<{
+    id: number;
+    studentId: number;
+    sessionId: number;
+    status: string;
+    enrolledAt: string;
+    student: {
+      id: number;
+      name: string;
+      phoneNumber: string;
+    };
+  }>;
+}

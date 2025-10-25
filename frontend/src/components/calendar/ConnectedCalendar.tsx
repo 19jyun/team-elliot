@@ -25,6 +25,7 @@ export function ConnectedCalendar() {
     selectedSessionIds,
     focusedMonth,
     calendarRange,
+    selectedDate,
     onMonthChange,
     updateFocusedMonth,
     onSessionSelect,
@@ -450,6 +451,12 @@ export function ConnectedCalendar() {
                   const isSelected = dayInfo.sessions.some((session: ClassSession) => 
                     selectedSessionIds.has(session.id)
                   );
+                  
+                  // 선택된 날짜인지 확인 (teacher-view/student-view에서 사용)
+                  const isDateSelected = selectedDate && 
+                    dayInfo.year === new Date(selectedDate).getFullYear() &&
+                    dayInfo.month === new Date(selectedDate).getMonth() + 1 &&
+                    dayInfo.day === new Date(selectedDate).getDate();
 
                   // modification 모드에서 취소될 예정인 세션 확인 (기존에 신청되었지만 현재 선택되지 않은 경우)
                   const willBeCancelled = calendarMode === 'modification' && dayInfo.sessions.some((session: ClassSession) => {
@@ -490,6 +497,7 @@ export function ConnectedCalendar() {
                               type="button"
                               className={`w-10 h-10 flex items-center justify-center rounded-full border-2 text-base font-medium transition-all duration-150 cursor-pointer ${
                                 isToday ? 'border-[#573B30] bg-[#573B30] text-white' :
+                                isDateSelected ? 'border-[#573B30] bg-[#573B30] text-white' :
                                 isCurrentFocusedMonth 
                                   ? 'border-[#573B30] text-[#573B30] hover:bg-[#573B30] hover:text-white' 
                                   : 'border-gray-300 text-gray-400 hover:bg-gray-300 hover:text-white'

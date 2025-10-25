@@ -262,6 +262,7 @@ model ClassSession {
   endTime         DateTime            @map("end_time")
   currentStudents Int                 @default(0) @map("current_students")
   maxStudents     Int                 @map("max_students")
+  sessionSummary  String?             @map("session_summary") @db.VarChar(100)
   class           Class               @relation(fields: [classId], references: [id])
   contents        SessionContent[]
   enrollments     SessionEnrollment[]
