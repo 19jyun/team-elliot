@@ -47,6 +47,9 @@ COPY --from=builder --chown=nestjs:nodejs /app/scripts ./scripts
 RUN mkdir -p /app/uploads/teacher-photos /app/uploads/principal-photos /app/uploads/ballet-poses /app/backups
 RUN chown -R nestjs:nodejs /app/uploads /app/backups /app/scripts
 
+# Make deploy script executable (before switching to non-root user)
+RUN chmod +x /app/scripts/deploy.sh
+
 # Switch to non-root user
 USER nestjs
 
@@ -58,4 +61,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD node scripts/health-check.js || exit 1
 
 # Start the application with enhanced deployment script
-CMD ["sh", "-c", "chmod +x /app/scripts/deploy.sh && /app/scripts/deploy.sh"] 
+CMD ["/app/scripts/deploy.sh"] 
