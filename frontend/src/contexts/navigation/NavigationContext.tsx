@@ -140,7 +140,8 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
           'profile',
           'personal-info',
           'academy-management',
-          'teacher-classes'
+          'teacher-classes',
+          'session-detail'
         ].includes(page);
       case 'PRINCIPAL':
         return [

@@ -18,7 +18,9 @@ export function SessionCard({ session, onClick, role }: SessionCardProps) {
   return (
     <div
       className="flex flex-col p-4 mb-3 rounded-lg border border-gray-200 cursor-pointer hover:shadow-md transition-colors"
-      style={{ background: getDifficultyBgColor(session.class?.level || 'BEGINNER') }}
+      style={{ 
+        background: getDifficultyBgColor(session.class?.level || 'BEGINNER')
+      }}
       onClick={onClick}
     >
       {/* 날짜 정보 */}

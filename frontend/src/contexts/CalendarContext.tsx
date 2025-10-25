@@ -20,6 +20,7 @@ interface CalendarContextType {
   selectedSessionIds: Set<number>;
   focusedMonth: { year: number; month: number };
   calendarRange?: { startDate: Date; endDate: Date };
+  selectedDate?: string | null;
   onSessionSelect: (sessionId: number) => void;
   onDateClick: (date: string) => void;
   onMonthChange: (direction: 'prev' | 'next') => void;
@@ -47,6 +48,7 @@ interface CalendarProviderProps {
   onDateClick?: (date: string) => void;
   initialFocusedMonth?: { year: number; month: number };
   calendarRange?: { startDate: Date; endDate: Date };
+  selectedDate?: string | null;
 }
 
 export function CalendarProvider({
@@ -58,6 +60,7 @@ export function CalendarProvider({
   onDateClick,
   initialFocusedMonth,
   calendarRange,
+  selectedDate,
 }: CalendarProviderProps) {
   const [focusedMonth, setFocusedMonth] = useState(() => {
     if (initialFocusedMonth) return initialFocusedMonth;
@@ -259,6 +262,7 @@ export function CalendarProvider({
     selectedSessionIds,
     focusedMonth,
     calendarRange,
+    selectedDate,
     onSessionSelect,
     onDateClick: onDateClick || (() => {}),
     onMonthChange: handleMonthChange,

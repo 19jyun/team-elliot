@@ -4,33 +4,34 @@ import { Session, useSession, useSignOut } from '@/lib/auth/AuthProvider'
 import { useState, useMemo, useEffect } from 'react'
 
 import { useTeacherCalendarApi } from '@/hooks/calendar/useTeacherCalendarApi'
-import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessionModal'
-import { SessionDetailModal } from '@/components/common/Session/SessionDetailModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
+import { SessionCardDisplay } from '@/components/calendar/SessionCardDisplay'
 import { useApp } from '@/contexts/AppContext'
-import { toTeacherCalendarSessionVM, toTeacherSessionDetailModalVM, toClassSessionForCalendar } from '@/lib/adapters/teacher'
-import type { TeacherSessionDetailModalVM } from '@/types/view/teacher'
+import { toClassSessionForCalendar } from '@/lib/adapters/teacher'
+import { useRoleCalendarApi } from '@/hooks/calendar/useRoleCalendarApi'
 import type { TeacherSession } from '@/types/api/teacher'
-import type { ClassSession } from '@/types/api/class'
+import type { ClassSession, ClassSessionWithCounts } from '@/types/api/class'
 
 export default function TeacherDashboardPage() {
   const { data: session, status } = useSession()
   const signOut = useSignOut()
 
-  const { navigation } = useApp()
+  const { navigation, data } = useApp()
   const { navigateToSubPage } = navigation
   
   // API 기반 데이터 관리 (Redux 기반)
   const { calendarSessions, calendarRange, loadSessions, isLoading, error } = useTeacherCalendarApi(session as Session)
   
-  // 날짜 클릭 관련 상태 추가
-  const [clickedDate, setClickedDate] = useState<Date | null>(null)
-  const [isDateModalOpen, setIsDateModalOpen] = useState(false)
+  // Role별 API 기반 데이터 관리
+  const { getSessionsByDate } = useRoleCalendarApi('TEACHER', session);
   
-  // 세션 상세 모달 상태 추가
-  const [selectedSession, setSelectedSession] = useState<TeacherSession | null>(null)
-  const [isSessionDetailModalOpen, setIsSessionDetailModalOpen] = useState(false)
+  // 선택된 날짜와 세션 상태
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [selectedSessions, setSelectedSessions] = useState<ClassSessionWithCounts[]>([])
+  
+  // 선택된 날짜 문자열 (YYYY-MM-DD 형식)
+  const selectedDateString = selectedDate ? selectedDate.toISOString().split('T')[0] : null
 
   // 초기 데이터 로드
   useEffect(() => {
@@ -55,13 +56,6 @@ export default function TeacherDashboardPage() {
 
   // CalendarProvider용 데이터 변환 (ClassSession 타입으로 변환)
   const classSessionsForCalendar = (calendarSessions as TeacherSession[]).map(toClassSessionForCalendar);
-  
-  // 세션 상세 모달 ViewModel
-  const sessionDetailModalVM: TeacherSessionDetailModalVM = toTeacherSessionDetailModalVM({
-    isOpen: isSessionDetailModalOpen,
-    session: selectedSession ? toTeacherCalendarSessionVM(selectedSession) : null,
-    onClose: () => setIsSessionDetailModalOpen(false)
-  });
 
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {
@@ -93,24 +87,38 @@ export default function TeacherDashboardPage() {
     )
   }
 
-  // 날짜 클릭 핸들러 (ConnectedCalendar용) - API 방식
+  // 날짜 클릭 핸들러 (ConnectedCalendar용) - 선택/해제 기능
   const handleDateClick = (dateString: string) => {
     const clickedDateObj = new Date(dateString);
-    setClickedDate(clickedDateObj);
-    setIsDateModalOpen(true);
+    
+    // 같은 날짜를 클릭하면 선택 해제
+    if (selectedDate && selectedDate.toISOString().split('T')[0] === dateString) {
+      setSelectedDate(null);
+      setSelectedSessions([]);
+      return;
+    }
+    
+    // 새로운 날짜 선택
+    setSelectedDate(clickedDateObj);
+    
+    // 선택된 날짜의 세션들을 가져와서 상태 업데이트
+    const sessions = getSessionsByDate(clickedDateObj);
+    const sessionsWithCounts = sessions.map((session) => ({
+      ...session,
+      enrollmentCount: (session as any).enrollmentCount || 0,
+      confirmedCount: (session as any).confirmedCount || 0,
+    })) as ClassSessionWithCounts[];
+    
+    setSelectedSessions(sessionsWithCounts);
   }
 
-  const closeDateModal = () => {
-    setIsDateModalOpen(false)
-    setClickedDate(null)
-  }
-
-  // 세션 클릭 핸들러 추가
-  const handleSessionClick = (session: ClassSession) => {
-    // ClassSession을 TeacherSession으로 변환하여 저장
-    const teacherSession = calendarSessions.find(s => s.id === session.id) as TeacherSession
-    setSelectedSession(teacherSession)
-    setIsSessionDetailModalOpen(true)
+  // 세션 클릭 핸들러 - 서브페이지로 이동
+  const handleSessionClick = (session: ClassSessionWithCounts) => {
+    // 세션 정보를 DataContext에 저장
+    data.setCache('selectedSession', session);
+    
+    // 서브페이지로 이동
+    navigateToSubPage('session-detail');
   }
 
 
@@ -164,29 +172,22 @@ export default function TeacherDashboardPage() {
             onSessionSelect={() => {}} // teacher-view에서는 선택 기능 없음
             onDateClick={handleDateClick}
             calendarRange={calendarRangeForCalendar}
+            selectedDate={selectedDateString}
           >
             <ConnectedCalendar />
           </CalendarProvider>
         </div>
       </header>
 
-      {/* Date Session Modal - API 방식 */}
-      <DateSessionModal
-        isOpen={isDateModalOpen}
-        selectedDate={clickedDate}
-        onClose={closeDateModal}
-        onSessionClick={handleSessionClick}
-        role="teacher"
-        session={session}
-      />
-
-      {/* Session Detail Modal - API 방식 */}
-      <SessionDetailModal
-        isOpen={sessionDetailModalVM.isOpen}
-        sessionId={selectedSession?.id || null}
-        onClose={sessionDetailModalVM.onClose}
-        role="teacher"
-      />
+      {/* 세션 카드 표시 섹션 */}
+      <div className="flex-1 bg-white px-5 py-4">
+        <SessionCardDisplay
+          selectedDate={selectedDate}
+          sessions={selectedSessions}
+          onSessionClick={handleSessionClick}
+          role="teacher"
+        />
+      </div>
     </div>
   )
 }
