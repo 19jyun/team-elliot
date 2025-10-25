@@ -18,6 +18,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useStudentInitialization } from '@/hooks/redux/useStudentInitialization';
 import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSocketListener';
+import { SettingsPage } from '@/components/settings/SettingsPage';
 
 
 function StudentDashboardContent() {
@@ -54,6 +55,8 @@ function StudentDashboardContent() {
         return <EnrollmentHistory />;
       case 'cancellation-history':
         return <CancellationHistory />;
+      case 'settings':
+        return <SettingsPage role="STUDENT" />;
       default:
         return null;
     }

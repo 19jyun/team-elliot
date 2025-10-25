@@ -1,6 +1,6 @@
 'use client'
 
-import { useSession, useSignOut } from '@/lib/auth/AuthProvider'
+import { Session, useSession, useSignOut } from '@/lib/auth/AuthProvider'
 import { useState, useMemo, useEffect } from 'react'
 
 import { useTeacherCalendarApi } from '@/hooks/calendar/useTeacherCalendarApi'
@@ -8,7 +8,6 @@ import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessi
 import { SessionDetailModal } from '@/components/common/Session/SessionDetailModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
-import { CalendarSyncInitializer } from '@/components/calendar/CalendarSyncInitializer'
 import { useApp } from '@/contexts/AppContext'
 import { toTeacherCalendarSessionVM, toTeacherSessionDetailModalVM, toClassSessionForCalendar } from '@/lib/adapters/teacher'
 import type { TeacherSessionDetailModalVM } from '@/types/view/teacher'
@@ -23,7 +22,7 @@ export default function TeacherDashboardPage() {
   const { navigateToSubPage } = navigation
   
   // API 기반 데이터 관리 (Redux 기반)
-  const { calendarSessions, calendarRange, loadSessions, isLoading, error } = useTeacherCalendarApi()
+  const { calendarSessions, calendarRange, loadSessions, isLoading, error } = useTeacherCalendarApi(session as Session)
   
   // 날짜 클릭 관련 상태 추가
   const [clickedDate, setClickedDate] = useState<Date | null>(null)
@@ -155,10 +154,6 @@ export default function TeacherDashboardPage() {
           </div>
         </div>
 
-        {/* 캘린더 동기화 상태 */}
-        <div className="px-5 py-2">
-          <CalendarSyncInitializer role="TEACHER" />
-        </div>
 
         {/* 캘린더 섹션 - 기존 크기 복원 */}
         <div className="flex flex-col w-full bg-white text-stone-700" style={{ height: 'calc(100vh - 500px)' }}>
@@ -182,6 +177,7 @@ export default function TeacherDashboardPage() {
         onClose={closeDateModal}
         onSessionClick={handleSessionClick}
         role="teacher"
+        session={session}
       />
 
       {/* Session Detail Modal - API 방식 */}

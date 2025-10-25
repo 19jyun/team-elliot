@@ -41,7 +41,6 @@ export function AuthGuard({
   fallback 
 }: AuthGuardProps) {
   const { data: session, status } = useSession();
-  const [isRedirecting, setIsRedirecting] = React.useState(false);
 
   // 모든 useEffect를 최상단에서 호출 (Hooks 규칙 준수)
   React.useEffect(() => {
@@ -50,14 +49,6 @@ export function AuthGuard({
       AuthRouter.redirectToLogin();
     }
   }, [requireAuth, session?.user, status]);
-
-  React.useEffect(() => {
-    // 로그인된 사용자가 로그인 페이지에 접근한 경우
-    if (!requireAuth && session?.user && status !== 'loading' && !isRedirecting) {
-      setIsRedirecting(true);
-      AuthRouter.redirectToDashboard();
-    }
-  }, [requireAuth, session?.user, status, isRedirecting]);
 
 
   // 로딩 상태
@@ -68,11 +59,6 @@ export function AuthGuard({
   // 인증이 필요한데 로그인되지 않은 경우
   if (requireAuth && !session?.user) {
     return fallback || <LoadingSpinner message="인증이 필요합니다." size="sm" />;
-  }
-
-  // 로그인된 사용자가 로그인 페이지에 접근한 경우
-  if (!requireAuth && session?.user && isRedirecting) {
-    return fallback || <LoadingSpinner message="리디렉션 중..." size="md" />;
   }
 
   return <>{children}</>;

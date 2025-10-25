@@ -8,11 +8,11 @@ import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessi
 import { SessionDetailModal } from '@/components/common/Session/SessionDetailModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
-import { CalendarSyncInitializer } from '@/components/calendar/CalendarSyncInitializer'
 import { useApp } from '@/contexts/AppContext'
 import { toClassSessionForCalendar } from '@/lib/adapters/principal'
 import type { PrincipalClassSession } from '@/types/api/principal'
 import type { ClassSession } from '@/types/api/class'
+import { Session } from '@/lib/auth/AuthProvider'
 
 // 강의 개설 카드 컴포넌트
 const CreateClassCard: React.FC<{
@@ -73,7 +73,7 @@ export default function PrincipalClassPage() {
   const { navigateToSubPage } = navigation
   
   // API 기반 데이터 관리 (Redux 기반)
-  const { calendarSessions, calendarRange, loadSessions, isLoading, error } = usePrincipalCalendarApi()
+  const { calendarSessions, calendarRange, loadSessions, isLoading, error } = usePrincipalCalendarApi(session as Session)
   
   // 날짜 클릭 관련 상태 추가
   const [clickedDate, setClickedDate] = useState<Date | null>(null)
@@ -206,10 +206,6 @@ export default function PrincipalClassPage() {
           </div>
         </div>
 
-        {/* 캘린더 동기화 상태 */}
-        <div className="px-5 py-2">
-          <CalendarSyncInitializer role="PRINCIPAL" />
-        </div>
 
         {/* 캘린더 섹션 - 기존 크기 복원 */}
         <div className="flex flex-col w-full bg-white text-stone-700" style={{ height: 'calc(100vh - 500px)' }}>
@@ -244,6 +240,7 @@ export default function PrincipalClassPage() {
         onClose={closeDateModal}
         onSessionClick={handleSessionClick}
         role="principal"
+        session={session}
       />
 
       {/* Session Detail Modal - API 방식 */}

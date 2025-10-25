@@ -1,14 +1,13 @@
 import { useCallback } from "react";
-import { useSession } from "@/lib/auth/AuthProvider";
 import { getTeacherClassesWithSessions } from "@/api/teacher";
 import { useTeacherCalendarData } from "@/hooks/redux/useTeacherCalendarData";
 import { useAppDispatch } from "@/store/hooks";
 import { setLoading, setError } from "@/store/slices/teacherSlice";
 import type { TeacherSession } from "@/types/api/teacher";
+import type { Session } from "@/lib/auth/AuthProvider";
 
 // Teacher Calendar API 훅 - Redux 기반으로 수정
-export function useTeacherCalendarApi() {
-  const { data: session, status } = useSession();
+export function useTeacherCalendarApi(session: Session | null) {
   const dispatch = useAppDispatch();
 
   // Redux 기반 캘린더 데이터 훅 사용
@@ -25,8 +24,7 @@ export function useTeacherCalendarApi() {
   } = useTeacherCalendarData();
 
   // Teacher가 아닌 경우 데이터 로드하지 않음
-  const isTeacher =
-    status === "authenticated" && session?.user?.role === "TEACHER";
+  const isTeacher = session?.user?.role === "TEACHER";
 
   const loadSessions = useCallback(async () => {
     if (!isTeacher) return;
@@ -50,7 +48,7 @@ export function useTeacherCalendarApi() {
     } finally {
       dispatch(setLoading(false));
     }
-  }, [isTeacher, dispatch, setSessions]);
+  }, [dispatch, setSessions, isTeacher]);
 
   // 캘린더용 세션 데이터 (이미 TeacherSession 타입이므로 그대로 사용)
   const sessions = calendarSessions;

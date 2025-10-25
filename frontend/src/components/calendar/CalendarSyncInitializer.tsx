@@ -1,17 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useSession } from '@/lib/auth/AuthProvider';
+import { useState } from 'react';
 import { useCalendarSync } from '@/hooks/useCalendarSync';
 import { Button } from '@/components/ui/button';
-import { Calendar, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 interface CalendarSyncInitializerProps {
   role: 'STUDENT' | 'PRINCIPAL' | 'TEACHER';
 }
 
 export function CalendarSyncInitializer({ role }: CalendarSyncInitializerProps) {
-  const { data: session, status } = useSession();
   const {
     syncStatus,
     checkAndRequestPermissions,
@@ -19,28 +17,9 @@ export function CalendarSyncInitializer({ role }: CalendarSyncInitializerProps) 
     clearError,
   } = useCalendarSync(role);
 
-  const [isInitializing, setIsInitializing] = useState(false);
+  const [_isInitializing, setIsInitializing] = useState(false);
 
-  // 앱 시작 시 권한 확인 및 동기화 활성화
-  useEffect(() => {
-    const initializeSync = async () => {
-      if (status === 'authenticated' && session?.user) {
-        setIsInitializing(true);
-        try {
-          const hasPermission = await checkAndRequestPermissions();
-          if (hasPermission) {
-            console.log(`${role} 캘린더 동기화 초기화 완료`);
-          }
-        } catch (error) {
-          console.error(`${role} 캘린더 동기화 초기화 실패:`, error);
-        } finally {
-          setIsInitializing(false);
-        }
-      }
-    };
-
-    initializeSync();
-  }, [status, session, role, checkAndRequestPermissions]);
+  // 자동 초기화 로직 제거 - 설정에서만 활성화
 
   // 권한 요청 처리
   const handleRequestPermission = async () => {
@@ -67,18 +46,13 @@ export function CalendarSyncInitializer({ role }: CalendarSyncInitializerProps) 
     clearError();
   };
 
-  // 로딩 중
-  if (isInitializing) {
-    return (
-      <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
-        <Calendar className="h-4 w-4 text-blue-600 animate-spin" />
-        <span className="text-sm text-blue-700">캘린더 동기화 초기화 중...</span>
-      </div>
-    );
+  // 설정에서 비활성화된 경우 아무것도 표시하지 않음
+  if (!syncStatus.isEnabled) {
+    return null;
   }
 
-  // 권한이 없는 경우
-  if (!syncStatus.isEnabled && !syncStatus.error) {
+  // 권한이 없는 경우 (설정에서 활성화되었지만 권한이 없는 경우)
+  if (syncStatus.isEnabled && !syncStatus.error && !syncStatus.lastSyncTime) {
     return (
       <div className="border border-orange-200 bg-orange-50 rounded-lg p-4">
         <div className="flex items-center justify-between">

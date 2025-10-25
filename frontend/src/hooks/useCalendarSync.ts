@@ -43,6 +43,18 @@ export function useCalendarSync(role: "STUDENT" | "PRINCIPAL" | "TEACHER") {
   // 세션들을 기기 캘린더에 동기화
   const syncSessionsToDevice = useCallback(async () => {
     try {
+      console.log(`📅 ${role} Redux에서 가져온 세션 데이터:`, {
+        sessionsCount: sessions.length,
+        sessions: sessions.map((session) => ({
+          id: session.id,
+          date: session.date,
+          startTime: session.startTime,
+          endTime: session.endTime,
+          type: typeof session,
+          keys: Object.keys(session),
+        })),
+      });
+
       const success = await calendarSyncService.syncSessionsToDevice(
         sessions as UnifiedCalendarSession[]
       );
@@ -53,11 +65,12 @@ export function useCalendarSync(role: "STUDENT" | "PRINCIPAL" | "TEACHER") {
       updateSyncStatus();
       return false;
     }
-  }, [sessions, updateSyncStatus]);
+  }, [sessions, updateSyncStatus, role]);
 
-  // 세션 변경 시 자동 동기화
+  // 세션 변경 시 자동 동기화 (사용자 설정 확인)
   useEffect(() => {
-    if (sessions.length > 0 && syncStatus.isEnabled) {
+    const isUserEnabled = calendarSyncService.isUserEnabled();
+    if (sessions.length > 0 && syncStatus.isEnabled && isUserEnabled) {
       console.log(
         `${role} 캘린더 세션 변경 감지, 동기화 시작:`,
         sessions.length,

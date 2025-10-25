@@ -2,6 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { login, logout, getSession as apiGetSession, refreshToken } from "@/api/auth";
+import { toast } from "sonner";
+import { AuthRouter } from "./AuthRouter";
 
 // NextAuth와 호환되는 타입 정의
 interface User {
@@ -97,6 +99,7 @@ interface SessionProviderProps {
 export const SessionProvider = ({ children, session: initialSession }: SessionProviderProps) => {
   const [session, setSession] = useState<Session | null>(initialSession || null);
   const [loading, setLoading] = useState(!initialSession);
+  const [isAutoRedirecting, setIsAutoRedirecting] = useState(false);
 
   // 초기 세션 로드
   useEffect(() => {
@@ -115,6 +118,8 @@ export const SessionProvider = ({ children, session: initialSession }: SessionPr
           // 토큰 만료 확인
           if (savedSession.expiresAt && savedSession.expiresAt > Date.now()) {
             setSession(savedSession);
+            // 세션 복원 성공 시 자동 리디렉션 플래그 설정
+            setIsAutoRedirecting(true);
           } else {
             // 토큰 갱신 시도
             try {
@@ -131,6 +136,8 @@ export const SessionProvider = ({ children, session: initialSession }: SessionPr
                   TokenManager.set(newSession.accessToken);
                 }
                 setSession(newSession);
+                // 토큰 갱신 성공 시 자동 리디렉션 플래그 설정
+                setIsAutoRedirecting(true);
               }
             } catch (_error) {
               // 갱신 실패 시 로그아웃
@@ -150,6 +157,36 @@ export const SessionProvider = ({ children, session: initialSession }: SessionPr
 
     initializeSession();
   }, [initialSession]);
+
+  // 자동 리디렉션 처리 (로그인 성공과 동일한 플로우)
+  useEffect(() => {
+    if (isAutoRedirecting && session?.user && !loading) {
+      const waitForAuthRouter = () => {
+        return new Promise<void>((resolve) => {
+          const checkRouter = () => {
+            setTimeout(() => {
+              resolve();
+            }, 200); // 200ms 대기
+          };
+          checkRouter();
+        });
+      };
+
+      // 로그인 성공과 동일한 플로우 적용
+      toast.success('자동 로그인되었습니다.');
+      
+      // AuthRouter 대기 후 리디렉션
+      waitForAuthRouter().then(() => {
+        // 로그인 성공과 동일한 지연 적용
+        setTimeout(() => {
+          AuthRouter.redirectToDashboard();
+        }, 100);
+      });
+      
+      // 리디렉션 플래그 리셋
+      setIsAutoRedirecting(false);
+    }
+  }, [isAutoRedirecting, session, loading]);
 
   // 로그인 함수 (NextAuth signIn과 호환)
   const signIn = useCallback(async (provider: string, options?: SignInOptions) => {

@@ -117,6 +117,11 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
       return true;
     }
     
+    // 설정 서브페이지는 모든 역할에서 접근 가능
+    if (page === 'settings') {
+      return true;
+    }
+    
     switch (userRole) {
       case 'STUDENT':
         return [

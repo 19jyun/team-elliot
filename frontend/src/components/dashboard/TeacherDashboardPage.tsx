@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSocketListener';
 import { useTeacherInitialization } from '@/hooks/redux/useTeacherInitialization';
+import { SettingsPage } from '@/components/settings/SettingsPage';
 
 
 function TeacherDashboardContent() {
@@ -37,6 +38,8 @@ function TeacherDashboardContent() {
         return <TeacherPersonalInfoManagement />;
       case 'academy-management':
         return <AcademyManagementContainer onBack={clearSubPage} />;
+      case 'settings':
+        return <SettingsPage role="TEACHER" />;
       default:
         return null;
     }

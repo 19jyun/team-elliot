@@ -2,7 +2,6 @@
 
 import * as React from 'react'
 
-
 import { MenuLinks } from '@/components/navigation/MenuLinks'
 import { useSession } from '@/lib/auth/AuthProvider'
 import { LogoutModal } from '@/components/user/LogoutModal'
@@ -43,6 +42,10 @@ export default function PrincipalProfilePage() {
     navigateToSubPage('bank-info')
   }
 
+  const handleSettingsClick = () => {
+    navigateToSubPage('settings')
+  }
+
   const menuLinks = [
     {
       label: '내 프로필 관리',
@@ -58,6 +61,11 @@ export default function PrincipalProfilePage() {
       label: '은행 정보',
       icon: '/icons/group.svg',
       onClick: handleBankInfoClick,
+    },
+    {
+      label: '설정',
+      icon: '/icons/group.svg',
+      onClick: handleSettingsClick,
     },
   ]
 

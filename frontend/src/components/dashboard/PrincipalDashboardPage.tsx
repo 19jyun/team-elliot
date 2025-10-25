@@ -20,6 +20,7 @@ import { TeacherStudentManagementContainer } from './principal/person_management
 import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSocketListener';
 
 import { usePrincipalInitialization } from '@/hooks/redux/usePrincipalInitialization';
+import { SettingsPage } from '@/components/settings/SettingsPage';
 
 
 
@@ -49,6 +50,8 @@ function PrincipalDashboardContent() {
         return <EnrollmentRefundManagementContainer />;
       case 'teacher-student-management':
         return <TeacherStudentManagementContainer />;
+      case 'settings':
+        return <SettingsPage role="PRINCIPAL" />;
       default:
         return (
           <div className="flex items-center justify-center h-full">

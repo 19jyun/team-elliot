@@ -1,12 +1,13 @@
 'use client'
 
-import React, { useMemo, useEffect } from 'react'
+import React, { useMemo } from 'react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { SessionCardList } from '@/components/common/Session/SessionCardList'
 import { useRoleCalendarApi } from '@/hooks/calendar/useRoleCalendarApi'
 import type { ClassSession, ClassSessionWithCounts } from '@/types/api/class'
+import { Session } from '@/lib/auth/AuthProvider'
 
 interface DateSessionModalProps {
   isOpen: boolean
@@ -14,38 +15,40 @@ interface DateSessionModalProps {
   onClose: () => void
   onSessionClick: (session: ClassSession) => void
   role: 'student' | 'teacher' | 'principal'
+  session: Session | null
 }
+
+// 타입 가드 함수들
+const hasEnrollmentCount = (session: unknown): session is { enrollmentCount: number } => {
+  return typeof session === 'object' && session !== null && 'enrollmentCount' in session;
+};
+
+const hasConfirmedCount = (session: unknown): session is { confirmedCount: number } => {
+  return typeof session === 'object' && session !== null && 'confirmedCount' in session;
+};
 
 export function DateSessionModal({ 
   isOpen, 
   selectedDate, 
   onClose, 
   onSessionClick,
-  role 
+  role,
+  session 
 }: DateSessionModalProps) {
   
   // Role별 API 기반 데이터 관리
-  const { getSessionsByDate, loadSessions } = useRoleCalendarApi(role.toUpperCase() as 'STUDENT' | 'TEACHER' | 'PRINCIPAL');
-
-  // 모달이 열릴 때 세션 데이터 로드
-  useEffect(() => {
-    if (isOpen) {
-      loadSessions();
-    }
-  }, [isOpen, loadSessions]);
+  const { getSessionsByDate } = useRoleCalendarApi(role.toUpperCase() as 'STUDENT' | 'TEACHER' | 'PRINCIPAL', session);
 
   // 선택된 날짜의 세션들을 API에서 가져오기
   const sessions = useMemo(() => {
     if (!selectedDate) return [];
     const result = getSessionsByDate(selectedDate);
     // ClassSessionWithCounts로 변환 (enrollmentCount, confirmedCount 기본값 설정)
-    /* eslint-disable @typescript-eslint/no-explicit-any */
     return result.map((session) => ({
       ...session,
-      enrollmentCount: (session as any).enrollmentCount || 0,
-      confirmedCount: (session as any).confirmedCount || 0,
+      enrollmentCount: hasEnrollmentCount(session) ? session.enrollmentCount : 0,
+      confirmedCount: hasConfirmedCount(session) ? session.confirmedCount : 0,
     })) as ClassSessionWithCounts[];
-    /* eslint-enable @typescript-eslint/no-explicit-any */
   }, [selectedDate, getSessionsByDate]);
 
   const formatDate = (date: Date) => {
