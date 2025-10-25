@@ -57,5 +57,6 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD node scripts/health-check.js || exit 1
 
-# Start the application with migration
-CMD ["sh", "-c", "npx prisma migrate deploy --schema=./prisma/schema.prisma && node dist/src/main"] 
+# Make deploy script executable and start the application
+RUN chmod +x /app/scripts/deploy.sh
+CMD ["/app/scripts/deploy.sh"] 

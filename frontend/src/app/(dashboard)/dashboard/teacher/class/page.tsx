@@ -103,11 +103,32 @@ export default function TeacherDashboardPage() {
     
     // 선택된 날짜의 세션들을 가져와서 상태 업데이트
     const sessions = getSessionsByDate(clickedDateObj);
-    const sessionsWithCounts = sessions.map((session) => ({
-      ...session,
-      enrollmentCount: (session as any).enrollmentCount || 0,
-      confirmedCount: (session as any).confirmedCount || 0,
-    })) as ClassSessionWithCounts[];
+    const sessionsWithCounts = sessions.map((session) => {
+      // TeacherSession 타입인지 확인
+      if ('enrollmentCount' in session && 'confirmedCount' in session && 'class' in session) {
+        return {
+          ...session,
+          enrollmentCount: session.enrollmentCount || 0,
+          confirmedCount: session.confirmedCount || 0,
+          class: {
+            ...session.class,
+            tuitionFee: '50000', // 기본값 설정
+          },
+        } as ClassSessionWithCounts;
+      }
+      // 다른 타입인 경우 기본값 사용
+      return {
+        ...session,
+        enrollmentCount: 0,
+        confirmedCount: 0,
+        class: {
+          id: session.classId || 0,
+          className: 'Unknown Class',
+          level: 'BEGINNER',
+          tuitionFee: '50000',
+        },
+      } as ClassSessionWithCounts;
+    });
     
     setSelectedSessions(sessionsWithCounts);
   }

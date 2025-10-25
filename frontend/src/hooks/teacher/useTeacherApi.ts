@@ -9,12 +9,14 @@ import {
   updateTeacherProfile,
   updateTeacherProfilePhoto,
   updateClassDetails,
+  updateSessionSummary,
 } from "@/api/teacher";
 import type {
   TeacherProfileResponse,
   UpdateEnrollmentStatusRequest,
   UpdateProfileRequest,
   UpdateClassDetailsRequest,
+  UpdateSessionSummaryRequest,
   TeacherClass,
   TeacherSession,
 } from "@/types/api/teacher";
@@ -191,6 +193,25 @@ export function useTeacherApi() {
     [isTeacher]
   );
 
+  // 세션 요약 업데이트
+  const updateSessionSummaryHandler = useCallback(
+    async (sessionId: number, data: UpdateSessionSummaryRequest) => {
+      if (!isTeacher) return null;
+
+      try {
+        setError(null);
+        const response = await updateSessionSummary(sessionId, data);
+        // 백엔드 응답이 { success, data, timestamp } 구조이므로 data 부분 사용
+        return response.data;
+      } catch (err: unknown) {
+        const error = err as { response?: { data?: { message?: string } } };
+        setError(error.response?.data?.message || "세션 요약 업데이트 실패");
+        return null;
+      }
+    },
+    [isTeacher]
+  );
+
   // 모든 데이터 로드
   const loadAllData = async () => {
     if (!isTeacher) return;
@@ -274,6 +295,7 @@ export function useTeacherApi() {
     updateProfile,
     updateProfilePhoto,
     updateClassDetails: updateClassDetailsHandler,
+    updateSessionSummary: updateSessionSummaryHandler,
     loadProfileById,
 
     // 헬퍼 함수들

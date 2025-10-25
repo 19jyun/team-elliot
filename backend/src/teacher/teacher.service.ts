@@ -711,6 +711,7 @@ export class TeacherService {
           endTime: session.endTime,
           currentStudents: session.enrollments.length,
           maxStudents: cls.maxStudents,
+          sessionSummary: session.sessionSummary,
           enrollments: session.enrollments.map((enrollment) => ({
             id: enrollment.id,
             studentId: enrollment.studentId,
@@ -735,6 +736,65 @@ export class TeacherService {
       sessions,
       enrollments,
     };
+  }
+
+  // 세션 요약 업데이트
+  async updateSessionSummary(
+    sessionId: number,
+    sessionSummary: string,
+    userId: number,
+  ) {
+    // 먼저 해당 세션이 현재 사용자의 학원에 속하는지 확인
+    const teacher = await this.prisma.teacher.findUnique({
+      where: { userRefId: userId },
+      include: {
+        academy: {
+          include: {
+            classes: {
+              include: {
+                classSessions: {
+                  where: { id: sessionId },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!teacher) {
+      throw new Error('Teacher not found');
+    }
+
+    // 세션이 해당 학원의 클래스에 속하는지 확인
+    const sessionExists = teacher.academy.classes.some((cls) =>
+      cls.classSessions.some((session) => session.id === sessionId),
+    );
+
+    if (!sessionExists) {
+      throw new Error('Session not found or access denied');
+    }
+
+    // 세션 요약 업데이트
+    const updatedSession = await this.prisma.classSession.update({
+      where: { id: sessionId },
+      data: { sessionSummary },
+      include: {
+        class: true,
+        contents: {
+          include: {
+            pose: true,
+          },
+        },
+        enrollments: {
+          include: {
+            student: true,
+          },
+        },
+      },
+    });
+
+    return updatedSession;
   }
 
   // Principal의 학원 모든 강사 조회

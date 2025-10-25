@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import type { ClassSessionWithCounts } from '@/types/api/class'
+import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'
 
 interface ContentDetailComponentProps {
   session: ClassSessionWithCounts | null
@@ -12,19 +13,28 @@ export function ContentDetailComponent({ session, onBack }: ContentDetailCompone
   const [content, setContent] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const { updateSessionSummary } = useTeacherApi()
 
   // 100자 제한
   const MAX_LENGTH = 100
   const remainingChars = MAX_LENGTH - content.length
 
-  // 수업내용 로드 (임시 - 추후 API 연동)
+  // 수업내용 로드
   useEffect(() => {
-    // TODO: 실제 API에서 수업내용 로드
-    setContent('오늘은 샤세를 해용')
+    if (session?.sessionSummary) {
+      setContent(session.sessionSummary)
+    } else {
+      setContent('')
+    }
   }, [session])
 
   // 수업내용 저장
   const handleSave = async () => {
+    if (!session?.id) {
+      alert('세션 정보가 없습니다.')
+      return
+    }
+
     if (content.trim().length === 0) {
       alert('수업내용을 입력해주세요.')
       return
@@ -32,11 +42,17 @@ export function ContentDetailComponent({ session, onBack }: ContentDetailCompone
 
     try {
       setIsSaving(true)
-      // TODO: 실제 API 호출
-      console.log('수업내용 저장:', content)
       
-      // 임시 알림
-      alert('수업내용이 저장되었습니다.')
+      const result = await updateSessionSummary(session.id, {
+        sessionSummary: content.trim()
+      })
+      
+      if (result) {
+        alert('수업내용이 저장되었습니다.')
+        onBack() // 저장 후 이전 화면으로 돌아가기
+      } else {
+        alert('수업내용 저장에 실패했습니다.')
+      }
     } catch (error) {
       console.error('수업내용 저장 실패:', error)
       alert('수업내용 저장에 실패했습니다.')

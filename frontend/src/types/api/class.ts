@@ -162,4 +162,5 @@ export interface GetClassSessionsForModificationResponse {
 export interface ClassSessionWithCounts extends ClassSession {
   enrollmentCount: number;
   confirmedCount: number;
+  sessionSummary?: string | null;
 }

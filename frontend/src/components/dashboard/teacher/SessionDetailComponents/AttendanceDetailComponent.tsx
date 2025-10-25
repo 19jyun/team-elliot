@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'
 import { TeacherSessionEnrollment } from '@/types/api/teacher'
 import type { ClassSessionWithCounts } from '@/types/api/class'
+import type { AttendanceStatus, EnrollmentStatus } from '@/types/api/common'
 import { Checkbox } from '@mui/material'
 
 interface AttendanceDetailComponentProps {
@@ -41,7 +42,7 @@ export function AttendanceDetailComponent({ session, onBack }: AttendanceDetailC
     setEnrollments(prev => 
       prev.map(enrollment => 
         enrollment.id === enrollmentId 
-          ? { ...enrollment, status: isPresent ? 'PRESENT' : 'ABSENT' as any }
+          ? { ...enrollment, status: (isPresent ? 'PRESENT' : 'ABSENT') as EnrollmentStatus }
           : enrollment
       )
     )
@@ -98,7 +99,7 @@ export function AttendanceDetailComponent({ session, onBack }: AttendanceDetailC
         {/* 출석부 목록 */}
         <div className="space-y-3">
           {enrollments.map((enrollment) => {
-            const isPresent = (enrollment.status as any) === 'PRESENT'
+            const isPresent = (enrollment.status as string) === 'PRESENT'
             
             return (
               <div

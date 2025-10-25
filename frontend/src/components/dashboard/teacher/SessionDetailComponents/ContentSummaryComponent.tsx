@@ -9,6 +9,8 @@ interface ContentSummaryComponentProps {
 }
 
 export function ContentSummaryComponent({ session, onNavigateToDetail }: ContentSummaryComponentProps) {
+  const hasContent = session?.sessionSummary && session.sessionSummary.trim().length > 0
+  
   return (
     <div 
       className="bg-white border border-[#AC9592] rounded-lg p-4 cursor-pointer hover:bg-gray-50 transition-colors"
@@ -20,7 +22,9 @@ export function ContentSummaryComponent({ session, onNavigateToDetail }: Content
       </div>
       <div className="bg-gray-50 border border-[#AC9592] rounded-lg p-3">
         <p className="text-[#573B30] text-sm">세줄요약</p>
-        <p className="text-gray-800 text-sm mt-1">오늘은 샤세를 해용</p>
+        <p className="text-gray-800 text-sm mt-1">
+          {hasContent ? session.sessionSummary : '수업내용을 입력해주세요'}
+        </p>
       </div>
     </div>
   )
