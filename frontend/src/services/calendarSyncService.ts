@@ -332,7 +332,7 @@ class CalendarSyncService {
             delete event.calendarId;
           }
         }
-      } catch (calendarError) {
+      } catch (_calendarError) {
         delete event.calendarId;
       }
 
@@ -353,7 +353,7 @@ class CalendarSyncService {
             createEventSuccess = true;
             break;
           }
-        } catch (error) {
+        } catch (_error) {
           // 재시도
         }
 
@@ -847,7 +847,7 @@ class CalendarSyncService {
   ): Promise<boolean> {
     try {
       // modifyEvent 호출
-      const result = await modifyEvent({
+      const _result = await modifyEvent({
         id: nativeEventId,
         title: event.title,
         startDate: event.startDate,

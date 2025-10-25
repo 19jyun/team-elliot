@@ -177,6 +177,7 @@ export default function StudentDashboard() {
         onClose={closeDateModal}
         onSessionClick={handleSessionClick}
         role="student"
+        session={session}
       />
 
       {/* Student Session Detail Modal */}

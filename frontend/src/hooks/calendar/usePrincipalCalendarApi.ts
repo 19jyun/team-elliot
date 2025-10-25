@@ -43,7 +43,7 @@ export function usePrincipalCalendarApi(session: Session | null) {
     } finally {
       dispatch(setLoading(false));
     }
-  }, [dispatch, setSessions]);
+  }, [dispatch, setSessions, isPrincipal]);
 
   // 캘린더용 세션 데이터 (이미 PrincipalClassSession 타입이므로 그대로 사용)
   const sessions = calendarSessions;

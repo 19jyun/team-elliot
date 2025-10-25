@@ -48,7 +48,7 @@ export function useTeacherCalendarApi(session: Session | null) {
     } finally {
       dispatch(setLoading(false));
     }
-  }, [dispatch, setSessions]);
+  }, [dispatch, setSessions, isTeacher]);
 
   // 캘린더용 세션 데이터 (이미 TeacherSession 타입이므로 그대로 사용)
   const sessions = calendarSessions;

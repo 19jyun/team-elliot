@@ -1,14 +1,12 @@
 'use client'
 
-import React, { useMemo, useEffect } from 'react'
+import React, { useMemo } from 'react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { SessionCardList } from '@/components/common/Session/SessionCardList'
 import { useRoleCalendarApi } from '@/hooks/calendar/useRoleCalendarApi'
 import type { ClassSession, ClassSessionWithCounts } from '@/types/api/class'
-import type { TeacherSession } from '@/types/api/teacher'
-import type { PrincipalClassSession } from '@/types/api/principal'
 import { Session } from '@/lib/auth/AuthProvider'
 
 interface DateSessionModalProps {
