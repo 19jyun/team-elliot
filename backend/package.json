@@ -36,7 +36,7 @@
     "test:all": "npm run test:unit && npm run test:integration",
     "prisma:seed": "ts-node prisma/seed.ts",
     "seed": "ts-node prisma/seed.ts",
-    "seed:deploy": "ts-node prisma/seed_deploy.ts",
+    "seed:deploy": "npx ts-node prisma/seed_deploy.ts",
     "db:reset": "ts-node prisma/reset.ts",
     "db:reset:seed": "ts-node prisma/reset.ts && ts-node prisma/seed.ts"
   },
