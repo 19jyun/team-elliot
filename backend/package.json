@@ -37,7 +37,7 @@
     "test:all": "npm run test:unit && npm run test:integration",
     "prisma:seed": "ts-node prisma/seed.ts",
     "seed": "ts-node prisma/seed.ts",
-    "seed:deploy": "npx ts-node prisma/seed_deploy.ts",
+    "seed:deploy": "node dist/prisma/seed_deploy.js",
     "db:reset": "ts-node prisma/reset.ts",
     "db:reset:seed": "ts-node prisma/reset.ts && ts-node prisma/seed.ts"
   },
@@ -89,7 +89,7 @@
     "supertest": "^7.0.0",
     "ts-jest": "^29.1.0",
     "ts-loader": "^9.4.3",
-    "ts-node": "^10.9.1",
+    "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.1.3"
   },
