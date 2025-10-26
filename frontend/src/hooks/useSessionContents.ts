@@ -3,6 +3,7 @@ import {
   CreateSessionContentRequest,
   ReorderSessionContentsRequest,
   UpdateSessionPosesRequest,
+  SessionContentResponse,
 } from "@/types/api/session-content";
 import { UpdateSessionSummaryRequest } from "@/types/api/teacher";
 import { toast } from "sonner";
@@ -20,9 +21,9 @@ import { updateSessionSummary } from "@/api/teacher";
 export const useSessionContents = (sessionId: number) => {
   return useQuery({
     queryKey: ["session-contents", sessionId],
-    queryFn: async () => {
+    queryFn: async (): Promise<SessionContentResponse> => {
       const response = await getSessionContents(sessionId);
-      return response.data;
+      return response.data || { contents: [] }; // undefined인 경우 기본값 제공
     },
     enabled: !!sessionId,
     staleTime: 2 * 60 * 1000, // 2분

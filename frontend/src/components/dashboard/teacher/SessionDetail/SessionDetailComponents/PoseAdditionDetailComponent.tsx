@@ -142,8 +142,8 @@ export function PoseAdditionDetailComponent({ session, onBack }: PoseAdditionDet
   // 기존 자세들을 finalPoseIds에 초기화 (포즈 ID 리스트 방식)
   useEffect(() => {
     if (existingContents) {
-      const poseIds = existingContents.map(content => content.poseId)
-      const notes = existingContents.map(content => content.notes || '')
+      const poseIds = existingContents.contents.map(content => content.poseId)
+      const notes = existingContents.contents.map(content => content.notes || '')
       setFinalPoseIds(poseIds)
       setFinalNotes(notes)
     } else {
@@ -156,7 +156,7 @@ export function PoseAdditionDetailComponent({ session, onBack }: PoseAdditionDet
   const hasChanges = useMemo(() => {
     if (!existingContents) return finalPoseIds.length > 0
     
-    const currentPoseIds = existingContents.map(content => content.poseId)
+    const currentPoseIds = existingContents.contents.map(content => content.poseId)
     return JSON.stringify(currentPoseIds) !== JSON.stringify(finalPoseIds)
   }, [existingContents, finalPoseIds])
 

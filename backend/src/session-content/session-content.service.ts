@@ -14,13 +14,34 @@ export class SessionContentService {
   constructor(private prisma: PrismaService) {}
 
   async findBySessionId(sessionId: number) {
-    return this.prisma.sessionContent.findMany({
+    // 세션 정보와 함께 세션 내용 조회
+    const session = await this.prisma.classSession.findUnique({
+      where: { id: sessionId },
+      select: {
+        sessionSummary: true,
+      },
+    });
+
+    if (!session) {
+      throw new NotFoundException({
+        code: 'SESSION_NOT_FOUND',
+        message: '세션을 찾을 수 없습니다.',
+        details: { sessionId },
+      });
+    }
+
+    const contents = await this.prisma.sessionContent.findMany({
       where: { sessionId },
       include: {
         pose: true,
       },
       orderBy: { order: 'asc' },
     });
+
+    return {
+      sessionSummary: session.sessionSummary || undefined,
+      contents,
+    };
   }
 
   async findOne(id: number) {

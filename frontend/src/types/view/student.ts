@@ -281,6 +281,7 @@ export interface SessionDetailTabVM {
 
 export interface SessionDetailDisplayVM {
   sessionId: number;
+  sessionSummary?: string;
   contents: SessionContentDisplayVM[];
   isLoading: boolean;
   error: string | null;

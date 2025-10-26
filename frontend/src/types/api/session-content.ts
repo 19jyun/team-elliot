@@ -12,7 +12,8 @@ export interface SessionContent {
 }
 
 export interface SessionContentResponse {
-  data: SessionContent[];
+  sessionSummary?: string;
+  contents: SessionContent[];
 }
 
 export type { CreateSessionContentRequest };

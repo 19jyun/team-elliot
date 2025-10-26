@@ -331,16 +331,17 @@ function toSessionContentDisplayVM(
 
 export function toSessionDetailDisplayVM(
   sessionId: number,
-  contents: SessionContent[] | undefined,
+  response: { sessionSummary?: string; contents: SessionContent[] } | undefined,
   isLoading: boolean,
   error: string | null
 ): SessionDetailDisplayVM {
   return {
     sessionId,
-    contents: contents?.map(toSessionContentDisplayVM) || [],
+    sessionSummary: response?.sessionSummary,
+    contents: response?.contents?.map(toSessionContentDisplayVM) || [],
     isLoading,
     error,
-    hasContents: Boolean(contents && contents.length > 0),
+    hasContents: Boolean(response?.contents && response.contents.length > 0),
   };
 }
 
