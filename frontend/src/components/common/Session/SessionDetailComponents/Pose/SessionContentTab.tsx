@@ -101,14 +101,16 @@ export function SessionContentTab({ sessionId, onAddPoseClick }: SessionContentT
   const hasChanges = useMemo(() => {
     if (!contents || !finalContents) return false;
     
+    const contentsArray = contents.contents || [];
+    
     // 1. 길이가 다르면 변경사항 있음 (삭제된 경우)
-    if (finalContents.length !== contents.length) {
+    if (finalContents.length !== contentsArray.length) {
       return true;
     }
     
     // 2. 순서가 다르면 변경사항 있음
     for (let i = 0; i < finalContents.length; i++) {
-      if (finalContents[i].id !== contents[i].id) {
+      if (finalContents[i].id !== contentsArray[i].id) {
         return true;
       }
     }
@@ -128,7 +130,7 @@ export function SessionContentTab({ sessionId, onAddPoseClick }: SessionContentT
   // 초기 상태 설정
   React.useEffect(() => {
     if (contents) {
-      setFinalContents([...contents]);
+      setFinalContents([...(contents.contents || [])]);
       // 새로운 데이터가 로드되면 편집 모드 초기화
       setIsEditMode(false);
     }
@@ -174,7 +176,7 @@ export function SessionContentTab({ sessionId, onAddPoseClick }: SessionContentT
       if (!contents) return;
 
       // 1. 삭제된 항목들을 찾아서 개별 삭제
-      const deletedContentIds = contents
+      const deletedContentIds = (contents.contents || [])
         .filter((content: SessionContent) => !finalContents.some(final => final.id === content.id))
         .map((content: SessionContent) => content.id);
 

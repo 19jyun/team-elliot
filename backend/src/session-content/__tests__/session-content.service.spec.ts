@@ -62,11 +62,18 @@ describe('SessionContentService', () => {
         },
       ];
 
+      prisma.classSession.findUnique.mockResolvedValue({
+        id: sessionId,
+        sessionSummary: null,
+      });
       prisma.sessionContent.findMany.mockResolvedValue(contents);
 
       const result = await service.findBySessionId(sessionId);
 
-      expect(result).toEqual(contents);
+      expect(result).toEqual({
+        sessionSummary: undefined,
+        contents,
+      });
       expect(prisma.sessionContent.findMany).toHaveBeenCalledWith({
         where: { sessionId },
         include: { pose: true },
@@ -361,7 +368,10 @@ describe('SessionContentService', () => {
         },
       ];
 
-      prisma.classSession.findUnique.mockResolvedValue({ id: sessionId });
+      prisma.classSession.findUnique.mockResolvedValue({
+        id: sessionId,
+        sessionSummary: null,
+      });
       prisma.sessionContent.findMany.mockResolvedValue(currentContents);
       prisma.$transaction.mockResolvedValue([]);
       prisma.sessionContent.findMany
@@ -370,7 +380,10 @@ describe('SessionContentService', () => {
 
       const response = await service.reorder(sessionId, reorderDto);
 
-      expect(response).toEqual(reorderedContents);
+      expect(response).toEqual({
+        sessionSummary: undefined,
+        contents: reorderedContents,
+      });
       expect(prisma.classSession.findUnique).toHaveBeenCalledWith({
         where: { id: sessionId },
       });

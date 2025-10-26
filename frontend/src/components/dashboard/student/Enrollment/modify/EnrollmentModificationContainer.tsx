@@ -66,9 +66,28 @@ export function EnrollmentModificationContainer({ classId, month }: EnrollmentMo
     return result;
   }, [enrollmentHistory, classId]);
 
+  // ModificationSessionVM을 SessionInfo로 변환하는 함수
+  const convertToSessionInfo = (session: ModificationSessionVM) => {
+    return {
+      id: session.id,
+      date: session.date,
+      startTime: session.startTime,
+      endTime: session.endTime,
+      isAlreadyEnrolled: session.isAlreadyEnrolled,
+      enrollment: session.enrollment ? {
+        id: session.enrollment.id,
+        status: session.enrollment.status === "ATTENDED" || session.enrollment.status === "ABSENT" 
+          ? "CONFIRMED" // 출석 상태는 CONFIRMED로 변환
+          : session.enrollment.status as "PENDING" | "CONFIRMED" | "CANCELLED" | "REJECTED" | "REFUND_REQUESTED" | "REFUND_CANCELLED" | "TEACHER_CANCELLED" | "REFUND_REJECTED_CONFIRMED",
+        enrolledAt: session.enrollment.enrolledAt,
+        cancelledAt: undefined // ModificationSessionVM에는 cancelledAt이 없음
+      } : undefined
+    };
+  };
+
   // 수강 변경 금액 계산
   const { change } = useEnrollmentCalculation({
-    originalEnrollments: existingEnrollments,
+    originalEnrollments: existingEnrollments.map(convertToSessionInfo),
     selectedSessionIds,
     sessionPrice: sessionPrice
   });

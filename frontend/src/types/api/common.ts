@@ -9,16 +9,17 @@ export type DayOfWeek =
   | "SATURDAY"
   | "SUNDAY";
 
-// 수강신청 상태 타입
+// 수강신청 상태 타입 (출석 상태 포함)
 export type EnrollmentStatus =
   | "PENDING"
   | "CONFIRMED"
   | "REJECTED"
   | "REFUND_REQUESTED"
-  | "REFUND_REJECTED_CONFIRMED";
+  | "REFUND_REJECTED_CONFIRMED"
+  | AttendanceStatus;
 
-// 출석 상태 타입
-export type AttendanceStatus = "PRESENT" | "ABSENT";
+// 출석 상태 타입 (백엔드 SessionEnrollment.status와 일치)
+export type AttendanceStatus = "ATTENDED" | "ABSENT";
 
 // 환불 상태 타입
 export type RefundStatusType = "REFUND_REQUESTED" | "APPROVED" | "REJECTED";

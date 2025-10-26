@@ -745,36 +745,70 @@ export class TeacherService {
     sessionId: number,
     sessionSummary: string,
     userId: number,
+    userRole: string,
   ) {
-    // 먼저 해당 세션이 현재 사용자의 학원에 속하는지 확인
-    const teacher = await this.prisma.teacher.findUnique({
-      where: { userRefId: userId },
-      include: {
-        academy: {
-          include: {
-            classes: {
-              include: {
-                classSessions: {
-                  where: { id: sessionId },
+    if (userRole === 'TEACHER') {
+      // Teacher 권한 로직: 본인이 담당하는 클래스의 세션만 수정 가능
+      const teacher = await this.prisma.teacher.findUnique({
+        where: { userRefId: userId },
+        include: {
+          classes: {
+            include: {
+              classSessions: {
+                where: { id: sessionId },
+              },
+            },
+          },
+        },
+      });
+
+      if (!teacher) {
+        throw new Error('Teacher not found');
+      }
+
+      // 세션이 본인이 담당하는 클래스에 속하는지 확인
+      const sessionExists = teacher.classes.some((cls) =>
+        cls.classSessions.some((session) => session.id === sessionId),
+      );
+
+      if (!sessionExists) {
+        throw new Error(
+          'Session not found or access denied - You can only modify sessions of your own classes',
+        );
+      }
+    } else if (userRole === 'PRINCIPAL') {
+      // Principal 권한 로직: 해당 학원 소속의 모든 클래스/세션 수정 가능
+      const principal = await this.prisma.principal.findUnique({
+        where: { userRefId: userId },
+        include: {
+          academy: {
+            include: {
+              classes: {
+                include: {
+                  classSessions: {
+                    where: { id: sessionId },
+                  },
                 },
               },
             },
           },
         },
-      },
-    });
+      });
 
-    if (!teacher) {
-      throw new Error('Teacher not found');
-    }
+      if (!principal) {
+        throw new Error('Principal not found');
+      }
 
-    // 세션이 해당 학원의 클래스에 속하는지 확인
-    const sessionExists = teacher.academy.classes.some((cls) =>
-      cls.classSessions.some((session) => session.id === sessionId),
-    );
+      // 세션이 해당 학원의 클래스에 속하는지 확인
+      const sessionExists = principal.academy.classes.some((cls) =>
+        cls.classSessions.some((session) => session.id === sessionId),
+      );
 
-    if (!sessionExists) {
-      throw new Error('Session not found or access denied');
+      if (!sessionExists) {
+        throw new Error('Session not found or access denied');
+      }
+    } else {
+      throw new Error('Invalid user role');
     }
 
     // 세션 요약 업데이트

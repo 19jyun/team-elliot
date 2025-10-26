@@ -5,11 +5,10 @@ import { useState, useMemo, useEffect } from 'react'
 
 import { usePrincipalCalendarApi } from '@/hooks/calendar/usePrincipalCalendarApi'
 import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessionModal'
-import { SessionDetailModal } from '@/components/common/Session/SessionDetailModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
 import { useApp } from '@/contexts/AppContext'
-import { toClassSessionForCalendar } from '@/lib/adapters/principal'
+import { toClassSessionForCalendar, convertPrincipalSessionToClassSessionWithCounts } from '@/lib/adapters/principal'
 import type { PrincipalClassSession } from '@/types/api/principal'
 import type { ClassSession } from '@/types/api/class'
 import { Session } from '@/lib/auth/AuthProvider'
@@ -69,7 +68,7 @@ export default function PrincipalClassPage() {
   const { data: session, status } = useSession()
 
 
-  const { navigation } = useApp()
+  const { navigation, data } = useApp()
   const { navigateToSubPage } = navigation
   
   // API 기반 데이터 관리 (Redux 기반)
@@ -79,9 +78,6 @@ export default function PrincipalClassPage() {
   const [clickedDate, setClickedDate] = useState<Date | null>(null)
   const [isDateModalOpen, setIsDateModalOpen] = useState(false)
   
-  // 세션 상세 모달 상태 추가
-  const [selectedSession, setSelectedSession] = useState<PrincipalClassSession | null>(null)
-  const [isSessionDetailModalOpen, setIsSessionDetailModalOpen] = useState(false)
 
   // 초기 데이터 로드
   useEffect(() => {
@@ -148,18 +144,29 @@ export default function PrincipalClassPage() {
     setClickedDate(null)
   }
 
-  // 세션 클릭 핸들러 추가
+  // 세션 클릭 핸들러 - 서브페이지로 이동
   const handleSessionClick = (session: ClassSession) => {
-    // ClassSession을 PrincipalClassSession으로 변환하여 저장
+    // ClassSession을 PrincipalClassSession으로 변환
     const principalSession = calendarSessions.find(s => s.id === session.id) as PrincipalClassSession
-    setSelectedSession(principalSession)
-    setIsSessionDetailModalOpen(true)
+    
+    if (!principalSession) {
+      console.error('Principal session not found')
+      return
+    }
+    
+    // PrincipalClassSession을 ClassSessionWithCounts로 변환
+    const sessionForDetail = convertPrincipalSessionToClassSessionWithCounts(principalSession)
+    
+    // DataContext에 저장
+    data.setCache('selectedSession', sessionForDetail)
+    
+    // DateSessionModal 닫기
+    closeDateModal()
+    
+    // 서브페이지로 이동
+    navigateToSubPage('session-detail')
   }
 
-  const closeSessionDetailModal = () => {
-    setIsSessionDetailModalOpen(false)
-    setSelectedSession(null)
-  }
 
   // 전체 클래스 SubPage로 이동
   const handlePrincipalClassesClick = () => {
@@ -243,13 +250,6 @@ export default function PrincipalClassPage() {
         session={session}
       />
 
-      {/* Session Detail Modal - API 방식 */}
-      <SessionDetailModal
-        isOpen={isSessionDetailModalOpen}
-        sessionId={selectedSession?.id || null}
-        onClose={closeSessionDetailModal}
-        role="principal"
-      />
     </div>
   )
 } 

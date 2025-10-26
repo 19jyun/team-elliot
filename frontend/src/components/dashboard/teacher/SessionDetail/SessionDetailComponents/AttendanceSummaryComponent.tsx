@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'
+import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi'
+import { useSession } from '@/lib/auth/AuthProvider'
 import { useSessionContents, useBatchCheckAttendance } from '@/hooks/useSessionContents'
 import { TeacherSessionEnrollment } from '@/types/api/teacher'
 import type { ClassSessionWithCounts } from '@/types/api/class'
-import type { EnrollmentStatus } from '@/types/api/common'
+import type { AttendanceStatus } from '@/types/api/common'
 import { Checkbox } from '@mui/material'
 
 interface AttendanceSummaryComponentProps {
@@ -13,7 +15,13 @@ interface AttendanceSummaryComponentProps {
 }
 
 export function AttendanceSummaryComponent({ session }: AttendanceSummaryComponentProps) {
-  const { loadSessionEnrollments } = useTeacherApi()
+  const { data: userSession } = useSession()
+  const userRole = userSession?.user?.role || 'STUDENT'
+  
+  // 역할에 따라 다른 API 훅 사용
+  const teacherApi = useTeacherApi()
+  const principalApi = usePrincipalApi()
+  
   const [enrollments, setEnrollments] = useState<TeacherSessionEnrollment[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
@@ -25,20 +33,28 @@ export function AttendanceSummaryComponent({ session }: AttendanceSummaryCompone
   // 일괄 출석 체크를 위한 훅
   const batchCheckAttendanceMutation = useBatchCheckAttendance()
 
-  // 수강생 정보 로드
+  // 수강생 정보 로드 (역할에 따라 다른 API 사용)
   const loadEnrollments = useCallback(async () => {
     if (!session?.id) return
     
     try {
       setIsLoading(true)
-      const data = await loadSessionEnrollments(session.id)
+      let data = null
+      
+      if (userRole === 'TEACHER') {
+        data = await teacherApi.loadSessionEnrollments(session.id)
+      } else if (userRole === 'PRINCIPAL') {
+        data = await principalApi.loadSessionEnrollments(session.id)
+      }
+      
       setEnrollments(data?.enrollments || [])
     } catch (error) {
       console.error('수강생 정보 로드 실패:', error)
     } finally {
       setIsLoading(false)
     }
-  }, [session?.id, loadSessionEnrollments])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.id, userRole])
 
   // 컴포넌트 마운트 시 데이터 로드
   useEffect(() => {
@@ -50,7 +66,7 @@ export function AttendanceSummaryComponent({ session }: AttendanceSummaryCompone
     setEnrollments(prev => 
       prev.map(enrollment => 
         enrollment.id === enrollmentId 
-          ? { ...enrollment, status: (isPresent ? 'PRESENT' : 'ABSENT') as EnrollmentStatus }
+          ? { ...enrollment, status: (isPresent ? 'ATTENDED' : 'ABSENT') as AttendanceStatus }
           : enrollment
       )
     )
@@ -62,13 +78,14 @@ export function AttendanceSummaryComponent({ session }: AttendanceSummaryCompone
       // 출석 데이터 준비
       const attendanceData = enrollments.map(enrollment => ({
         enrollmentId: enrollment.id,
-        status: (enrollment.status as string) === 'PRESENT' ? 'ATTENDED' : 'ABSENT' as "ATTENDED" | "ABSENT"
+        status: (enrollment.status as string) === 'ATTENDED' ? 'ATTENDED' : 'ABSENT' as "ATTENDED" | "ABSENT"
       }))
       
       // 일괄 출석 체크 실행
       await batchCheckAttendanceMutation.mutateAsync(attendanceData)
       
-      // 성공 시 접기
+      // 성공 시 데이터 다시 로드 및 접기
+      await loadEnrollments()
       setIsExpanded(false)
     } catch (error) {
       console.error('출석 정보 저장 실패:', error)
@@ -109,7 +126,7 @@ export function AttendanceSummaryComponent({ session }: AttendanceSummaryCompone
               {/* 출석부 목록 */}
               <div className="space-y-3 mb-4">
                 {enrollments.map((enrollment) => {
-                  const isPresent = (enrollment.status as string) === 'PRESENT'
+                  const isPresent = (enrollment.status as string) === 'ATTENDED'
                   
                   return (
                     <div

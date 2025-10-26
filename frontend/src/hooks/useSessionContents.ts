@@ -16,11 +16,15 @@ import {
   checkAttendance,
 } from "@/api/session-content";
 import { updateSessionSummary } from "@/api/teacher";
+import { useSession } from "@/lib/auth/AuthProvider";
 
 // 세션 내용 목록 조회
 export const useSessionContents = (sessionId: number) => {
+  const { data: session } = useSession();
+  const userRole = session?.user?.role || "STUDENT";
+
   return useQuery({
-    queryKey: ["session-contents", sessionId],
+    queryKey: ["session-contents", sessionId, userRole],
     queryFn: async (): Promise<SessionContentResponse> => {
       const response = await getSessionContents(sessionId);
       return response.data || { contents: [] }; // undefined인 경우 기본값 제공
@@ -33,6 +37,8 @@ export const useSessionContents = (sessionId: number) => {
 // 세션 내용 추가
 export const useAddSessionContent = (sessionId: number) => {
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
+  const userRole = session?.user?.role || "STUDENT";
 
   return useMutation({
     mutationFn: async (data: CreateSessionContentRequest) => {
@@ -40,9 +46,27 @@ export const useAddSessionContent = (sessionId: number) => {
       return response.data;
     },
     onSuccess: () => {
+      // 역할에 따라 적절한 쿼리 무효화
       queryClient.invalidateQueries({
-        queryKey: ["session-contents", sessionId],
+        queryKey: ["session-contents", sessionId, userRole],
       });
+
+      if (userRole === "TEACHER") {
+        queryClient.invalidateQueries({
+          queryKey: ["teacher-classes-with-sessions"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["teacher-profile"],
+        });
+      } else if (userRole === "PRINCIPAL") {
+        queryClient.invalidateQueries({
+          queryKey: ["principal-sessions"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["principal-profile"],
+        });
+      }
+
       toast.success("세션 내용이 추가되었습니다.");
     },
     onError: (error) => {
@@ -55,6 +79,8 @@ export const useAddSessionContent = (sessionId: number) => {
 // 세션 내용 삭제
 export const useDeleteSessionContent = (sessionId: number) => {
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
+  const userRole = session?.user?.role || "STUDENT";
 
   return useMutation({
     mutationFn: async (contentId: number) => {
@@ -62,9 +88,27 @@ export const useDeleteSessionContent = (sessionId: number) => {
       return response.data;
     },
     onSuccess: () => {
+      // 역할에 따라 적절한 쿼리 무효화
       queryClient.invalidateQueries({
-        queryKey: ["session-contents", sessionId],
+        queryKey: ["session-contents", sessionId, userRole],
       });
+
+      if (userRole === "TEACHER") {
+        queryClient.invalidateQueries({
+          queryKey: ["teacher-classes-with-sessions"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["teacher-profile"],
+        });
+      } else if (userRole === "PRINCIPAL") {
+        queryClient.invalidateQueries({
+          queryKey: ["principal-sessions"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["principal-profile"],
+        });
+      }
+
       toast.success("세션 내용이 삭제되었습니다.");
     },
     onError: (error) => {
@@ -77,6 +121,8 @@ export const useDeleteSessionContent = (sessionId: number) => {
 // 세션 내용 순서 변경
 export const useReorderSessionContents = (sessionId: number) => {
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
+  const userRole = session?.user?.role || "STUDENT";
 
   return useMutation({
     mutationFn: async (data: ReorderSessionContentsRequest) => {
@@ -84,9 +130,27 @@ export const useReorderSessionContents = (sessionId: number) => {
       return response.data;
     },
     onSuccess: () => {
+      // 역할에 따라 적절한 쿼리 무효화
       queryClient.invalidateQueries({
-        queryKey: ["session-contents", sessionId],
+        queryKey: ["session-contents", sessionId, userRole],
       });
+
+      if (userRole === "TEACHER") {
+        queryClient.invalidateQueries({
+          queryKey: ["teacher-classes-with-sessions"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["teacher-profile"],
+        });
+      } else if (userRole === "PRINCIPAL") {
+        queryClient.invalidateQueries({
+          queryKey: ["principal-sessions"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["principal-profile"],
+        });
+      }
+
       toast.success("순서가 변경되었습니다.");
     },
     onError: (error) => {
@@ -99,6 +163,8 @@ export const useReorderSessionContents = (sessionId: number) => {
 // 세션 요약 업데이트
 export const useUpdateSessionSummary = (sessionId: number) => {
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
+  const userRole = session?.user?.role || "STUDENT";
 
   return useMutation({
     mutationFn: async (data: UpdateSessionSummaryRequest) => {
@@ -106,16 +172,27 @@ export const useUpdateSessionSummary = (sessionId: number) => {
       return response.data;
     },
     onSuccess: () => {
-      // 세션 관련 쿼리들을 모두 무효화하여 데이터 새로고침
+      // 역할에 따라 적절한 쿼리 무효화
       queryClient.invalidateQueries({
-        queryKey: ["session-contents", sessionId],
+        queryKey: ["session-contents", sessionId, userRole],
       });
-      queryClient.invalidateQueries({
-        queryKey: ["teacher-classes-with-sessions"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["teacher-profile"],
-      });
+
+      if (userRole === "TEACHER") {
+        queryClient.invalidateQueries({
+          queryKey: ["teacher-classes-with-sessions"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["teacher-profile"],
+        });
+      } else if (userRole === "PRINCIPAL") {
+        queryClient.invalidateQueries({
+          queryKey: ["principal-sessions"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["principal-profile"],
+        });
+      }
+
       toast.success("수업내용 요약이 저장되었습니다.");
     },
     onError: (error) => {
@@ -128,6 +205,8 @@ export const useUpdateSessionSummary = (sessionId: number) => {
 // 세션 자세 목록 전체 업데이트 (새로운 방식)
 export const useUpdateSessionPoses = (sessionId: number) => {
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
+  const userRole = session?.user?.role || "STUDENT";
 
   return useMutation({
     mutationFn: async (data: UpdateSessionPosesRequest) => {
@@ -135,16 +214,27 @@ export const useUpdateSessionPoses = (sessionId: number) => {
       return response.data;
     },
     onSuccess: () => {
-      // 세션 관련 쿼리들을 모두 무효화하여 데이터 새로고침
+      // 역할에 따라 적절한 쿼리 무효화
       queryClient.invalidateQueries({
-        queryKey: ["session-contents", sessionId],
+        queryKey: ["session-contents", sessionId, userRole],
       });
-      queryClient.invalidateQueries({
-        queryKey: ["teacher-classes-with-sessions"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["teacher-profile"],
-      });
+
+      if (userRole === "TEACHER") {
+        queryClient.invalidateQueries({
+          queryKey: ["teacher-classes-with-sessions"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["teacher-profile"],
+        });
+      } else if (userRole === "PRINCIPAL") {
+        queryClient.invalidateQueries({
+          queryKey: ["principal-sessions"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["principal-profile"],
+        });
+      }
+
       toast.success("수업 자세가 저장되었습니다.");
     },
     onError: (error) => {
@@ -157,6 +247,8 @@ export const useUpdateSessionPoses = (sessionId: number) => {
 // 출석 체크
 export const useCheckAttendance = (enrollmentId: number) => {
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
+  const userRole = session?.user?.role || "STUDENT";
 
   return useMutation({
     mutationFn: async (status: "ATTENDED" | "ABSENT") => {
@@ -164,16 +256,27 @@ export const useCheckAttendance = (enrollmentId: number) => {
       return response.data;
     },
     onSuccess: () => {
-      // 관련 쿼리들을 무효화하여 데이터 새로고침
+      // 역할에 따라 적절한 쿼리 무효화
       queryClient.invalidateQueries({
         queryKey: ["session-contents"],
       });
-      queryClient.invalidateQueries({
-        queryKey: ["teacher-classes-with-sessions"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["teacher-profile"],
-      });
+
+      if (userRole === "TEACHER") {
+        queryClient.invalidateQueries({
+          queryKey: ["teacher-classes-with-sessions"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["teacher-profile"],
+        });
+      } else if (userRole === "PRINCIPAL") {
+        queryClient.invalidateQueries({
+          queryKey: ["principal-sessions"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["principal-profile"],
+        });
+      }
+
       toast.success("출석 정보가 저장되었습니다.");
     },
     onError: (error) => {
@@ -186,6 +289,8 @@ export const useCheckAttendance = (enrollmentId: number) => {
 // 일괄 출석 체크
 export const useBatchCheckAttendance = () => {
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
+  const userRole = session?.user?.role || "STUDENT";
 
   return useMutation({
     mutationFn: async (
@@ -198,21 +303,52 @@ export const useBatchCheckAttendance = () => {
       return responses.map((response) => response.data);
     },
     onSuccess: () => {
-      // 관련 쿼리들을 무효화하여 데이터 새로고침
+      // 모든 세션 컨텐츠 쿼리 무효화 (출석체크는 모든 세션에 영향)
       queryClient.invalidateQueries({
         queryKey: ["session-contents"],
       });
-      queryClient.invalidateQueries({
-        queryKey: ["teacher-classes-with-sessions"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["teacher-profile"],
-      });
+
+      // 역할에 따라 관련 쿼리 무효화
+      if (userRole === "TEACHER") {
+        queryClient.invalidateQueries({
+          queryKey: ["teacher-classes-with-sessions"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["teacher-profile"],
+        });
+        // Teacher 세션 수강생 목록도 무효화
+        queryClient.invalidateQueries({
+          queryKey: ["teacher-session-enrollments"],
+        });
+      } else if (userRole === "PRINCIPAL") {
+        queryClient.invalidateQueries({
+          queryKey: ["principal-sessions"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["principal-profile"],
+        });
+        // Principal 세션 수강생 목록도 무효화
+        queryClient.invalidateQueries({
+          queryKey: ["principal-session-enrollments"],
+        });
+      }
+
       toast.success("출석 정보가 저장되었습니다.");
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
       console.error("출석 체크 실패:", error);
-      toast.error("출석 체크에 실패했습니다.");
+
+      // 출석 체크 날짜 제한 에러 처리
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "ATTENDANCE_CHECK_INVALID_DATE"
+      ) {
+        toast.error("출석 체크는 수업 당일에만 가능합니다.");
+      } else {
+        toast.error("출석 체크에 실패했습니다.");
+      }
     },
   });
 };

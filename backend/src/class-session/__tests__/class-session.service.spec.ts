@@ -509,15 +509,24 @@ describe('ClassSessionService', () => {
           date: today,
         },
       });
+      prisma.teacher.findUnique.mockResolvedValue({
+        id: teacherId,
+        userRefId: teacherId,
+      });
       prisma.sessionEnrollment.update.mockResolvedValue({ id: enrollmentId });
 
       const response = await service.checkAttendance(
         enrollmentId,
         attendanceStatus,
         teacherId,
+        'TEACHER',
       );
 
       expect(response).toEqual({ id: enrollmentId });
+      expect(prisma.teacher.findUnique).toHaveBeenCalledWith({
+        where: { userRefId: teacherId },
+        select: { id: true },
+      });
       expect(prisma.sessionEnrollment.findUnique).toHaveBeenCalledWith({
         where: { id: enrollmentId },
         include: {

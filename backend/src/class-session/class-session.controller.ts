@@ -160,7 +160,7 @@ export class ClassSessionController {
    * 출석 체크
    */
   @Put('enrollments/:enrollmentId/attendance')
-  @Roles(Role.TEACHER)
+  @Roles(Role.TEACHER, Role.PRINCIPAL)
   @ApiOperation({ summary: '출석 체크' })
   @ApiResponse({ status: 200, description: '출석 체크 성공' })
   async checkAttendance(
@@ -172,6 +172,7 @@ export class ClassSessionController {
       enrollmentId,
       attendanceStatus,
       user.id,
+      user.role,
     );
   }
 
