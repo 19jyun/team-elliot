@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateSessionContentDto } from './dto/create-session-content.dto';
 import { UpdateSessionContentDto } from './dto/update-session-content.dto';
 import { ReorderSessionContentsDto } from './dto/reorder-session-contents.dto';
+import { UpdateSessionPosesDto } from './dto/update-session-poses.dto';
 
 @Injectable()
 export class SessionContentService {
@@ -165,5 +166,80 @@ export class SessionContentService {
     await this.prisma.$transaction(updates);
 
     return this.findBySessionId(sessionId);
+  }
+
+  async updateSessionPoses(
+    sessionId: number,
+    updateSessionPosesDto: UpdateSessionPosesDto,
+  ) {
+    // 세션이 존재하는지 확인
+    const session = await this.prisma.classSession.findUnique({
+      where: { id: sessionId },
+    });
+
+    if (!session) {
+      throw new NotFoundException({
+        code: 'SESSION_NOT_FOUND',
+        message: '세션을 찾을 수 없습니다.',
+        details: { sessionId },
+      });
+    }
+
+    // 발레 자세들이 존재하는지 확인
+    const poseIds = updateSessionPosesDto.poseIds;
+    if (poseIds.length > 0) {
+      const existingPoses = await this.prisma.balletPose.findMany({
+        where: { id: { in: poseIds } },
+        select: { id: true },
+      });
+
+      const existingPoseIds = existingPoses.map((pose) => pose.id);
+      const invalidPoseIds = poseIds.filter(
+        (id) => !existingPoseIds.includes(id),
+      );
+
+      if (invalidPoseIds.length > 0) {
+        throw new BadRequestException({
+          code: 'INVALID_POSE_IDS',
+          message: '유효하지 않은 발레 자세 ID가 포함되어 있습니다.',
+          details: { invalidPoseIds },
+        });
+      }
+    }
+
+    // 노트 배열 길이 검증
+    const notes = updateSessionPosesDto.notes || [];
+    if (notes.length > 0 && notes.length !== poseIds.length) {
+      throw new BadRequestException({
+        code: 'NOTES_LENGTH_MISMATCH',
+        message: '노트 배열의 길이가 포즈 ID 배열의 길이와 일치하지 않습니다.',
+        details: { poseIdsLength: poseIds.length, notesLength: notes.length },
+      });
+    }
+
+    // 트랜잭션으로 원자적 처리
+    return this.prisma.$transaction(async (tx) => {
+      // 1. 기존 세션 내용 모두 삭제
+      await tx.sessionContent.deleteMany({
+        where: { sessionId },
+      });
+
+      // 2. 새로운 세션 내용들 추가
+      if (poseIds.length > 0) {
+        const sessionContents = poseIds.map((poseId, index) => ({
+          sessionId,
+          poseId,
+          order: index,
+          notes: notes[index] || null,
+        }));
+
+        await tx.sessionContent.createMany({
+          data: sessionContents,
+        });
+      }
+
+      // 3. 업데이트된 세션 내용 반환
+      return this.findBySessionId(sessionId);
+    });
   }
 }

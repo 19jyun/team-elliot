@@ -1,18 +1,28 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "@/lib/axios";
 import {
   CreateSessionContentRequest,
   ReorderSessionContentsRequest,
+  UpdateSessionPosesRequest,
 } from "@/types/api/session-content";
+import { UpdateSessionSummaryRequest } from "@/types/api/teacher";
 import { toast } from "sonner";
+import {
+  getSessionContents,
+  createSessionContent,
+  deleteSessionContent,
+  reorderSessionContents,
+  updateSessionPoses,
+  checkAttendance,
+} from "@/api/session-content";
+import { updateSessionSummary } from "@/api/teacher";
 
 // 세션 내용 목록 조회
 export const useSessionContents = (sessionId: number) => {
   return useQuery({
     queryKey: ["session-contents", sessionId],
     queryFn: async () => {
-      const res = await axios.get(`/class-sessions/${sessionId}/contents`);
-      return res.data.data;
+      const response = await getSessionContents(sessionId);
+      return response.data;
     },
     enabled: !!sessionId,
     staleTime: 2 * 60 * 1000, // 2분
@@ -25,11 +35,8 @@ export const useAddSessionContent = (sessionId: number) => {
 
   return useMutation({
     mutationFn: async (data: CreateSessionContentRequest) => {
-      const res = await axios.post(
-        `/class-sessions/${sessionId}/contents`,
-        data
-      );
-      return res.data;
+      const response = await createSessionContent(sessionId, data);
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -49,10 +56,10 @@ export const useDeleteSessionContent = (sessionId: number) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (contentId: number) =>
-      axios
-        .delete(`/class-sessions/${sessionId}/contents/${contentId}`)
-        .then((r) => r.data),
+    mutationFn: async (contentId: number) => {
+      const response = await deleteSessionContent(sessionId, contentId);
+      return response.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["session-contents", sessionId],
@@ -72,17 +79,8 @@ export const useReorderSessionContents = (sessionId: number) => {
 
   return useMutation({
     mutationFn: async (data: ReorderSessionContentsRequest) => {
-      const ids =
-        (data as unknown as { orderedContentIds?: number[] })
-          .orderedContentIds ??
-        (data as unknown as { contentIds?: number[] }).contentIds ??
-        [];
-      const contentIds: string[] = (ids as Array<string | number>).map(String);
-      const res = await axios.patch(
-        `/class-sessions/${sessionId}/contents/reorder`,
-        { contentIds }
-      );
-      return res.data;
+      const response = await reorderSessionContents(sessionId, data);
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -93,6 +91,127 @@ export const useReorderSessionContents = (sessionId: number) => {
     onError: (error) => {
       console.error("순서 변경 실패:", error);
       toast.error("순서 변경에 실패했습니다.");
+    },
+  });
+};
+
+// 세션 요약 업데이트
+export const useUpdateSessionSummary = (sessionId: number) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: UpdateSessionSummaryRequest) => {
+      const response = await updateSessionSummary(sessionId, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      // 세션 관련 쿼리들을 모두 무효화하여 데이터 새로고침
+      queryClient.invalidateQueries({
+        queryKey: ["session-contents", sessionId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["teacher-classes-with-sessions"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["teacher-profile"],
+      });
+      toast.success("수업내용 요약이 저장되었습니다.");
+    },
+    onError: (error) => {
+      console.error("수업내용 요약 저장 실패:", error);
+      toast.error("수업내용 요약 저장에 실패했습니다.");
+    },
+  });
+};
+
+// 세션 자세 목록 전체 업데이트 (새로운 방식)
+export const useUpdateSessionPoses = (sessionId: number) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: UpdateSessionPosesRequest) => {
+      const response = await updateSessionPoses(sessionId, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      // 세션 관련 쿼리들을 모두 무효화하여 데이터 새로고침
+      queryClient.invalidateQueries({
+        queryKey: ["session-contents", sessionId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["teacher-classes-with-sessions"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["teacher-profile"],
+      });
+      toast.success("수업 자세가 저장되었습니다.");
+    },
+    onError: (error) => {
+      console.error("수업 자세 저장 실패:", error);
+      toast.error("수업 자세 저장에 실패했습니다.");
+    },
+  });
+};
+
+// 출석 체크
+export const useCheckAttendance = (enrollmentId: number) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (status: "ATTENDED" | "ABSENT") => {
+      const response = await checkAttendance(enrollmentId, { status });
+      return response.data;
+    },
+    onSuccess: () => {
+      // 관련 쿼리들을 무효화하여 데이터 새로고침
+      queryClient.invalidateQueries({
+        queryKey: ["session-contents"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["teacher-classes-with-sessions"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["teacher-profile"],
+      });
+      toast.success("출석 정보가 저장되었습니다.");
+    },
+    onError: (error) => {
+      console.error("출석 체크 실패:", error);
+      toast.error("출석 체크에 실패했습니다.");
+    },
+  });
+};
+
+// 일괄 출석 체크
+export const useBatchCheckAttendance = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (
+      attendanceData: { enrollmentId: number; status: "ATTENDED" | "ABSENT" }[]
+    ) => {
+      const promises = attendanceData.map(({ enrollmentId, status }) =>
+        checkAttendance(enrollmentId, { status })
+      );
+      const responses = await Promise.all(promises);
+      return responses.map((response) => response.data);
+    },
+    onSuccess: () => {
+      // 관련 쿼리들을 무효화하여 데이터 새로고침
+      queryClient.invalidateQueries({
+        queryKey: ["session-contents"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["teacher-classes-with-sessions"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["teacher-profile"],
+      });
+      toast.success("출석 정보가 저장되었습니다.");
+    },
+    onError: (error) => {
+      console.error("출석 체크 실패:", error);
+      toast.error("출석 체크에 실패했습니다.");
     },
   });
 };

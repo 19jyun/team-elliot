@@ -16,7 +16,7 @@ import { useEffect } from 'react';
 import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSocketListener';
 import { useTeacherInitialization } from '@/hooks/redux/useTeacherInitialization';
 import { SettingsPage } from '@/components/settings/SettingsPage';
-import { SessionDetailPage } from './teacher/SessionDetailPage';
+import { SessionDetailContainer } from './teacher/SessionDetail/SessionDetailContainer';
 
 
 function TeacherDashboardContent() {
@@ -42,7 +42,7 @@ function TeacherDashboardContent() {
       case 'settings':
         return <SettingsPage role="TEACHER" />;
       case 'session-detail':
-        return <SessionDetailPage />;
+        return <SessionDetailContainer />;
       default:
         return null;
     }

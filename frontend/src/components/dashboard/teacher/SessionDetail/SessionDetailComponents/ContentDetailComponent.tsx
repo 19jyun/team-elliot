@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect } from 'react'
 import type { ClassSessionWithCounts } from '@/types/api/class'
-import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'
+import { useUpdateSessionSummary } from '@/hooks/useSessionContents'
+import { useApp } from '@/contexts/AppContext'
+import { toast } from 'sonner'
 
 interface ContentDetailComponentProps {
   session: ClassSessionWithCounts | null
@@ -11,9 +13,9 @@ interface ContentDetailComponentProps {
 
 export function ContentDetailComponent({ session, onBack }: ContentDetailComponentProps) {
   const [content, setContent] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
-  const { updateSessionSummary } = useTeacherApi()
+  const { data } = useApp()
+  const sessionId = session?.id || 0
+  const updateSummaryMutation = useUpdateSessionSummary(sessionId)
 
   // 100자 제한
   const MAX_LENGTH = 100
@@ -31,33 +33,30 @@ export function ContentDetailComponent({ session, onBack }: ContentDetailCompone
   // 수업내용 저장
   const handleSave = async () => {
     if (!session?.id) {
-      alert('세션 정보가 없습니다.')
+      toast.error('세션 정보가 없습니다.')
       return
     }
 
     if (content.trim().length === 0) {
-      alert('수업내용을 입력해주세요.')
+      toast.error('수업내용을 입력해주세요.')
       return
     }
 
     try {
-      setIsSaving(true)
-      
-      const result = await updateSessionSummary(session.id, {
+      await updateSummaryMutation.mutateAsync({
         sessionSummary: content.trim()
       })
       
-      if (result) {
-        alert('수업내용이 저장되었습니다.')
-        onBack() // 저장 후 이전 화면으로 돌아가기
-      } else {
-        alert('수업내용 저장에 실패했습니다.')
+      // 캐시된 세션 데이터 업데이트
+      const updatedSession = {
+        ...session,
+        sessionSummary: content.trim()
       }
+      data.setCache('selectedSession', updatedSession)
+      
+      onBack() // 저장 후 이전 화면으로 돌아가기
     } catch (error) {
       console.error('수업내용 저장 실패:', error)
-      alert('수업내용 저장에 실패했습니다.')
-    } finally {
-      setIsSaving(false)
     }
   }
 
@@ -94,24 +93,24 @@ export function ContentDetailComponent({ session, onBack }: ContentDetailCompone
         <div className="mt-4">
           <button
             onClick={handleSave}
-            disabled={isSaving || content.trim().length === 0}
+            disabled={updateSummaryMutation.isPending || content.trim().length === 0}
             className="w-full py-3 rounded-lg text-white text-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
-              backgroundColor: isSaving ? '#8C7A7A' : '#A08B8B',
+              backgroundColor: updateSummaryMutation.isPending ? '#8C7A7A' : '#A08B8B',
               fontFamily: 'Pretendard, sans-serif'
             }}
             onMouseEnter={(e) => {
-              if (!isSaving && content.trim().length > 0) {
+              if (!updateSummaryMutation.isPending && content.trim().length > 0) {
                 e.currentTarget.style.backgroundColor = '#8C7A7A'
               }
             }}
             onMouseLeave={(e) => {
-              if (!isSaving) {
+              if (!updateSummaryMutation.isPending) {
                 e.currentTarget.style.backgroundColor = '#A08B8B'
               }
             }}
           >
-            {isSaving ? '저장 중...' : '저장하기'}
+            {updateSummaryMutation.isPending ? '저장 중...' : '저장하기'}
           </button>
         </div>
       </div>

@@ -24,8 +24,8 @@ export interface UpdateSessionContentRequest {
 }
 
 export interface ReorderSessionContentsRequest {
-  // 백엔드 DTO는 contentIds: string[] 요구
-  contentIds: Array<string | number>;
+  // 백엔드 DTO는 contentIds: string[] 요구 (숫자 문자열 배열)
+  contentIds: string[];
 }
 
 // CreateSessionContentResponse는 principal.ts에서 import됨;
@@ -42,4 +42,27 @@ export interface DeleteSessionContentResponse {
 export interface ReorderSessionContentsResponse {
   message: string;
   contents: SessionContent[];
+}
+
+export interface CheckAttendanceRequest {
+  status: "ATTENDED" | "ABSENT";
+}
+
+export interface CheckAttendanceResponse {
+  id: number;
+  studentId: number;
+  sessionId: number;
+  status: string;
+  enrolledAt: string;
+  student: {
+    id: number;
+    name: string;
+    phoneNumber: string;
+  };
+}
+
+// 새로운 포즈 리스트 업데이트 요청 타입
+export interface UpdateSessionPosesRequest {
+  poseIds: number[];
+  notes?: string[];
 }

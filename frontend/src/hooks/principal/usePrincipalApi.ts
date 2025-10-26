@@ -276,7 +276,7 @@ export function usePrincipalApi() {
   const reorderSessionContents = useCallback(
     async (sessionId: number, orderedContentIds: number[]) => {
       return apiReorderSessionContents(sessionId, {
-        contentIds: orderedContentIds,
+        contentIds: orderedContentIds.map((id) => id.toString()),
       });
     },
     []
