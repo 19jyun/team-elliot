@@ -9,7 +9,7 @@ import { toSessionDetailDisplayVM } from '@/lib/adapters/student'
 // 통일된 발레 자세 카드 컴포넌트 (PoseAdditionDetailComponent 스타일 적용)
 function UnifiedPoseCard({ content, index }: { content: SessionContentDisplayVM; index: number }) {
   return (
-    <div className="flex items-center justify-between p-3 border border-[#AC9592] rounded-lg bg-[#F5F5F5] hover:bg-[#F0F0F0] transition-colors duration-200">
+    <div className="flex items-center justify-between p-3 border border-[#AC9592] rounded-lg hover:bg-[#F0F0F0] transition-colors duration-200">
       <div className="flex items-center flex-1">
         <span className="text-[#AC9592] mr-2 font-medium text-sm">{index + 1}</span>
         <div className="flex-1">
@@ -92,7 +92,7 @@ export function SessionDetailTab({ sessionId }: SessionDetailTabVM) {
           이번 수업에서 배울 자세들
         </h3>
         <p className="text-sm text-stone-500">
-          총 {displayVM.contents.length}개의 발레 자세를 순서대로 배워볼 예정입니다.
+          총 {displayVM.contents.length}개의 발레 자세들을 배워볼 예정입니다.
         </p>
       </div>
 

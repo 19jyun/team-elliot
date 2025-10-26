@@ -6,12 +6,12 @@ import { useSelector } from 'react-redux'
 
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
-import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessionModal'
+import { SessionCardDisplay } from '@/components/calendar/SessionCardDisplay'
 import { StudentSessionDetailModal } from '@/components/features/student/classes/StudentSessionDetailModal'
 import { useApp } from '@/contexts/AppContext'
 import type { RootState } from '@/store/index'
 import type { StudentCalendarSessionVM, StudentCalendarRangeVM } from '@/types/view/student'
-import type { ClassSession } from '@/types/api/class'
+import type { ClassSession, ClassSessionWithCounts } from '@/types/api/class'
 import type { ClassSession as Session } from '@/types/api/class-session'
 import { toStudentCalendarSessionVM, toStudentCalendarRangeVM } from '@/lib/adapters/student'
 
@@ -56,9 +56,9 @@ export default function StudentDashboard() {
   const isLoading = false
   const error = null
 
-  // 날짜 클릭 관련 상태 추가
-  const [clickedDate, setClickedDate] = useState<Date | null>(null)
-  const [isDateModalOpen, setIsDateModalOpen] = useState(false)
+  // 선택된 날짜와 세션 상태 (teacher/class/page.tsx와 유사)
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [selectedSessions, setSelectedSessions] = useState<ClassSessionWithCounts[]>([])
   
   // 세션 상세 모달 상태 추가
   const [selectedSession, setSelectedSession] = useState<ClassSession | null>(null)
@@ -88,30 +88,69 @@ export default function StudentDashboard() {
     )
   }
 
-  // 날짜 클릭 핸들러 추가 (ConnectedCalendar용)
-  const handleDateClick = (date: string) => {
-    const clickedDateObj = new Date(date)
-    setClickedDate(clickedDateObj)
-    setIsDateModalOpen(true)
+  // 날짜 클릭 핸들러 (teacher/class/page.tsx와 유사한 방식)
+  const handleDateClick = (dateString: string) => {
+    const clickedDateObj = new Date(dateString);
+    
+    // 같은 날짜를 클릭하면 선택 해제
+    if (selectedDate && selectedDate.toISOString().split('T')[0] === dateString) {
+      setSelectedDate(null);
+      setSelectedSessions([]);
+      return;
+    }
+    
+    // 새로운 날짜 선택
+    setSelectedDate(clickedDateObj);
+    
+    // 선택된 날짜의 세션들을 필터링
+    const sessionsForDate = calendarSessions.filter(session => {
+      const sessionDate = new Date(session.date).toISOString().split('T')[0];
+      return sessionDate === dateString;
+    });
+    
+    // StudentCalendarSessionVM을 ClassSessionWithCounts 형태로 변환
+    const sessionsAsClassSessions: ClassSessionWithCounts[] = sessionsForDate.map(session => ({
+      id: session.id,
+      date: session.date,
+      startTime: session.startTime,
+      endTime: session.endTime,
+      maxStudents: session.capacityText ? parseInt(session.capacityText.split('/')[1]) : 0,
+      currentStudents: session.capacityText ? parseInt(session.capacityText.split('/')[0]) : 0,
+      enrollmentCount: session.capacityText ? parseInt(session.capacityText.split('/')[0]) : 0,
+      confirmedCount: session.isEnrolled ? (session.capacityText ? parseInt(session.capacityText.split('/')[0]) : 0) : 0,
+      studentEnrollmentStatus: session.isEnrolled ? 'CONFIRMED' : undefined,
+      class: session.class ? {
+        id: session.class.id,
+        className: session.class.className,
+        level: session.class.level,
+        tuitionFee: session.class.tuitionFee,
+        teacher: session.class.teacher
+      } : undefined
+    }));
+    
+    setSelectedSessions(sessionsAsClassSessions);
   }
 
-  const closeDateModal = () => {
-    setIsDateModalOpen(false)
-    setClickedDate(null)
-  }
-
-  // 세션 클릭 핸들러 추가
-  const handleSessionClick = (session: ClassSession) => {
-    setSelectedSession(session)
+  // 세션 클릭 핸들러 (기존 방식 유지)
+  const handleSessionClick = (session: ClassSessionWithCounts) => {
+    // ClassSessionWithCounts를 ClassSession으로 변환하여 모달에 전달
+    const sessionForModal: ClassSession = {
+      id: session.id,
+      date: session.date,
+      startTime: session.startTime,
+      endTime: session.endTime,
+      maxStudents: session.maxStudents,
+      currentStudents: session.currentStudents,
+      studentEnrollmentStatus: session.studentEnrollmentStatus,
+      class: session.class
+    };
+    setSelectedSession(sessionForModal)
     setIsSessionDetailModalOpen(true)
   }
 
   const closeSessionDetailModal = () => {
     setIsSessionDetailModalOpen(false)
     setSelectedSession(null)
-    // 세션 상세 모달이 닫힐 때 날짜 모달도 함께 닫기
-    setIsDateModalOpen(false)
-    setClickedDate(null)
   }
 
   // 수강중인 클래스 SubPage로 이동
@@ -164,21 +203,22 @@ export default function StudentDashboard() {
             onSessionSelect={() => {}} // student-view에서는 선택 기능 없음
             onDateClick={handleDateClick}
             calendarRange={calendarRange}
+            selectedDate={selectedDate ? selectedDate.toISOString().split('T')[0] : undefined}
           >
             <ConnectedCalendar />
           </CalendarProvider>
         </div>
       </header>
 
-      {/* Date Session Modal */}
-      <DateSessionModal
-        isOpen={isDateModalOpen}
-        selectedDate={clickedDate}
-        onClose={closeDateModal}
-        onSessionClick={handleSessionClick}
-        role="student"
-        session={session}
-      />
+      {/* 세션 카드 표시 섹션 */}
+      <div className="flex-1 bg-white px-5 py-4">
+        <SessionCardDisplay
+          selectedDate={selectedDate}
+          sessions={selectedSessions}
+          onSessionClick={handleSessionClick}
+          role="student"
+        />
+      </div>
 
       {/* Student Session Detail Modal */}
       <StudentSessionDetailModal

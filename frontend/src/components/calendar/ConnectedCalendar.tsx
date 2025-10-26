@@ -475,7 +475,7 @@ export function ConnectedCalendar() {
                       {/* 날짜 - 기존 캘린더와 동일한 디자인 */}
                       <div className="h-10 flex items-center justify-center">
                         {dayInfo.isCurrentMonth ? (
-                          isSelectable ? (
+                          isSelectable && calendarMode !== 'student-view' && calendarMode !== 'teacher-view' ? (
                             <button
                               type="button"
                               className={`w-10 h-10 flex items-center justify-center rounded-full border-2 transition-colors duration-150
@@ -495,12 +495,12 @@ export function ConnectedCalendar() {
                             calendarMode === 'student-view' || calendarMode === 'teacher-view' ? (
                                                           <button
                               type="button"
-                              className={`w-10 h-10 flex items-center justify-center rounded-full border-2 text-base font-medium transition-all duration-150 cursor-pointer ${
+                              className={`w-10 h-10 flex items-center justify-center rounded-full border text-base font-medium transition-all duration-150 cursor-pointer ${
                                 isToday ? 'border-[#573B30] bg-[#573B30] text-white' :
                                 isDateSelected ? 'border-[#573B30] bg-[#573B30] text-white' :
                                 isCurrentFocusedMonth 
-                                  ? 'border-[#573B30] text-[#573B30] hover:bg-[#573B30] hover:text-white' 
-                                  : 'border-gray-300 text-gray-400 hover:bg-gray-300 hover:text-white'
+                                  ? 'border-gray-400 text-gray-600 hover:bg-gray-100' 
+                                  : 'border-gray-300 text-gray-400 hover:bg-gray-100'
                               }`}
                               style={{
                                 opacity: isCurrentFocusedMonth ? 1 : 0.2, // focused month가 아닌 경우 투명도 적용
