@@ -2,17 +2,28 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'
+import { useSessionContents, useBatchCheckAttendance } from '@/hooks/useSessionContents'
+import { TeacherSessionEnrollment } from '@/types/api/teacher'
 import type { ClassSessionWithCounts } from '@/types/api/class'
+import type { EnrollmentStatus } from '@/types/api/common'
+import { Checkbox } from '@mui/material'
 
 interface AttendanceSummaryComponentProps {
   session: ClassSessionWithCounts | null
-  onNavigateToDetail: () => void
 }
 
-export function AttendanceSummaryComponent({ session, onNavigateToDetail }: AttendanceSummaryComponentProps) {
+export function AttendanceSummaryComponent({ session }: AttendanceSummaryComponentProps) {
   const { loadSessionEnrollments } = useTeacherApi()
-  const [_enrollments, setEnrollments] = useState<any[]>([])
-  const [_isLoading, setIsLoading] = useState(false)
+  const [enrollments, setEnrollments] = useState<TeacherSessionEnrollment[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
+  
+  // useSessionContents 훅 사용
+  const sessionId = session?.id || 0
+  const { data: _sessionContents, isLoading: contentsLoading } = useSessionContents(sessionId)
+  
+  // 일괄 출석 체크를 위한 훅
+  const batchCheckAttendanceMutation = useBatchCheckAttendance()
 
   // 수강생 정보 로드
   const loadEnrollments = useCallback(async () => {
@@ -34,16 +45,132 @@ export function AttendanceSummaryComponent({ session, onNavigateToDetail }: Atte
     loadEnrollments()
   }, [loadEnrollments])
 
+  // 출석 상태 변경 처리
+  const handleAttendanceChange = (enrollmentId: number, isPresent: boolean) => {
+    setEnrollments(prev => 
+      prev.map(enrollment => 
+        enrollment.id === enrollmentId 
+          ? { ...enrollment, status: (isPresent ? 'PRESENT' : 'ABSENT') as EnrollmentStatus }
+          : enrollment
+      )
+    )
+  }
+
+  // 출석 정보 일괄 저장
+  const handleSaveAttendance = async () => {
+    try {
+      // 출석 데이터 준비
+      const attendanceData = enrollments.map(enrollment => ({
+        enrollmentId: enrollment.id,
+        status: (enrollment.status as string) === 'PRESENT' ? 'ATTENDED' : 'ABSENT' as "ATTENDED" | "ABSENT"
+      }))
+      
+      // 일괄 출석 체크 실행
+      await batchCheckAttendanceMutation.mutateAsync(attendanceData)
+      
+      // 성공 시 접기
+      setIsExpanded(false)
+    } catch (error) {
+      console.error('출석 정보 저장 실패:', error)
+    }
+  }
+
+  // 토글 핸들러
+  const handleToggle = () => {
+    setIsExpanded(!isExpanded)
+  }
 
   return (
-    <div 
-      className="bg-white border border-[#AC9592] rounded-lg p-4 cursor-pointer hover:bg-gray-50 transition-colors"
-      onClick={onNavigateToDetail}
-    >
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-[#AC9592]">출석부</h3>
-        <span className="text-[#AC9592]">▼</span>
+    <div className="bg-white rounded-lg p-4">
+      {/* 헤더 - 클릭 시 토글 */}
+      <div 
+        className="flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
+        onClick={handleToggle}
+      >
+        <h3 className="text-lg font-semibold text-[#573B30]">출석부</h3>
+        <span className={`text-[#AC9592] transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+          ▼
+        </span>
       </div>
+
+      {/* 확장된 내용 */}
+      {isExpanded && (
+        <div className="mt-4 max-h-[50vh] overflow-y-auto">
+          {isLoading || contentsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#AC9592]" />
+            </div>
+          ) : !enrollments || enrollments.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              수강생 정보가 없습니다.
+            </div>
+          ) : (
+            <>
+              {/* 출석부 목록 */}
+              <div className="space-y-3 mb-4">
+                {enrollments.map((enrollment) => {
+                  const isPresent = (enrollment.status as string) === 'PRESENT'
+                  
+                  return (
+                    <div
+                      key={enrollment.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    >
+                      {/* 체크박스 */}
+                      <div className="flex items-center">
+                        <Checkbox
+                          checked={isPresent}
+                          onChange={(e) => handleAttendanceChange(enrollment.id, e.target.checked)}
+                          className="w-5 h-5 rounded focus:ring-[#AC9592] focus:ring-2"
+                          sx={{
+                            color: '#AC9592',
+                            '&.Mui-checked': {
+                              color: '#AC9592',
+                            },
+                          }}
+                        />
+                      </div>
+                      
+                      {/* 학생 정보 - 이름과 전화번호를 좌우로 분리 */}
+                      <div className="flex-1 pl-4 flex justify-between items-center">
+                        <span className="text-gray-800 font-medium">
+                          {enrollment.student.name || '수강생'}
+                        </span>
+                        <span className="text-gray-600 text-sm">
+                          {enrollment.student.phoneNumber || '전화번호 없음'}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* 저장하기 버튼 */}
+              <button
+                onClick={handleSaveAttendance}
+                disabled={batchCheckAttendanceMutation.isPending}
+                className="w-full py-3 rounded-lg text-white text-lg font-semibold transition-colors disabled:opacity-50"
+                style={{
+                  backgroundColor: batchCheckAttendanceMutation.isPending ? '#8C7A7A' : '#A08B8B',
+                  fontFamily: 'Pretendard, sans-serif'
+                }}
+                onMouseEnter={(e) => {
+                  if (!batchCheckAttendanceMutation.isPending) {
+                    e.currentTarget.style.backgroundColor = '#8C7A7A'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!batchCheckAttendanceMutation.isPending) {
+                    e.currentTarget.style.backgroundColor = '#A08B8B'
+                  }
+                }}
+              >
+                {batchCheckAttendanceMutation.isPending ? '저장 중...' : '저장하기'}
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }

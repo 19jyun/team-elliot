@@ -18,11 +18,6 @@ export function SessionCardDisplay({
   onSessionClick, 
   role 
 }: SessionCardDisplayProps) {
-  // 선택된 날짜가 없으면 빈 상태 표시
-  if (!selectedDate) {
-    return <EmptySessionDisplay />
-  }
-
   // 세션들을 시간순으로 정렬
   const sortedSessions = React.useMemo(() => {
     return [...sessions].sort((a, b) => {
@@ -31,6 +26,11 @@ export function SessionCardDisplay({
       return timeA - timeB
     })
   }, [sessions])
+
+  // 선택된 날짜가 없으면 빈 상태 표시
+  if (!selectedDate) {
+    return <EmptySessionDisplay />
+  }
 
   // 세션이 없는 경우
   if (sortedSessions.length === 0) {

@@ -8,6 +8,7 @@ import type {
   ReorderSessionContentsResponse,
   CheckAttendanceRequest,
   CheckAttendanceResponse,
+  UpdateSessionPosesRequest,
 } from "@/types/api/session-content";
 
 // 세션 내용 목록 조회
@@ -47,6 +48,17 @@ export const reorderSessionContents = (
 ): Promise<ApiResponse<ReorderSessionContentsResponse>> => {
   return put<ApiResponse<ReorderSessionContentsResponse>>(
     `/class-sessions/${sessionId}/contents/reorder`,
+    data
+  );
+};
+
+// 세션 자세 목록 전체 업데이트 (새로운 방식)
+export const updateSessionPoses = (
+  sessionId: number,
+  data: UpdateSessionPosesRequest
+): Promise<ApiResponse<SessionContent[]>> => {
+  return put<ApiResponse<SessionContent[]>>(
+    `/class-sessions/${sessionId}/contents/poses`,
     data
   );
 };

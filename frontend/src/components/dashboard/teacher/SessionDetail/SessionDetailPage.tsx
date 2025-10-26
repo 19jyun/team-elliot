@@ -20,14 +20,12 @@ export function SessionDetailPage() {
     <div className="flex flex-col h-full bg-white p-4 space-y-4">
       <AttendanceSummaryComponent 
         session={selectedSession}
-        onNavigateToDetail={() => setCurrentStep('attendance')}
       />
       <ContentSummaryComponent 
         session={selectedSession}
         onNavigateToDetail={() => setCurrentStep('content')}
       />
       <PoseAdditionSummaryComponent 
-        session={selectedSession}
         onNavigateToDetail={() => setCurrentStep('pose')}
       />
     </div>

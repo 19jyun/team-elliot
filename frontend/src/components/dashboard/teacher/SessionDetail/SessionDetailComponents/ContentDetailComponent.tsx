@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import type { ClassSessionWithCounts } from '@/types/api/class'
 import { useUpdateSessionSummary } from '@/hooks/useSessionContents'
+import { useApp } from '@/contexts/AppContext'
 import { toast } from 'sonner'
 
 interface ContentDetailComponentProps {
@@ -12,6 +13,7 @@ interface ContentDetailComponentProps {
 
 export function ContentDetailComponent({ session, onBack }: ContentDetailComponentProps) {
   const [content, setContent] = useState('')
+  const { data } = useApp()
   const sessionId = session?.id || 0
   const updateSummaryMutation = useUpdateSessionSummary(sessionId)
 
@@ -44,6 +46,13 @@ export function ContentDetailComponent({ session, onBack }: ContentDetailCompone
       await updateSummaryMutation.mutateAsync({
         sessionSummary: content.trim()
       })
+      
+      // 캐시된 세션 데이터 업데이트
+      const updatedSession = {
+        ...session,
+        sessionSummary: content.trim()
+      }
+      data.setCache('selectedSession', updatedSession)
       
       onBack() // 저장 후 이전 화면으로 돌아가기
     } catch (error) {

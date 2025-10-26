@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   CreateSessionContentRequest,
   ReorderSessionContentsRequest,
+  UpdateSessionPosesRequest,
 } from "@/types/api/session-content";
 import { UpdateSessionSummaryRequest } from "@/types/api/teacher";
 import { toast } from "sonner";
@@ -10,6 +11,7 @@ import {
   createSessionContent,
   deleteSessionContent,
   reorderSessionContents,
+  updateSessionPoses,
   checkAttendance,
 } from "@/api/session-content";
 import { updateSessionSummary } from "@/api/teacher";
@@ -122,6 +124,35 @@ export const useUpdateSessionSummary = (sessionId: number) => {
   });
 };
 
+// 세션 자세 목록 전체 업데이트 (새로운 방식)
+export const useUpdateSessionPoses = (sessionId: number) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: UpdateSessionPosesRequest) => {
+      const response = await updateSessionPoses(sessionId, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      // 세션 관련 쿼리들을 모두 무효화하여 데이터 새로고침
+      queryClient.invalidateQueries({
+        queryKey: ["session-contents", sessionId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["teacher-classes-with-sessions"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["teacher-profile"],
+      });
+      toast.success("수업 자세가 저장되었습니다.");
+    },
+    onError: (error) => {
+      console.error("수업 자세 저장 실패:", error);
+      toast.error("수업 자세 저장에 실패했습니다.");
+    },
+  });
+};
+
 // 출석 체크
 export const useCheckAttendance = (enrollmentId: number) => {
   const queryClient = useQueryClient();
@@ -130,6 +161,40 @@ export const useCheckAttendance = (enrollmentId: number) => {
     mutationFn: async (status: "ATTENDED" | "ABSENT") => {
       const response = await checkAttendance(enrollmentId, { status });
       return response.data;
+    },
+    onSuccess: () => {
+      // 관련 쿼리들을 무효화하여 데이터 새로고침
+      queryClient.invalidateQueries({
+        queryKey: ["session-contents"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["teacher-classes-with-sessions"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["teacher-profile"],
+      });
+      toast.success("출석 정보가 저장되었습니다.");
+    },
+    onError: (error) => {
+      console.error("출석 체크 실패:", error);
+      toast.error("출석 체크에 실패했습니다.");
+    },
+  });
+};
+
+// 일괄 출석 체크
+export const useBatchCheckAttendance = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (
+      attendanceData: { enrollmentId: number; status: "ATTENDED" | "ABSENT" }[]
+    ) => {
+      const promises = attendanceData.map(({ enrollmentId, status }) =>
+        checkAttendance(enrollmentId, { status })
+      );
+      const responses = await Promise.all(promises);
+      return responses.map((response) => response.data);
     },
     onSuccess: () => {
       // 관련 쿼리들을 무효화하여 데이터 새로고침

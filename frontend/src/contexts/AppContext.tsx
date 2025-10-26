@@ -16,7 +16,7 @@ import { PrincipalPersonManagementStep } from './forms/PersonManagementFormManag
 import { PrincipalCreateClassStep, PrincipalClassFormData } from './forms/PrincipalCreateClassFormManager';
 
 // SessionDetail 단계 타입 정의
-export type SessionDetailStep = 'main' | 'attendance' | 'content' | 'pose';
+export type SessionDetailStep = 'main' | 'content' | 'pose';
 
 // 통합된 AppContext 타입
 interface AppContextType {
@@ -350,7 +350,8 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     },
   }), [
     navigation, forms, ui, data, session, stateSync,
-    goBack, updateForm, resetAllForms, getFormState
+    updateForm, resetAllForms, getFormState,
+    sessionDetailCurrentStep, sessionDetailGoBack, unifiedGoBack
   ]);
 
   return (

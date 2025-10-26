@@ -6,7 +6,6 @@ import type { ClassSessionWithCounts } from '@/types/api/class'
 
 // 컴포넌트 import
 import { SessionDetailPage } from './SessionDetailPage'
-import { AttendanceDetailComponent } from './SessionDetailComponents/AttendanceDetailComponent'
 import { ContentDetailComponent } from './SessionDetailComponents/ContentDetailComponent'
 import { PoseAdditionDetailComponent } from './SessionDetailComponents/PoseAdditionDetailComponent'
 
@@ -28,7 +27,6 @@ export function SessionDetailContainer() {
     const month = String(sessionDate.getMonth() + 1).padStart(2, '0')
     const day = String(sessionDate.getDate()).padStart(2, '0')
     const hours = String(startTime.getHours()).padStart(2, '0')
-    const minutes = String(startTime.getMinutes()).padStart(2, '0')
     
     const className = selectedSession.class?.className || '클래스명'
     
@@ -40,13 +38,6 @@ export function SessionDetailContainer() {
     switch (currentStep) {
       case 'main':
         return <SessionDetailPage />
-      case 'attendance':
-        return (
-          <AttendanceDetailComponent 
-            session={selectedSession}
-            onBack={() => sessionDetail.setCurrentStep('main')}
-          />
-        )
       case 'content':
         return (
           <ContentDetailComponent 

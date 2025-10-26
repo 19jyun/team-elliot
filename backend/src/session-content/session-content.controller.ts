@@ -8,12 +8,14 @@ import {
   Delete,
   ParseIntPipe,
   UseGuards,
+  Put,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { SessionContentService } from './session-content.service';
 import { CreateSessionContentDto } from './dto/create-session-content.dto';
 import { UpdateSessionContentDto } from './dto/update-session-content.dto';
 import { ReorderSessionContentsDto } from './dto/reorder-session-contents.dto';
+import { UpdateSessionPosesDto } from './dto/update-session-poses.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -73,6 +75,20 @@ export class SessionContentController {
     @Body() updateSessionContentDto: UpdateSessionContentDto,
   ) {
     return this.sessionContentService.update(id, updateSessionContentDto);
+  }
+
+  @Put('poses')
+  @Roles(Role.TEACHER, Role.PRINCIPAL)
+  @ApiOperation({ summary: '세션 자세 목록 전체 업데이트' })
+  @ApiResponse({ status: 200, description: '세션 자세 목록 업데이트 성공' })
+  async updateSessionPoses(
+    @Param('sessionId', ParseIntPipe) sessionId: number,
+    @Body() updateSessionPosesDto: UpdateSessionPosesDto,
+  ) {
+    return this.sessionContentService.updateSessionPoses(
+      sessionId,
+      updateSessionPosesDto,
+    );
   }
 
   @Delete(':id')

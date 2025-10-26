@@ -60,3 +60,9 @@ export interface CheckAttendanceResponse {
     phoneNumber: string;
   };
 }
+
+// 새로운 포즈 리스트 업데이트 요청 타입
+export interface UpdateSessionPosesRequest {
+  poseIds: number[];
+  notes?: string[];
+}

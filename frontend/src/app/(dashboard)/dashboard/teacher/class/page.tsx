@@ -11,7 +11,7 @@ import { useApp } from '@/contexts/AppContext'
 import { toClassSessionForCalendar } from '@/lib/adapters/teacher'
 import { useRoleCalendarApi } from '@/hooks/calendar/useRoleCalendarApi'
 import type { TeacherSession } from '@/types/api/teacher'
-import type { ClassSession, ClassSessionWithCounts } from '@/types/api/class'
+import type { ClassSessionWithCounts } from '@/types/api/class'
 
 export default function TeacherDashboardPage() {
   const { data: session, status } = useSession()

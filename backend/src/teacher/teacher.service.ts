@@ -435,6 +435,7 @@ export class TeacherService {
           date: session.date,
           startTime: session.startTime,
           endTime: session.endTime,
+          sessionSummary: session.sessionSummary,
           class: {
             id: class_.id,
             className: class_.className,
@@ -600,6 +601,7 @@ export class TeacherService {
         endTime: session.endTime,
         currentStudents: session.enrollments.length,
         maxStudents: cls.maxStudents,
+        sessionSummary: session.sessionSummary,
         class: {
           id: cls.id,
           className: cls.className,
