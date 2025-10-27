@@ -159,7 +159,7 @@ export function ScrollableContentContainer({
   }, [activeTab, onTabChange, isDashboardFocused, children, enableSwipe]);
 
   return (
-    <div className="relative w-full overflow-hidden">
+    <div className="relative w-full h-full overflow-hidden">
       <motion.div
         ref={containerRef}
         className="flex w-full"

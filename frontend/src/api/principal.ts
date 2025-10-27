@@ -302,3 +302,19 @@ export const rejectTeacherJoinRequest = (
     data
   );
 };
+
+// 필터링된 수강신청 목록 조회
+export const getPrincipalFilteredEnrollments = (): Promise<
+  ApiResponse<GetPrincipalAllSessionsResponse>
+> => {
+  return get<ApiResponse<GetPrincipalAllSessionsResponse>>(
+    "/principal/enrollments"
+  );
+};
+
+// 필터링된 환불요청 목록 조회
+export const getPrincipalFilteredRefundRequests = (): Promise<
+  ApiResponse<GetRefundRequestsResponse>
+> => {
+  return get<ApiResponse<GetRefundRequestsResponse>>("/principal/refunds");
+};

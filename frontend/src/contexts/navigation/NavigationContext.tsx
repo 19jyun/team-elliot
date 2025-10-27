@@ -23,10 +23,10 @@ export const TEACHER_NAVIGATION_ITEMS: NavigationItem[] = [
 ];
 
 export const PRINCIPAL_NAVIGATION_ITEMS: NavigationItem[] = [
-  { label: "강의 관리", href: "/dashboard", index: 0 },
-  { label: "수강생/강사 관리", href: "/dashboard", index: 1 },
-  { label: "학원 관리", href: "/dashboard", index: 2 },
-  { label: "나의 정보", href: "/dashboard", index: 3 },
+  { label: "수업", href: "/dashboard", index: 0 },
+  { label: "신청 관리", href: "/dashboard", index: 1 },
+  { label: "인원 관리", href: "/dashboard", index: 2 },
+  { label: "프로필", href: "/dashboard", index: 3 },
 ];
 
 interface NavigationContextType {
@@ -130,7 +130,8 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
           'academy',
           'personal-info',
           'enrollment-history',
-          'cancellation-history'
+          'cancellation-history',
+          'refund-account'
         ].includes(page) || page.startsWith('modify-');
       case 'TEACHER':
         return [

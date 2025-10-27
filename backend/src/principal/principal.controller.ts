@@ -89,8 +89,8 @@ export class PrincipalController {
     return this.principalService.getAllStudents(user.id);
   }
 
-  // Principal의 학원 모든 수강신청 조회 (Redux store용)
-  @Get('enrollments')
+  // Principal의 학원 모든 수강신청 조회 (Redux store용) - DEPRECATED: 필터링된 API 사용
+  @Get('enrollments-all')
   async getAllEnrollments(@GetUser() user: any) {
     return this.principalService.getAllEnrollments(user.id);
   }
@@ -301,5 +301,21 @@ export class PrincipalController {
       user.id,
       body.reason,
     );
+  }
+
+  // 필터링된 수강신청 목록 조회
+  @Get('enrollments')
+  @ApiOperation({ summary: '필터링된 수강신청 목록 조회' })
+  @ApiResponse({ status: 200, description: '수강신청 목록 조회 성공' })
+  async getFilteredEnrollments(@GetUser() user: any) {
+    return this.principalService.getFilteredEnrollments(user.id);
+  }
+
+  // 필터링된 환불요청 목록 조회
+  @Get('refunds')
+  @ApiOperation({ summary: '필터링된 환불요청 목록 조회' })
+  @ApiResponse({ status: 200, description: '환불요청 목록 조회 성공' })
+  async getFilteredRefundRequests(@GetUser() user: any) {
+    return this.principalService.getFilteredRefundRequests(user.id);
   }
 }

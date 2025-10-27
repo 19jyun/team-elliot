@@ -37,6 +37,10 @@ export default function ProfilePage() {
     navigateToSubPage('cancellation-history')
   }
 
+  const handleRefundAccountClick = () => {
+    navigateToSubPage('refund-account')
+  }
+
   const handleSettingsClick = () => {
     navigateToSubPage('settings')
   }
@@ -61,6 +65,11 @@ export default function ProfilePage() {
       label: '환불/취소 내역',
       icon: '/icons/group.svg',
       onClick: handleRefundHistoryClick,
+    },
+    {
+      label: '환불 계좌 정보',
+      icon: '/icons/group.svg',
+      onClick: handleRefundAccountClick,
     },
     {
       label: '설정',

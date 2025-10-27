@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
@@ -20,8 +20,13 @@ export function EnrollmentRefundManagementContainer() {
   const { principalPersonManagement } = form;
   const { selectedTab } = principalPersonManagement;
   
-  // Redux store에서 데이터 가져오기
-  const { enrollments, refundRequests, isLoading, error } = usePrincipalData();
+  // Redux에서 데이터 가져오기 (백엔드에서 이미 필터링됨)
+  const { 
+    enrollments, 
+    refundRequests, 
+    isLoading, 
+    error 
+  } = usePrincipalData();
   
   // API 훅
   const { approveEnrollment, rejectEnrollment, approveRefund, rejectRefund } = usePrincipalApi();
@@ -45,7 +50,7 @@ export function EnrollmentRefundManagementContainer() {
     setExpandedCardId(null);
   };
 
-  // 통합된 요청 데이터 생성
+  // 통합된 요청 데이터 생성 (백엔드에서 이미 필터링됨)
   const unifiedRequests = useMemo(() => {
     const requests = selectedTab === 'enrollment' 
       ? (enrollments as unknown as PrincipalEnrollment[]) || []
@@ -56,7 +61,7 @@ export function EnrollmentRefundManagementContainer() {
     );
   }, [selectedTab, enrollments, refundRequests]);
 
-  // 필터링된 요청 목록
+  // 필터링된 요청 목록 (프론트엔드에서 상태 필터링)
   const filteredRequests = useMemo(() => {
     if (selectedStatusFilter === 'ALL') return unifiedRequests;
     return unifiedRequests.filter(request => request.status === selectedStatusFilter);
@@ -167,7 +172,7 @@ export function EnrollmentRefundManagementContainer() {
   }
 
   return (
-    <div className="w-full h-full overflow-hidden flex flex-col bg-white max-w-[480px] mx-auto">
+    <div className="flex flex-col h-full bg-white max-w-[480px] mx-auto min-h-0">
       {/* 헤더 */}
       <header className="flex-shrink-0 bg-white border-b border-gray-200 py-5 px-5">
         <div>
@@ -212,7 +217,7 @@ export function EnrollmentRefundManagementContainer() {
 
       {/* 메인 콘텐츠 */}
       <main className="flex-1 min-h-0 bg-white px-5 py-4">
-        <div className="h-full overflow-y-auto">
+        <div className="h-full overflow-y-auto max-h-[calc(100vh-330px)]">
           {filteredRequests.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <p>요청이 없습니다.</p>
@@ -220,19 +225,19 @@ export function EnrollmentRefundManagementContainer() {
             </div>
           ) : (
             <div className="space-y-4">
-                          {filteredRequests.map((request) => (
-                            <div key={request.id}>
-                              <PrincipalRequestCard
-                                request={request}
-                                requestType={selectedTab}
-                                onApprove={handleApprove}
-                                onReject={handleReject}
-                                isExpanded={expandedCardId === request.id}
-                                isProcessing={isProcessing}
-                                onClick={() => handleCardClick(request.id)}
-                              />
-                            </div>
-                          ))}
+              {filteredRequests.map((request) => (
+                <div key={request.id}>
+                  <PrincipalRequestCard
+                    request={request}
+                    requestType={selectedTab}
+                    onApprove={handleApprove}
+                    onReject={handleReject}
+                    isExpanded={expandedCardId === request.id}
+                    isProcessing={isProcessing}
+                    onClick={() => handleCardClick(request.id)}
+                  />
+                </div>
+              ))}
             </div>
           )}
         </div>

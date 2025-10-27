@@ -40,7 +40,7 @@ export function DashboardPage({
   return (
     <div
       ref={pageRef}
-      className="w-full h-full overflow-y-auto overflow-x-hidden"
+      className="w-full h-full overflow-x-hidden"
       style={{
         width: '100%',
         height: '100%',

@@ -7,14 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Building, CreditCard, Edit, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
-import { UpdatePrincipalProfileRequest } from '@/types/api/principal';
-import { validatePrincipalBankName, validatePrincipalAccountNumber, validatePrincipalAccountHolder } from '@/utils/validation';
+import { useStudentApi } from '@/hooks/student/useStudentApi';
+import { UpdateStudentRefundAccountRequest } from '@/types/api/student';
 import { useApiError } from '@/hooks/useApiError';
+import { useSession } from '@/lib/auth/AuthProvider';
 
-export function PrincipalBankInfoManagement() {
+export function RefundAccountManagement() {
   const [isEditing, setIsEditing] = useState(false);
-  const [editedInfo, setEditedInfo] = useState<UpdatePrincipalProfileRequest>({});
+  const [editedInfo, setEditedInfo] = useState<UpdateStudentRefundAccountRequest>({});
   const [isLoading, setIsLoading] = useState(false);
   
   // Validation 관련 상태
@@ -22,33 +22,36 @@ export function PrincipalBankInfoManagement() {
   const [isShaking, setIsShaking] = useState(false);
   
   // API 기반 데이터 관리
-  const { profile, loadProfile, error, isPrincipal, updateProfile } = usePrincipalApi();
+  const { refundAccount, loadRefundAccount, updateRefundAccountInfo, error } = useStudentApi();
   const { handleApiError, fieldErrors, clearErrors } = useApiError();
+  const { data: session, status } = useSession();
+  
+  const isStudent = status === 'authenticated' && session?.user?.role === 'STUDENT';
 
-  // 컴포넌트 마운트 시 프로필 로드
+  // 컴포넌트 마운트 시 환불 계좌 정보 로드
   useEffect(() => {
-    if (isPrincipal) {
-      loadProfile();
+    if (isStudent) {
+      loadRefundAccount();
     }
-  }, [isPrincipal, loadProfile]);
+  }, [isStudent]);
 
-  // profile 데이터가 로드되면 editedInfo 업데이트 (편집 모드가 아닐 때만)
+  // refundAccount 데이터가 로드되면 editedInfo 업데이트 (편집 모드가 아닐 때만)
   useEffect(() => {
-    if (profile && !isEditing) {
+    if (refundAccount && !isEditing) {
       setEditedInfo({
-        bankName: profile.bankName || '',
-        accountNumber: profile.accountNumber || '',
-        accountHolder: profile.accountHolder || '',
+        refundAccountHolder: refundAccount.refundAccountHolder || '',
+        refundAccountNumber: refundAccount.refundAccountNumber || '',
+        refundBankName: refundAccount.refundBankName || '',
       });
     }
-  }, [profile, isEditing]);
+  }, [refundAccount, isEditing]);
 
   const handleEdit = () => {
-    if (profile) {
+    if (refundAccount) {
       setEditedInfo({
-        bankName: profile.bankName || '',
-        accountNumber: profile.accountNumber || '',
-        accountHolder: profile.accountHolder || '',
+        refundAccountHolder: refundAccount.refundAccountHolder || '',
+        refundAccountNumber: refundAccount.refundAccountNumber || '',
+        refundBankName: refundAccount.refundBankName || '',
       });
     }
     setIsEditing(true);
@@ -57,37 +60,31 @@ export function PrincipalBankInfoManagement() {
   const handleCancel = () => {
     setIsEditing(false);
     setEditedInfo({
-      bankName: profile?.bankName || '',
-      accountNumber: profile?.accountNumber || '',
-      accountHolder: profile?.accountHolder || '',
+      refundAccountHolder: refundAccount?.refundAccountHolder || '',
+      refundAccountNumber: refundAccount?.refundAccountNumber || '',
+      refundBankName: refundAccount?.refundBankName || '',
     });
   };
 
   const handleSave = async () => {
     // 프론트엔드 validation 수행
-    const bankNameValidation = validatePrincipalBankName(editedInfo.bankName || '');
-    const accountNumberValidation = validatePrincipalAccountNumber(editedInfo.accountNumber || '');
-    const accountHolderValidation = validatePrincipalAccountHolder(editedInfo.accountHolder || '');
+    const bankNameValidation = validateBankName(editedInfo.refundBankName || '');
+    const accountNumberValidation = validateAccountNumber(editedInfo.refundAccountNumber || '');
+    const accountHolderValidation = validateAccountHolder(editedInfo.refundAccountHolder || '');
     
     // 모든 validation 에러 수집
     const allErrors: Record<string, string> = {};
     
     if (!bankNameValidation.isValid) {
-      bankNameValidation.errors.forEach(error => {
-        allErrors[error.field] = error.message;
-      });
+      allErrors.refundBankName = bankNameValidation.message;
     }
     
     if (!accountNumberValidation.isValid) {
-      accountNumberValidation.errors.forEach(error => {
-        allErrors[error.field] = error.message;
-      });
+      allErrors.refundAccountNumber = accountNumberValidation.message;
     }
     
     if (!accountHolderValidation.isValid) {
-      accountHolderValidation.errors.forEach(error => {
-        allErrors[error.field] = error.message;
-      });
+      allErrors.refundAccountHolder = accountHolderValidation.message;
     }
     
     // validation 에러가 있으면 처리
@@ -109,10 +106,10 @@ export function PrincipalBankInfoManagement() {
       clearErrors(); // 요청 시작 시 에러 초기화
       setValidationErrors({}); // validation 에러도 초기화
       
-      await updateProfile(editedInfo);
+      await updateRefundAccountInfo(editedInfo);
       
       setIsEditing(false);
-      toast.success('은행 정보가 성공적으로 업데이트되었습니다.');
+      toast.success('환불 계좌 정보가 성공적으로 업데이트되었습니다.');
     } catch (error) {
       handleApiError(error, { disableToast: false, disableConsole: true });
     } finally {
@@ -120,7 +117,7 @@ export function PrincipalBankInfoManagement() {
     }
   };
 
-  const handleInputChange = (field: keyof UpdatePrincipalProfileRequest, value: string) => {
+  const handleInputChange = (field: keyof UpdateStudentRefundAccountRequest, value: string) => {
     setEditedInfo(prev => ({
       ...prev,
       [field]: value,
@@ -135,12 +132,52 @@ export function PrincipalBankInfoManagement() {
     }
   };
 
+  // Validation 함수들
+  const validateBankName = (value: string) => {
+    if (!value.trim()) {
+      return { isValid: false, message: '은행명을 입력해주세요.' };
+    }
+    if (value.length > 50) {
+      return { isValid: false, message: '은행명은 50자 이하여야 합니다.' };
+    }
+    if (!/^[가-힣a-zA-Z\s]+$/.test(value)) {
+      return { isValid: false, message: '은행명은 한글, 영문, 공백만 사용 가능합니다.' };
+    }
+    return { isValid: true, message: '' };
+  };
+
+  const validateAccountNumber = (value: string) => {
+    if (!value.trim()) {
+      return { isValid: false, message: '계좌번호를 입력해주세요.' };
+    }
+    if (value.length > 20) {
+      return { isValid: false, message: '계좌번호는 20자 이하여야 합니다.' };
+    }
+    if (!/^[0-9-]+$/.test(value)) {
+      return { isValid: false, message: '계좌번호는 숫자와 하이픈(-)만 사용 가능합니다.' };
+    }
+    return { isValid: true, message: '' };
+  };
+
+  const validateAccountHolder = (value: string) => {
+    if (!value.trim()) {
+      return { isValid: false, message: '예금주를 입력해주세요.' };
+    }
+    if (value.length > 50) {
+      return { isValid: false, message: '예금주는 50자 이하여야 합니다.' };
+    }
+    if (!/^[가-힣a-zA-Z\s]+$/.test(value)) {
+      return { isValid: false, message: '예금주는 한글, 영문, 공백만 사용 가능합니다.' };
+    }
+    return { isValid: true, message: '' };
+  };
+
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-full">
-        <p className="text-red-500">은행 정보를 불러오는데 실패했습니다.</p>
+        <p className="text-red-500">환불 계좌 정보를 불러오는데 실패했습니다.</p>
         <button
-          onClick={() => loadProfile()}
+          onClick={() => loadRefundAccount()}
           className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
         >
           다시 시도
@@ -154,15 +191,15 @@ export function PrincipalBankInfoManagement() {
       {/* 헤더 */}
       <div className="flex items-center justify-between px-5 pb-4 flex-shrink-0">
         <div>
-          <h1 className="text-2xl font-bold text-stone-700">은행 정보 관리</h1>
-          <p className="text-gray-600 mt-1">결제를 위한 은행 계좌 정보를 관리할 수 있습니다.</p>
+          <h1 className="text-2xl font-bold text-stone-700">환불 계좌 정보 관리</h1>
+          <p className="text-gray-600 mt-1">환불을 위한 은행 계좌 정보를 관리할 수 있습니다.</p>
         </div>
         <Building className="h-8 w-8 text-stone-700" />
       </div>
 
       <Separator className="mx-5 flex-shrink-0" />
 
-      {/* 은행 정보 카드 - 스크롤 가능한 컨테이너 */}
+      {/* 환불 계좌 정보 카드 - 스크롤 가능한 컨테이너 */}
       <div className="px-5 py-4 flex-1">
         <div className="max-h-[calc(100vh-260px)] overflow-y-auto">
           <Card>
@@ -170,7 +207,7 @@ export function PrincipalBankInfoManagement() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <CreditCard className="h-5 w-5" />
-                  은행 계좌 정보
+                  환불 계좌 정보
                 </CardTitle>
                 {!isEditing ? (
                   <Button
@@ -215,22 +252,22 @@ export function PrincipalBankInfoManagement() {
                 </label>
                 {isEditing ? (
                   <Input
-                    value={editedInfo.bankName || ''}
-                    onChange={(e) => handleInputChange('bankName', e.target.value)}
+                    value={editedInfo.refundBankName || ''}
+                    onChange={(e) => handleInputChange('refundBankName', e.target.value)}
                     placeholder="은행명을 입력하세요 (예: 신한은행)"
                     disabled={isLoading}
                     className={`transition-all duration-200 ${
-                      (fieldErrors.bankName || validationErrors.bankName) ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                      (fieldErrors.refundBankName || validationErrors.refundBankName) ? 'border-red-500 bg-red-50' : 'border-gray-300'
                     } ${
-                      isShaking && (fieldErrors.bankName || validationErrors.bankName) ? 'animate-shake' : ''
+                      isShaking && (fieldErrors.refundBankName || validationErrors.refundBankName) ? 'animate-shake' : ''
                     }`}
                   />
                 ) : (
-                  <p className="text-gray-700 py-2">{profile?.bankName || '미입력'}</p>
+                  <p className="text-gray-700 py-2">{refundAccount?.refundBankName || '미입력'}</p>
                 )}
-                {(fieldErrors.bankName || validationErrors.bankName) && (
+                {(fieldErrors.refundBankName || validationErrors.refundBankName) && (
                   <p className="text-red-500 text-sm animate-in fade-in">
-                    {fieldErrors.bankName || validationErrors.bankName}
+                    {fieldErrors.refundBankName || validationErrors.refundBankName}
                   </p>
                 )}
               </div>
@@ -245,52 +282,52 @@ export function PrincipalBankInfoManagement() {
                 </label>
                 {isEditing ? (
                   <Input
-                    value={editedInfo.accountNumber || ''}
-                    onChange={(e) => handleInputChange('accountNumber', e.target.value)}
+                    value={editedInfo.refundAccountNumber || ''}
+                    onChange={(e) => handleInputChange('refundAccountNumber', e.target.value)}
                     placeholder="계좌번호를 입력하세요 (예: 110-123-456789)"
                     disabled={isLoading}
                     className={`transition-all duration-200 ${
-                      (fieldErrors.accountNumber || validationErrors.accountNumber) ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                      (fieldErrors.refundAccountNumber || validationErrors.refundAccountNumber) ? 'border-red-500 bg-red-50' : 'border-gray-300'
                     } ${
-                      isShaking && (fieldErrors.accountNumber || validationErrors.accountNumber) ? 'animate-shake' : ''
+                      isShaking && (fieldErrors.refundAccountNumber || validationErrors.refundAccountNumber) ? 'animate-shake' : ''
                     }`}
                   />
                 ) : (
-                  <p className="text-gray-700 py-2 font-mono">{profile?.accountNumber || '미입력'}</p>
+                  <p className="text-gray-700 py-2 font-mono">{refundAccount?.refundAccountNumber || '미입력'}</p>
                 )}
-                {(fieldErrors.accountNumber || validationErrors.accountNumber) && (
+                {(fieldErrors.refundAccountNumber || validationErrors.refundAccountNumber) && (
                   <p className="text-red-500 text-sm animate-in fade-in">
-                    {fieldErrors.accountNumber || validationErrors.accountNumber}
+                    {fieldErrors.refundAccountNumber || validationErrors.refundAccountNumber}
                   </p>
                 )}
               </div>
 
               <Separator />
 
-              {/* 계좌주 */}
+              {/* 예금주 */}
               <div className="space-y-2">
                 <label className="text-sm font-medium flex items-center gap-2">
                   <Building className="h-4 w-4" />
-                  계좌주 *
+                  예금주 *
                 </label>
                 {isEditing ? (
                   <Input
-                    value={editedInfo.accountHolder || ''}
-                    onChange={(e) => handleInputChange('accountHolder', e.target.value)}
-                    placeholder="계좌주를 입력하세요"
+                    value={editedInfo.refundAccountHolder || ''}
+                    onChange={(e) => handleInputChange('refundAccountHolder', e.target.value)}
+                    placeholder="예금주를 입력하세요"
                     disabled={isLoading}
                     className={`transition-all duration-200 ${
-                      (fieldErrors.accountHolder || validationErrors.accountHolder) ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                      (fieldErrors.refundAccountHolder || validationErrors.refundAccountHolder) ? 'border-red-500 bg-red-50' : 'border-gray-300'
                     } ${
-                      isShaking && (fieldErrors.accountHolder || validationErrors.accountHolder) ? 'animate-shake' : ''
+                      isShaking && (fieldErrors.refundAccountHolder || validationErrors.refundAccountHolder) ? 'animate-shake' : ''
                     }`}
                   />
                 ) : (
-                  <p className="text-gray-700 py-2">{profile?.accountHolder || '미입력'}</p>
+                  <p className="text-gray-700 py-2">{refundAccount?.refundAccountHolder || '미입력'}</p>
                 )}
-                {(fieldErrors.accountHolder || validationErrors.accountHolder) && (
+                {(fieldErrors.refundAccountHolder || validationErrors.refundAccountHolder) && (
                   <p className="text-red-500 text-sm animate-in fade-in">
-                    {fieldErrors.accountHolder || validationErrors.accountHolder}
+                    {fieldErrors.refundAccountHolder || validationErrors.refundAccountHolder}
                   </p>
                 )}
               </div>
@@ -301,7 +338,7 @@ export function PrincipalBankInfoManagement() {
               <div className="bg-[#f5f3f2] border border-[#ac9592] rounded-lg p-4">
                 <h4 className="text-sm font-medium text-[#8b6f6b] mb-2">안내사항</h4>
                 <ul className="text-xs text-[#7a5f5b] space-y-1">
-                  <li>• 이 정보는 학생들이 수강료를 입금할 때 사용됩니다.</li>
+                  <li>• 이 정보는 환불 요청 시 환불금을 받을 계좌입니다.</li>
                   <li>• 정확한 은행 정보를 입력해주세요.</li>
                   <li>• 계좌번호는 하이픈(-) 없이 입력해도 됩니다.</li>
                   <li>• 정보 변경 시 즉시 반영됩니다.</li>
@@ -313,4 +350,4 @@ export function PrincipalBankInfoManagement() {
       </div>
     </div>
   );
-} 
+}

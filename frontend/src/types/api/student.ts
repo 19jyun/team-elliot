@@ -274,5 +274,27 @@ export interface TeacherProfileForStudentResponse {
   updatedAt: string;
 }
 
+// 환불 계좌 정보 타입
+export interface StudentRefundAccount {
+  id: number;
+  refundAccountHolder: string | null;
+  refundAccountNumber: string | null;
+  refundBankName: string | null;
+}
+
+export interface UpdateStudentRefundAccountRequest {
+  refundAccountHolder?: string;
+  refundAccountNumber?: string;
+  refundBankName?: string;
+}
+
+export interface UpdateStudentRefundAccountResponse {
+  id: number;
+  refundAccountHolder: string | null;
+  refundAccountNumber: string | null;
+  refundBankName: string | null;
+  updatedAt: string;
+}
+
 // Re-export from academy
 export type { GetAcademiesResponse, GetMyAcademiesResponse };

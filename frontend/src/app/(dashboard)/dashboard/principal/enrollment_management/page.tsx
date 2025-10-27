@@ -3,9 +3,9 @@
 import { useSession, useSignOut } from '@/lib/auth/AuthProvider'
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi'
 import { useEffect } from 'react'
-import { TeacherStudentManagementContainer } from '@/components/dashboard/principal/person_management/teacher_student_management/containers/TeacherStudentManagementContainer'
+import { EnrollmentRefundManagementContainer } from '@/components/dashboard/principal/person_management/enrollment_refund_management/containers/EnrollmentRefundManagementContainer'
 
-export default function PrincipalPersonManagementPage() {
+export default function PrincipalEnrollmentManagementPage() {
   const { status } = useSession()
   const signOut = useSignOut()
 
@@ -49,5 +49,9 @@ export default function PrincipalPersonManagementPage() {
     )
   }
 
-  return <TeacherStudentManagementContainer />
-} 
+  return (
+    <div className="h-full">
+      <EnrollmentRefundManagementContainer />
+    </div>
+  )
+}
