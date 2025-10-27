@@ -1122,7 +1122,8 @@ export class ClassSessionService {
   async checkAttendance(
     enrollmentId: number,
     attendanceStatus: 'ATTENDED' | 'ABSENT',
-    teacherId: number,
+    userId: number,
+    userRole: string,
   ) {
     const enrollment = await this.prisma.sessionEnrollment.findUnique({
       where: { id: enrollmentId },
@@ -1145,10 +1146,53 @@ export class ClassSessionService {
     }
 
     // 권한 확인
-    if (enrollment.session.class.teacherId !== teacherId) {
-      throw new ForbiddenException(
-        '해당 클래스의 출석을 관리할 권한이 없습니다.',
+    if (userRole === 'TEACHER') {
+      // Teacher 권한 로직: 본인이 담당하는 클래스의 세션만 출석체크 가능
+      const teacher = await this.prisma.teacher.findUnique({
+        where: { userRefId: userId },
+        select: { id: true },
+      });
+
+      if (!teacher) {
+        throw new ForbiddenException('Teacher를 찾을 수 없습니다.');
+      }
+
+      if (enrollment.session.class.teacherId !== teacher.id) {
+        throw new ForbiddenException(
+          '해당 클래스의 출석을 관리할 권한이 없습니다.',
+        );
+      }
+    } else if (userRole === 'PRINCIPAL') {
+      // Principal 권한 로직: 해당 학원 소속의 모든 클래스/세션 출석체크 가능
+      const principal = await this.prisma.principal.findUnique({
+        where: { userRefId: userId },
+        include: {
+          academy: {
+            include: {
+              classes: {
+                where: { id: enrollment.session.classId },
+              },
+            },
+          },
+        },
+      });
+
+      if (!principal) {
+        throw new ForbiddenException('Principal을 찾을 수 없습니다.');
+      }
+
+      // 세션이 해당 학원의 클래스에 속하는지 확인
+      const classExists = principal.academy.classes.some(
+        (cls) => cls.id === enrollment.session.classId,
       );
+
+      if (!classExists) {
+        throw new ForbiddenException(
+          '해당 클래스의 출석을 관리할 권한이 없습니다.',
+        );
+      }
+    } else {
+      throw new ForbiddenException('유효하지 않은 사용자 역할입니다.');
     }
 
     // 수업 당일인지 확인
@@ -2502,6 +2546,7 @@ export class ClassSessionService {
             date: session.date,
             startTime: session.startTime,
             endTime: session.endTime,
+            sessionSummary: session.sessionSummary,
             maxStudents: session.maxStudents,
             currentStudents: session.currentStudents,
             enrollmentCount,
@@ -2510,6 +2555,7 @@ export class ClassSessionService {
               id: classItem.id,
               className: classItem.className,
               level: classItem.level,
+              tuitionFee: classItem.tuitionFee,
               teacher: classItem.teacher,
             },
           });
@@ -2608,9 +2654,12 @@ export class ClassSessionService {
         date: session.date,
         startTime: session.startTime,
         endTime: session.endTime,
+        sessionSummary: session.sessionSummary,
         class: {
           id: session.class.id,
           className: session.class.className,
+          level: session.class.level,
+          tuitionFee: session.class.tuitionFee,
           teacher: session.class.teacher,
         },
       },

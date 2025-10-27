@@ -131,7 +131,7 @@ export class TeacherController {
   }
 
   @Put('sessions/:sessionId/summary')
-  @Roles(Role.TEACHER)
+  @Roles(Role.TEACHER, Role.PRINCIPAL)
   @ApiOperation({ summary: '세션 요약 업데이트' })
   @ApiResponse({
     status: 200,
@@ -146,6 +146,7 @@ export class TeacherController {
       sessionId,
       updateSessionSummaryDto.sessionSummary,
       user.id,
+      user.role,
     );
   }
 }

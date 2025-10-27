@@ -225,6 +225,7 @@ describe('ClassSessionController', () => {
         enrollmentId,
         attendanceStatus,
         mockUser.id,
+        mockUser.role,
       );
     });
 
@@ -245,6 +246,7 @@ describe('ClassSessionController', () => {
         enrollmentId,
         attendanceStatus,
         mockUser.id,
+        mockUser.role,
       );
     });
   });

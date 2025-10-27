@@ -140,6 +140,9 @@ export class PrincipalController {
 
   // Principal의 세션 수강생 조회
   @Get('sessions/:sessionId/enrollments')
+  @Roles(Role.PRINCIPAL)
+  @ApiOperation({ summary: 'Principal 세션 수강생 조회' })
+  @ApiResponse({ status: 200, description: '세션 수강생 조회 성공' })
   async getSessionEnrollments(
     @Param('sessionId', ParseIntPipe) sessionId: number,
     @GetUser() user: any,

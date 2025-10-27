@@ -61,9 +61,20 @@ export interface PrincipalClassSession {
   date: string;
   startTime: string;
   endTime: string;
+  sessionSummary?: string | null;
   currentStudents: number;
   maxStudents: number;
   enrollments: PrincipalSessionEnrollment[];
+  class?: {
+    id: number;
+    className: string;
+    level: string;
+    tuitionFee: string;
+    teacher: {
+      id: number;
+      name: string;
+    };
+  };
 }
 
 // Principal 세션 수강신청 정보 (백엔드 응답 구조에 맞춤)

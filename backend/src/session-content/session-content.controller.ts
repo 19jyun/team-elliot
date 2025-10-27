@@ -28,6 +28,7 @@ export class SessionContentController {
   constructor(private readonly sessionContentService: SessionContentService) {}
 
   @Get()
+  @Roles(Role.STUDENT, Role.TEACHER, Role.PRINCIPAL)
   @ApiOperation({ summary: '세션 내용 목록 조회' })
   @ApiResponse({ status: 200, description: '세션 내용 목록 조회 성공' })
   async findBySessionId(@Param('sessionId', ParseIntPipe) sessionId: number) {
@@ -35,6 +36,7 @@ export class SessionContentController {
   }
 
   @Get(':id')
+  @Roles(Role.STUDENT, Role.TEACHER, Role.PRINCIPAL)
   @ApiOperation({ summary: '세션 내용 상세 조회' })
   @ApiResponse({ status: 200, description: '세션 내용 상세 조회 성공' })
   async findOne(@Param('id', ParseIntPipe) id: number) {

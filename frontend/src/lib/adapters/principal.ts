@@ -8,7 +8,7 @@ import type {
   UpdatePrincipalProfileRequest,
 } from "@/types/api/principal";
 import type { RefundRequestResponse } from "@/types/api/refund";
-import type { ClassSession } from "@/types/api/class";
+import type { ClassSession, ClassSessionWithCounts } from "@/types/api/class";
 import type { EnrollmentStatus } from "@/types/api/common";
 import { formatDate, formatTime } from "@/utils/dateTime";
 import type {
@@ -531,5 +531,58 @@ export function toUnifiedRequestVM(
     statusColor: getStatusColor(status),
     canApprove: status === "PENDING",
     canReject: status === "PENDING",
+  };
+}
+
+// ============= SessionDetail용 어댑터 함수 =============
+
+/**
+ * PrincipalClassSession을 ClassSessionWithCounts로 변환하는 함수
+ * Teacher의 SessionDetailContainer에서 사용할 수 있도록 변환
+ */
+export function convertPrincipalSessionToClassSessionWithCounts(
+  principalSession: PrincipalClassSession
+): ClassSessionWithCounts {
+  // enrollmentCount와 confirmedCount 계산
+  const enrollments = principalSession.enrollments || [];
+  const enrollmentCount = enrollments.length;
+  const confirmedCount = enrollments.filter(
+    (enrollment) => enrollment.status === "CONFIRMED"
+  ).length;
+
+  return {
+    id: principalSession.id,
+    classId: principalSession.classId,
+    date: principalSession.date,
+    startTime: principalSession.startTime,
+    endTime: principalSession.endTime,
+    currentStudents: principalSession.currentStudents,
+    maxStudents: principalSession.maxStudents,
+    enrollmentCount,
+    confirmedCount,
+    sessionSummary: principalSession.sessionSummary || null, // API에서 제공하는 값 사용
+    // 기본값들 설정
+    isEnrollable: false,
+    isFull: principalSession.currentStudents >= principalSession.maxStudents,
+    isPastStartTime: false,
+    isAlreadyEnrolled: false,
+    studentEnrollmentStatus: null,
+    class: {
+      id: principalSession.classId,
+      className: principalSession.class?.className || "클래스명", // API에서 제공하는 값 사용
+      level: principalSession.class?.level || "BEGINNER", // API에서 제공하는 값 사용
+      tuitionFee: principalSession.class?.tuitionFee || "50000", // API에서 제공하는 값 사용
+      teacher: principalSession.class?.teacher || {
+        id: 0,
+        name: "선생님",
+      }, // API에서 제공하는 값 사용
+    },
+    enrollments: enrollments.map((enrollment) => ({
+      id: enrollment.id,
+      studentId: enrollment.studentId,
+      sessionId: enrollment.sessionId,
+      status: enrollment.status as EnrollmentStatus, // 타입 변환
+      enrolledAt: enrollment.enrolledAt,
+    })),
   };
 }

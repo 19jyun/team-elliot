@@ -73,7 +73,9 @@ interface EnrollmentHistory {
     | "CONFIRMED"
     | "REJECTED"
     | "REFUND_REQUESTED"
-    | "REFUND_REJECTED_CONFIRMED";
+    | "REFUND_REJECTED_CONFIRMED"
+    | "ATTENDED"
+    | "ABSENT";
   description?: string;
   // 거절 사유 정보
   enrollmentRejection?: RejectionDetail;

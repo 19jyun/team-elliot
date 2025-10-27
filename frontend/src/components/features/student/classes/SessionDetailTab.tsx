@@ -6,66 +6,31 @@ import { useSessionContents } from '@/hooks/useSessionContents'
 import type { SessionDetailTabVM, SessionDetailDisplayVM, SessionContentDisplayVM } from '@/types/view/student'
 import { toSessionDetailDisplayVM } from '@/lib/adapters/student'
 
-// 학생용 발레 자세 카드 컴포넌트
-function StudentPoseCard({ content, index }: { content: SessionContentDisplayVM; index: number }) {
-
+// 통일된 발레 자세 카드 컴포넌트 (PoseAdditionDetailComponent 스타일 적용)
+function UnifiedPoseCard({ content, index }: { content: SessionContentDisplayVM; index: number }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm">
-      {/* 순서 번호와 자세명 */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <span className="flex items-center justify-center w-8 h-8 bg-[#ac9592] text-white rounded-full text-sm font-bold">
-            {index + 1}
-          </span>
-          <h3 className="text-lg font-semibold text-stone-700">
-            {content.pose.name}
-          </h3>
+    <div className="flex items-center justify-between p-3 border border-[#AC9592] rounded-lg hover:bg-[#F0F0F0] transition-colors duration-200">
+      <div className="flex items-center flex-1">
+        <span className="text-[#AC9592] mr-2 font-medium text-sm">{index + 1}</span>
+        <div className="flex-1">
+          <div className="text-[#573B30] font-medium text-base">{content.pose.name}</div>
+          {content.pose.description && (
+            <div className="text-xs text-gray-600 mt-0.5 line-clamp-2">{content.pose.description}</div>
+          )}
         </div>
-        <span className={`px-3 py-1 rounded-full text-xs font-medium ${content.pose.difficultyColor}`}>
-          {content.pose.displayDifficulty}
-        </span>
       </div>
-
-      {/* 자세 이미지 (있는 경우) */}
-      {content.hasImage && (
-        <div className="mb-3">
-          <div className="relative w-full h-48 bg-gray-100 rounded-lg overflow-hidden">
-            <Image
-              src={content.pose.imageUrl!}
-              alt={content.pose.name}
-              fill
-              className="object-cover"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* 자세 설명 */}
-      <div className="mb-3">
-        <h4 className="text-sm font-medium text-stone-600 mb-2">자세 설명</h4>
-        <p className="text-sm text-stone-700 leading-relaxed whitespace-pre-line">
-          {content.pose.description}
-        </p>
-      </div>
-
-      {/* 추가 노트 (있는 경우) */}
-      {content.hasNotes && (
-        <div className="bg-stone-50 rounded-lg p-3 border-l-4 border-[#ac9592]">
-          <h4 className="text-sm font-medium text-stone-600 mb-1">강사 노트</h4>
-          <p className="text-sm text-stone-700 leading-relaxed whitespace-pre-line">
-            {content.notes}
-          </p>
-        </div>
-      )}
+      <span className={`px-3 py-1 rounded-full text-xs font-medium ${content.pose.difficultyColor}`}>
+        {content.pose.displayDifficulty}
+      </span>
     </div>
   )
 }
 
 export function SessionDetailTab({ sessionId }: SessionDetailTabVM) {
-  const { data: contents, isLoading, error } = useSessionContents(sessionId)
+  const { data: sessionData, isLoading, error } = useSessionContents(sessionId)
 
   // View Model 생성
-  const displayVM: SessionDetailDisplayVM = toSessionDetailDisplayVM(sessionId, contents, isLoading, error?.message || null)
+  const displayVM: SessionDetailDisplayVM = toSessionDetailDisplayVM(sessionId, sessionData, isLoading, error?.message || null)
 
   if (displayVM.isLoading) {
     return (
@@ -111,20 +76,30 @@ export function SessionDetailTab({ sessionId }: SessionDetailTabVM) {
 
   return (
     <div className="space-y-4">
+      {/* 세줄요약 섹션 */}
+      {displayVM.sessionSummary && (
+        <div className="mb-6 p-4 rounded-lg">
+          <h3 className="text-lg font-semibold text-[#573B30] mb-2">수업 세 줄 요약</h3>
+          <p className="text-sm text-[#573B30] leading-relaxed">
+            {displayVM.sessionSummary}
+          </p>
+        </div>
+      )}
+
       {/* 헤더 */}
       <div className="mb-6">
-        <h3 className="text-xl font-bold text-stone-700 mb-2">
+        <h3 className="text-xl font-bold text-[#573B30] mb-2">
           이번 수업에서 배울 자세들
         </h3>
         <p className="text-sm text-stone-500">
-          총 {displayVM.contents.length}개의 발레 자세를 순서대로 배워볼 예정입니다.
+          총 {displayVM.contents.length}개의 발레 자세들을 배워볼 예정입니다.
         </p>
       </div>
 
       {/* 자세 목록 */}
-      <div className="space-y-4">
+      <div className="space-y-1.5">
         {displayVM.contents.map((content: SessionContentDisplayVM, index: number) => (
-          <StudentPoseCard
+          <UnifiedPoseCard
             key={content.id}
             content={content}
             index={index}

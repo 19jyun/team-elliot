@@ -4,6 +4,7 @@ import type {
   CreateSessionContentRequest,
   ReorderSessionContentsRequest,
   SessionContent,
+  SessionContentResponse,
   DeleteSessionContentResponse,
   ReorderSessionContentsResponse,
   CheckAttendanceRequest,
@@ -14,8 +15,8 @@ import type {
 // 세션 내용 목록 조회
 export const getSessionContents = (
   sessionId: number
-): Promise<ApiResponse<SessionContent[]>> => {
-  return get<ApiResponse<SessionContent[]>>(
+): Promise<ApiResponse<SessionContentResponse>> => {
+  return get<ApiResponse<SessionContentResponse>>(
     `/class-sessions/${sessionId}/contents`
   );
 };
