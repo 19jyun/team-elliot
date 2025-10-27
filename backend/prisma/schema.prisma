@@ -93,6 +93,9 @@ model Student {
   birthDate          DateTime?           @map("birth_date")
   notes              String?
   level              String?             @db.VarChar(50)
+  refundAccountHolder   String?             @map("refund_account_holder") @db.VarChar(50)
+  refundAccountNumber   String?             @map("refund_account_number") @db.VarChar(20)
+  refundBankName        String?             @map("refund_bank_name") @db.VarChar(50)
   userRefId          Int                 @unique @map("user_ref_id")
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt

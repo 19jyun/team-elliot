@@ -11,6 +11,7 @@ import { AcademyService } from '../academy/academy.service';
 import { JoinAcademyDto } from './dto/join-academy.dto';
 import { LeaveAcademyDto } from './dto/leave-academy.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdateRefundAccountDto } from './dto/update-refund-account.dto';
 
 @Injectable()
 export class StudentService {
@@ -970,5 +971,83 @@ export class StudentService {
     }
 
     return teacher;
+  }
+
+  /**
+   * 학생의 환불 계좌 정보 조회
+   */
+  async getRefundAccount(userId: number) {
+    const student = await this.prisma.student.findUnique({
+      where: { userRefId: userId },
+      select: {
+        id: true,
+        refundAccountHolder: true,
+        refundAccountNumber: true,
+        refundBankName: true,
+      },
+    });
+
+    if (!student) {
+      throw new NotFoundException({
+        code: 'STUDENT_NOT_FOUND',
+        message: '학생을 찾을 수 없습니다.',
+        details: { userId },
+      });
+    }
+
+    return {
+      id: student.id,
+      refundAccountHolder: student.refundAccountHolder,
+      refundAccountNumber: student.refundAccountNumber,
+      refundBankName: student.refundBankName,
+    };
+  }
+
+  /**
+   * 학생의 환불 계좌 정보 수정
+   */
+  async updateRefundAccount(
+    userId: number,
+    updateRefundAccountDto: UpdateRefundAccountDto,
+  ) {
+    const student = await this.prisma.student.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!student) {
+      throw new NotFoundException({
+        code: 'STUDENT_NOT_FOUND',
+        message: '학생을 찾을 수 없습니다.',
+        details: { userId },
+      });
+    }
+
+    // 빈 문자열을 null로 변환
+    const updateData = {
+      refundAccountHolder: updateRefundAccountDto.refundAccountHolder || null,
+      refundAccountNumber: updateRefundAccountDto.refundAccountNumber || null,
+      refundBankName: updateRefundAccountDto.refundBankName || null,
+      updatedAt: new Date(),
+    };
+
+    const updatedStudent = await this.prisma.student.update({
+      where: { userRefId: userId },
+      data: updateData,
+      select: {
+        id: true,
+        refundAccountHolder: true,
+        refundAccountNumber: true,
+        refundBankName: true,
+        updatedAt: true,
+      },
+    });
+
+    return {
+      id: updatedStudent.id,
+      refundAccountHolder: updatedStudent.refundAccountHolder,
+      refundAccountNumber: updatedStudent.refundAccountNumber,
+      refundBankName: updatedStudent.refundBankName,
+      updatedAt: updatedStudent.updatedAt,
+    };
   }
 }
