@@ -9,9 +9,16 @@ interface DashboardContainerProps {
   activeTab: number;
   onTabChange: (tab: number) => void;
   isTransitioning?: boolean;
+  enableSwipe?: boolean; // 스와이프 기능 활성화/비활성화 옵션
 }
 
-export function DashboardContainer({ children, activeTab, onTabChange, isTransitioning = false }: DashboardContainerProps) {
+export function DashboardContainer({ 
+  children, 
+  activeTab, 
+  onTabChange, 
+  isTransitioning = false, 
+  enableSwipe = true 
+}: DashboardContainerProps) {
   // 각 페이지의 스크롤 위치를 개별적으로 관리
   const [pageScrollPositions, setPageScrollPositions] = useState<Record<number, number>>({});
 
@@ -36,6 +43,7 @@ export function DashboardContainer({ children, activeTab, onTabChange, isTransit
         isTransitioning={isTransitioning}
         onTransitionComplete={handleTransitionComplete}
         onTabChange={onTabChange}
+        enableSwipe={enableSwipe}
       >
         {children.map((child, index) => (
           <DashboardPage

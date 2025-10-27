@@ -164,7 +164,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
 
   const navigationItems = getNavigationItems();
 
-  // Virtual History 초기화
+  // Virtual History 초기화 (앱 시작 시)
   useEffect(() => {
     // 앱 시작 시 초기 상태를 Virtual History에 추가
     virtualHistory.push({
@@ -241,6 +241,53 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
     
     stateSyncRef.current.publish('navigation', navigationState);
   }, [activeTab, subPage, canGoBack, isTransitioning, getNavigationItems, history]);
+
+  // 로그아웃 이벤트 감지 및 네비게이션 상태 초기화
+  useEffect(() => {
+    const handleLogoutCleanup = () => {
+      // 로그아웃 시 네비게이션 상태 완전 초기화
+      setActiveTabState(0);
+      setSubPageState(null);
+      setCanGoBack(false);
+      setIsTransitioning(false);
+      setHistory([]);
+      
+      // Virtual History도 완전 초기화
+      virtualHistory.clear();
+      
+      // 초기 상태를 Virtual History에 다시 추가
+      virtualHistory.push({
+        type: "navigation",
+        data: {
+          activeTab: 0,
+          subPage: null,
+          title: "After Logout",
+          description: "Navigation reset after logout",
+        },
+      });
+    };
+
+    // 로그아웃 정리 이벤트 리스너 등록
+    if (typeof window !== 'undefined') {
+      window.addEventListener('logout-cleanup', handleLogoutCleanup);
+      
+      return () => {
+        window.removeEventListener('logout-cleanup', handleLogoutCleanup);
+      };
+    }
+  }, [virtualHistory]);
+
+  // 세션이 없을 때 네비게이션 상태 초기화 (추가 안전장치)
+  useEffect(() => {
+    if (!session?.user) {
+      // 세션이 없으면 네비게이션 상태 초기화
+      setActiveTabState(0);
+      setSubPageState(null);
+      setCanGoBack(false);
+      setIsTransitioning(false);
+      setHistory([]);
+    }
+  }, [session?.user]);
 
   // 이벤트 버스 구독
   useEffect(() => {
