@@ -20,6 +20,7 @@ import { useEffect } from 'react';
 import { useStudentInitialization } from '@/hooks/redux/useStudentInitialization';
 import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSocketListener';
 import { SettingsPage } from '@/components/settings/SettingsPage';
+import { WithdrawalPage } from '@/components/common/WithdrawalPage';
 
 
 function StudentDashboardContent() {
@@ -60,6 +61,8 @@ function StudentDashboardContent() {
         return <RefundAccountManagement />;
       case 'settings':
         return <SettingsPage role="STUDENT" />;
+      case 'withdrawal':
+        return <WithdrawalPage />;
       default:
         return null;
     }

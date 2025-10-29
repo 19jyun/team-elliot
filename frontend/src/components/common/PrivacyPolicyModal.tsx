@@ -39,7 +39,7 @@ export function PrivacyPolicyModal({ isOpen, onClose, isSignUp = false, onAgree 
         <section>
           <p className="mb-4">
             {/* // 수정됨: PDF 내용 반영 */}
-            팀 엘리엇(이하 "회사")는 개인정보 보호법 제30조에 따라 정보 주체의 개인정보를 보호하고 이와 관련한 고충을 신속하고 원활하게 처리할 수 있도록 하기 위하여 다음과 같이 개인정보 처리지침을 수립, 공개합니다.
+            팀 엘리엇(이하 &quot;회사&quot;)는 개인정보 보호법 제30조에 따라 정보 주체의 개인정보를 보호하고 이와 관련한 고충을 신속하고 원활하게 처리할 수 있도록 하기 위하여 다음과 같이 개인정보 처리지침을 수립, 공개합니다.
           </p>
         </section>
 
@@ -231,7 +231,7 @@ export function PrivacyPolicyModal({ isOpen, onClose, isSignUp = false, onAgree 
           </ul>
           <p className="mt-2 pl-4">
             {/* // 수정됨: PDF */}
-            위 권리 행사는 서비스 내 '설정' 메뉴를 통해 직접 수행하실 수 있으며, 
+            위 권리 행사는 서비스 내 &apos;설정&apos; 메뉴를 통해 직접 수행하실 수 있으며, 
             개인정보 보호책임자에게 서면, 전화, 이메일, 모사전송(FAX) 등으로 연락하시면 지체 없이 조치하겠습니다.
           </p>
            <p className="mt-2 pl-4">

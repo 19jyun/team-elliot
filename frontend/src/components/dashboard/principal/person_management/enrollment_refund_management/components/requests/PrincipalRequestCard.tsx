@@ -16,7 +16,7 @@ interface PrincipalRequestCardProps {
 
 export function PrincipalRequestCard({ 
   request, 
-  requestType, 
+  requestType: _requestType,
   onApprove, 
   onReject, 
   isProcessing = false,

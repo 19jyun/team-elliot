@@ -131,7 +131,8 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
           'personal-info',
           'enrollment-history',
           'cancellation-history',
-          'refund-account'
+          'refund-account',
+          'withdrawal'
         ].includes(page) || page.startsWith('modify-');
       case 'TEACHER':
         return [
@@ -142,7 +143,8 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
           'personal-info',
           'academy-management',
           'teacher-classes',
-          'session-detail'
+          'session-detail',
+          'withdrawal'
         ].includes(page);
       case 'PRINCIPAL':
         return [
@@ -157,7 +159,8 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
           'enrollment-refund-management',
           'teacher-student-management',
           'session-detail',
-          'principal-all-classes'
+          'principal-all-classes',
+          'withdrawal'
         ].includes(page);
       default:
         return false;

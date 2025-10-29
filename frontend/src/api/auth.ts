@@ -88,3 +88,10 @@ export const getSession = (): Promise<ApiResponse<SessionResponse>> => {
 export const verifyToken = (): Promise<ApiResponse<VerifyResponse>> => {
   return get<ApiResponse<VerifyResponse>>("/auth/verify");
 };
+
+// 회원 탈퇴
+export const withdrawal = (data: {
+  reason: string;
+}): Promise<ApiResponse<{ message: string }>> => {
+  return post<ApiResponse<{ message: string }>>("/auth/withdrawal", data);
+};

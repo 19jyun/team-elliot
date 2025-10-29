@@ -17,6 +17,7 @@ import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSoc
 import { useTeacherInitialization } from '@/hooks/redux/useTeacherInitialization';
 import { SettingsPage } from '@/components/settings/SettingsPage';
 import { SessionDetailContainer } from './teacher/SessionDetail/SessionDetailContainer';
+import { WithdrawalPage } from '@/components/common/WithdrawalPage';
 
 
 function TeacherDashboardContent() {
@@ -43,6 +44,8 @@ function TeacherDashboardContent() {
         return <SettingsPage role="TEACHER" />;
       case 'session-detail':
         return <SessionDetailContainer />;
+      case 'withdrawal':
+        return <WithdrawalPage />;
       default:
         return null;
     }

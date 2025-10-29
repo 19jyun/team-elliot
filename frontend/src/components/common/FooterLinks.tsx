@@ -3,10 +3,17 @@
 import React, { useState } from 'react';
 import { TermsModal } from './TermsModal';
 import { PrivacyPolicyModal } from './PrivacyPolicyModal';
+import { useApp } from '@/contexts/AppContext';
 
 export default function FooterLinks() {
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const { navigation } = useApp();
+  const { navigateToSubPage } = navigation;
+
+  const handleWithdrawalClick = () => {
+    navigateToSubPage('withdrawal');
+  };
 
   return (
     <>
@@ -24,9 +31,12 @@ export default function FooterLinks() {
           >
             개인정보처리방침
           </button>
-          <a href="/withdrawal" className="hover:text-neutral-600">
+          <button 
+            onClick={handleWithdrawalClick}
+            className="hover:text-neutral-600 cursor-pointer"
+          >
             회원탈퇴
-          </a>
+          </button>
         </nav>
       </footer>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';

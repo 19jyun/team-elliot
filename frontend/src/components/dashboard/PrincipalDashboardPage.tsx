@@ -21,6 +21,7 @@ import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSoc
 import { usePrincipalInitialization } from '@/hooks/redux/usePrincipalInitialization';
 import { SettingsPage } from '@/components/settings/SettingsPage';
 import { SessionDetailContainer } from './teacher/SessionDetail/SessionDetailContainer';
+import { WithdrawalPage } from '@/components/common/WithdrawalPage';
 
 
 
@@ -52,6 +53,8 @@ function PrincipalDashboardContent() {
         return <SettingsPage role="PRINCIPAL" />;
       case 'session-detail':
         return <SessionDetailContainer />;
+      case 'withdrawal':
+        return <WithdrawalPage />;
       default:
         return (
           <div className="flex items-center justify-center h-full">

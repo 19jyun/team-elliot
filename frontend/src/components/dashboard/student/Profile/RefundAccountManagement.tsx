@@ -33,7 +33,7 @@ export function RefundAccountManagement() {
     if (isStudent) {
       loadRefundAccount();
     }
-  }, [isStudent]);
+  }, [isStudent, loadRefundAccount]);
 
   // refundAccount 데이터가 로드되면 editedInfo 업데이트 (편집 모드가 아닐 때만)
   useEffect(() => {

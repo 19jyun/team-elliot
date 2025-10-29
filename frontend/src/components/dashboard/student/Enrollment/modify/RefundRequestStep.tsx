@@ -55,7 +55,7 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
   // 컴포넌트 마운트 시 환불 계좌 정보 로드
   useEffect(() => {
     loadRefundAccount();
-  }, []);
+  }, [loadRefundAccount]);
 
   // 환불 계좌 정보가 로드되면 폼에 자동 입력
   useEffect(() => {
@@ -72,7 +72,7 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
         setSaveAccount(true);
       }
     }
-  }, [refundAccount]);
+  }, [refundAccount, loadRefundAccount]);
 
   const statusSteps = [
     {

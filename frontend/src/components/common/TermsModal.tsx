@@ -40,7 +40,7 @@ export function TermsModal({ isOpen, onClose, isSignUp = false, onAgree }: Terms
           {/* // 수정됨: PDF 제1조  */}
           <h2 className="text-base font-semibold mb-3 text-stone-900">제1조 (목적)</h2>
           <p>
-            본 이용약관은 "발레 동아리 관리 플랫폼"(이하 "사이트")의 서비스의 이용조건과 운영에 관한 제반 사항 규정을 목적으로 합니다. 
+            본 이용약관은 &quot;발레 동아리 관리 플랫폼&quot;(이하 &quot;사이트&quot;)의 서비스의 이용조건과 운영에 관한 제반 사항 규정을 목적으로 합니다. 
           </p>
         </section>
 
@@ -49,12 +49,12 @@ export function TermsModal({ isOpen, onClose, isSignUp = false, onAgree }: Terms
           <h2 className="text-base font-semibold mb-3 text-stone-900">제2조 (용어의 정의)</h2>
           <p className="mb-2">본 약관에서 사용하는 용어의 정의는 다음과 같습니다: </p>
           <ol className="list-decimal list-inside space-y-2 pl-2">
-            <li>"회원"이라 함은 사이트의 약관에 동의하고 개인정보를 제공하여 회원등록을 한 자로서, 사이트와의 이용계약을 체결하고 사이트를 이용하는 이용자를 말합니다.</li>
-            <li>"이용계약"이라 함은 사이트 이용과 관련하여 사이트와 회원간에 체결 하는 계약을 말합니다.</li>
-            <li>"회원 아이디(ID)"라 함은 회원의 식별과 회원의 서비스 이용을 위하여 회원별로 부여하는 고유한 문자와 숫자의 조합을 말합니다.</li>
-            <li>"비밀번호"라 함은 회원이 부여받은 ID와 일치된 회원임을 확인하고 회원의 권익 보호를 위하여 회원이 선정한 문자와 숫자의 조합을 말합니다.</li>
-            <li>"운영자"라 함은 서비스에 홈페이지를 개설하여 운영하는 운영자를 말합니다.</li>
-            <li>"해지"라 함은 회원이 이용계약을 해약하는 것을 말합니다.</li>
+            <li>&quot;회원&quot;이라 함은 사이트의 약관에 동의하고 개인정보를 제공하여 회원등록을 한 자로서, 사이트와의 이용계약을 체결하고 사이트를 이용하는 이용자를 말합니다.</li>
+            <li>&quot;이용계약&quot;이라 함은 사이트 이용과 관련하여 사이트와 회원간에 체결 하는 계약을 말합니다.</li>
+            <li>&quot;회원 아이디(ID)&quot;라 함은 회원의 식별과 회원의 서비스 이용을 위하여 회원별로 부여하는 고유한 문자와 숫자의 조합을 말합니다.</li>
+            <li>&quot;비밀번호&quot;라 함은 회원이 부여받은 ID와 일치된 회원임을 확인하고 회원의 권익 보호를 위하여 회원이 선정한 문자와 숫자의 조합을 말합니다.</li>
+            <li>&quot;운영자&quot;라 함은 서비스에 홈페이지를 개설하여 운영하는 운영자를 말합니다.</li>
+            <li>&quot;해지&quot;라 함은 회원이 이용계약을 해약하는 것을 말합니다.</li>
           </ol>
         </section>
 
@@ -72,7 +72,7 @@ export function TermsModal({ isOpen, onClose, isSignUp = false, onAgree }: Terms
           <h2 className="text-base font-semibold mb-3 text-stone-900">제4조 (이용계약 체결)</h2>
           <ol className="list-decimal list-inside space-y-2 pl-2">
             <li>이용계약은 회원으로 등록하여 사이트를 이용하려는 자의 본 약관 내용에 대한 동의와 가입신청에 대하여 운영자의 이용승낙으로 성립합니다.</li>
-            <li>회원으로 등록하여 서비스를 이용하려는 자는 사이트 가입신청 시 본 약관을 읽고 "동의합니다"를 선택하는 것으로 본 약관에 대한 동의 의사 표시를 합니다.</li>
+            <li>회원으로 등록하여 서비스를 이용하려는 자는 사이트 가입신청 시 본 약관을 읽고 &quot;동의합니다&quot;를 선택하는 것으로 본 약관에 대한 동의 의사 표시를 합니다.</li>
             {/* // 수정됨: 요구사항 5번(신분확인X)에 따라 신분확인 절차 내용은 제외함 */}
           </ol>
         </section>

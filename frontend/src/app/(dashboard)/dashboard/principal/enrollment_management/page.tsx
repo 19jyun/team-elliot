@@ -10,7 +10,7 @@ export default function PrincipalEnrollmentManagementPage() {
   const signOut = useSignOut()
 
   // API 기반 데이터 관리
-  const { academy, loadAcademy, isLoading, error } = usePrincipalApi()
+  const { loadAcademy, isLoading, error } = usePrincipalApi()
 
   // 컴포넌트 마운트 시 academy 데이터 로드
   useEffect(() => {
