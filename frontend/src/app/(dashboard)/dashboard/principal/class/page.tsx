@@ -180,7 +180,8 @@ export default function PrincipalClassPage() {
 
   return (
     <div className="flex flex-col h-full bg-white">
-      <header className="flex-shrink-0">
+      {/* 상단 헤더 - 고정 */}
+      <header className="flex-shrink-0 border-b border-gray-200">
         {/* 환영 메시지 + 캘린더 아이콘 버튼 */}
         <div className="flex flex-col px-5 py-6">
           <div className="flex items-center justify-between">
@@ -212,33 +213,35 @@ export default function PrincipalClassPage() {
             </button>
           </div>
         </div>
-
-
-        {/* 캘린더 섹션 - 기존 크기 복원 */}
-        <div className="flex flex-col w-full bg-white text-stone-700" style={{ height: 'calc(100vh - 500px)' }}>
-          <CalendarProvider
-            mode="teacher-view"
-            sessions={calendarSessions.map(toClassSessionForCalendar)}
-            selectedSessionIds={new Set()}
-            onSessionSelect={() => {}} // principal-view에서는 선택 기능 없음
-            onDateClick={handleDateClick}
-            calendarRange={calendarRangeForCalendar}
-          >
-            <ConnectedCalendar />
-          </CalendarProvider>
-        </div>
-
-        {/* 강의 개설 버튼 섹션 */}
-        <div className="flex flex-col px-5 py-4 border-t border-gray-200">
-          <div className="flex flex-col self-center w-full font-semibold leading-snug text-center max-w-[335px]">
-            <CreateClassCard
-              title="강의 개설"
-              description="새로운 강의를 개설하고 선생님을 배정하세요"
-              onClick={handleCreateClassClick}
-            />
-          </div>
-        </div>
       </header>
+
+      {/* 캘린더 섹션 - 고정 높이 + 내부 스크롤 */}
+      <div 
+        className="flex-shrink-0 bg-white"
+        style={{ height: 'calc(100vh - 350px)' }}
+      >
+        <CalendarProvider
+          mode="teacher-view"
+          sessions={calendarSessions.map(toClassSessionForCalendar)}
+          selectedSessionIds={new Set()}
+          onSessionSelect={() => {}} // principal-view에서는 선택 기능 없음
+          onDateClick={handleDateClick}
+          calendarRange={calendarRangeForCalendar}
+        >
+          <ConnectedCalendar />
+        </CalendarProvider>
+      </div>
+
+      {/* 강의 개설 버튼 - 하단 고정 */}
+      <div className="flex-shrink-0 px-5 py-4 border-t border-gray-200 bg-white">
+        <div className="flex flex-col self-center w-full font-semibold leading-snug text-center max-w-[375px] mx-auto">
+          <CreateClassCard
+            title="강의 개설"
+            description="새로운 강의를 개설하고 선생님을 배정하세요"
+            onClick={handleCreateClassClick}
+          />
+        </div>
+      </div>
 
       {/* Date Session Modal - API 방식 */}
       <DateSessionModal
@@ -249,7 +252,6 @@ export default function PrincipalClassPage() {
         role="principal"
         session={session}
       />
-
     </div>
   )
 } 

@@ -14,6 +14,7 @@ import { PrincipalRejectionFormModal } from '../components/modals/PrincipalRejec
 import { toUnifiedRequestVM } from '@/lib/adapters/principal';
 import type { PrincipalEnrollment } from '@/types/api/principal';
 import type { RefundRequestResponse } from '@/types/api/refund';
+import Image from 'next/image';
 
 export function EnrollmentRefundManagementContainer() {
   const { form, switchPrincipalPersonManagementTab } = useApp();
@@ -220,8 +221,15 @@ export function EnrollmentRefundManagementContainer() {
         <div className="h-full overflow-y-auto max-h-[calc(100vh-330px)]">
           {filteredRequests.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              <p>요청이 없습니다.</p>
-              <p className="text-sm">필터를 변경해보세요.</p>
+              <Image
+                src="/images/logo/team-eliot-2.png"
+                alt="요청이 없습니다."
+                width={120}
+                height={120}
+                className="mx-auto mb-4"
+              />
+              <p className="text-stone-500">요청이 없습니다.</p>
+              <p className="text-sm text-stone-400">필터를 변경해보세요.</p>
             </div>
           ) : (
             <div className="space-y-4">

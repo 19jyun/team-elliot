@@ -13,19 +13,18 @@ export function PaymentConfirmFooter({
 }: PaymentConfirmFooterProps) {
   return (
     <div className="flex flex-col items-center px-5 pt-2 pb-4 w-full">
-        <label className="flex items-center gap-2 text-sm mb-2 py-3">
+        <label className="flex items-center gap-2 text-sm mb-2 py-3 cursor-pointer">
           <input
             type="checkbox"
             checked={confirmed}
             onChange={e => setConfirmed(e.target.checked)}
+            className="w-4 h-4 cursor-pointer"
             style={{ 
-              accentColor: confirmed ? '#262626' : '#8C8C8C',
-              width: '16px',
-              height: '16px'
+              accentColor: confirmed ? '#AC9592' : '#D9D9D9'
             }}
             disabled={isProcessing}
           />
-          <span style={{ color: confirmed ? '#262626' : '#8C8C8C' }}>
+          <span className={`transition-colors duration-200 ${confirmed ? 'text-[#AC9592]' : 'text-[#8C8C8C]'}`}>
             입금 완료했습니다
           </span>
         </label>

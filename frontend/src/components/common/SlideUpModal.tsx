@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useApp } from '@/contexts/AppContext';
 
 interface SlideUpModalProps {
@@ -28,8 +29,14 @@ export function SlideUpModal({
 }: SlideUpModalProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { ui } = useApp();
   const { pushFocus, popFocus } = ui;
+
+  // 클라이언트 사이드에서만 포털 사용
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // 모달이 열릴 때 애니메이션 시작
   useEffect(() => {
@@ -81,8 +88,9 @@ export function SlideUpModal({
   }, [isOpen, isVisible, popFocus]);
 
   if (!isOpen && !isVisible) return null;
+  if (!mounted) return null;
 
-  return (
+  const modalContent = (
     <div className={`fixed inset-0 z-50 transition-opacity duration-300 ${
       isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
     }`}>
@@ -138,4 +146,7 @@ export function SlideUpModal({
       </div>
     </div>
   );
+
+  // Portal을 사용하여 document.body에 렌더링
+  return createPortal(modalContent, document.body);
 } 

@@ -28,6 +28,18 @@ export function EnrollmentModificationContainer({ classId, month }: EnrollmentMo
     setEnrollmentStep('date-selection');
   }, [setEnrollmentStep]);
 
+  // EnrollmentModificationContainer가 unmount될 때 RefundPolicy 동의 상태 초기화
+  useEffect(() => {
+    return () => {
+      // Cleanup: 컴포넌트가 unmount될 때 실행
+      const clearRefundPolicyAgreement = async () => {
+        const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
+        SyncStorage.removeItem('refundPolicyAgreed');
+      };
+      clearRefundPolicyAgreement();
+    };
+  }, []);
+
   // 수강 신청 내역 로드
   useEffect(() => {
     loadEnrollmentHistory();

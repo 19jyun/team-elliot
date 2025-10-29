@@ -156,7 +156,8 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
           'bank-info',
           'enrollment-refund-management',
           'teacher-student-management',
-          'session-detail'
+          'session-detail',
+          'principal-all-classes'
         ].includes(page);
       default:
         return false;
