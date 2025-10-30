@@ -774,25 +774,53 @@ export class ClassSessionService {
         },
       });
 
-      // 새로운 SessionEnrollment 생성
-      const newEnrollment = await this.prisma.sessionEnrollment.create({
-        data: {
-          studentId,
-          sessionId,
-          status: 'PENDING',
-        },
+      // 세션 정보 조회 (tuitionFee 필요)
+      const sessionForPayment = await this.prisma.classSession.findUnique({
+        where: { id: sessionId },
         include: {
-          session: {
-            include: {
-              class: {
-                include: {
-                  teacher: true,
+          class: {
+            select: {
+              tuitionFee: true,
+            },
+          },
+        },
+      });
+
+      // 새로운 SessionEnrollment와 Payment를 트랜잭션으로 함께 생성
+      const newEnrollment = await this.prisma.$transaction(async (tx) => {
+        // SessionEnrollment 생성
+        const enrollment = await tx.sessionEnrollment.create({
+          data: {
+            studentId,
+            sessionId,
+            status: 'PENDING',
+          },
+          include: {
+            session: {
+              include: {
+                class: {
+                  include: {
+                    teacher: true,
+                  },
                 },
               },
             },
+            student: true,
           },
-          student: true,
-        },
+        });
+
+        // Payment 생성 (method: BANK_TRANSFER, status: PENDING)
+        await tx.payment.create({
+          data: {
+            studentId,
+            sessionEnrollmentId: enrollment.id,
+            amount: sessionForPayment.class.tuitionFee,
+            method: 'BANK_TRANSFER',
+            status: 'PENDING',
+          },
+        });
+
+        return enrollment;
       });
 
       return newEnrollment;
@@ -832,25 +860,41 @@ export class ClassSessionService {
       });
     }
 
-    // SessionEnrollment 생성
-    const enrollment = await this.prisma.sessionEnrollment.create({
-      data: {
-        studentId,
-        sessionId,
-        status: 'PENDING',
-      },
-      include: {
-        session: {
-          include: {
-            class: {
-              include: {
-                teacher: true,
+    // SessionEnrollment와 Payment를 트랜잭션으로 함께 생성
+    const enrollment = await this.prisma.$transaction(async (tx) => {
+      // SessionEnrollment 생성
+      const newEnrollment = await tx.sessionEnrollment.create({
+        data: {
+          studentId,
+          sessionId,
+          status: 'PENDING',
+        },
+        include: {
+          session: {
+            include: {
+              class: {
+                include: {
+                  teacher: true,
+                },
               },
             },
           },
+          student: true,
         },
-        student: true,
-      },
+      });
+
+      // Payment 생성 (method: BANK_TRANSFER, status: PENDING)
+      await tx.payment.create({
+        data: {
+          studentId,
+          sessionEnrollmentId: newEnrollment.id,
+          amount: session.class.tuitionFee,
+          method: 'BANK_TRANSFER',
+          status: 'PENDING',
+        },
+      });
+
+      return newEnrollment;
     });
 
     // 활동 로그 기록 (비동기)
@@ -2284,20 +2328,41 @@ export class ClassSessionService {
       );
     }
 
-    // 수강 신청 승인
-    const updatedEnrollment = await this.prisma.sessionEnrollment.update({
-      where: { id: enrollmentId },
-      data: {
-        status: 'CONFIRMED',
-      },
-      include: {
-        student: true,
-        session: {
-          include: {
-            class: true,
+    // 수강 신청 승인 및 Payment 상태 업데이트 (트랜잭션)
+    const updatedEnrollment = await this.prisma.$transaction(async (tx) => {
+      // SessionEnrollment 상태 업데이트
+      const enrollment = await tx.sessionEnrollment.update({
+        where: { id: enrollmentId },
+        data: {
+          status: 'CONFIRMED',
+        },
+        include: {
+          student: true,
+          session: {
+            include: {
+              class: true,
+            },
           },
         },
-      },
+      });
+
+      // Payment 상태를 PENDING → COMPLETED로 변경
+      await tx.payment
+        .update({
+          where: { sessionEnrollmentId: enrollmentId },
+          data: {
+            status: 'COMPLETED',
+            paidAt: new Date(),
+          },
+        })
+        .catch(() => {
+          // Payment가 없는 경우 무시 (기존 데이터 호환성)
+          console.warn(
+            `Payment not found for enrollment ${enrollmentId}, skipping payment update`,
+          );
+        });
+
+      return enrollment;
     });
 
     // 세션 현재 학생 수 증가
@@ -2388,6 +2453,21 @@ export class ClassSessionService {
           },
         },
       });
+
+      // Payment 상태를 PENDING → CANCELLED로 변경
+      await prisma.payment
+        .update({
+          where: { sessionEnrollmentId: enrollmentId },
+          data: {
+            status: 'CANCELLED',
+          },
+        })
+        .catch(() => {
+          // Payment가 없는 경우 무시 (기존 데이터 호환성)
+          console.warn(
+            `Payment not found for enrollment ${enrollmentId}, skipping payment update`,
+          );
+        });
 
       // 거절 상세 정보 생성
       await prisma.rejectionDetail.create({
@@ -2828,18 +2908,39 @@ export class ClassSessionService {
       throw new BadRequestException('이미 처리된 수강 신청입니다.');
     }
 
-    // 수강 신청 승인
-    const updatedEnrollment = await this.prisma.sessionEnrollment.update({
-      where: { id: enrollmentId },
-      data: { status: 'CONFIRMED' },
-      include: {
-        student: true,
-        session: {
-          include: {
-            class: true,
+    // 수강 신청 승인 및 Payment 상태 업데이트 (트랜잭션)
+    const updatedEnrollment = await this.prisma.$transaction(async (tx) => {
+      // SessionEnrollment 상태 업데이트
+      const enrollment = await tx.sessionEnrollment.update({
+        where: { id: enrollmentId },
+        data: { status: 'CONFIRMED' },
+        include: {
+          student: true,
+          session: {
+            include: {
+              class: true,
+            },
           },
         },
-      },
+      });
+
+      // Payment 상태를 PENDING → COMPLETED로 변경
+      await tx.payment
+        .update({
+          where: { sessionEnrollmentId: enrollmentId },
+          data: {
+            status: 'COMPLETED',
+            paidAt: new Date(),
+          },
+        })
+        .catch(() => {
+          // Payment가 없는 경우 무시 (기존 데이터 호환성)
+          console.warn(
+            `Payment not found for enrollment ${enrollmentId}, skipping payment update`,
+          );
+        });
+
+      return enrollment;
     });
 
     // 세션 현재 학생 수 증가 (PENDING -> CONFIRMED)
@@ -2942,6 +3043,21 @@ export class ClassSessionService {
           },
         },
       });
+
+      // Payment 상태를 PENDING → CANCELLED로 변경
+      await prisma.payment
+        .update({
+          where: { sessionEnrollmentId: enrollmentId },
+          data: {
+            status: 'CANCELLED',
+          },
+        })
+        .catch(() => {
+          // Payment가 없는 경우 무시 (기존 데이터 호환성)
+          console.warn(
+            `Payment not found for enrollment ${enrollmentId}, skipping payment update`,
+          );
+        });
 
       // 거절 상세 정보 생성
       await prisma.rejectionDetail.create({

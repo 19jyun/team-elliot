@@ -1,8 +1,6 @@
 # compiled output
 /dist
 /node_modules
-/build
-/uploads
 
 # Logs
 logs
@@ -36,22 +34,13 @@ lerna-debug.log*
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# dotenv environment variable files
+# Environment
 .env
-.env.development.local
-.env.test.local
-.env.production.local
 .env.local
+.env.*.local
 
-# temp directory
-.temp
-.tmp
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Diagnostic reports (https://nodejs.org/api/report.html)
-report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+# Prisma
+# Keep schema.prisma and schema_retention.prisma in version control
+# Ignore generated and temporary files
+prisma/schema_merged.prisma
+prisma/schema.prisma.backup

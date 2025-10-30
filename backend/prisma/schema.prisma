@@ -6,6 +6,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  schemas  = ["public", "retention"]
 }
 
 model Academy {
@@ -17,13 +18,13 @@ model Academy {
   code         String               @unique @db.VarChar(50)
   createdAt    DateTime             @default(now())
   updatedAt    DateTime             @updatedAt
-  joinRequests AcademyJoinRequest[]
   classes      Class[]
   principal    Principal?
   students     StudentAcademy[]
   teachers     Teacher[]
 
   @@map("academies")
+  @@schema("public")
 }
 
 model Principal {
@@ -50,6 +51,7 @@ model Principal {
   user              User     @relation(fields: [userRefId], references: [id])
 
   @@map("principals")
+  @@schema("public")
 }
 
 model StudentAcademy {
@@ -62,6 +64,7 @@ model StudentAcademy {
 
   @@unique([studentId, academyId])
   @@map("student_academies")
+  @@schema("public")
 }
 
 model User {
@@ -81,6 +84,7 @@ model User {
   principal        Principal?
 
   @@map("users")
+  @@schema("public")
 }
 
 model Student {
@@ -100,7 +104,6 @@ model Student {
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   attendances        Attendance[]
-  enrollments        Enrollment[]
   payments           Payment[]
   refundRequests     RefundRequest[]
   sessionEnrollments SessionEnrollment[]
@@ -109,6 +112,7 @@ model Student {
   user               User                @relation(fields: [userRefId], references: [id])
 
   @@map("students")
+  @@schema("public")
 }
 
 model Teacher {
@@ -129,7 +133,6 @@ model Teacher {
   updatedAt         DateTime                 @updatedAt
   academyId         Int?                     @map("academy_id")
   creationRequests  AcademyCreationRequest[]
-  joinRequests      AcademyJoinRequest[]
   classDetails      ClassDetail[]
   classes           Class[]
   academy           Academy?                 @relation(fields: [academyId], references: [id])
@@ -137,6 +140,7 @@ model Teacher {
   user               User                    @relation(fields: [userRefId], references: [id])
 
   @@map("teachers")
+  @@schema("public")
 }
 
 model Class {
@@ -162,10 +166,10 @@ model Class {
   academy         Academy        @relation(fields: [academyId], references: [id])
   classDetail     ClassDetail?   @relation(fields: [classDetailId], references: [id])
   teacher         Teacher        @relation(fields: [teacherId], references: [id])
-  enrollments     Enrollment[]
   notices         Notice[]
 
   @@map("classes")
+  @@schema("public")
 }
 
 model ClassDetail {
@@ -180,37 +184,23 @@ model ClassDetail {
   classes       Class[]
 
   @@map("class_details")
-}
-
-model Enrollment {
-  id          Int          @id @default(autoincrement())
-  studentId   Int          @map("student_id")
-  classId     Int          @map("class_id")
-  status      String       @default("PENDING")
-  cancelledAt DateTime?
-  enrolledAt  DateTime     @default(now())
-  attendances Attendance[]
-  class       Class        @relation(fields: [classId], references: [id])
-  student     Student      @relation(fields: [studentId], references: [id])
-  payments    Payment[]
-
-  @@unique([classId, studentId])
-  @@map("enrollments")
+  @@schema("public")
 }
 
 model Attendance {
   id           Int        @id @default(autoincrement())
-  enrollmentId Int        @map("enrollment_id")
+  sessionEnrollmentId Int        @map("session_enrollment_id")
   classId      Int        @map("class_id")
   studentId    Int        @map("student_id")
   date         DateTime
   status       String
   note         String?
   class        Class      @relation(fields: [classId], references: [id])
-  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id])
+  sessionEnrollment SessionEnrollment @relation(fields: [sessionEnrollmentId], references: [id])
   student      Student    @relation(fields: [studentId], references: [id])
 
   @@map("attendances")
+  @@schema("public")
 }
 
 model Payment {
@@ -220,13 +210,12 @@ model Payment {
   status              String
   method              String
   paidAt              DateTime?
-  enrollmentId        Int?
   sessionEnrollmentId Int               @unique @map("session_enrollment_id")
-  enrollment          Enrollment?       @relation(fields: [enrollmentId], references: [id])
   sessionEnrollment   SessionEnrollment @relation(fields: [sessionEnrollmentId], references: [id])
   student             Student           @relation(fields: [studentId], references: [id])
 
   @@map("payments")
+  @@schema("public")
 }
 
 model Notice {
@@ -242,6 +231,7 @@ model Notice {
   class       Class?   @relation(fields: [classId], references: [id])
 
   @@map("notices")
+  @@schema("public")
 }
 
 model WithdrawalHistory {
@@ -255,6 +245,7 @@ model WithdrawalHistory {
   createdAt      DateTime @default(now())
 
   @@map("withdrawal_histories")
+  @@schema("public")
 }
 
 model ClassSession {
@@ -272,6 +263,7 @@ model ClassSession {
 
   @@unique([classId, date])
   @@map("class_sessions")
+  @@schema("public")
 }
 
 model SessionEnrollment {
@@ -285,11 +277,13 @@ model SessionEnrollment {
   hasContributedToCurrentStudents Boolean         @default(false) @map("has_contributed_to_current_students")
   payment                         Payment?
   refundRequests                  RefundRequest[]
+  attendances                     Attendance[]
   session                         ClassSession    @relation(fields: [sessionId], references: [id])
   student                         Student         @relation(fields: [studentId], references: [id])
 
   @@unique([studentId, sessionId])
   @@map("session_enrollments")
+  @@schema("public")
 }
 
 model RefundRequest {
@@ -314,6 +308,7 @@ model RefundRequest {
   student             Student           @relation(fields: [studentId], references: [id])
 
   @@map("refund_requests")
+  @@schema("public")
 }
 
 model RejectionDetail {
@@ -331,23 +326,7 @@ model RejectionDetail {
   @@index([rejectedBy, rejectedAt])
   @@index([entityType, entityId])
   @@map("rejection_details")
-}
-
-model AcademyJoinRequest {
-  id        Int                  @id @default(autoincrement())
-  teacherId Int                  @map("teacher_id")
-  academyId Int                  @map("academy_id")
-  status    AcademyRequestStatus @default(PENDING)
-  message   String?
-  createdAt DateTime             @default(now())
-  updatedAt DateTime             @updatedAt
-  academy   Academy              @relation(fields: [academyId], references: [id], onDelete: Cascade)
-  teacher   Teacher              @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-
-  @@unique([teacherId, academyId])
-  @@index([academyId, status])
-  @@index([teacherId, status])
-  @@map("academy_join_requests")
+  @@schema("public")
 }
 
 model AcademyCreationRequest {
@@ -365,6 +344,7 @@ model AcademyCreationRequest {
   @@index([teacherId, status])
   @@index([status, createdAt])
   @@map("academy_creation_requests")
+  @@schema("public")
 }
 
 model BalletPose {
@@ -378,6 +358,7 @@ model BalletPose {
   sessionContents SessionContent[]
 
   @@map("ballet_poses")
+  @@schema("public")
 }
 
 model SessionContent {
@@ -392,28 +373,631 @@ model SessionContent {
 
   @@unique([sessionId, poseId, order])
   @@map("session_contents")
+  @@schema("public")
 }
 
 enum Role {
   TEACHER
   STUDENT
   PRINCIPAL
+  
+  @@schema("public")
 }
 
 enum RejectionType {
   ENROLLMENT_REJECTION
   REFUND_REJECTION
   SESSION_ENROLLMENT_REJECTION
+  
+  @@schema("public")
 }
 
 enum AcademyRequestStatus {
   PENDING
   APPROVED
   REJECTED
+  
+  @@schema("public")
 }
 
 enum PoseDifficulty {
   BEGINNER
   INTERMEDIATE
   ADVANCED
+  
+  @@schema("public")
 }
+// ============================================================================
+// 1. 익명화된 사용자 마스터 테이블
+// ============================================================================
+
+/// 탈퇴한 사용자의 익명화된 기본 정보
+/// 모든 retention 데이터의 루트 엔티티
+model AnonymizedUser {
+  id                 Int      @id @default(autoincrement())
+  
+  // 익명화 식별자
+  anonymousId        String   @unique @map("anonymous_id") @db.VarChar(100)
+  // 형식: ANON_{ROLE}_{TIMESTAMP}_{RANDOM}
+  // 예: ANON_STUDENT_1735459200000_A1B2C3D4
+  
+  // 원본 정보 (최소한의 메타데이터만)
+  originalUserRole   String   @map("original_user_role") @db.VarChar(20)
+  // STUDENT, TEACHER, PRINCIPAL
+  
+  // 탈퇴 및 보관 정보
+  withdrawalDate     DateTime @map("withdrawal_date")
+  // 회원 탈퇴 일시
+  
+  dataRetentionUntil DateTime @map("data_retention_until")
+  // 데이터 보관 만료일 (탈퇴일 + 5년)
+  // 이 날짜가 지나면 자동으로 완전 삭제됨
+  
+  // 감사 추적
+  createdAt          DateTime @default(now()) @map("created_at")
+  lastAccessedAt     DateTime? @map("last_accessed_at")
+  // 법적 분쟁 등으로 조회한 마지막 시점
+  
+  accessCount        Int      @default(0) @map("access_count")
+  // 조회 횟수 (감사 목적)
+  
+  // 관계
+  enrollments        AnonymizedEnrollment[]
+  payments           AnonymizedPayment[]
+  refunds            AnonymizedRefund[]
+  attendances        AnonymizedAttendance[]
+  disputes           AnonymizedDispute[]
+  sessionEnrollments AnonymizedSessionEnrollment[]
+  
+  @@index([dataRetentionUntil])
+  @@index([withdrawalDate])
+  @@index([originalUserRole])
+  @@map("anonymized_users")
+  @@schema("retention")
+}
+
+// ============================================================================
+// 2. 익명화된 수강 신청 기록 (5년 보관)
+// ============================================================================
+
+/// 수강 신청 내역 (전자상거래법: 계약·청약 철회 기록)
+/// 보관 기간: 최대 5년
+model AnonymizedEnrollment {
+  id                  Int      @id @default(autoincrement())
+  
+  // 익명화된 사용자 참조
+  anonymousUserId     Int      @map("anonymous_user_id")
+  anonymousUser       AnonymizedUser @relation(fields: [anonymousUserId], references: [id], onDelete: Cascade)
+  
+  // 수강 신청 정보 (개인정보 제외)
+  classId             Int      @map("class_id")
+  // Class 테이블 참조 (학원, 강사 정보 확인용)
+  
+  academyId           Int      @map("academy_id")
+  // Academy 테이블 참조
+  
+  className           String   @map("class_name") @db.VarChar(200)
+  // 클래스명 snapshot (Class 삭제 대비)
+  
+  // 수강 상태
+  status              EnrollmentStatus
+  // PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED
+  
+  // 계약 일시
+  enrolledAt          DateTime @map("enrolled_at")
+  approvedAt          DateTime? @map("approved_at")
+  cancelledAt         DateTime? @map("cancelled_at")
+  completedAt         DateTime? @map("completed_at")
+  
+  // 금액 정보
+  tuitionFee          Decimal  @map("tuition_fee") @db.Decimal(10, 2)
+  paidAmount          Decimal? @map("paid_amount") @db.Decimal(10, 2)
+  refundedAmount      Decimal? @map("refunded_amount") @db.Decimal(10, 2)
+  
+  // 법적 보관 정보
+  dataRetentionUntil  DateTime @map("data_retention_until")
+  createdAt           DateTime @default(now()) @map("created_at")
+  
+  // 원본 데이터 참조 (삭제 전 ID 보관)
+  originalEnrollmentId Int     @map("original_enrollment_id")
+  
+  @@index([anonymousUserId])
+  @@index([dataRetentionUntil])
+  @@index([status])
+  @@index([enrolledAt])
+  @@index([academyId])
+  @@map("anonymized_enrollments")
+  @@schema("retention")
+}
+
+// ============================================================================
+// 3. 익명화된 세션 수강 신청 기록 (5년 보관)
+// ============================================================================
+
+/// 단일 세션(회차별) 수강 신청 내역
+/// 보관 기간: 최대 5년
+model AnonymizedSessionEnrollment {
+  id                  Int      @id @default(autoincrement())
+  
+  // 익명화된 사용자 참조
+  anonymousUserId     Int      @map("anonymous_user_id")
+  anonymousUser       AnonymizedUser @relation(fields: [anonymousUserId], references: [id], onDelete: Cascade)
+  
+  // 세션 정보
+  sessionId           Int      @map("session_id")
+  // ClassSession 테이블 참조
+  
+  classId             Int      @map("class_id")
+  academyId           Int      @map("academy_id")
+  
+  sessionDate         DateTime @map("session_date")
+  // 수업 날짜 snapshot
+  
+  // 신청 상태
+  status              SessionEnrollmentStatus
+  // PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED
+  
+  // 신청 일시
+  enrolledAt          DateTime @map("enrolled_at")
+  approvedAt          DateTime? @map("approved_at")
+  rejectedAt          DateTime? @map("rejected_at")
+  cancelledAt         DateTime? @map("cancelled_at")
+  
+  // 법적 보관 정보
+  dataRetentionUntil  DateTime @map("data_retention_until")
+  createdAt           DateTime @default(now()) @map("created_at")
+  
+  // 원본 데이터 참조
+  originalSessionEnrollmentId Int @map("original_session_enrollment_id")
+  
+  @@index([anonymousUserId])
+  @@index([dataRetentionUntil])
+  @@index([status])
+  @@index([sessionDate])
+  @@map("anonymized_session_enrollments")
+  @@schema("retention")
+}
+
+// ============================================================================
+// 4. 익명화된 결제 기록 (5년 보관)
+// ============================================================================
+
+/// 결제 내역 (전자상거래법: 대금 결제 기록)
+/// 보관 기간: 최대 5년
+model AnonymizedPayment {
+  id                      Int      @id @default(autoincrement())
+  
+  // 익명화된 사용자 참조
+  anonymousUserId         Int      @map("anonymous_user_id")
+  anonymousUser           AnonymizedUser @relation(fields: [anonymousUserId], references: [id], onDelete: Cascade)
+  
+  // 결제 연관 정보 (원본 ID는 문자열로 보관)
+  enrollmentReference     String?  @map("enrollment_reference") @db.VarChar(50)
+  // 정규 수강신청 ID (삭제된 경우를 대비한 문자열 저장)
+  
+  sessionEnrollmentReference String? @map("session_enrollment_reference") @db.VarChar(50)
+  // 회차별 수강신청 ID
+  
+  academyId               Int      @map("academy_id")
+  // 어느 학원에서 발생한 결제인지
+  
+  classId                 Int?     @map("class_id")
+  // 어느 수업에 대한 결제인지
+  
+  // 결제 상세 정보
+  amount                  Decimal  @db.Decimal(10, 2)
+  // 결제 금액
+  
+  method                  String   @db.VarChar(50)
+  // CARD, BANK_TRANSFER, CASH 등
+  
+  status                  PaymentStatus
+  // PENDING, COMPLETED, FAILED, CANCELLED, REFUNDED
+  
+  // 결제 일시
+  paidAt                  DateTime? @map("paid_at")
+  
+  // 영수증 정보 (개인정보 제외)
+  receiptNumber           String?  @map("receipt_number") @db.VarChar(100)
+  // 영수증 번호 (분쟁 해결용)
+  
+  // 법적 보관 정보
+  dataRetentionUntil      DateTime @map("data_retention_until")
+  createdAt               DateTime @default(now()) @map("created_at")
+  
+  // 원본 데이터 참조
+  originalPaymentId       Int      @map("original_payment_id")
+  
+  @@index([anonymousUserId])
+  @@index([dataRetentionUntil])
+  @@index([status])
+  @@index([paidAt])
+  @@index([academyId])
+  @@map("anonymized_payments")
+  @@schema("retention")
+}
+
+// ============================================================================
+// 5. 익명화된 환불 기록 (5년 보관)
+// ============================================================================
+
+/// 환불 신청 및 처리 내역 (전자상거래법: 계약 철회 기록)
+/// 보관 기간: 최대 5년
+model AnonymizedRefund {
+  id                      Int      @id @default(autoincrement())
+  
+  // 익명화된 사용자 참조
+  anonymousUserId         Int      @map("anonymous_user_id")
+  anonymousUser           AnonymizedUser @relation(fields: [anonymousUserId], references: [id], onDelete: Cascade)
+  
+  // 환불 연관 정보
+  sessionEnrollmentReference String @map("session_enrollment_reference") @db.VarChar(50)
+  // 환불 대상 세션 수강신청 ID
+  
+  enrollmentReference     String?  @map("enrollment_reference") @db.VarChar(50)
+  // 환불 대상 정규 수강신청 ID (있는 경우)
+  
+  academyId               Int      @map("academy_id")
+  classId                 Int?     @map("class_id")
+  
+  // 환불 사유
+  reason                  String
+  // 환불 사유 카테고리 (PERSONAL, SCHEDULE_CONFLICT 등)
+  
+  detailedReason          String?  @map("detailed_reason")
+  // 상세 사유 (개인정보 포함 가능성이 있으므로 익명화 처리 필요)
+  
+  // 환불 금액
+  requestedAmount         Decimal  @map("requested_amount") @db.Decimal(10, 2)
+  // 요청한 환불 금액
+  
+  actualRefundAmount      Decimal? @map("actual_refund_amount") @db.Decimal(10, 2)
+  // 실제 환불된 금액 (수수료 등 차감 후)
+  
+  // 환불 상태
+  status                  RefundStatus
+  // PENDING, APPROVED, REJECTED, COMPLETED, CANCELLED
+  
+  // 처리 정보
+  processReason           String?  @map("process_reason")
+  // 승인/거부 사유
+  
+  processedByRole         String?  @map("processed_by_role") @db.VarChar(20)
+  // 처리자 역할 (PRINCIPAL, TEACHER - 개인 식별 불가)
+  
+  // 일시 정보
+  requestedAt             DateTime @map("requested_at")
+  processedAt             DateTime? @map("processed_at")
+  completedAt             DateTime? @map("completed_at")
+  
+  // 법적 보관 정보
+  dataRetentionUntil      DateTime @map("data_retention_until")
+  createdAt               DateTime @default(now()) @map("created_at")
+  
+  // 원본 데이터 참조
+  originalRefundRequestId Int      @map("original_refund_request_id")
+  
+  @@index([anonymousUserId])
+  @@index([dataRetentionUntil])
+  @@index([status])
+  @@index([requestedAt])
+  @@index([academyId])
+  @@map("anonymized_refunds")
+  @@schema("retention")
+}
+
+// ============================================================================
+// 6. 익명화된 출석 기록 (3년 보관 권장)
+// ============================================================================
+
+/// 출석 체크 기록 (학습 내역 확인 및 증빙용)
+/// 보관 기간: 3년 (법적 명확한 기간은 없으나 관리 목적)
+model AnonymizedAttendance {
+  id                  Int      @id @default(autoincrement())
+  
+  // 익명화된 사용자 참조
+  anonymousUserId     Int      @map("anonymous_user_id")
+  anonymousUser       AnonymizedUser @relation(fields: [anonymousUserId], references: [id], onDelete: Cascade)
+  
+  // 출석 정보
+  classId             Int      @map("class_id")
+  academyId           Int      @map("academy_id")
+  
+  enrollmentReference String   @map("enrollment_reference") @db.VarChar(50)
+  // 수강신청 참조
+  
+  // 출석 일자 및 상태
+  attendanceDate      DateTime @map("attendance_date")
+  // 출석 체크한 날짜
+  
+  status              AttendanceStatus
+  // PRESENT, ABSENT, LATE, EXCUSED
+  
+  note                String?
+  // 비고 (개인정보 포함 가능성 - 익명화 처리 필요)
+  
+  // 법적 보관 정보
+  dataRetentionUntil  DateTime @map("data_retention_until")
+  // 3년 보관 (탈퇴일 + 3년)
+  
+  createdAt           DateTime @default(now()) @map("created_at")
+  
+  // 원본 데이터 참조
+  originalAttendanceId Int     @map("original_attendance_id")
+  
+  @@index([anonymousUserId])
+  @@index([dataRetentionUntil])
+  @@index([attendanceDate])
+  @@index([academyId])
+  @@map("anonymized_attendances")
+  @@schema("retention")
+}
+
+// ============================================================================
+// 7. 익명화된 소비자 분쟁 처리 기록 (3년 보관)
+// ============================================================================
+
+/// 소비자 불만 및 분쟁 처리 기록 (소비자보호법)
+/// 보관 기간: 최소 3년
+model AnonymizedDispute {
+  id                  Int      @id @default(autoincrement())
+  
+  // 익명화된 사용자 참조
+  anonymousUserId     Int      @map("anonymous_user_id")
+  anonymousUser       AnonymizedUser @relation(fields: [anonymousUserId], references: [id], onDelete: Cascade)
+  
+  // 분쟁 유형
+  disputeType         DisputeType @map("dispute_type")
+  // REFUND_REJECTION, SERVICE_COMPLAINT, ENROLLMENT_REJECTION, 
+  // PAYMENT_ISSUE, QUALITY_COMPLAINT, OTHER
+  
+  // 분쟁 관련 엔티티
+  relatedEntityType   String   @map("related_entity_type") @db.VarChar(50)
+  // REFUND, ENROLLMENT, SESSION_ENROLLMENT, PAYMENT, CLASS
+  
+  relatedEntityRef    String   @map("related_entity_ref") @db.VarChar(50)
+  // 관련 엔티티 ID 또는 참조
+  
+  academyId           Int      @map("academy_id")
+  
+  // 분쟁 내용
+  title               String   @db.VarChar(200)
+  // 분쟁 제목
+  
+  description         String
+  // 분쟁 상세 내용 (개인정보 익명화 처리)
+  
+  // 분쟁 상태
+  status              DisputeStatus
+  // OPEN, IN_PROGRESS, RESOLVED, CLOSED, ESCALATED
+  
+  // 해결 정보
+  resolution          String?
+  // 해결 방안 및 결과
+  
+  compensationAmount  Decimal? @map("compensation_amount") @db.Decimal(10, 2)
+  // 보상 금액 (있는 경우)
+  
+  // 처리자 정보 (익명화)
+  resolvedByRole      String?  @map("resolved_by_role") @db.VarChar(20)
+  // PRINCIPAL, TEACHER, SYSTEM
+  
+  // 일시 정보
+  reportedAt          DateTime @map("reported_at")
+  // 분쟁 신고 일시
+  
+  resolvedAt          DateTime? @map("resolved_at")
+  // 분쟁 해결 일시
+  
+  closedAt            DateTime? @map("closed_at")
+  // 분쟁 종결 일시
+  
+  // 법적 보관 정보
+  dataRetentionUntil  DateTime @map("data_retention_until")
+  // 3년 보관 (신고일 + 3년)
+  
+  createdAt           DateTime @default(now()) @map("created_at")
+  
+  // 우선순위 및 심각도
+  severity            DisputeSeverity @default(MEDIUM)
+  // LOW, MEDIUM, HIGH, CRITICAL
+  
+  @@index([anonymousUserId])
+  @@index([dataRetentionUntil])
+  @@index([disputeType])
+  @@index([status])
+  @@index([reportedAt])
+  @@index([academyId])
+  @@map("anonymized_disputes")
+  @@schema("retention")
+}
+
+// ============================================================================
+// 8. 데이터 파기 로그 (영구 보관)
+// ============================================================================
+
+/// 데이터 파기 이력 (감사 추적용)
+/// 보관 기간: 영구 (파기 사실 증명용)
+model DataDeletionLog {
+  id                  Int      @id @default(autoincrement())
+  
+  // 파기된 데이터 정보
+  anonymousId         String   @map("anonymous_id") @db.VarChar(100)
+  // 파기된 익명화 사용자 ID
+  
+  originalUserRole    String   @map("original_user_role") @db.VarChar(20)
+  // 원본 사용자 역할
+  
+  withdrawalDate      DateTime @map("withdrawal_date")
+  // 탈퇴 일시
+  
+  // 파기 정보
+  deletedAt           DateTime @map("deleted_at")
+  // 실제 파기 일시
+  
+  deletionReason      String   @map("deletion_reason") @db.VarChar(100)
+  // RETENTION_EXPIRED, MANUAL_REQUEST, LEGAL_REQUIREMENT
+  
+  // 파기된 데이터 통계
+  enrollmentsDeleted  Int      @default(0) @map("enrollments_deleted")
+  paymentsDeleted     Int      @default(0) @map("payments_deleted")
+  refundsDeleted      Int      @default(0) @map("refunds_deleted")
+  attendancesDeleted  Int      @default(0) @map("attendances_deleted")
+  disputesDeleted     Int      @default(0) @map("disputes_deleted")
+  
+  // 파기 수행 정보
+  deletedBySystem     Boolean  @default(true) @map("deleted_by_system")
+  // true: Cron Job, false: 수동 파기
+  
+  deletedByUserId     Int?     @map("deleted_by_user_id")
+  // 수동 파기한 관리자 ID (해당하는 경우)
+  
+  // 감사 추적
+  createdAt           DateTime @default(now()) @map("created_at")
+  
+  // 비고
+  notes               String?
+  // 특이사항 기록
+  
+  @@index([anonymousId])
+  @@index([deletedAt])
+  @@index([deletionReason])
+  @@map("data_deletion_logs")
+  @@schema("retention")
+}
+
+// ============================================================================
+// 9. 데이터 접근 로그 (감사 추적)
+// ============================================================================
+
+/// 익명화 데이터 접근 이력 (보안 감사용)
+/// 보관 기간: 3년
+model DataAccessLog {
+  id                  Int      @id @default(autoincrement())
+  
+  // 접근 대상
+  anonymousUserId     Int      @map("anonymous_user_id")
+  // 조회한 익명화 사용자
+  
+  anonymousId         String   @map("anonymous_id") @db.VarChar(100)
+  // 익명화 ID (삭제 후에도 로그 유지)
+  
+  // 접근 정보
+  accessedBy          Int      @map("accessed_by")
+  // 접근한 사용자 ID (관리자)
+  
+  accessedByRole      String   @map("accessed_by_role") @db.VarChar(20)
+  // 접근한 사용자 역할
+  
+  accessType          String   @map("access_type") @db.VarChar(50)
+  // READ, EXPORT, SEARCH
+  
+  accessReason        String   @map("access_reason")
+  // 접근 사유 (필수)
+  
+  // 접근한 데이터 유형
+  dataTypesAccessed   String[] @map("data_types_accessed")
+  // ['ENROLLMENT', 'PAYMENT', 'REFUND'] 등
+  
+  // 일시 정보
+  accessedAt          DateTime @default(now()) @map("accessed_at")
+  
+  // IP 및 위치 정보
+  ipAddress           String?  @map("ip_address") @db.VarChar(45)
+  userAgent           String?  @map("user_agent")
+  
+  // 감사 추적
+  createdAt           DateTime @default(now()) @map("created_at")
+  
+  @@index([anonymousUserId])
+  @@index([accessedBy])
+  @@index([accessedAt])
+  @@index([anonymousId])
+  @@map("data_access_logs")
+  @@schema("retention")
+}
+
+// ============================================================================
+// Enums
+// ============================================================================
+
+enum EnrollmentStatus {
+  PENDING    // 대기중
+  APPROVED   // 승인됨
+  REJECTED   // 거부됨
+  CANCELLED  // 취소됨
+  COMPLETED  // 완료됨
+  
+  @@schema("retention")
+}
+
+enum SessionEnrollmentStatus {
+  PENDING    // 대기중
+  APPROVED   // 승인됨
+  REJECTED   // 거부됨
+  CANCELLED  // 취소됨
+  COMPLETED  // 완료됨
+  
+  @@schema("retention")
+}
+
+enum PaymentStatus {
+  PENDING    // 결제 대기
+  COMPLETED  // 결제 완료
+  FAILED     // 결제 실패
+  CANCELLED  // 결제 취소
+  REFUNDED   // 환불됨
+  
+  @@schema("retention")
+}
+
+enum RefundStatus {
+  PENDING    // 환불 대기
+  APPROVED   // 승인됨
+  REJECTED   // 거부됨
+  COMPLETED  // 환불 완료
+  CANCELLED  // 취소됨
+  
+  @@schema("retention")
+}
+
+enum AttendanceStatus {
+  PENDING    // 처리 전
+  PRESENT    // 출석
+  ABSENT     // 결석
+  LATE       // 지각
+  EXCUSED    // 인정 결석
+  
+  @@schema("retention")
+}
+
+enum DisputeType {
+  REFUND_REJECTION      // 환불 거부 분쟁
+  SERVICE_COMPLAINT     // 서비스 불만
+  ENROLLMENT_REJECTION  // 수강신청 거부 분쟁
+  PAYMENT_ISSUE         // 결제 문제
+  QUALITY_COMPLAINT     // 수업 품질 불만
+  OTHER                 // 기타
+  
+  @@schema("retention")
+}
+
+enum DisputeStatus {
+  OPEN         // 접수됨
+  IN_PROGRESS  // 처리중
+  RESOLVED     // 해결됨
+  CLOSED       // 종결됨
+  ESCALATED    // 상위 단계 이관
+  
+  @@schema("retention")
+}
+
+enum DisputeSeverity {
+  LOW       // 낮음
+  MEDIUM    // 보통
+  HIGH      // 높음
+  CRITICAL  // 긴급
+  
+  @@schema("retention")
+}
+

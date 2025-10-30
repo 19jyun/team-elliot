@@ -963,13 +963,22 @@ export class RefundService {
         },
       });
 
-      // 결제 상태 업데이트 (존재 시)
+      // Payment 상태를 COMPLETED → REFUNDED로 변경
       await prisma.payment
         .update({
           where: { sessionEnrollmentId: refundRequest.sessionEnrollmentId },
-          data: { status: 'REFUNDED' },
+          data: {
+            status: 'REFUNDED',
+            // paidAt은 유지 (환불 전 결제 일시 기록)
+          },
         })
-        .catch(() => undefined);
+        .catch((error) => {
+          // Payment가 없는 경우 무시 (기존 데이터 호환성)
+          console.warn(
+            `Payment not found for enrollment ${refundRequest.sessionEnrollmentId}, skipping payment update`,
+            error,
+          );
+        });
 
       // 수강신청 상태를 REFUND_CANCELLED로 변경
       const updatedEnrollment = await prisma.sessionEnrollment.update({
