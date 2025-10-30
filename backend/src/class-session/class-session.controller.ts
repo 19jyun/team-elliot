@@ -24,6 +24,7 @@ import {
   SessionEnrollmentStatus,
 } from './dto/update-enrollment-status.dto';
 import { ChangeEnrollmentDto } from './dto/change-enrollment.dto';
+import { BatchCheckAttendanceDto } from './dto/batch-check-attendance.dto';
 
 @ApiTags('ClassSession')
 @Controller('class-sessions')
@@ -157,6 +158,26 @@ export class ClassSessionController {
   }
 
   /**
+   * 일괄 출석 체크
+   */
+  @Put(':sessionId/attendances')
+  @Roles(Role.TEACHER, Role.PRINCIPAL)
+  @ApiOperation({ summary: '일괄 출석 체크' })
+  @ApiResponse({ status: 200, description: '일괄 출석 체크 성공' })
+  async batchCheckAttendance(
+    @Param('sessionId', ParseIntPipe) sessionId: number,
+    @Body() batchDto: BatchCheckAttendanceDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.classSessionService.batchCheckAttendance(
+      sessionId,
+      batchDto.attendances,
+      user.id,
+      user.role,
+    );
+  }
+
+  /**
    * 출석 체크
    */
   @Put('enrollments/:enrollmentId/attendance')
@@ -165,7 +186,7 @@ export class ClassSessionController {
   @ApiResponse({ status: 200, description: '출석 체크 성공' })
   async checkAttendance(
     @Param('enrollmentId', ParseIntPipe) enrollmentId: number,
-    @Body('status') attendanceStatus: 'ATTENDED' | 'ABSENT',
+    @Body('status') attendanceStatus: 'PRESENT' | 'ABSENT',
     @CurrentUser() user: any,
   ) {
     return this.classSessionService.checkAttendance(

@@ -20,7 +20,6 @@ export interface PaymentWithRelations {
   status: string;
   method: string;
   paidAt: Date | null;
-  enrollmentId: number | null;
   sessionEnrollmentId: number;
   sessionEnrollment: {
     session: {
@@ -34,7 +33,6 @@ export interface PaymentWithRelations {
 
 export interface AnonymizedPaymentData {
   anonymousUserId: number;
-  enrollmentReference: string | null;
   sessionEnrollmentReference: string;
   academyId: number;
   classId: number | null;
@@ -72,7 +70,6 @@ export function transformPaymentToAnonymized(
 ): AnonymizedPaymentData {
   return {
     anonymousUserId,
-    enrollmentReference: payment.enrollmentId?.toString() || null,
     sessionEnrollmentReference: payment.sessionEnrollmentId.toString(),
     academyId: payment.sessionEnrollment.session.class.academyId,
     classId: payment.sessionEnrollment.session.classId,

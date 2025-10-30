@@ -11,7 +11,7 @@ type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
 
 export interface AttendanceWithRelations {
   id: number;
-  enrollmentId: number;
+  sessionEnrollmentId: number;
   classId: number;
   studentId: number;
   date: Date;
@@ -26,7 +26,7 @@ export interface AnonymizedAttendanceData {
   anonymousUserId: number;
   classId: number;
   academyId: number;
-  enrollmentReference: string;
+  sessionEnrollmentReference: string;
   attendanceDate: Date;
   status: AttendanceStatus;
   note: string | null;
@@ -60,7 +60,7 @@ export function transformAttendanceToAnonymized(
     anonymousUserId,
     classId: attendance.classId,
     academyId: attendance.class.academyId,
-    enrollmentReference: attendance.enrollmentId.toString(),
+    sessionEnrollmentReference: attendance.sessionEnrollmentId.toString(),
     attendanceDate: attendance.date,
     status: mapAttendanceStatus(attendance.status),
     note: anonymizeText(attendance.note), // 개인정보 익명화 처리

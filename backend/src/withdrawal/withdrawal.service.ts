@@ -123,7 +123,7 @@ export class WithdrawalService {
               },
             },
           },
-        }),
+        }) as any, // 타입 단언 (Prisma가 sessionEnrollmentId를 포함한 타입을 정확히 추론하지 못함)
       ]);
 
     const withdrawalDate = new Date();

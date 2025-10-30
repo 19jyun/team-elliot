@@ -1126,37 +1126,76 @@ export class ClassSessionService {
 
   /**
    * 수업 종료 후 자동 상태 업데이트 (스케줄러용)
+   * 수업 시간이 지났는데 출석 기록이 없으면 자동으로 ABSENT 처리
    */
   async updateCompletedSessions() {
     const now = new Date();
 
-    // 종료된 세션의 수강 신청들을 COMPLETED로 변경
-    const completedEnrollments = await this.prisma.sessionEnrollment.updateMany(
-      {
-        where: {
-          status: {
-            in: [
-              SessionEnrollmentStatus.CONFIRMED,
-              SessionEnrollmentStatus.ATTENDED,
-            ],
-          },
-          session: {
-            endTime: { lt: now },
-          },
-        },
-        data: {
-          status: 'CONFIRMED', // COMPLETED 대신 CONFIRMED 유지
+    // 종료된 세션의 수강 신청 조회 (CONFIRMED 상태만)
+    const completedEnrollments = await this.prisma.sessionEnrollment.findMany({
+      where: {
+        status: SessionEnrollmentStatus.CONFIRMED,
+        session: {
+          endTime: { lt: now },
         },
       },
-    );
+      include: {
+        session: {
+          select: {
+            id: true,
+            date: true,
+            classId: true,
+            endTime: true,
+          },
+        },
+      },
+    });
+
+    let absentCount = 0;
+
+    // 각 수강 신청에 대해 출석 기록 확인 및 자동 ABSENT 처리
+    for (const enrollment of completedEnrollments) {
+      const sessionDate = new Date(enrollment.session.date);
+      const sessionDateStart = new Date(sessionDate);
+      sessionDateStart.setHours(0, 0, 0, 0);
+      const sessionDateEnd = new Date(sessionDate);
+      sessionDateEnd.setHours(23, 59, 59, 999);
+
+      // 해당 날짜의 출석 기록 확인
+      const existingAttendance = await this.prisma.attendance.findFirst({
+        where: {
+          sessionEnrollmentId: enrollment.id,
+          date: {
+            gte: sessionDateStart,
+            lt: sessionDateEnd,
+          },
+        } as any,
+      });
+
+      // 출석 기록이 없으면 자동으로 ABSENT 처리
+      if (!existingAttendance) {
+        await this.prisma.attendance.create({
+          data: {
+            sessionEnrollmentId: enrollment.id,
+            classId: enrollment.session.classId,
+            studentId: enrollment.studentId,
+            date: sessionDate,
+            status: 'ABSENT',
+            note: '자동 처리: 수업 시간 경과 후 출석 기록 없음',
+          } as any,
+        });
+        absentCount++;
+      }
+    }
 
     // 배치 완료 로그
-    if (completedEnrollments.count > 0) {
+    if (completedEnrollments.length > 0) {
     }
 
     return {
-      updatedCount: completedEnrollments.count,
-      message: `${completedEnrollments.count}개의 수강 신청이 완료 상태로 변경되었습니다.`,
+      processedCount: completedEnrollments.length,
+      absentCount,
+      message: `${completedEnrollments.length}개의 수강 신청 처리 완료 (${absentCount}개 자동 결석 처리)`,
     };
   }
 
@@ -1165,7 +1204,7 @@ export class ClassSessionService {
    */
   async checkAttendance(
     enrollmentId: number,
-    attendanceStatus: 'ATTENDED' | 'ABSENT',
+    attendanceStatus: 'PRESENT' | 'ABSENT',
     userId: number,
     userRole: string,
   ) {
@@ -1256,13 +1295,45 @@ export class ClassSessionService {
       });
     }
 
-    // const oldStatus = enrollment.status;
-    const newStatus = attendanceStatus;
+    // Attendance 테이블에 출석 기록 생성 또는 업데이트
+    const sessionDateForAttendance = new Date(enrollment.session.date);
+    const sessionDateStart = new Date(sessionDateForAttendance);
+    sessionDateStart.setHours(0, 0, 0, 0);
+    const sessionDateEnd = new Date(sessionDateForAttendance);
+    sessionDateEnd.setHours(23, 59, 59, 999);
 
-    // 출석 상태 업데이트
-    const updatedEnrollment = await this.prisma.sessionEnrollment.update({
+    // Attendance 레코드 찾기 (이미 존재하는지 확인)
+    const existingAttendance = await this.prisma.attendance.findFirst({
+      where: {
+        sessionEnrollmentId: enrollmentId,
+        date: {
+          gte: sessionDateStart,
+          lt: sessionDateEnd,
+        },
+      } as any,
+    });
+
+    // Attendance 레코드 생성 또는 업데이트
+    const attendance = existingAttendance
+      ? await this.prisma.attendance.update({
+          where: { id: existingAttendance.id },
+          data: {
+            status: attendanceStatus, // 'PRESENT' 또는 'ABSENT'
+          },
+        })
+      : await this.prisma.attendance.create({
+          data: {
+            sessionEnrollmentId: enrollmentId,
+            classId: enrollment.session.classId,
+            studentId: enrollment.studentId,
+            date: sessionDateForAttendance,
+            status: attendanceStatus, // 'PRESENT' 또는 'ABSENT'
+          } as any,
+        });
+
+    // SessionEnrollment는 수정하지 않음 (수강 신청 상태만 관리)
+    const updatedEnrollment = await this.prisma.sessionEnrollment.findUnique({
       where: { id: enrollmentId },
-      data: { status: newStatus },
       include: {
         session: {
           include: {
@@ -1279,7 +1350,179 @@ export class ClassSessionService {
 
     // 출석 체크 로그
 
-    return updatedEnrollment;
+    return {
+      ...updatedEnrollment,
+      attendance, // 출석 기록 정보 포함
+    };
+  }
+
+  /**
+   * 일괄 출석 체크 (수업 당일)
+   * 여러 학생의 출석 상태를 한 번에 업데이트
+   */
+  async batchCheckAttendance(
+    sessionId: number,
+    attendances: Array<{ enrollmentId: number; status: 'PRESENT' | 'ABSENT' }>,
+    userId: number,
+    userRole: string,
+  ) {
+    // 세션 정보 조회
+    const session = await this.prisma.classSession.findUnique({
+      where: { id: sessionId },
+      include: {
+        class: {
+          include: {
+            teacher: true,
+          },
+        },
+      },
+    });
+
+    if (!session) {
+      throw new NotFoundException('세션을 찾을 수 없습니다.');
+    }
+
+    // 권한 확인
+    if (userRole === 'TEACHER') {
+      const teacher = await this.prisma.teacher.findUnique({
+        where: { userRefId: userId },
+        select: { id: true },
+      });
+
+      if (!teacher || session.class.teacherId !== teacher.id) {
+        throw new ForbiddenException(
+          '해당 클래스의 출석을 관리할 권한이 없습니다.',
+        );
+      }
+    } else if (userRole === 'PRINCIPAL') {
+      const principal = await this.prisma.principal.findUnique({
+        where: { userRefId: userId },
+        include: {
+          academy: {
+            include: {
+              classes: {
+                where: { id: session.classId },
+              },
+            },
+          },
+        },
+      });
+
+      if (!principal) {
+        throw new ForbiddenException('Principal을 찾을 수 없습니다.');
+      }
+
+      const classExists = principal.academy.classes.some(
+        (cls) => cls.id === session.classId,
+      );
+
+      if (!classExists) {
+        throw new ForbiddenException(
+          '해당 클래스의 출석을 관리할 권한이 없습니다.',
+        );
+      }
+    } else {
+      throw new ForbiddenException('유효하지 않은 사용자 역할입니다.');
+    }
+
+    // 수업 당일인지 확인
+    const today = new Date();
+    const sessionDate = new Date(session.date);
+    const isSameDay = today.toDateString() === sessionDate.toDateString();
+
+    if (!isSameDay) {
+      throw new BadRequestException({
+        code: 'ATTENDANCE_CHECK_INVALID_DATE',
+        message: '출석 체크는 수업 당일에만 가능합니다.',
+        details: {
+          sessionId,
+          sessionDate: sessionDate.toISOString(),
+          currentDate: today.toISOString(),
+        },
+      });
+    }
+
+    // 모든 enrollmentId가 해당 세션에 속하는지 확인
+    const enrollmentIds = attendances.map((a) => a.enrollmentId);
+    const enrollments = await this.prisma.sessionEnrollment.findMany({
+      where: {
+        id: { in: enrollmentIds },
+        sessionId,
+      },
+      include: {
+        student: true,
+      },
+    });
+
+    if (enrollments.length !== enrollmentIds.length) {
+      throw new NotFoundException('일부 수강 신청을 찾을 수 없습니다.');
+    }
+
+    // 일괄 출석 체크 처리 (트랜잭션)
+    const sessionDateForAttendance = new Date(session.date);
+    const sessionDateStart = new Date(sessionDateForAttendance);
+    sessionDateStart.setHours(0, 0, 0, 0);
+    const sessionDateEnd = new Date(sessionDateForAttendance);
+    sessionDateEnd.setHours(23, 59, 59, 999);
+
+    const results = await this.prisma.$transaction(async (tx) => {
+      const attendanceResults = [];
+
+      for (const attendanceItem of attendances) {
+        const enrollment = enrollments.find(
+          (e) => e.id === attendanceItem.enrollmentId,
+        );
+
+        if (!enrollment) {
+          continue;
+        }
+
+        // 기존 Attendance 레코드 찾기
+        const existingAttendance = await (tx as any).attendance.findFirst({
+          where: {
+            sessionEnrollmentId: attendanceItem.enrollmentId,
+            date: {
+              gte: sessionDateStart,
+              lt: sessionDateEnd,
+            },
+          },
+        });
+
+        // Attendance 레코드 생성 또는 업데이트
+        const attendance = existingAttendance
+          ? await (tx as any).attendance.update({
+              where: { id: existingAttendance.id },
+              data: {
+                status: attendanceItem.status,
+              },
+            })
+          : await (tx as any).attendance.create({
+              data: {
+                sessionEnrollmentId: attendanceItem.enrollmentId,
+                classId: session.classId,
+                studentId: enrollment.studentId,
+                date: sessionDateForAttendance,
+                status: attendanceItem.status,
+              },
+            });
+
+        attendanceResults.push({
+          enrollmentId: attendanceItem.enrollmentId,
+          status: attendanceItem.status,
+          attendance,
+        });
+      }
+
+      return attendanceResults;
+    });
+
+    // 출석 체크 로그
+
+    return {
+      sessionId,
+      totalCount: results.length,
+      results,
+    };
   }
 
   /**
@@ -1455,9 +1698,12 @@ export class ClassSessionService {
       );
     }
 
-    // 세션의 수강생 목록 조회
-    const enrollments = await this.prisma.sessionEnrollment.findMany({
-      where: { sessionId },
+    // 세션의 CONFIRMED 상태 수강신청 조회
+    const confirmedEnrollments = await this.prisma.sessionEnrollment.findMany({
+      where: {
+        sessionId,
+        status: 'CONFIRMED',
+      },
       include: {
         student: {
           select: {
@@ -1493,6 +1739,46 @@ export class ClassSessionService {
       orderBy: { enrolledAt: 'asc' },
     });
 
+    // 각 수강신청에 대한 Attendance 조회
+    const sessionDate = new Date(session.date);
+    const sessionDateStart = new Date(sessionDate);
+    sessionDateStart.setHours(0, 0, 0, 0);
+    const sessionDateEnd = new Date(sessionDate);
+    sessionDateEnd.setHours(23, 59, 59, 999);
+
+    const enrollmentIds = confirmedEnrollments.map((e) => e.id);
+    const attendances = await this.prisma.attendance.findMany({
+      where: {
+        sessionEnrollmentId: { in: enrollmentIds },
+        date: {
+          gte: sessionDateStart,
+          lt: sessionDateEnd,
+        },
+      } as any,
+    });
+
+    // enrollmentId를 키로 하는 Map 생성
+    const attendanceMap = new Map(
+      attendances.map((a: any) => [a.sessionEnrollmentId, a]),
+    );
+
+    // 응답 형식 변환 (Attendance 기반)
+    const enrollments = confirmedEnrollments.map((enrollment) => {
+      const attendance = attendanceMap.get(enrollment.id);
+      return {
+        id: enrollment.id,
+        studentId: enrollment.studentId,
+        sessionId: enrollment.sessionId,
+        status: enrollment.status,
+        enrolledAt: enrollment.enrolledAt,
+        cancelledAt: enrollment.cancelledAt,
+        attendanceStatus: attendance?.status || 'ABSENT', // 'PRESENT' 또는 'ABSENT'
+        student: enrollment.student,
+        payment: enrollment.payment,
+        refundRequests: enrollment.refundRequests,
+      };
+    });
+
     return {
       session: {
         id: session.id,
@@ -1508,12 +1794,12 @@ export class ClassSessionService {
       enrollments,
       totalCount: enrollments.length,
       statusCounts: {
-        pending: enrollments.filter((e) => e.status === 'PENDING').length,
         confirmed: enrollments.filter((e) => e.status === 'CONFIRMED').length,
-        cancelled: enrollments.filter((e) => e.status === 'CANCELLED').length,
-        attended: enrollments.filter((e) => e.status === 'ATTENDED').length,
-        absent: enrollments.filter((e) => e.status === 'ABSENT').length,
-        completed: enrollments.filter((e) => e.status === 'COMPLETED').length,
+        // 출석 상태는 Attendance 테이블에서 계산
+        present: enrollments.filter((e) => e.attendanceStatus === 'PRESENT')
+          .length,
+        absent: enrollments.filter((e) => e.attendanceStatus === 'ABSENT')
+          .length,
       },
     };
   }
@@ -2362,6 +2648,25 @@ export class ClassSessionService {
           );
         });
 
+      // Attendance 레코드 생성 (기본 상태: ABSENT)
+      const sessionDate = new Date(enrollment.session.date);
+      await (tx as any).attendance
+        .create({
+          data: {
+            sessionEnrollmentId: enrollmentId,
+            classId: enrollment.session.classId,
+            studentId: enrollment.studentId,
+            date: sessionDate,
+            status: 'ABSENT',
+          },
+        })
+        .catch(() => {
+          // 이미 Attendance 레코드가 있는 경우 무시
+          console.warn(
+            `Attendance already exists for enrollment ${enrollmentId}, skipping attendance creation`,
+          );
+        });
+
       return enrollment;
     });
 
@@ -2937,6 +3242,25 @@ export class ClassSessionService {
           // Payment가 없는 경우 무시 (기존 데이터 호환성)
           console.warn(
             `Payment not found for enrollment ${enrollmentId}, skipping payment update`,
+          );
+        });
+
+      // Attendance 레코드 생성 (기본 상태: ABSENT)
+      const sessionDate = new Date(enrollment.session.date);
+      await (tx as any).attendance
+        .create({
+          data: {
+            sessionEnrollmentId: enrollmentId,
+            classId: enrollment.session.classId,
+            studentId: enrollment.studentId,
+            date: sessionDate,
+            status: 'ABSENT',
+          },
+        })
+        .catch(() => {
+          // 이미 Attendance 레코드가 있는 경우 무시
+          console.warn(
+            `Attendance already exists for enrollment ${enrollmentId}, skipping attendance creation`,
           );
         });
 
