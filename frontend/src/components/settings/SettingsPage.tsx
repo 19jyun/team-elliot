@@ -74,7 +74,7 @@ export function SettingsPage({ role }: SettingsPageProps) {
           </div>
           <div>
             <h2 className="text-base font-medium mb-4">알림</h2>
-            <PushNotificationSettings role={role} />
+            <PushNotificationSettings />
           </div>
         </div>
       </div>

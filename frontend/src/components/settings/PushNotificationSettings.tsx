@@ -5,11 +5,7 @@ import { Button } from '@/components/ui/button';
 import { AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 import { usePushNotification } from '@/hooks/usePushNotification';
 
-interface PushNotificationSettingsProps {
-  role?: 'STUDENT' | 'TEACHER' | 'PRINCIPAL';
-}
-
-export function PushNotificationSettings({ role }: PushNotificationSettingsProps) {
+export function PushNotificationSettings() {
   const { status, checkAndRequestPermissions, setEnabled, clearError, getToken } = usePushNotification();
   const [isEnabled, setIsEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
