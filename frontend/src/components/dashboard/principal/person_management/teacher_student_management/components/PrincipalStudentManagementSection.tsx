@@ -109,7 +109,7 @@ export default function PrincipalStudentManagementSection() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
+          <div className="space-y-3 overflow-y-auto">
             {studentListVM.students && studentListVM.students.length > 0 ? (
               studentListVM.students.map((student) => (
                 <div key={student.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">

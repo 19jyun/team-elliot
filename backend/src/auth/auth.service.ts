@@ -3,10 +3,10 @@ import {
   UnauthorizedException,
   ConflictException,
   BadRequestException,
-  NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
+import { WithdrawalService } from '../withdrawal/withdrawal.service';
 import { AuthenticatedUser } from './types/auth.types';
 import * as bcrypt from 'bcrypt';
 import { SignupDto } from './dto/signup.dto';
@@ -17,6 +17,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private withdrawalService: WithdrawalService,
   ) {}
 
   async validateUser(userId: string, password: string) {
@@ -372,49 +373,8 @@ export class AuthService {
   }
 
   async withdrawal(userId: number, reason: string) {
-    // User 테이블에서 먼저 찾기
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('사용자를 찾을 수 없습니다.');
-    }
-
-    // Student 정보 찾기
-    const student = await this.prisma.student.findUnique({
-      where: { userRefId: userId },
-    });
-
-    if (!student) {
-      throw new NotFoundException('학생 정보를 찾을 수 없습니다.');
-    }
-
-    await this.prisma.withdrawalHistory.create({
-      data: {
-        userId: user.userId,
-        userName: user.name,
-        userRole: 'STUDENT',
-        reason: reason,
-        reasonCategory: 'OTHER',
-      },
-    });
-
-    // 사용자 관련 데이터 삭제
-    await this.prisma.$transaction([
-      // 수강 신청 내역 삭제
-      this.prisma.enrollment.deleteMany({
-        where: { studentId: student.id },
-      }),
-      // 학생 정보 삭제
-      this.prisma.student.delete({
-        where: { id: student.id },
-      }),
-      // User 정보 삭제
-      this.prisma.user.delete({
-        where: { id: userId },
-      }),
-    ]);
+    // WithdrawalService를 사용하여 회원 탈퇴 처리
+    await this.withdrawalService.withdrawStudent(userId, reason);
   }
 
   async checkUserId(userId: string): Promise<{ available: boolean }> {

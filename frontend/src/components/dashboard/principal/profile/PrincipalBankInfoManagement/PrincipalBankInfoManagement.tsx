@@ -298,9 +298,9 @@ export function PrincipalBankInfoManagement() {
               <Separator />
 
               {/* 안내 메시지 */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-blue-800 mb-2">💡 안내사항</h4>
-                <ul className="text-xs text-blue-700 space-y-1">
+              <div className="bg-[#f5f3f2] border border-[#ac9592] rounded-lg p-4">
+                <h4 className="text-sm font-medium text-[#8b6f6b] mb-2">안내사항</h4>
+                <ul className="text-xs text-[#7a5f5b] space-y-1">
                   <li>• 이 정보는 학생들이 수강료를 입금할 때 사용됩니다.</li>
                   <li>• 정확한 은행 정보를 입력해주세요.</li>
                   <li>• 계좌번호는 하이픈(-) 없이 입력해도 됩니다.</li>

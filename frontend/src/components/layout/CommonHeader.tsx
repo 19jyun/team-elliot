@@ -38,8 +38,8 @@ export function CommonHeader() {
   } else if (userRole === 'PRINCIPAL') {
     navigationItems = [
       { label: '수업', value: 0 },
-      { label: '인원관리', value: 1 },
-      { label: '학원 관리', value: 2 },
+      { label: '신청 관리', value: 1 },
+      { label: '인원 관리', value: 2 },
       { label: '프로필', value: 3 }
     ];
   }

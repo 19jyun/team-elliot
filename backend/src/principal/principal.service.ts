@@ -1012,4 +1012,91 @@ export class PrincipalService {
 
     return this.rejectTeacherJoinRequest(requestId, principal.id, reason);
   }
+
+  // 필터링된 수강신청 목록 조회 (환불 관련 상태 제외)
+  async getFilteredEnrollments(userId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userId },
+      });
+    }
+
+    return await this.prisma.sessionEnrollment.findMany({
+      where: {
+        session: {
+          class: {
+            academyId: principal.academyId,
+          },
+        },
+        // 환불 관련 상태 제외
+        status: {
+          in: ['PENDING', 'CONFIRMED', 'REJECTED'],
+        },
+      },
+      include: {
+        session: {
+          include: {
+            class: {
+              include: {
+                teacher: true,
+              },
+            },
+          },
+        },
+        student: true,
+      },
+      orderBy: { enrolledAt: 'desc' },
+    });
+  }
+
+  // 필터링된 환불요청 목록 조회
+  async getFilteredRefundRequests(userId: number) {
+    const principal = await this.prisma.principal.findUnique({
+      where: { userRefId: userId },
+    });
+
+    if (!principal) {
+      throw new NotFoundException({
+        code: 'PRINCIPAL_NOT_FOUND',
+        message: 'Principal을 찾을 수 없습니다.',
+        details: { userId },
+      });
+    }
+
+    return await this.prisma.refundRequest.findMany({
+      where: {
+        sessionEnrollment: {
+          session: {
+            class: {
+              academyId: principal.academyId,
+            },
+          },
+        },
+      },
+      include: {
+        sessionEnrollment: {
+          include: {
+            session: {
+              include: {
+                class: {
+                  include: {
+                    teacher: true,
+                  },
+                },
+              },
+            },
+            student: true,
+          },
+        },
+        student: true,
+      },
+      orderBy: { requestedAt: 'desc' },
+    });
+  }
 }

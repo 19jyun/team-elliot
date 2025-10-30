@@ -15,6 +15,8 @@ import {
   getSessionPaymentInfo,
   getCancellationHistory,
   getTeacherProfile,
+  getRefundAccount,
+  updateRefundAccount,
 } from "@/api/student";
 import { getMyAcademies, joinAcademy, leaveAcademy } from "@/api/student";
 import {
@@ -42,6 +44,8 @@ import type {
   GetMyAcademiesResponse,
   StudentBatchEnrollSessionsRequest,
   GetStudentAvailableSessionsForEnrollmentResponse,
+  StudentRefundAccount,
+  UpdateStudentRefundAccountRequest,
 } from "@/types/api/student";
 
 // Student 대시보드에서 사용할 API 훅
@@ -71,6 +75,8 @@ export function useStudentApi() {
     CancellationHistory[]
   >([]);
   const [userProfile, setUserProfile] = useState<StudentProfile | null>(null);
+  const [refundAccount, setRefundAccount] =
+    useState<StudentRefundAccount | null>(null);
   const [calendarRange, _setCalendarRange] = useState<{
     startDate: Date;
     endDate: Date;
@@ -442,6 +448,50 @@ export function useStudentApi() {
     [loadUserProfile]
   );
 
+  // 환불 계좌 정보 로드 함수
+  const loadRefundAccount = useCallback(async () => {
+    try {
+      const response = await getRefundAccount();
+      const data = response.data;
+      setRefundAccount(data || null);
+      return data;
+    } catch (err) {
+      console.error("환불 계좌 정보 로드 실패:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "환불 계좌 정보를 불러오는데 실패했습니다."
+      );
+      throw err;
+    }
+  }, []);
+
+  // 환불 계좌 정보 업데이트 함수
+  const updateRefundAccountInfo = useCallback(
+    async (accountData: UpdateStudentRefundAccountRequest) => {
+      try {
+        const sanitized: Record<string, unknown> = {};
+        Object.entries(accountData || {}).forEach(([key, value]) => {
+          if (value === "" || value === undefined || value === null) return;
+          sanitized[key] = value;
+        });
+
+        const result = await updateRefundAccount(sanitized);
+        await loadRefundAccount();
+        return result;
+      } catch (err) {
+        console.error("환불 계좌 정보 업데이트 실패:", err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "환불 계좌 정보 업데이트에 실패했습니다."
+        );
+        throw err;
+      }
+    },
+    [loadRefundAccount]
+  );
+
   // 학원 가입 함수
   const joinAcademyApi = useCallback(
     async (academyData: { code: string }) => {
@@ -592,6 +642,7 @@ export function useStudentApi() {
     enrollmentHistory,
     cancellationHistory,
     userProfile,
+    refundAccount,
 
     // 변환된 데이터
     convertedSessions,
@@ -624,6 +675,10 @@ export function useStudentApi() {
     // 프로필 관리
     loadUserProfile,
     updateUserProfile,
+
+    // 환불 계좌 정보 관리
+    loadRefundAccount,
+    updateRefundAccountInfo,
 
     // 학원 관리
     joinAcademyApi,

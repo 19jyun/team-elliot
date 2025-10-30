@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { InfoBubble } from '@/components/common/InfoBubble';
@@ -32,6 +32,12 @@ const banks = [
   { value: 'other', label: '기타' },
 ];
 
+// 은행명을 value로 변환하는 함수
+const getBankValueFromName = (bankName: string): string => {
+  const bank = banks.find(b => b.label === bankName);
+  return bank ? bank.value : '';
+};
+
 export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestStepProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
@@ -44,7 +50,29 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
   const [saveAccount, setSaveAccount] = useState(false);
   const [refundReason, setRefundReason] = useState<RefundReason>(RefundReason.PERSONAL_SCHEDULE);
   const [detailedReason, setDetailedReason] = useState('');
-  const { createRefundRequest } = useStudentApi();
+  const { createRefundRequest, refundAccount, loadRefundAccount, updateRefundAccountInfo } = useStudentApi();
+
+  // 컴포넌트 마운트 시 환불 계좌 정보 로드
+  useEffect(() => {
+    loadRefundAccount();
+  }, [loadRefundAccount]);
+
+  // 환불 계좌 정보가 로드되면 폼에 자동 입력
+  useEffect(() => {
+    if (refundAccount) {
+      setAccountInfo(prev => ({
+        ...prev,
+        bank: getBankValueFromName(refundAccount.refundBankName || ''),
+        accountNumber: refundAccount.refundAccountNumber || '',
+        accountHolder: refundAccount.refundAccountHolder || '',
+      }));
+      
+      // 기존 계좌 정보가 있으면 저장 체크박스를 기본으로 체크
+      if (refundAccount.refundBankName && refundAccount.refundAccountNumber && refundAccount.refundAccountHolder) {
+        setSaveAccount(true);
+      }
+    }
+  }, [refundAccount, loadRefundAccount]);
 
   const statusSteps = [
     {
@@ -234,8 +262,21 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
 
       // 계좌 정보 저장 (선택사항)
       if (saveAccount) {
-        const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
-        SyncStorage.setItem('savedAccountInfo', JSON.stringify(accountInfo));
+        try {
+          // 은행 value를 실제 은행명으로 변환
+          const bankLabel = banks.find(b => b.value === accountInfo.bank)?.label || accountInfo.bank;
+          
+          const accountData = {
+            refundBankName: bankLabel,
+            refundAccountNumber: accountInfo.accountNumber,
+            refundAccountHolder: accountInfo.accountHolder,
+          };
+          
+          await updateRefundAccountInfo(accountData);
+        } catch (error) {
+          // 계좌 정보 저장 실패는 환불 신청 성공에 영향을 주지 않음
+          console.warn('계좌 정보 저장에 실패했습니다:', error);
+        }
       }
       
       toast.success(`${refundRequests.length}개 세션의 환불 신청이 완료되었습니다.`);
@@ -318,6 +359,11 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
           <span className="text-[#595959] text-sm font-medium px-1.5 py-0.5 rounded text-center">적어주신 계좌번호로 환불을 도와드리겠습니다.</span>
         </div>
         <div className="text-xs text-[#8C8C8C] mt-1 text-center">환불까지 최대 48시간이 걸릴 수 있습니다.</div>
+        {refundAccount && refundAccount.refundBankName && (
+          <div className="text-xs text-[#AC9592] mt-2 text-center font-medium">
+            기존 계좌 정보를 불러왔습니다. 필요시 수정해주세요.
+          </div>
+        )}
       </div>
 
       {/* 입력 카드들 */}
@@ -376,15 +422,18 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
       </div>
 
       {/* 체크박스 */}
-      <div className="w-[335px] flex items-center mb-6">
-        <input
-          type="checkbox"
-          id="saveAccount"
-          checked={saveAccount}
-          onChange={e => setSaveAccount(e.target.checked)}
-          className="mr-2 w-4 h-4 accent-[#AC9592]"
-        />
-        <label htmlFor="saveAccount" className="text-sm text-[#595959] select-none">계좌정보 저장하기</label>
+      <div className="w-[335px] flex flex-col mb-6">
+        <div className="flex items-center mb-1">
+          <input
+            type="checkbox"
+            id="saveAccount"
+            checked={saveAccount}
+            onChange={e => setSaveAccount(e.target.checked)}
+            className="mr-2 w-4 h-4 accent-[#AC9592]"
+          />
+          <label htmlFor="saveAccount" className="text-sm text-[#595959] select-none">계좌정보 저장하기</label>
+        </div>
+        <div className="text-xs text-[#8C8C8C] ml-6">다음 환불 신청 시 이 정보를 자동으로 사용합니다</div>
       </div>
 
       {/* 하단 버튼 */}

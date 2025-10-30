@@ -11,6 +11,7 @@ import { AcademyManagement } from './student/Profile/AcademyManagement';
 import { PersonalInfoManagement } from './student/Profile/PersonalInfoManagement';
 import { EnrollmentHistory } from './student/Profile/EnrollmentHistory';
 import { CancellationHistory } from './student/Profile/CancellationHistory';
+import { RefundAccountManagement } from './student/Profile/RefundAccountManagement';
 import { EnrolledClassesContainer } from './student/EnrolledClasses/EnrolledClassesContainer';
 import { DashboardContainer } from './DashboardContainer';
 import { useSession } from '@/lib/auth/AuthProvider';
@@ -19,6 +20,7 @@ import { useEffect } from 'react';
 import { useStudentInitialization } from '@/hooks/redux/useStudentInitialization';
 import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSocketListener';
 import { SettingsPage } from '@/components/settings/SettingsPage';
+import { WithdrawalPage } from '@/components/common/WithdrawalPage';
 
 
 function StudentDashboardContent() {
@@ -55,8 +57,12 @@ function StudentDashboardContent() {
         return <EnrollmentHistory />;
       case 'cancellation-history':
         return <CancellationHistory />;
+      case 'refund-account':
+        return <RefundAccountManagement />;
       case 'settings':
         return <SettingsPage role="STUDENT" />;
+      case 'withdrawal':
+        return <WithdrawalPage />;
       default:
         return null;
     }

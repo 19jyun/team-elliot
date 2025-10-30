@@ -6,28 +6,26 @@ interface ClassFeeListProps {
 
 export function ClassFeeList({ classFees }: ClassFeeListProps) {
   return (
-    <div className="w-full font-[Pretendard Variable] text-sm">
+    <>
       {classFees.map((fee, idx) => (
-        <div key={fee.name} className="flex items-center justify-between py-1 w-full">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-[#595959] min-w-16">
+        <div key={fee.name} className="flex flex-row justify-between items-start w-full gap-5">
+          <div className="flex flex-row items-center m-auto px-[19px] py-2.5 gap-2 w-[109px]">
+            <span className="flex items-center text-[#31220F] font-normal text-base leading-[19px]">
               {idx === 0 ? '수강금액' : ''}
             </span>
-            <span 
-              className="font-bold text-[#573B30] max-w-32 truncate"
-              title={fee.name}
-            >
-              {fee.name}
-            </span>
           </div>
-          <div className="flex items-center gap-1">
-            <span className="font-bold text-[#573B30]">{fee.count}회 /</span>
-            <span className="font-bold text-[#573B30] min-w-0 flex-shrink-0">
-              {fee.price.toLocaleString()}원
-            </span>
+          <div className="flex flex-row items-center m-auto px-[19px] py-2.5 gap-2 w-[226px]">
+            <div className="flex flex-col gap-1">
+              <span className="flex items-center text-[#31220F] font-semibold text-base leading-[19px]">
+                {fee.name}
+              </span>
+              <span className="flex items-center text-[#31220F] font-semibold text-base leading-[19px]">
+                {fee.count}회 / {fee.price.toLocaleString()}원
+              </span>
+            </div>
           </div>
         </div>
       ))}
-    </div>
+    </>
   );
 } 

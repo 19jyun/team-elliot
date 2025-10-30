@@ -9,19 +9,19 @@ import { useEffect } from 'react';
 import PrincipalClassPage from '@/app/(dashboard)/dashboard/principal/class/page';
 import PrincipalProfilePage from '@/app/(dashboard)/dashboard/principal/profile/page';
 import PrincipalPersonManagementPage from '@/app/(dashboard)/dashboard/principal/person_management/page';
+import PrincipalEnrollmentManagementPage from '@/app/(dashboard)/dashboard/principal/enrollment_management/page';
 import { PrincipalClassesContainer } from '@/components/features/principal/classes/PrincipalClassesContainer';
 import { CreateClassContainer } from './principal/class_management/create-class/containers/CreateClassContainer';
 import PrincipalAcademyManagementPage from '@/app/(dashboard)/dashboard/principal/academy_management/page';
 import { PrincipalProfileManagement } from './principal/profile/PrincipalProfileManagement/PrincipalProfileManagement';
 import { PrincipalPersonalInfoManagement } from './principal/profile/PrincipalPersonalInfoManagement/PrincipalPersonalInfoManagement';
 import { PrincipalBankInfoManagement } from './principal/profile/PrincipalBankInfoManagement/PrincipalBankInfoManagement';
-import { EnrollmentRefundManagementContainer } from './principal/person_management/enrollment_refund_management/containers/EnrollmentRefundManagementContainer';
-import { TeacherStudentManagementContainer } from './principal/person_management/teacher_student_management/containers/TeacherStudentManagementContainer';
 import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSocketListener';
 
 import { usePrincipalInitialization } from '@/hooks/redux/usePrincipalInitialization';
 import { SettingsPage } from '@/components/settings/SettingsPage';
 import { SessionDetailContainer } from './teacher/SessionDetail/SessionDetailContainer';
+import { WithdrawalPage } from '@/components/common/WithdrawalPage';
 
 
 
@@ -47,14 +47,14 @@ function PrincipalDashboardContent() {
         return <PrincipalPersonalInfoManagement />;
       case 'bank-info':
         return <PrincipalBankInfoManagement />;
-      case 'enrollment-refund-management':
-        return <EnrollmentRefundManagementContainer />;
-      case 'teacher-student-management':
-        return <TeacherStudentManagementContainer />;
+      case 'academy-management':
+        return <PrincipalAcademyManagementPage />;
       case 'settings':
         return <SettingsPage role="PRINCIPAL" />;
       case 'session-detail':
         return <SessionDetailContainer />;
+      case 'withdrawal':
+        return <WithdrawalPage />;
       default:
         return (
           <div className="flex items-center justify-center h-full">
@@ -71,8 +71,8 @@ function PrincipalDashboardContent() {
   // 메인 탭 페이지들을 배열로 준비
   const tabPages = [
     <PrincipalClassPage key="class" />,
+    <PrincipalEnrollmentManagementPage key="enrollment-management" />,
     <PrincipalPersonManagementPage key="person-management" />,
-    <PrincipalAcademyManagementPage key="academy-management" />,
     <PrincipalProfilePage key="profile" />
   ];
 

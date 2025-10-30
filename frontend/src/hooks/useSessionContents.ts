@@ -4,6 +4,7 @@ import {
   ReorderSessionContentsRequest,
   UpdateSessionPosesRequest,
   SessionContentResponse,
+  AttendanceItem,
 } from "@/types/api/session-content";
 import { UpdateSessionSummaryRequest } from "@/types/api/teacher";
 import { toast } from "sonner";
@@ -14,6 +15,7 @@ import {
   reorderSessionContents,
   updateSessionPoses,
   checkAttendance,
+  batchCheckAttendance,
 } from "@/api/session-content";
 import { updateSessionSummary } from "@/api/teacher";
 import { useSession } from "@/lib/auth/AuthProvider";
@@ -251,7 +253,7 @@ export const useCheckAttendance = (enrollmentId: number) => {
   const userRole = session?.user?.role || "STUDENT";
 
   return useMutation({
-    mutationFn: async (status: "ATTENDED" | "ABSENT") => {
+    mutationFn: async (status: "PRESENT" | "ABSENT") => {
       const response = await checkAttendance(enrollmentId, { status });
       return response.data;
     },
@@ -287,20 +289,17 @@ export const useCheckAttendance = (enrollmentId: number) => {
 };
 
 // 일괄 출석 체크
-export const useBatchCheckAttendance = () => {
+export const useBatchCheckAttendance = (sessionId: number) => {
   const queryClient = useQueryClient();
   const { data: session } = useSession();
   const userRole = session?.user?.role || "STUDENT";
 
   return useMutation({
-    mutationFn: async (
-      attendanceData: { enrollmentId: number; status: "ATTENDED" | "ABSENT" }[]
-    ) => {
-      const promises = attendanceData.map(({ enrollmentId, status }) =>
-        checkAttendance(enrollmentId, { status })
-      );
-      const responses = await Promise.all(promises);
-      return responses.map((response) => response.data);
+    mutationFn: async (attendanceData: AttendanceItem[]) => {
+      const response = await batchCheckAttendance(sessionId, {
+        attendances: attendanceData,
+      });
+      return response.data;
     },
     onSuccess: () => {
       // 모든 세션 컨텐츠 쿼리 무효화 (출석체크는 모든 세션에 영향)

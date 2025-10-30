@@ -10,6 +10,8 @@ import {
   getPrincipalSessionEnrollments,
   getPrincipalAllEnrollments,
   getPrincipalAllRefundRequests,
+  getPrincipalFilteredEnrollments,
+  getPrincipalFilteredRefundRequests,
   approvePrincipalEnrollment,
   rejectPrincipalEnrollment,
   approvePrincipalRefund,
@@ -361,7 +363,16 @@ export function usePrincipalApi() {
     [loadAcademy]
   );
 
-  // 수강신청 및 환불 요청 관리
+  // 수강신청 및 환불 요청 관리 (필터링된 버전)
+  const getFilteredEnrollments = useCallback(async () => {
+    return getPrincipalFilteredEnrollments();
+  }, []);
+
+  const getFilteredRefundRequests = useCallback(async () => {
+    return getPrincipalFilteredRefundRequests();
+  }, []);
+
+  // 수강신청 및 환불 요청 관리 (기존 버전 - DEPRECATED)
   const getAllEnrollments = useCallback(async () => {
     return getPrincipalAllEnrollments();
   }, []);
@@ -551,7 +562,10 @@ export function usePrincipalApi() {
     // 생성/수정 관련
     createClass,
     updateAcademy,
-    // 수강신청 및 환불 요청 관리
+    // 수강신청 및 환불 요청 관리 (필터링된 버전)
+    getFilteredEnrollments,
+    getFilteredRefundRequests,
+    // 수강신청 및 환불 요청 관리 (기존 버전 - DEPRECATED)
     getAllEnrollments,
     getAllRefundRequests,
     // 발레 포즈

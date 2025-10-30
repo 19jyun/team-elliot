@@ -6,6 +6,8 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { signup, signupPrincipal } from '@/api/auth'
 import Image from 'next/image'
+import { TermsModal } from '@/components/common/TermsModal'
+import { PrivacyPolicyModal } from '@/components/common/PrivacyPolicyModal'
 
 
 const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
@@ -24,9 +26,10 @@ export function SignupTermsPage() {
     age: false,
     terms1: false,
     terms2: false,
-    marketing: false,
   })
   const [allChecked, setAllChecked] = useState(false)
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false)
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false)
 
   const handleAllCheck = () => {
     const newValue = !allChecked
@@ -35,7 +38,6 @@ export function SignupTermsPage() {
       age: newValue,
       terms1: newValue,
       terms2: newValue,
-      marketing: newValue,
     })
   }
 
@@ -184,68 +186,134 @@ export function SignupTermsPage() {
         </button>
 
         <div className="flex flex-col gap-3 mt-4">
-          {[
-            { key: 'age', label: '만 18세 이상입니다', required: true },
-            { key: 'terms1', label: '서비스 이용약관 동의', required: true },
-            {
-              key: 'terms2',
-              label: '개인정보 처리방침 동의',
-              required: true,
-            },
-            {
-              key: 'marketing',
-              label: '혜택/이벤트 정보 수신 동의',
-              required: false,
-            },
-          ].map((item) => (
-            <label
-              key={item.key}
-              className="flex gap-2 items-center group cursor-pointer"
-            >
-              <div className="relative w-6 h-6">
-                <input
-                  type="checkbox"
-                  checked={agreements[item.key as keyof typeof agreements]}
-                  onChange={() =>
-                    handleSingleCheck(item.key as keyof typeof agreements)
-                  }
-                  className="absolute opacity-0 w-6 h-6 cursor-pointer"
-                />
-                <div
-                  className={`w-6 h-6 border rounded transition-colors ${
-                    agreements[item.key as keyof typeof agreements]
-                      ? 'bg-stone-700 border-stone-700'
-                      : 'border-stone-300 group-hover:border-stone-400'
-                  }`}
-                >
-                  {agreements[item.key as keyof typeof agreements] && (
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      className="w-6 h-6 text-white"
-                    >
-                      <path
-                        d="M20 6L9 17L4 12"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  )}
-                </div>
-              </div>
-              <div className="flex gap-1 items-center">
-                <span className="text-base text-stone-700">{item.label}</span>
-                {item.required && (
-                  <span className="text-base text-stone-500">(필수)</span>
-                )}
-                {!item.required && (
-                  <span className="text-base text-stone-500">(선택)</span>
+          {/* 만 18세 이상 */}
+          <label className="flex gap-2 items-center group cursor-pointer">
+            <div className="relative w-6 h-6">
+              <input
+                type="checkbox"
+                checked={agreements.age}
+                onChange={() => handleSingleCheck('age')}
+                className="absolute opacity-0 w-6 h-6 cursor-pointer"
+              />
+              <div
+                className={`w-6 h-6 border rounded transition-colors ${
+                  agreements.age
+                    ? 'bg-stone-700 border-stone-700'
+                    : 'border-stone-300 group-hover:border-stone-400'
+                }`}
+              >
+                {agreements.age && (
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    className="w-6 h-6 text-white"
+                  >
+                    <path
+                      d="M20 6L9 17L4 12"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 )}
               </div>
-            </label>
-          ))}
+            </div>
+            <div className="flex gap-1 items-center">
+              <span className="text-base text-stone-700">만 18세 이상입니다</span>
+              <span className="text-base text-stone-500">(필수)</span>
+            </div>
+          </label>
+
+          {/* 서비스 이용약관 동의 */}
+          <div className="flex gap-2 items-center group">
+            <div className="relative w-6 h-6">
+              <input
+                type="checkbox"
+                checked={agreements.terms1}
+                onChange={() => handleSingleCheck('terms1')}
+                className="absolute opacity-0 w-6 h-6 cursor-pointer"
+              />
+              <div
+                className={`w-6 h-6 border rounded transition-colors cursor-pointer ${
+                  agreements.terms1
+                    ? 'bg-stone-700 border-stone-700'
+                    : 'border-stone-300 group-hover:border-stone-400'
+                }`}
+              >
+                {agreements.terms1 && (
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    className="w-6 h-6 text-white"
+                  >
+                    <path
+                      d="M20 6L9 17L4 12"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-1 items-center">
+              <button
+                type="button"
+                onClick={() => setIsTermsModalOpen(true)}
+                className="text-base text-stone-700 underline hover:text-stone-900"
+              >
+                서비스 이용약관 동의
+              </button>
+              <span className="text-base text-stone-500">(필수)</span>
+            </div>
+          </div>
+
+          {/* 개인정보 처리방침 동의 */}
+          <div className="flex gap-2 items-center group">
+            <div className="relative w-6 h-6">
+              <input
+                type="checkbox"
+                checked={agreements.terms2}
+                onChange={() => handleSingleCheck('terms2')}
+                className="absolute opacity-0 w-6 h-6 cursor-pointer"
+              />
+              <div
+                className={`w-6 h-6 border rounded transition-colors cursor-pointer ${
+                  agreements.terms2
+                    ? 'bg-stone-700 border-stone-700'
+                    : 'border-stone-300 group-hover:border-stone-400'
+                }`}
+              >
+                {agreements.terms2 && (
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    className="w-6 h-6 text-white"
+                  >
+                    <path
+                      d="M20 6L9 17L4 12"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-1 items-center">
+              <button
+                type="button"
+                onClick={() => setIsPrivacyModalOpen(true)}
+                className="text-base text-stone-700 underline hover:text-stone-900"
+              >
+                개인정보 처리방침 동의
+              </button>
+              <span className="text-base text-stone-500">(필수)</span>
+            </div>
+          </div>
         </div>
 
         <button
@@ -257,6 +325,31 @@ export function SignupTermsPage() {
           {isLoading ? '처리중...' : '가입완료'}
         </button>
       </div>
+
+      {/* 모달들 */}
+      <TermsModal
+        isOpen={isTermsModalOpen}
+        onClose={() => setIsTermsModalOpen(false)}
+        isSignUp={true}
+        onAgree={(agreed) => {
+          if (agreed) {
+            setAgreements(prev => ({ ...prev, terms1: true }))
+          }
+          setIsTermsModalOpen(false)
+        }}
+      />
+
+      <PrivacyPolicyModal
+        isOpen={isPrivacyModalOpen}
+        onClose={() => setIsPrivacyModalOpen(false)}
+        isSignUp={true}
+        onAgree={(agreed) => {
+          if (agreed) {
+            setAgreements(prev => ({ ...prev, terms2: true }))
+          }
+          setIsPrivacyModalOpen(false)
+        }}
+      />
     </div>
   )
 } 

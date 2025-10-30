@@ -140,7 +140,7 @@ export default function PrincipalTeacherManagementSection() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="space-y-3 overflow-y-auto">
               {joinRequests.pendingRequests.map((request: TeacherJoinRequest) => (
                 <div key={request.id} className="flex items-center justify-between p-3 bg-[#AC9592]/5 border border-[#AC9592]/20 rounded-lg">
                   <div className="flex items-center gap-3">

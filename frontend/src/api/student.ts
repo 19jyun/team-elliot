@@ -18,6 +18,9 @@ import {
   StudentBatchModifyEnrollmentsRequest,
   StudentBatchModifyEnrollmentsResponse,
   TeacherProfileForStudentResponse,
+  StudentRefundAccount,
+  UpdateStudentRefundAccountRequest,
+  UpdateStudentRefundAccountResponse,
 } from "../types/api/student";
 import { GetClassSessionsForModificationResponse } from "../types/api/class";
 
@@ -45,6 +48,23 @@ export const updateMyProfile = (
   updateData: UpdateStudentProfileRequest
 ): Promise<ApiResponse<StudentProfile>> => {
   return put<ApiResponse<StudentProfile>>("/student/profile", updateData);
+};
+
+// 환불 계좌 정보 조회
+export const getRefundAccount = (): Promise<
+  ApiResponse<StudentRefundAccount>
+> => {
+  return get<ApiResponse<StudentRefundAccount>>("/student/refund-account");
+};
+
+// 환불 계좌 정보 수정
+export const updateRefundAccount = (
+  updateData: UpdateStudentRefundAccountRequest
+): Promise<ApiResponse<UpdateStudentRefundAccountResponse>> => {
+  return put<ApiResponse<UpdateStudentRefundAccountResponse>>(
+    "/student/refund-account",
+    updateData
+  );
 };
 
 // 수강 내역 조회

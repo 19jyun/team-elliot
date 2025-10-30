@@ -180,6 +180,7 @@ interface ClassEnrollment {
 // SessionEnrollment은 class.ts에서 import됨
 // Teacher/Principal용 확장된 SessionEnrollment 타입
 export interface TeacherSessionEnrollment extends SessionEnrollment {
+  attendanceStatus?: "PRESENT" | "ABSENT"; // 출석 상태 (Attendance 테이블 기반)
   student: {
     id: number;
     name: string;
@@ -215,12 +216,9 @@ export interface SessionEnrollmentsResponse {
   enrollments: TeacherSessionEnrollment[];
   totalCount: number;
   statusCounts: {
-    pending: number;
     confirmed: number;
-    cancelled: number;
-    attended: number;
-    absent: number;
-    completed: number;
+    present: number; // PRESENT 상태 출석 수
+    absent: number; // ABSENT 상태 출석 수
   };
 }
 

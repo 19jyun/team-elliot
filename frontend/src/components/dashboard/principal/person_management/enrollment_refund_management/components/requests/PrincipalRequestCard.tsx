@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import { User, Calendar, DollarSign, Clock } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { useClipboard } from '@/hooks/useClipboard';
 import type { UnifiedRequest } from '@/types/view/principal';
 
 interface PrincipalRequestCardProps {
@@ -17,184 +16,152 @@ interface PrincipalRequestCardProps {
 
 export function PrincipalRequestCard({ 
   request, 
-  requestType, 
+  requestType: _requestType,
   onApprove, 
   onReject, 
   isProcessing = false,
   isExpanded = false,
   onClick
 }: PrincipalRequestCardProps) {
+  const { copy } = useClipboard({
+    successMessage: "계좌번호가 복사되었습니다",
+  });
+
   // 처리 완료된 요청인지 확인
   const isCompleted = request.status === 'CONFIRMED' || request.status === 'REJECTED' || 
-                     request.status === 'APPROVED' || request.status === 'REJECTED';
+                     request.status === 'APPROVED';
+  const isApproved = request.status === 'CONFIRMED' || request.status === 'APPROVED';
+  const isRejected = request.status === 'REJECTED';
 
-  // 상태 배지 텍스트
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'PENDING':
-        return '대기';
-      case 'CONFIRMED':
-      case 'APPROVED':
-        return '승인됨';
-      case 'REJECTED':
-        return '거절됨';
-      default:
-        return status;
+  // 계좌번호 복사 함수
+  const handleCopyAccount = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (request.bankInfo) {
+      const accountText = `${request.bankInfo.bankName} ${request.bankInfo.accountNumber}`;
+      copy(accountText);
     }
   };
 
-  return (
-    <div 
-      className={`w-full bg-white border border-gray-200 rounded-md shadow-sm transition-all duration-300 cursor-pointer ${
-        isExpanded ? 'shadow-lg' : 'hover:shadow-md'
-      }`}
-      style={{
-        width: '343px',
-        minHeight: '153px',
-        boxShadow: '0px 4px 4px rgba(0, 0, 0, 0.25)',
-        borderRadius: '6px'
-      }}
-      onClick={onClick}
-    >
-      {/* 헤더: 요청 타입 + 상태 */}
-      <div className="flex items-center gap-3 p-4 border-b border-gray-200">
-        <span 
-          className="font-bold text-black"
-          style={{ fontSize: '18px', lineHeight: '140%', letterSpacing: '-0.01em' }}
-        >
-          {requestType === 'enrollment' ? '결제' : '환불'}
-        </span>
-        <Badge 
-          className={`${request.statusColor} text-xs font-bold rounded-full`}
-          style={{ 
-            width: '70px', 
-            height: '21px', 
-            borderRadius: '10.5px',
-            fontSize: '12px',
-            lineHeight: '140%',
-            letterSpacing: '-0.01em',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          {getStatusText(request.status)}
-        </Badge>
-      </div>
-      
-      {/* 기본 정보 (항상 표시) */}
-      <div className="p-4 space-y-3">
-        <div className="flex items-center gap-3">
-          <User className="w-4 h-4 text-black" />
-          <span 
-            className="text-black font-medium"
-            style={{ fontSize: '14px', lineHeight: '140%', letterSpacing: '-0.01em' }}
-          >
-            신청인: {request.studentName}
-          </span>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <Calendar className="w-4 h-4 text-black" />
-          <span 
-            className="text-black font-medium"
-            style={{ fontSize: '14px', lineHeight: '140%', letterSpacing: '-0.01em' }}
-          >
-            수업: {request.displaySessionDate} {request.displaySessionTime} {request.sessionInfo.className}
-          </span>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <DollarSign className="w-4 h-4 text-black" />
-          <span 
-            className="text-black font-medium"
-            style={{ fontSize: '14px', lineHeight: '140%', letterSpacing: '-0.01em' }}
-          >
-            금액: {request.displayAmount}
-          </span>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <Clock className="w-4 h-4 text-black" />
-          <span 
-            className="text-black font-medium"
-            style={{ fontSize: '14px', lineHeight: '140%', letterSpacing: '-0.01em' }}
-          >
-            신청일시: {request.displayRequestedAt}
-          </span>
-        </div>
-      </div>
+  // 금액을 숫자로 변환 (displayAmount에서 "원"과 쉼표 제거)
+  const amount = request.displayAmount.replace(/[^0-9]/g, '');
 
-      {/* 확장된 정보 (클릭 시 표시) */}
+  return (
+    <div className="flex flex-col w-full transition-all duration-300 ease-in-out">
       <div 
-        className={`overflow-hidden transition-all duration-300 ${
-          isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-        }`}
+        className="flex flex-row items-center px-5 py-6 gap-4 w-[375px] bg-white border-b border-[#D9D9D9] cursor-pointer box-border"
+        onClick={onClick}
       >
-        <div className="px-4 pb-4 border-t border-gray-200">
-          <div className="pt-4 space-y-4">
-            {/* 환불 요청의 경우 추가 정보 */}
-            {requestType === 'refund' && request.bankInfo && (
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">환불 계좌 정보</h4>
-                <div className="space-y-2 text-sm text-gray-700">
-                  <div className="flex justify-between">
-                    <span className="font-medium">은행:</span>
-                    <span>{request.bankInfo.bankName}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="font-medium">계좌번호:</span>
-                    <span>{request.bankInfo.accountNumber}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="font-medium">예금주:</span>
-                    <span>{request.bankInfo.accountHolder}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* 환불 요청의 경우 사유 */}
-            {requestType === 'refund' && request.reason && (
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">환불 사유</h4>
-                <p className="text-sm text-gray-700 leading-relaxed">{request.reason}</p>
-              </div>
-            )}
-            
-            {/* 연락처 정보 */}
-            {request.studentPhoneNumber && (
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">연락처</h4>
-                <p className="text-sm text-gray-700">{request.studentPhoneNumber}</p>
-              </div>
+        {/* 메인 콘텐츠 */}
+        <div className="flex flex-col items-start gap-4 w-full">
+          {/* 체크박스 / X 표시 */}
+          <div
+            className={`flex flex-row justify-center items-center w-6 h-6 rounded-full transition-all duration-200 ${
+              isApproved ? 'bg-[#AC9592]' : isRejected ? 'bg-[#FF5656]' : 'bg-[#AC9592] opacity-20'
+            }`}
+          >
+            {isRejected ? (
+              // X 아이콘
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 14 14"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M2 2L12 12M12 2L2 12"
+                  stroke="#FFFFFF"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            ) : (
+              // 체크 아이콘
+              <svg
+                width="14"
+                height="10"
+                viewBox="0 0 14 10"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M1 5L5 9L13 1"
+                  stroke="#FFFFFF"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             )}
           </div>
+
+          {/* 금액 */}
+          <div className="flex flex-row items-center gap-2">
+            <span className="font-semibold text-base leading-[19px] text-black">
+              {amount}
+            </span>
+            <span className="font-semibold text-base leading-[19px] text-black">
+              원
+            </span>
+          </div>
+
+          {/* 신청인 정보 그룹 */}
+          <div className="flex flex-col items-start gap-2 w-full">
+            {/* 신청인 이름 */}
+            <span className="font-semibold text-base leading-[19px] text-black">
+              {request.studentName}
+            </span>
+
+            {/* 수업 정보 */}
+            <span className="font-medium text-sm leading-[120%] tracking-[-0.01em] text-black">
+              {request.displaySessionDate}
+            </span>
+
+            <span className="font-medium text-sm leading-[120%] tracking-[-0.01em] text-black">
+              {request.displaySessionTime} {request.sessionInfo.className}
+            </span>
+
+            {/* 신청일시 */}
+            <span className="font-medium text-[10px] leading-[140%] tracking-[-0.01em] text-[#B3B3B3] whitespace-nowrap">
+              {request.displayRequestedAt}
+            </span>
+          </div>
+
+          {/* 계좌번호 복사 버튼 */}
+          {request.bankInfo && (
+            <button
+              onClick={handleCopyAccount}
+              className="flex flex-row justify-center items-center px-2 py-1 gap-2 w-full h-7 rounded-full border border-[#AC9592] bg-transparent hover:bg-[#AC9592] active:bg-[#AC9592] transition-colors duration-200 group"
+            >
+              <span className="font-medium text-sm leading-[140%] tracking-[-0.01em] whitespace-nowrap overflow-hidden text-ellipsis text-[#AC9592] group-hover:text-white group-active:text-white">
+                {request.bankInfo.bankName} {request.bankInfo.accountNumber} 복사
+              </span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* 액션 버튼들 - 처리 완료되지 않은 경우에만 표시 */}
-      {!isCompleted && (
-        <div 
-          className={`overflow-hidden transition-all duration-300 ${
-            isExpanded ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'
-          }`}
-        >
-          <div className="px-4 pb-4 border-t border-gray-200">
-            <div className="flex gap-3 mt-4">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onApprove(request.id);
-                }}
-                disabled={isProcessing}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors hover:opacity-90"
-              style={{ 
-                backgroundColor: '#A48B88'
-              }}
-              >
-                {isProcessing ? '처리중...' : '승인'}
-              </button>
+      {/* 확장된 정보 및 액션 버튼 */}
+      <div 
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+          isExpanded && !isCompleted ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'
+        }`}
+      >
+        <div className="w-[375px] bg-white border-b border-[#D9D9D9] px-5 py-4">
+          <div className="flex flex-col gap-4">
+            {/* 전화번호 정보 */}
+            {request.studentPhoneNumber && (
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-medium text-gray-500">연락처</span>
+                <span className="text-sm font-medium text-black">
+                  {request.studentPhoneNumber}
+                </span>
+              </div>
+            )}
+            
+            {/* 액션 버튼 */}
+            <div className="flex gap-3">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -205,10 +172,20 @@ export function PrincipalRequestCard({
               >
                 {isProcessing ? '처리중...' : '거절'}
               </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onApprove(request.id);
+                }}
+                disabled={isProcessing}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-[#AC9592] disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors hover:opacity-90"
+              >
+                {isProcessing ? '처리중...' : '승인'}
+              </button>
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }; 

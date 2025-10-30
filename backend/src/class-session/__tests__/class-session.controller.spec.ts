@@ -6,6 +6,10 @@ import {
   SessionEnrollmentStatus,
 } from '../dto/update-enrollment-status.dto';
 import { ChangeEnrollmentDto } from '../dto/change-enrollment.dto';
+import {
+  BatchCheckAttendanceDto,
+  AttendanceStatus,
+} from '../dto/batch-check-attendance.dto';
 
 describe('ClassSessionController', () => {
   let controller: ClassSessionController;
@@ -19,6 +23,7 @@ describe('ClassSessionController', () => {
     updateEnrollmentStatus: jest.fn(),
     batchUpdateEnrollmentStatus: jest.fn(),
     checkAttendance: jest.fn(),
+    batchCheckAttendance: jest.fn(),
     getSessionEnrollments: jest.fn(),
     completeSessions: jest.fn(),
     enrollSession: jest.fn(),
@@ -208,9 +213,9 @@ describe('ClassSessionController', () => {
   });
 
   describe('checkAttendance', () => {
-    it('should check attendance as attended', async () => {
+    it('should check attendance as PRESENT', async () => {
       const enrollmentId = 1;
-      const attendanceStatus = 'ATTENDED';
+      const attendanceStatus = 'PRESENT';
       const result = { message: 'Attendance recorded' };
       mockService.checkAttendance.mockResolvedValue(result);
 
@@ -229,7 +234,7 @@ describe('ClassSessionController', () => {
       );
     });
 
-    it('should check attendance as absent', async () => {
+    it('should check attendance as ABSENT', async () => {
       const enrollmentId = 1;
       const attendanceStatus = 'ABSENT';
       const result = { message: 'Absence recorded' };
@@ -245,6 +250,41 @@ describe('ClassSessionController', () => {
       expect(service.checkAttendance).toHaveBeenCalledWith(
         enrollmentId,
         attendanceStatus,
+        mockUser.id,
+        mockUser.role,
+      );
+    });
+  });
+
+  describe('batchCheckAttendance', () => {
+    it('should batch check attendance successfully', async () => {
+      const sessionId = 1;
+      const batchDto: BatchCheckAttendanceDto = {
+        attendances: [
+          { enrollmentId: 1, status: AttendanceStatus.PRESENT },
+          { enrollmentId: 2, status: AttendanceStatus.ABSENT },
+        ],
+      };
+      const result = {
+        sessionId,
+        totalCount: 2,
+        results: [
+          { enrollmentId: 1, status: 'PRESENT', attendance: { id: 1 } },
+          { enrollmentId: 2, status: 'ABSENT', attendance: { id: 2 } },
+        ],
+      };
+      mockService.batchCheckAttendance.mockResolvedValue(result);
+
+      const response = await controller.batchCheckAttendance(
+        sessionId,
+        batchDto,
+        mockUser,
+      );
+
+      expect(response).toEqual(result);
+      expect(service.batchCheckAttendance).toHaveBeenCalledWith(
+        sessionId,
+        batchDto.attendances,
         mockUser.id,
         mockUser.role,
       );

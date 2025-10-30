@@ -15,6 +15,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdateRefundAccountDto } from './dto/update-refund-account.dto';
 import { Role } from '@prisma/client';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
@@ -62,6 +63,32 @@ export class StudentController {
     @Body() updateProfileDto: UpdateProfileDto,
   ) {
     return this.studentService.updateMyProfile(user.id, updateProfileDto);
+  }
+
+  @Get('refund-account')
+  @ApiOperation({ summary: '환불 계좌 정보 조회' })
+  @ApiResponse({
+    status: 200,
+    description: '학생의 환불 계좌 정보를 반환합니다.',
+  })
+  async getRefundAccount(@CurrentUser() user: any) {
+    return this.studentService.getRefundAccount(user.id);
+  }
+
+  @Put('refund-account')
+  @ApiOperation({ summary: '환불 계좌 정보 수정' })
+  @ApiResponse({
+    status: 200,
+    description: '환불 계좌 정보가 성공적으로 수정되었습니다.',
+  })
+  async updateRefundAccount(
+    @CurrentUser() user: any,
+    @Body() updateRefundAccountDto: UpdateRefundAccountDto,
+  ) {
+    return this.studentService.updateRefundAccount(
+      user.id,
+      updateRefundAccountDto,
+    );
   }
 
   @Get('enrollment-history')

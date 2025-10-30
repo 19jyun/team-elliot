@@ -10,6 +10,8 @@ import type {
   CheckAttendanceRequest,
   CheckAttendanceResponse,
   UpdateSessionPosesRequest,
+  BatchCheckAttendanceRequest,
+  BatchCheckAttendanceResponse,
 } from "@/types/api/session-content";
 
 // 세션 내용 목록 조회
@@ -71,6 +73,17 @@ export const checkAttendance = (
 ): Promise<ApiResponse<CheckAttendanceResponse>> => {
   return put<ApiResponse<CheckAttendanceResponse>>(
     `/class-sessions/enrollments/${enrollmentId}/attendance`,
+    data
+  );
+};
+
+// 일괄 출석 체크
+export const batchCheckAttendance = (
+  sessionId: number,
+  data: BatchCheckAttendanceRequest
+): Promise<ApiResponse<BatchCheckAttendanceResponse>> => {
+  return put<ApiResponse<BatchCheckAttendanceResponse>>(
+    `/class-sessions/${sessionId}/attendances`,
     data
   );
 };

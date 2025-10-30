@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import PrincipalTeacherManagementSection from '../components/PrincipalTeacherManagementSection';
 import PrincipalStudentManagementSection from '../components/PrincipalStudentManagementSection';
 
@@ -25,35 +26,40 @@ export function TeacherStudentManagementContainer() {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* 탭 네비게이션 - EnrollmentRefundManagementTabs와 동일한 디자인 */}
-      <div className="flex border-b border-stone-200 bg-white">
-        <button
-          onClick={() => handleTabClick('teachers')}
-          className={`flex-1 py-3 px-4 text-sm font-medium transition-colors duration-200 ${
-            activeSection === 'teachers'
-              ? 'text-primary border-b-2 border-primary'
-              : 'text-stone-500 hover:text-stone-700'
-          }`}
-        >
-          선생 관리
-        </button>
-        <button
-          onClick={() => handleTabClick('students')}
-          className={`flex-1 py-3 px-4 text-sm font-medium transition-colors duration-200 ${
-            activeSection === 'students'
-              ? 'text-primary border-b-2 border-primary'
-              : 'text-stone-500 hover:text-stone-700'
-          }`}
-        >
-          수강생 관리
-        </button>
-      </div>
+    <div className="w-full h-full overflow-hidden flex flex-col bg-white max-w-[480px] mx-auto">
+      {/* 헤더 */}
+      <header className="flex-shrink-0 bg-white border-b border-gray-200 py-5 px-5">
+        <div>
+          <h1 className="text-2xl font-bold text-stone-700">인원 관리</h1>
+        </div>
+        
+        {/* 탭 버튼들 */}
+        <div className="flex gap-2 mt-4">
+          <Button
+            variant={activeSection === 'teachers' ? 'default' : 'outline'}
+            size="sm"
+            className="text-xs px-3 py-2 h-8"
+            onClick={() => handleTabClick('teachers')}
+          >
+            선생 관리
+          </Button>
+          <Button
+            variant={activeSection === 'students' ? 'default' : 'outline'}
+            size="sm"
+            className="text-xs px-3 py-2 h-8"
+            onClick={() => handleTabClick('students')}
+          >
+            수강생 관리
+          </Button>
+        </div>
+      </header>
 
-      {/* 스크롤 가능한 섹션 컨텐츠 */}
-      <div className="flex-1 overflow-y-auto px-5 py-4">
-        {renderSectionContent()}
-      </div>
+      {/* 메인 콘텐츠 */}
+      <main className="flex-1 min-h-0 bg-white px-5 py-4">
+        <div className="h-full overflow-y-auto">
+          {renderSectionContent()}
+        </div>
+      </main>
     </div>
   );
 } 

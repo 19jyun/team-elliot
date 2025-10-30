@@ -10,7 +10,7 @@ interface PrincipalPaymentBoxProps {
 
 export function PrincipalPaymentBox({ principal, onCopy }: PrincipalPaymentBoxProps) {
   return (
-    <div className="border rounded-xl p-5 bg-white shadow flex flex-col items-start min-w-[320px] w-full flex-shrink-0 mx-auto text-sm py-5">
+    <div className="flex flex-col justify-center items-center bg-white border border-[#D9D9D9] rounded-lg mx-auto py-[30px] px-[15px] gap-3 w-[380px]">
       <BankInfo 
         bankName={principal.bankName}
         accountNumber={principal.accountNumber}

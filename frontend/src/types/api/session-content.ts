@@ -46,7 +46,7 @@ export interface ReorderSessionContentsResponse {
 }
 
 export interface CheckAttendanceRequest {
-  status: "ATTENDED" | "ABSENT";
+  status: "PRESENT" | "ABSENT";
 }
 
 export interface CheckAttendanceResponse {
@@ -60,6 +60,34 @@ export interface CheckAttendanceResponse {
     name: string;
     phoneNumber: string;
   };
+}
+
+export interface BatchCheckAttendanceRequest {
+  attendances: Array<{
+    enrollmentId: number;
+    status: "PRESENT" | "ABSENT";
+  }>;
+}
+
+// 출석 항목 타입을 별도로 export (재사용용)
+export type AttendanceItem = BatchCheckAttendanceRequest["attendances"][number];
+
+export interface BatchCheckAttendanceResponse {
+  sessionId: number;
+  totalCount: number;
+  results: Array<{
+    enrollmentId: number;
+    status: "PRESENT" | "ABSENT";
+    attendance: {
+      id: number;
+      sessionEnrollmentId: number;
+      classId: number;
+      studentId: number;
+      date: string;
+      status: "PRESENT" | "ABSENT";
+      note?: string | null;
+    };
+  }>;
 }
 
 // 새로운 포즈 리스트 업데이트 요청 타입

@@ -47,7 +47,17 @@ describe('ClassSessionService', () => {
     },
     payment: {
       create: jest.fn(),
+      update: jest.fn(),
       delete: jest.fn(),
+    },
+    attendance: {
+      create: jest.fn(),
+      update: jest.fn(),
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
+    },
+    principal: {
+      findUnique: jest.fn(),
     },
     $transaction: jest.fn(),
   };
@@ -271,7 +281,6 @@ describe('ClassSessionService', () => {
     it('should enroll in a session successfully', async () => {
       const sessionId = 1;
       const studentId = 1;
-      // const enrollment = { id: 1, sessionId, studentId };
 
       // 현재 시간을 고정 (2025-01-15 12:00:00)
       jest.useFakeTimers();
@@ -279,62 +288,64 @@ describe('ClassSessionService', () => {
 
       const sessionDate = new Date('2025-01-15');
       const startTime = new Date('1970-01-01T23:00:00');
-      prisma.classSession.findUnique.mockResolvedValue({
+      const mockSession = {
         id: sessionId,
         currentStudents: 5,
         date: sessionDate,
         startTime: startTime,
-        class: { maxStudents: 10 },
+        class: {
+          maxStudents: 10,
+          tuitionFee: 50000,
+        },
         enrollments: [],
-      });
+      };
+
+      prisma.classSession.findUnique.mockResolvedValue(mockSession);
       prisma.student.findUnique.mockResolvedValue({ id: studentId });
       prisma.sessionEnrollment.findUnique.mockResolvedValue(null); // 기존 수강 신청 없음
-      prisma.sessionEnrollment.update.mockResolvedValue({
-        id: 1,
-        status: 'CANCELLED',
-      });
-      prisma.sessionEnrollment.create.mockResolvedValue({
+
+      const mockEnrollment = {
         id: 2,
-        sessionId: 2,
-        studentId: 1,
+        sessionId: sessionId,
+        studentId: studentId,
+        status: 'PENDING',
         session: {
           class: {
             academyId: 1,
+            tuitionFee: 50000,
           },
         },
+      };
+
+      // 트랜잭션 모킹
+      prisma.$transaction.mockImplementation(async (callback) => {
+        const mockTx = {
+          ...mockPrisma,
+          sessionEnrollment: {
+            ...mockPrisma.sessionEnrollment,
+            create: jest.fn().mockResolvedValue(mockEnrollment),
+          },
+          payment: {
+            create: jest.fn().mockResolvedValue({
+              id: 1,
+              sessionEnrollmentId: mockEnrollment.id,
+              amount: 50000,
+              method: 'BANK_TRANSFER',
+              status: 'PENDING',
+            }),
+          },
+        };
+        return await callback(mockTx);
       });
 
       const result = await service.enrollSession(sessionId, studentId);
 
-      expect(result).toEqual({
-        id: 2,
-        sessionId: 2,
-        studentId: 1,
-        session: {
-          class: {
-            academyId: 1,
-          },
-        },
-      });
+      expect(result).toEqual(mockEnrollment);
       expect(prisma.classSession.findUnique).toHaveBeenCalledWith({
         where: { id: sessionId },
         include: { class: true },
       });
-      expect(prisma.sessionEnrollment.create).toHaveBeenCalledWith({
-        data: { sessionId, studentId, status: 'PENDING' },
-        include: {
-          session: {
-            include: {
-              class: {
-                include: {
-                  teacher: true,
-                },
-              },
-            },
-          },
-          student: true,
-        },
-      });
+      expect(prisma.$transaction).toHaveBeenCalled();
 
       // 타이머 복원
       jest.useRealTimers();
@@ -495,25 +506,38 @@ describe('ClassSessionService', () => {
   });
 
   describe('checkAttendance', () => {
-    it('should check attendance successfully', async () => {
+    it('should check attendance successfully (PRESENT)', async () => {
       const enrollmentId = 1;
-      const attendanceStatus = 'ATTENDED';
+      const attendanceStatus = 'PRESENT';
       const teacherId = 1;
-      // const result = { message: '출석이 기록되었습니다.' };
 
       const today = new Date();
-      prisma.sessionEnrollment.findUnique.mockResolvedValue({
+      const sessionDate = new Date(today);
+      sessionDate.setHours(0, 0, 0, 0);
+
+      const mockEnrollment = {
         id: enrollmentId,
+        studentId: 1,
+        classId: 1,
         session: {
+          id: 1,
+          classId: 1,
+          date: sessionDate,
           class: { teacherId: 1 },
-          date: today,
         },
-      });
+      };
+
+      prisma.sessionEnrollment.findUnique.mockResolvedValue(mockEnrollment);
       prisma.teacher.findUnique.mockResolvedValue({
         id: teacherId,
         userRefId: teacherId,
       });
-      prisma.sessionEnrollment.update.mockResolvedValue({ id: enrollmentId });
+      prisma.attendance.findFirst.mockResolvedValue(null); // 기존 출석 기록 없음
+      prisma.attendance.create.mockResolvedValue({
+        id: 1,
+        sessionEnrollmentId: enrollmentId,
+        status: attendanceStatus,
+      });
 
       const response = await service.checkAttendance(
         enrollmentId,
@@ -522,7 +546,7 @@ describe('ClassSessionService', () => {
         'TEACHER',
       );
 
-      expect(response).toEqual({ id: enrollmentId });
+      expect(response).toBeDefined();
       expect(prisma.teacher.findUnique).toHaveBeenCalledWith({
         where: { userRefId: teacherId },
         select: { id: true },
@@ -542,21 +566,114 @@ describe('ClassSessionService', () => {
           student: true,
         },
       });
-      expect(prisma.sessionEnrollment.update).toHaveBeenCalledWith({
-        where: { id: enrollmentId },
-        data: { status: attendanceStatus },
-        include: {
-          session: {
-            include: {
-              class: {
-                include: {
-                  teacher: true,
-                },
-              },
-            },
-          },
-          student: true,
+      expect(prisma.attendance.findFirst).toHaveBeenCalled();
+      expect(prisma.attendance.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          sessionEnrollmentId: enrollmentId,
+          classId: mockEnrollment.classId,
+          studentId: mockEnrollment.studentId,
+          status: attendanceStatus,
+        }),
+      });
+    });
+
+    it('should check attendance successfully (ABSENT)', async () => {
+      const enrollmentId = 1;
+      const attendanceStatus = 'ABSENT';
+      const teacherId = 1;
+
+      const today = new Date();
+      const sessionDate = new Date(today);
+      sessionDate.setHours(0, 0, 0, 0);
+
+      const mockEnrollment = {
+        id: enrollmentId,
+        studentId: 1,
+        classId: 1,
+        session: {
+          id: 1,
+          classId: 1,
+          date: sessionDate,
+          class: { teacherId: 1 },
         },
+      };
+
+      prisma.sessionEnrollment.findUnique.mockResolvedValue(mockEnrollment);
+      prisma.teacher.findUnique.mockResolvedValue({
+        id: teacherId,
+        userRefId: teacherId,
+      });
+      prisma.attendance.findFirst.mockResolvedValue(null);
+      prisma.attendance.create.mockResolvedValue({
+        id: 1,
+        sessionEnrollmentId: enrollmentId,
+        status: attendanceStatus,
+      });
+
+      const response = await service.checkAttendance(
+        enrollmentId,
+        attendanceStatus,
+        teacherId,
+        'TEACHER',
+      );
+
+      expect(response).toBeDefined();
+      expect(prisma.attendance.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          status: attendanceStatus,
+        }),
+      });
+    });
+
+    it('should update existing attendance record', async () => {
+      const enrollmentId = 1;
+      const attendanceStatus = 'PRESENT';
+      const teacherId = 1;
+
+      const today = new Date();
+      const sessionDate = new Date(today);
+      sessionDate.setHours(0, 0, 0, 0);
+
+      const mockEnrollment = {
+        id: enrollmentId,
+        studentId: 1,
+        classId: 1,
+        session: {
+          id: 1,
+          classId: 1,
+          date: sessionDate,
+          class: { teacherId: 1 },
+        },
+      };
+
+      const existingAttendance = {
+        id: 1,
+        sessionEnrollmentId: enrollmentId,
+        status: 'ABSENT',
+      };
+
+      prisma.sessionEnrollment.findUnique.mockResolvedValue(mockEnrollment);
+      prisma.teacher.findUnique.mockResolvedValue({
+        id: teacherId,
+        userRefId: teacherId,
+      });
+      prisma.attendance.findFirst.mockResolvedValue(existingAttendance);
+      prisma.attendance.update.mockResolvedValue({
+        ...existingAttendance,
+        status: attendanceStatus,
+      });
+
+      const response = await service.checkAttendance(
+        enrollmentId,
+        attendanceStatus,
+        teacherId,
+        'TEACHER',
+      );
+
+      expect(response).toBeDefined();
+      expect(prisma.attendance.update).toHaveBeenCalledWith({
+        where: { id: existingAttendance.id },
+        data: { status: attendanceStatus },
       });
     });
   });
@@ -584,21 +701,61 @@ describe('ClassSessionService', () => {
         },
       };
 
+      const mockCurrentEnrollment = {
+        id: enrollmentId,
+        studentId: 1,
+        session: {
+          startTime: new Date('2025-12-31T23:59:59'),
+          class: {
+            academyId: 1,
+          },
+        },
+      };
+
+      const mockNewEnrollment = {
+        id: 2,
+        sessionId: 2,
+        studentId: 1,
+        status: 'PENDING',
+        session: {
+          class: {
+            academyId: 1,
+            tuitionFee: 50000,
+          },
+        },
+      };
+
       prisma.sessionEnrollment.findUnique
-        .mockResolvedValueOnce({
-          id: enrollmentId,
-          studentId: 1,
-          session: { startTime: new Date('2025-12-31T23:59:59') },
-        })
+        .mockResolvedValueOnce(mockCurrentEnrollment)
         .mockResolvedValueOnce(null); // 새로운 세션에 대한 기존 등록 없음
       prisma.classSession.findUnique.mockResolvedValue({
         id: 2,
         currentStudents: 5,
+        startTime: new Date('2026-01-01T00:00:00'),
         class: { maxStudents: 10 },
         enrollments: [],
       });
+
+      // 트랜잭션 모킹
       prisma.$transaction.mockImplementation(async (callback) => {
-        return await callback(mockPrisma);
+        const mockTx = {
+          ...mockPrisma,
+          sessionEnrollment: {
+            ...mockPrisma.sessionEnrollment,
+            update: jest.fn().mockResolvedValue({ id: enrollmentId }),
+            create: jest.fn().mockResolvedValue(mockNewEnrollment),
+          },
+          payment: {
+            create: jest.fn().mockResolvedValue({
+              id: 1,
+              sessionEnrollmentId: mockNewEnrollment.id,
+              amount: 50000,
+              method: 'BANK_TRANSFER',
+              status: 'PENDING',
+            }),
+          },
+        };
+        return await callback(mockTx);
       });
 
       const response = await service.changeEnrollment(
@@ -607,41 +764,16 @@ describe('ClassSessionService', () => {
         studentId,
       );
 
-      expect(response).toEqual(result);
+      expect(response.message).toEqual(result.message);
+      expect(response.cancelledEnrollment).toBeDefined();
+      expect(response.newEnrollment).toBeDefined();
+      expect(response.newEnrollment.sessionId).toEqual(
+        result.newEnrollment.sessionId,
+      );
+      expect(response.newEnrollment.studentId).toEqual(
+        result.newEnrollment.studentId,
+      );
       expect(prisma.sessionEnrollment.findUnique).toHaveBeenCalledTimes(2);
-      expect(prisma.sessionEnrollment.findUnique).toHaveBeenNthCalledWith(1, {
-        where: { id: enrollmentId },
-        include: {
-          session: {
-            include: {
-              class: {
-                include: {
-                  teacher: true,
-                },
-              },
-            },
-          },
-          student: true,
-        },
-      });
-      expect(prisma.sessionEnrollment.findUnique).toHaveBeenNthCalledWith(2, {
-        where: {
-          studentId_sessionId: {
-            studentId: 1,
-            sessionId: 2,
-          },
-        },
-      });
-      expect(prisma.classSession.findUnique).toHaveBeenCalledWith({
-        where: { id: changeDto.newSessionId },
-        include: {
-          class: {
-            include: {
-              teacher: true,
-            },
-          },
-        },
-      });
     });
   });
 

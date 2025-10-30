@@ -42,6 +42,10 @@ export default function PrincipalProfilePage() {
     navigateToSubPage('bank-info')
   }
 
+  const handleAcademyManagementClick = () => {
+    navigateToSubPage('academy-management')
+  }
+
   const handleSettingsClick = () => {
     navigateToSubPage('settings')
   }
@@ -61,6 +65,11 @@ export default function PrincipalProfilePage() {
       label: '은행 정보',
       icon: '/icons/group.svg',
       onClick: handleBankInfoClick,
+    },
+    {
+      label: '학원 관리',
+      icon: '/icons/group.svg',
+      onClick: handleAcademyManagementClick,
     },
     {
       label: '설정',

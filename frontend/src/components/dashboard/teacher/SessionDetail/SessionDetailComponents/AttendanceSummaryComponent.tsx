@@ -8,6 +8,7 @@ import { useSessionContents, useBatchCheckAttendance } from '@/hooks/useSessionC
 import { TeacherSessionEnrollment } from '@/types/api/teacher'
 import type { ClassSessionWithCounts } from '@/types/api/class'
 import type { AttendanceStatus } from '@/types/api/common'
+import type { AttendanceItem } from '@/types/api/session-content'
 import { Checkbox } from '@mui/material'
 
 interface AttendanceSummaryComponentProps {
@@ -30,8 +31,8 @@ export function AttendanceSummaryComponent({ session }: AttendanceSummaryCompone
   const sessionId = session?.id || 0
   const { data: _sessionContents, isLoading: contentsLoading } = useSessionContents(sessionId)
   
-  // 일괄 출석 체크를 위한 훅
-  const batchCheckAttendanceMutation = useBatchCheckAttendance()
+  // 일괄 출석 체크를 위한 훅 (sessionId 전달)
+  const batchCheckAttendanceMutation = useBatchCheckAttendance(sessionId)
 
   // 수강생 정보 로드 (역할에 따라 다른 API 사용)
   const loadEnrollments = useCallback(async () => {
@@ -66,7 +67,7 @@ export function AttendanceSummaryComponent({ session }: AttendanceSummaryCompone
     setEnrollments(prev => 
       prev.map(enrollment => 
         enrollment.id === enrollmentId 
-          ? { ...enrollment, status: (isPresent ? 'ATTENDED' : 'ABSENT') as AttendanceStatus }
+          ? { ...enrollment, attendanceStatus: (isPresent ? 'PRESENT' : 'ABSENT') as AttendanceStatus }
           : enrollment
       )
     )
@@ -76,9 +77,9 @@ export function AttendanceSummaryComponent({ session }: AttendanceSummaryCompone
   const handleSaveAttendance = async () => {
     try {
       // 출석 데이터 준비
-      const attendanceData = enrollments.map(enrollment => ({
+      const attendanceData: AttendanceItem[] = enrollments.map(enrollment => ({
         enrollmentId: enrollment.id,
-        status: (enrollment.status as string) === 'ATTENDED' ? 'ATTENDED' : 'ABSENT' as "ATTENDED" | "ABSENT"
+        status: (enrollment.attendanceStatus as string) === 'PRESENT' ? 'PRESENT' : 'ABSENT' as "PRESENT" | "ABSENT"
       }))
       
       // 일괄 출석 체크 실행
@@ -126,7 +127,7 @@ export function AttendanceSummaryComponent({ session }: AttendanceSummaryCompone
               {/* 출석부 목록 */}
               <div className="space-y-3 mb-4">
                 {enrollments.map((enrollment) => {
-                  const isPresent = (enrollment.status as string) === 'ATTENDED'
+                  const isPresent = (enrollment.attendanceStatus as string) === 'PRESENT'
                   
                   return (
                     <div

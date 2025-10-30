@@ -9,8 +9,8 @@ import {
 } from "@/store/slices/principalSlice";
 import { extractErrorMessage } from "@/types/api/error";
 import {
-  getPrincipalAllEnrollments,
-  getPrincipalAllRefundRequests,
+  getPrincipalFilteredEnrollments,
+  getPrincipalFilteredRefundRequests,
   getPrincipalAllSessions,
 } from "@/api/principal";
 import { toast } from "sonner";
@@ -49,11 +49,11 @@ export function usePrincipalInitialization() {
         dispatch(setLoading(true));
         dispatch(setError(null));
 
-        // 실시간 업데이트가 필요한 데이터와 캘린더 데이터 로드
+        // 필터링된 데이터 로드 (백엔드에서 필터링됨)
         const [enrollmentsResponse, refundRequestsResponse, sessionsResponse] =
           await Promise.all([
-            getPrincipalAllEnrollments(),
-            getPrincipalAllRefundRequests(),
+            getPrincipalFilteredEnrollments(),
+            getPrincipalFilteredRefundRequests(),
             getPrincipalAllSessions(),
           ]);
 
