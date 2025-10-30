@@ -3,9 +3,10 @@ import { ClassSessionController } from './class-session.controller';
 import { ClassSessionService } from './class-session.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { SocketModule } from '../socket/socket.module';
+import { PushNotificationModule } from '../push-notification/push-notification.module';
 
 @Module({
-  imports: [PrismaModule, SocketModule],
+  imports: [PrismaModule, SocketModule, PushNotificationModule],
   controllers: [ClassSessionController],
   providers: [ClassSessionService],
   exports: [ClassSessionService],

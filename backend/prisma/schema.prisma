@@ -80,6 +80,7 @@ model User {
   notices          Notice[]
   processedRefunds RefundRequest[]   @relation("RefundProcessor")
   rejectionDetails RejectionDetail[]
+  deviceTokens     DeviceToken[]
   
   student          Student?
   teacher          Teacher?
@@ -411,6 +412,23 @@ model SessionContent {
 
   @@unique([sessionId, poseId, order])
   @@map("session_contents")
+  @@schema("public")
+}
+
+model DeviceToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  token     String   @unique @db.VarChar(500)
+  platform  String   @db.VarChar(20)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, token])
+  @@index([userId, isActive])
+  @@map("device_tokens")
   @@schema("public")
 }
 

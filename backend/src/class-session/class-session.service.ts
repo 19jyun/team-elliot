@@ -4,9 +4,11 @@ import {
   BadRequestException,
   ForbiddenException,
   ConflictException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SocketGateway } from '../socket/socket.gateway';
+import { PushNotificationService } from '../push-notification/push-notification.service';
 
 import {
   UpdateEnrollmentStatusDto,
@@ -17,9 +19,12 @@ import { ChangeEnrollmentDto } from './dto/change-enrollment.dto';
 
 @Injectable()
 export class ClassSessionService {
+  private readonly logger = new Logger(ClassSessionService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly socketGateway: SocketGateway,
+    private readonly pushNotificationService: PushNotificationService,
   ) {}
 
   /**
@@ -2680,23 +2685,58 @@ export class ClassSessionService {
 
     // 활동 로그 기록
 
-    // Socket 이벤트 발생 - 수강신청 승인 알림
+    // ===== 병렬 처리: Socket.io + Push Notification =====
     try {
-      // Student의 userRefId 조회
+      // Student의 userRefId 및 User ID 조회
       const student = await this.prisma.student.findUnique({
         where: { id: updatedEnrollment.studentId },
-        select: { userRefId: true },
+        select: {
+          userRefId: true,
+          user: {
+            select: {
+              id: true,
+            },
+          },
+        },
       });
 
-      if (student) {
-        this.socketGateway.notifyEnrollmentAccepted(
-          updatedEnrollment.id,
-          student.userRefId,
-          updatedEnrollment.sessionId,
-        );
+      if (student && student.user) {
+        const className = updatedEnrollment.session.class.className;
+
+        // A. Socket.io 이벤트 (실시간, 앱이 켜져있는 사용자)
+        const socketPromise = Promise.resolve().then(() => {
+          try {
+            this.socketGateway.notifyEnrollmentAccepted(
+              updatedEnrollment.id,
+              student.userRefId,
+              updatedEnrollment.sessionId,
+            );
+          } catch (error) {
+            this.logger.warn('Socket 알림 전송 실패', error);
+          }
+        });
+
+        // B. Push Notification (백그라운드, 앱이 꺼져있는 사용자)
+        const pushPromise = this.pushNotificationService
+          .sendToUser(student.user.id, {
+            title: '수강신청이 승인되었습니다',
+            body: `${className} 수업이 승인되었습니다`,
+            data: {
+              type: 'enrollment-approved',
+              enrollmentId: String(updatedEnrollment.id),
+              sessionId: String(updatedEnrollment.sessionId),
+              className: className,
+            },
+          })
+          .catch((error) => {
+            this.logger.warn('푸시 알림 전송 실패', error);
+          });
+
+        // 병렬 실행 (독립적이므로 await 필요 없음)
+        await Promise.all([socketPromise, pushPromise]);
       }
-    } catch (e) {
-      console.warn('Socket notifyEnrollmentAccepted failed:', e);
+    } catch (error) {
+      this.logger.error('알림 전송 실패 (비즈니스 로직에는 영향 없음)', error);
     }
 
     return updatedEnrollment;
@@ -2791,22 +2831,57 @@ export class ClassSessionService {
 
     // 활동 로그 기록
 
-    // Socket 이벤트 발생 - 수강신청 거절 알림
+    // ===== 병렬 처리: Socket.io + Push Notification =====
     try {
-      // Student의 userRefId 조회
+      // Student의 userRefId 및 User ID 조회
       const student = await this.prisma.student.findUnique({
         where: { id: result.studentId },
-        select: { userRefId: true },
+        select: {
+          userRefId: true,
+          user: {
+            select: {
+              id: true,
+            },
+          },
+        },
       });
 
-      if (student) {
-        this.socketGateway.notifyEnrollmentRejected(
-          result.id,
-          student.userRefId,
-        );
+      if (student && student.user) {
+        const className = result.session.class.className;
+
+        // A. Socket.io 이벤트 (실시간, 앱이 켜져있는 사용자)
+        const socketPromise = Promise.resolve().then(() => {
+          try {
+            this.socketGateway.notifyEnrollmentRejected(
+              result.id,
+              student.userRefId,
+            );
+          } catch (error) {
+            this.logger.warn('Socket 알림 전송 실패', error);
+          }
+        });
+
+        // B. Push Notification (백그라운드, 앱이 꺼져있는 사용자)
+        const pushPromise = this.pushNotificationService
+          .sendToUser(student.user.id, {
+            title: '수강신청이 거절되었습니다',
+            body: `${className} 수업 신청이 거절되었습니다`,
+            data: {
+              type: 'enrollment-rejected',
+              enrollmentId: String(result.id),
+              sessionId: String(result.sessionId),
+              className: className,
+            },
+          })
+          .catch((error) => {
+            this.logger.warn('푸시 알림 전송 실패', error);
+          });
+
+        // 병렬 실행 (독립적이므로 await 필요 없음)
+        await Promise.all([socketPromise, pushPromise]);
       }
-    } catch (e) {
-      console.warn('Socket notifyEnrollmentRejected failed:', e);
+    } catch (error) {
+      this.logger.error('알림 전송 실패 (비즈니스 로직에는 영향 없음)', error);
     }
 
     return result;
