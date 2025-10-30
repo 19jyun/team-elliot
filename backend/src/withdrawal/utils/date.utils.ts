@@ -24,4 +24,3 @@ export function addThreeYears(date: Date): Date {
 export function addFiveYears(date: Date): Date {
   return addYears(date, 5);
 }
-

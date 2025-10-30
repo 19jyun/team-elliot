@@ -104,7 +104,7 @@ export class TestApp {
         // 2. 거절 상세 정보 (User 참조)
         this.prisma.rejectionDetail.deleteMany(),
 
-        // 3. 결제 정보 (SessionEnrollment, Student, Enrollment 참조)
+        // 3. 결제 정보 (SessionEnrollment, Student 참조)
         this.prisma.payment.deleteMany(),
 
         // 4. 세션 수강신청 (ClassSession, Student 참조)
@@ -113,49 +113,40 @@ export class TestApp {
         // 5. 세션 내용 (ClassSession, BalletPose 참조)
         this.prisma.sessionContent.deleteMany(),
 
-        // 6. 출석 정보 (Enrollment, Class, Student 참조)
+        // 6. 출석 정보 (SessionEnrollment, Class, Student 참조)
         this.prisma.attendance.deleteMany(),
 
-        // 7. 수강신청 (Class, Student 참조)
-        this.prisma.enrollment.deleteMany(),
-
-        // 8. 공지사항 (User, Class 참조)
+        // 7. 공지사항 (User, Class 참조)
         this.prisma.notice.deleteMany(),
 
-        // 9. 클래스 세션 (Class 참조)
+        // 8. 클래스 세션 (Class 참조)
         this.prisma.classSession.deleteMany(),
 
-        // 10. 클래스 (Teacher, Academy, ClassDetail 참조)
+        // 9. 클래스 (Teacher, Academy, ClassDetail 참조)
         this.prisma.class.deleteMany(),
 
-        // 11. 클래스 상세 정보 (Teacher 참조)
+        // 10. 클래스 상세 정보 (Teacher 참조)
         this.prisma.classDetail.deleteMany(),
 
-        // 12. 학원 가입 신청 (Teacher, Academy 참조)
-        this.prisma.academyJoinRequest.deleteMany(),
-
-        // 13. 학원 생성 신청 (Teacher 참조)
-        this.prisma.academyCreationRequest.deleteMany(),
-
-        // 14. 학생-학원 관계 (Student, Academy 참조)
+        // 11. 학생-학원 관계 (Student, Academy 참조)
         this.prisma.studentAcademy.deleteMany(),
 
-        // 15. 학생 (User 참조)
+        // 13. 학생 (User 참조)
         this.prisma.student.deleteMany(),
 
-        // 16. 강사 (Academy 참조)
+        // 14. 강사 (Academy 참조)
         this.prisma.teacher.deleteMany(),
 
-        // 17. 원장 (Academy 참조)
+        // 15. 원장 (Academy 참조)
         this.prisma.principal.deleteMany(),
 
-        // 18. 탈퇴 이력 (독립적)
+        // 16. 탈퇴 이력 (독립적)
         this.prisma.withdrawalHistory.deleteMany(),
 
-        // 19. 학원 (독립적)
+        // 17. 학원 (독립적)
         this.prisma.academy.deleteMany(),
 
-        // 20. 사용자 (독립적, 마지막)
+        // 18. 사용자 (독립적, 마지막)
         this.prisma.user.deleteMany(),
       ]);
     } catch (error) {
@@ -173,13 +164,10 @@ export class TestApp {
           await this.prisma.sessionEnrollment.deleteMany();
           await this.prisma.sessionContent.deleteMany();
           await this.prisma.attendance.deleteMany();
-          await this.prisma.enrollment.deleteMany();
           await this.prisma.notice.deleteMany();
           await this.prisma.classSession.deleteMany();
           await this.prisma.class.deleteMany();
           await this.prisma.classDetail.deleteMany();
-          await this.prisma.academyJoinRequest.deleteMany();
-          await this.prisma.academyCreationRequest.deleteMany();
           await this.prisma.studentAcademy.deleteMany();
           await this.prisma.student.deleteMany();
           await this.prisma.teacher.deleteMany();
@@ -267,19 +255,19 @@ export class TestApp {
       const env = { ...process.env };
       env.DATABASE_URL = this.schemaManager.getSchemaUrl(this.schema);
 
-      // Prisma migrate 실행
-      childProcess.execSync('npx prisma migrate deploy', {
-        stdio: 'inherit',
-        env,
-        cwd: process.cwd(),
-      });
-
-      console.log(`✅ Migrations applied to schema: ${this.schema}`);
-    } catch (error) {
-      console.error(
-        `❌ Failed to run migrations for schema ${this.schema}:`,
-        error,
+      // 테스트 환경에서는 prisma db push를 사용 (마이그레이션 히스토리 없이 스키마 동기화)
+      childProcess.execSync(
+        'npx prisma db push --accept-data-loss --skip-generate',
+        {
+          stdio: 'inherit',
+          env,
+          cwd: process.cwd(),
+        },
       );
+
+      console.log(`✅ Schema synchronized: ${this.schema}`);
+    } catch (error) {
+      console.error(`❌ Failed to sync schema ${this.schema}:`, error);
       throw error;
     }
   }

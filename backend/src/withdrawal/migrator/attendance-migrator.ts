@@ -1,4 +1,3 @@
-import { Prisma } from '@prisma/client';
 import { anonymizeText } from '../anonymizer/anonymization-rules';
 import { addThreeYears } from '../utils/date.utils';
 

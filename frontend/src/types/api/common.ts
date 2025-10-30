@@ -18,8 +18,8 @@ export type EnrollmentStatus =
   | "REFUND_REJECTED_CONFIRMED"
   | AttendanceStatus;
 
-// 출석 상태 타입 (백엔드 SessionEnrollment.status와 일치)
-export type AttendanceStatus = "ATTENDED" | "ABSENT";
+// 출석 상태 타입 (백엔드 Attendance.status와 일치)
+export type AttendanceStatus = "PRESENT" | "ABSENT";
 
 // 환불 상태 타입
 export type RefundStatusType = "REFUND_REQUESTED" | "APPROVED" | "REJECTED";

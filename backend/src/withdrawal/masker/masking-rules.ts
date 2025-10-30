@@ -31,10 +31,7 @@ export interface MaskedUserData {
   name: string;
 }
 
-export function createMaskedUserData(
-  userId: number,
-  originalUserId: string,
-): MaskedUserData {
+export function createMaskedUserData(userId: number): MaskedUserData {
   return {
     userId: `WITHDRAWN_USER_${userId}`,
     password: hashRandomPassword(),
@@ -58,10 +55,7 @@ export interface MaskedStudentData {
   refundBankName: null;
 }
 
-export function createMaskedStudentData(
-  studentId: number,
-  originalUserId: string,
-): MaskedStudentData {
+export function createMaskedStudentData(studentId: number): MaskedStudentData {
   return {
     userId: `WITHDRAWN_STUDENT_${studentId}`,
     password: hashRandomPassword(),

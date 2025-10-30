@@ -88,7 +88,7 @@ export function EnrollmentModificationContainer({ classId, month }: EnrollmentMo
       isAlreadyEnrolled: session.isAlreadyEnrolled,
       enrollment: session.enrollment ? {
         id: session.enrollment.id,
-        status: session.enrollment.status === "ATTENDED" || session.enrollment.status === "ABSENT" 
+        status: session.enrollment.status === "PRESENT" || session.enrollment.status === "ABSENT" 
           ? "CONFIRMED" // 출석 상태는 CONFIRMED로 변환
           : session.enrollment.status as "PENDING" | "CONFIRMED" | "CANCELLED" | "REJECTED" | "REFUND_REQUESTED" | "REFUND_CANCELLED" | "TEACHER_CANCELLED" | "REFUND_REJECTED_CONFIRMED",
         enrolledAt: session.enrollment.enrolledAt,

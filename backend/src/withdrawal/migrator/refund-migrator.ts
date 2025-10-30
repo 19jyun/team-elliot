@@ -29,7 +29,6 @@ export interface RefundRequestWithRelations {
   processedAt: Date | null;
   cancelledAt: Date | null;
   sessionEnrollment: {
-    enrollmentId: number | null;
     session: {
       classId: number;
       class: {
@@ -94,8 +93,7 @@ export function transformRefundToAnonymized(
   return {
     anonymousUserId,
     sessionEnrollmentReference: refund.sessionEnrollmentId.toString(),
-    enrollmentReference:
-      refund.sessionEnrollment.enrollmentId?.toString() || null,
+    enrollmentReference: null, // SessionEnrollment는 Enrollment와 별개이며 직접 연결되지 않음
     academyId: refund.sessionEnrollment.session.class.academyId,
     classId: refund.sessionEnrollment.session.classId,
     reason: refund.reason, // 카테고리만 저장 (개인정보 제거)

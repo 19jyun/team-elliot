@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
 import { createAnonymizedUser } from './migrator/anonymized-user.migrator';
 import { migratePayments } from './migrator/payment-migrator';
 import { migrateRefunds } from './migrator/refund-migrator';
@@ -95,7 +94,7 @@ export class WithdrawalService {
               },
             },
           },
-        }) as any, // 타입 단언 (Prisma가 enrollmentId를 포함하는 타입을 정확히 추론하지 못함)
+        }) as any, // 타입 단언 (Prisma 타입 추론 한계)
 
         // SessionEnrollment 조회 (session 포함)
         this.prisma.sessionEnrollment.findMany({
@@ -166,17 +165,14 @@ export class WithdrawalService {
       );
 
       // [6] User 테이블 마스킹
-      const maskedUserData = createMaskedUserData(userId, user.userId);
+      const maskedUserData = createMaskedUserData(userId);
       await tx.user.update({
         where: { id: userId },
         data: maskedUserData,
       });
 
       // [7] Student 테이블 마스킹
-      const maskedStudentData = createMaskedStudentData(
-        student.id,
-        student.userId,
-      );
+      const maskedStudentData = createMaskedStudentData(student.id);
       await tx.student.update({
         where: { id: student.id },
         data: maskedStudentData,

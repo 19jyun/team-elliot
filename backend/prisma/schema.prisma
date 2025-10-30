@@ -1,6 +1,7 @@
 generator client {
-  provider = "prisma-client-js"
-  binaryTargets = ["native", "linux-musl", "linux-musl-openssl-3.0.x"]
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "linux-musl", "linux-musl-openssl-3.0.x"]
+  previewFeatures = ["multiSchema"]
 }
 
 datasource db {
@@ -22,6 +23,7 @@ model Academy {
   principal    Principal?
   students     StudentAcademy[]
   teachers     Teacher[]
+  joinRequests AcademyJoinRequest[]
 
   @@map("academies")
   @@schema("public")
@@ -107,6 +109,7 @@ model Student {
   payments           Payment[]
   refundRequests     RefundRequest[]
   sessionEnrollments SessionEnrollment[]
+  enrollments        Enrollment[]
   academies          StudentAcademy[]
   
   user               User                @relation(fields: [userRefId], references: [id])
@@ -133,6 +136,7 @@ model Teacher {
   updatedAt         DateTime                 @updatedAt
   academyId         Int?                     @map("academy_id")
   creationRequests  AcademyCreationRequest[]
+  joinRequests      AcademyJoinRequest[]
   classDetails      ClassDetail[]
   classes           Class[]
   academy           Academy?                 @relation(fields: [academyId], references: [id])
@@ -163,6 +167,7 @@ model Class {
   academyId       Int            @map("academy_id")
   attendances     Attendance[]
   classSessions   ClassSession[]
+  enrollments     Enrollment[]
   academy         Academy        @relation(fields: [academyId], references: [id])
   classDetail     ClassDetail?   @relation(fields: [classDetailId], references: [id])
   teacher         Teacher        @relation(fields: [teacherId], references: [id])
@@ -184,6 +189,21 @@ model ClassDetail {
   classes       Class[]
 
   @@map("class_details")
+  @@schema("public")
+}
+
+model Enrollment {
+  id          Int          @id @default(autoincrement())
+  studentId   Int          @map("student_id")
+  classId     Int          @map("class_id")
+  status      String       @default("PENDING")
+  cancelledAt DateTime?
+  enrolledAt  DateTime     @default(now())
+  class       Class        @relation(fields: [classId], references: [id])
+  student     Student      @relation(fields: [studentId], references: [id])
+
+  @@unique([classId, studentId])
+  @@map("enrollments")
   @@schema("public")
 }
 
@@ -347,6 +367,24 @@ model AcademyCreationRequest {
   @@schema("public")
 }
 
+model AcademyJoinRequest {
+  id        Int                  @id @default(autoincrement())
+  teacherId Int                  @map("teacher_id")
+  academyId Int                  @map("academy_id")
+  status    AcademyRequestStatus @default(PENDING)
+  message   String?
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+  academy   Academy              @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  teacher   Teacher              @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, academyId])
+  @@index([academyId, status])
+  @@index([teacherId, status])
+  @@map("academy_join_requests")
+  @@schema("public")
+}
+
 model BalletPose {
   id              Int              @id @default(autoincrement())
   name            String           @unique @db.VarChar(100)
@@ -442,6 +480,7 @@ model AnonymizedUser {
   // 조회 횟수 (감사 목적)
   
   // 관계
+  enrollments        AnonymizedEnrollment[]
   payments           AnonymizedPayment[]
   refunds            AnonymizedRefund[]
   attendances        AnonymizedAttendance[]
@@ -456,7 +495,61 @@ model AnonymizedUser {
 }
 
 // ============================================================================
-// 2. 익명화된 세션 수강 신청 기록 (5년 보관)
+// 2. 익명화된 수강 신청 기록 (5년 보관)
+// ============================================================================
+
+/// 수강 신청 내역 (전자상거래법: 계약·청약 철회 기록)
+/// 보관 기간: 최대 5년
+model AnonymizedEnrollment {
+  id                  Int      @id @default(autoincrement())
+  
+  // 익명화된 사용자 참조
+  anonymousUserId     Int      @map("anonymous_user_id")
+  anonymousUser       AnonymizedUser @relation(fields: [anonymousUserId], references: [id], onDelete: Cascade)
+  
+  // 수강 신청 정보 (개인정보 제외)
+  classId             Int      @map("class_id")
+  // Class 테이블 참조 (학원, 강사 정보 확인용)
+  
+  academyId           Int      @map("academy_id")
+  // Academy 테이블 참조
+  
+  className           String   @map("class_name") @db.VarChar(200)
+  // 클래스명 snapshot (Class 삭제 대비)
+  
+  // 수강 상태
+  status              EnrollmentStatus
+  // PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED
+  
+  // 계약 일시
+  enrolledAt          DateTime @map("enrolled_at")
+  approvedAt          DateTime? @map("approved_at")
+  cancelledAt         DateTime? @map("cancelled_at")
+  completedAt         DateTime? @map("completed_at")
+  
+  // 금액 정보
+  tuitionFee          Decimal  @map("tuition_fee") @db.Decimal(10, 2)
+  paidAmount          Decimal? @map("paid_amount") @db.Decimal(10, 2)
+  refundedAmount      Decimal? @map("refunded_amount") @db.Decimal(10, 2)
+  
+  // 법적 보관 정보
+  dataRetentionUntil  DateTime @map("data_retention_until")
+  createdAt           DateTime @default(now()) @map("created_at")
+  
+  // 원본 데이터 참조 (삭제 전 ID 보관)
+  originalEnrollmentId Int     @map("original_enrollment_id")
+  
+  @@index([anonymousUserId])
+  @@index([dataRetentionUntil])
+  @@index([status])
+  @@index([enrolledAt])
+  @@index([academyId])
+  @@map("anonymized_enrollments")
+  @@schema("retention")
+}
+
+// ============================================================================
+// 3. 익명화된 세션 수강 신청 기록 (5년 보관)
 // ============================================================================
 
 /// 단일 세션(회차별) 수강 신청 내역
@@ -504,7 +597,7 @@ model AnonymizedSessionEnrollment {
 }
 
 // ============================================================================
-// 3. 익명화된 결제 기록 (5년 보관)
+// 4. 익명화된 결제 기록 (5년 보관)
 // ============================================================================
 
 /// 결제 내역 (전자상거래법: 대금 결제 기록)
@@ -563,7 +656,7 @@ model AnonymizedPayment {
 }
 
 // ============================================================================
-// 4. 익명화된 환불 기록 (5년 보관)
+// 5. 익명화된 환불 기록 (5년 보관)
 // ============================================================================
 
 /// 환불 신청 및 처리 내역 (전자상거래법: 계약 철회 기록)
@@ -632,7 +725,7 @@ model AnonymizedRefund {
 }
 
 // ============================================================================
-// 5. 익명화된 출석 기록 (3년 보관 권장)
+// 6. 익명화된 출석 기록 (3년 보관 권장)
 // ============================================================================
 
 /// 출석 체크 기록 (학습 내역 확인 및 증빙용)
@@ -648,8 +741,8 @@ model AnonymizedAttendance {
   classId             Int      @map("class_id")
   academyId           Int      @map("academy_id")
   
-  sessionEnrollmentReference String   @map("session_enrollment_reference") @db.VarChar(50)
-  // 세션 수강신청 참조 (SessionEnrollment ID)
+  enrollmentReference String   @map("enrollment_reference") @db.VarChar(50)
+  // 수강신청 참조
   
   // 출석 일자 및 상태
   attendanceDate      DateTime @map("attendance_date")
@@ -679,7 +772,7 @@ model AnonymizedAttendance {
 }
 
 // ============================================================================
-// 6. 익명화된 소비자 분쟁 처리 기록 (3년 보관)
+// 7. 익명화된 소비자 분쟁 처리 기록 (3년 보관)
 // ============================================================================
 
 /// 소비자 불만 및 분쟁 처리 기록 (소비자보호법)
@@ -907,8 +1000,11 @@ enum RefundStatus {
 }
 
 enum AttendanceStatus {
+  PENDING    // 처리 전
   PRESENT    // 출석
   ABSENT     // 결석
+  LATE       // 지각
+  EXCUSED    // 인정 결석
   
   @@schema("retention")
 }

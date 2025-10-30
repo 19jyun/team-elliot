@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { AuthService } from '../auth.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { WithdrawalService } from '../../withdrawal/withdrawal.service';
 import * as bcrypt from 'bcrypt';
 import { SignupDto } from '../dto/signup.dto';
 
@@ -67,6 +68,10 @@ describe('AuthService', () => {
     sign: jest.fn(),
   };
 
+  const mockWithdrawalService = {
+    withdrawStudent: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -78,6 +83,10 @@ describe('AuthService', () => {
         {
           provide: JwtService,
           useValue: mockJwtService,
+        },
+        {
+          provide: WithdrawalService,
+          useValue: mockWithdrawalService,
         },
       ],
     }).compile();
@@ -549,62 +558,27 @@ describe('AuthService', () => {
   });
 
   describe('withdrawal', () => {
-    it('should delete student account successfully', async () => {
+    it('should call withdrawalService.withdrawStudent successfully', async () => {
       const userId = 3;
       const reason = '개인적인 이유';
-      const mockUser = {
-        id: userId,
-        userId: 'student123',
-        name: 'Student User',
-        role: 'STUDENT',
-      };
-      const mockStudentData = {
-        id: 3,
-        userRefId: userId,
-        userId: 'student123',
-        name: 'Student User',
-      };
 
-      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
-      mockPrismaService.student.findUnique.mockResolvedValue(mockStudentData);
-      mockPrismaService.withdrawalHistory.create.mockResolvedValue({});
-      mockPrismaService.$transaction.mockResolvedValue([]);
+      mockWithdrawalService.withdrawStudent.mockResolvedValue(undefined);
 
       await service.withdrawal(userId, reason);
 
-      expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
-        where: { id: userId },
-      });
-      expect(mockPrismaService.student.findUnique).toHaveBeenCalledWith({
-        where: { userRefId: userId },
-      });
-      expect(mockPrismaService.withdrawalHistory.create).toHaveBeenCalledWith({
-        data: {
-          userId: mockUser.userId,
-          userName: mockUser.name,
-          userRole: 'STUDENT',
-          reason: reason,
-          reasonCategory: 'OTHER',
-        },
-      });
-      expect(mockPrismaService.$transaction).toHaveBeenCalledWith([
-        mockPrismaService.enrollment.deleteMany({
-          where: { studentId: mockStudentData.id },
-        }),
-        mockPrismaService.student.delete({
-          where: { id: mockStudentData.id },
-        }),
-        mockPrismaService.user.delete({
-          where: { id: userId },
-        }),
-      ]);
+      expect(mockWithdrawalService.withdrawStudent).toHaveBeenCalledWith(
+        userId,
+        reason,
+      );
     });
 
     it('should throw NotFoundException for non-existent student', async () => {
       const userId = 999;
       const reason = '개인적인 이유';
 
-      mockPrismaService.user.findUnique.mockResolvedValue(null);
+      mockWithdrawalService.withdrawStudent.mockRejectedValue(
+        new NotFoundException('사용자를 찾을 수 없습니다.'),
+      );
 
       await expect(service.withdrawal(userId, reason)).rejects.toThrow(
         NotFoundException,

@@ -1,4 +1,3 @@
-import { Prisma } from '@prisma/client';
 import { addFiveYears } from '../utils/date.utils';
 
 // Retention 스키마의 Enum 타입 정의

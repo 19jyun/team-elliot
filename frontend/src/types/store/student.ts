@@ -1,6 +1,10 @@
 // Student 전용 데이터 타입 (Redux에서 관리하는 데이터만)
 
 import type { ClassSession as Session } from "@/types/api/class-session";
+import type {
+  EnrollmentHistory,
+  CancellationHistory,
+} from "@/types/api/student";
 
 interface StudentData {
   // 수강 신청/결제 내역
@@ -52,66 +56,7 @@ export interface StudentClass {
   };
 }
 
-// 수강 신청/결제 내역 타입
-interface EnrollmentHistory {
-  id: number;
-  sessionId: number;
-  session: {
-    id: number;
-    date: string;
-    startTime: string;
-    endTime: string;
-    class: {
-      id: number;
-      className: string;
-      teacherName: string;
-    };
-  };
-  enrolledAt: string;
-  status:
-    | "PENDING"
-    | "CONFIRMED"
-    | "REJECTED"
-    | "REFUND_REQUESTED"
-    | "REFUND_REJECTED_CONFIRMED"
-    | "ATTENDED"
-    | "ABSENT";
-  description?: string;
-  // 거절 사유 정보
-  enrollmentRejection?: RejectionDetail;
-  refundRejection?: RejectionDetail;
-}
-
-// 환불/취소 내역 타입
-interface CancellationHistory {
-  id: number;
-  sessionId: number;
-  className: string;
-  teacherName: string;
-  sessionDate: string;
-  sessionTime: string;
-  refundAmount: number;
-  status: "REFUND_REQUESTED" | "APPROVED" | "REJECTED";
-  reason: string;
-  detailedReason?: string;
-  requestedAt: string;
-  processedAt?: string;
-  cancelledAt?: string;
-  // 거절 사유 정보
-  rejectionDetail?: RejectionDetail;
-}
-
-// 거절 사유 타입
-interface RejectionDetail {
-  id: number;
-  reason: string;
-  detailedReason?: string;
-  rejectedAt: string;
-  rejector: {
-    id: number;
-    name: string;
-  };
-}
+// EnrollmentHistory와 CancellationHistory는 api/student.ts에서 import하여 사용
 
 // Student 상태 타입
 export interface StudentState {

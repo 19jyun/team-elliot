@@ -1,4 +1,3 @@
-import { Prisma } from '@prisma/client';
 import { generateAnonymousId } from '../anonymizer/anonymization-rules';
 import { addFiveYears } from '../utils/date.utils';
 

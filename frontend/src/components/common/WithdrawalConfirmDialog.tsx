@@ -52,7 +52,8 @@ export function WithdrawalConfirmDialog({
 
         <p className="text-gray-600 mb-6">
           정말로 탈퇴하시겠습니까?
-          <br />이 작업은 되돌릴 수 없습니다.
+                  <br />이 작업은 되돌릴 수 없습니다.
+                  <br />탈퇴 후 회원님의 수업 내역, 환불 내역, 출석 등 모든 정보가 삭제됩니다.
         </p>
 
         <div className="flex gap-3">
