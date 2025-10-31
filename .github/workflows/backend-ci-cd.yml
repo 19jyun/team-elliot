@@ -68,7 +68,7 @@ jobs:
 
       - name: Load environment variables from DOTENV
         env:
-          DOTENV: ${{ vars.DOTENV }}
+          DOTENV: ${{ secrets.DOTENV }}
         run: |
           if [ -n "$DOTENV" ]; then
             echo "Loading environment variables from DOTENV..."
