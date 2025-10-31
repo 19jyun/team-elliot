@@ -3,6 +3,7 @@ import { RefundService } from '../refund.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ClassSessionService } from '../../class-session/class-session.service';
 import { SocketGateway } from '../../socket/socket.gateway';
+import { PushNotificationService } from '../../push-notification/push-notification.service';
 import { RefundRequestDto, RefundReason } from '../dto/refund-request.dto';
 // import { RefundProcessDto } from '../dto/refund-process.dto';
 import {
@@ -50,6 +51,10 @@ describe('RefundService', () => {
     notifyNewRefundRequest: jest.fn(),
   };
 
+  const mockPushNotificationService = {
+    sendToUser: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -57,6 +62,10 @@ describe('RefundService', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: ClassSessionService, useValue: mockClassSessionService },
         { provide: SocketGateway, useValue: mockSocketGateway },
+        {
+          provide: PushNotificationService,
+          useValue: mockPushNotificationService,
+        },
       ],
     }).compile();
     service = module.get<RefundService>(RefundService);
