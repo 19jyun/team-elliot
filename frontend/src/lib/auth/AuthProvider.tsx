@@ -252,6 +252,12 @@ export const SessionProvider = ({ children, session: initialSession }: SessionPr
   // 로그아웃 함수 (NextAuth signOut과 호환)
   const signOut = useCallback(async (_options?: SignOutOptions) => {
     try {
+      // 로그아웃 전에 디바이스 토큰 완전 삭제
+      const token = pushNotificationService.getToken();
+      if (token) {
+        await pushNotificationService.deleteTokenFromBackend(token);
+      }
+      
       await logout();
     } catch (error) {
       console.error("로그아웃 실패:", error);
