@@ -1837,7 +1837,7 @@ export class ClassSessionService {
 
     // 응답 형식 변환 (Attendance 기반)
     const enrollments = confirmedEnrollments.map((enrollment) => {
-      const attendance = attendanceMap.get(enrollment.id);
+      const attendance = attendanceMap.get(enrollment.id) as any;
       return {
         id: enrollment.id,
         studentId: enrollment.studentId,
