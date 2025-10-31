@@ -62,7 +62,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "24"
           cache: "npm"
           cache-dependency-path: backend/package-lock.json
 
@@ -142,7 +142,7 @@ jobs:
         working-directory: ./backend
         run: |
           echo "Verifying database connection..."
-          npx prisma db execute --stdin <<< "SELECT version();"
+          npx prisma db execute --url "$DATABASE_URL" --stdin <<< "SELECT version();"
           echo "Database connection verified!"
 
       - name: Create test schemas for parallel testing
@@ -152,7 +152,7 @@ jobs:
           # Jest Worker별 스키마 생성 (최대 4개 worker)
           for i in {1..4}; do
             echo "Creating schema test_worker_$i"
-            npx prisma db execute --stdin <<< "CREATE SCHEMA IF NOT EXISTS test_worker_$i;"
+            npx prisma db execute --url "$DATABASE_URL" --stdin <<< "CREATE SCHEMA IF NOT EXISTS test_worker_$i;"
           done
           echo "Test schemas created successfully!"
 
@@ -182,7 +182,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "24"
           cache: "npm"
           cache-dependency-path: backend/package-lock.json
 
@@ -214,7 +214,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "24"
           cache: "npm"
           cache-dependency-path: backend/package-lock.json
 
