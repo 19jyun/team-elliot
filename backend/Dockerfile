@@ -3,8 +3,9 @@ FROM node:24-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files and npm config
 COPY package*.json ./
+COPY .npmrc ./
 COPY prisma ./prisma/
 COPY scripts ./scripts/
 
@@ -32,8 +33,9 @@ RUN apk add --no-cache openssl postgresql-client
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nestjs -u 1001
 
-# Copy package files
+# Copy package files and npm config
 COPY package*.json ./
+COPY .npmrc ./
 
 # Install only production dependencies
 RUN npm ci --only=production && npm cache clean --force
