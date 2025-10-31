@@ -51,15 +51,15 @@ export class DeviceTokenResponseDto {
 
   @ApiProperty({
     example: '2025-10-31T12:00:00.000Z',
-    description: '생성 일시 (ISO 8601 문자열)',
+    description: '생성 일시 (JSON 응답 시 ISO 8601 문자열로 자동 변환)',
   })
-  createdAt: string;
+  createdAt: Date;
 
   @ApiProperty({
     example: '2025-10-31T12:00:00.000Z',
-    description: '수정 일시 (ISO 8601 문자열)',
+    description: '수정 일시 (JSON 응답 시 ISO 8601 문자열로 자동 변환)',
   })
-  updatedAt: string;
+  updatedAt: Date;
 }
 
 export class DeviceOperationResponseDto {
