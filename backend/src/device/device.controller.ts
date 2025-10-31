@@ -1,4 +1,11 @@
-import { Controller, Post, Delete, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -9,10 +16,12 @@ import { DeviceService } from './device.service';
 import {
   RegisterDeviceDto,
   UnregisterDeviceDto,
+  DeviceTokenResponseDto,
+  DeviceOperationResponseDto,
 } from './dto/register-device.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { User } from '@prisma/client';
+import { AuthenticatedUser } from '../auth/types/auth.types';
 
 @ApiTags('devices')
 @Controller('devices')
@@ -26,26 +35,47 @@ export class DeviceController {
   @ApiResponse({
     status: 201,
     description: '디바이스 토큰이 성공적으로 등록되었습니다.',
+    type: DeviceTokenResponseDto,
   })
   @ApiResponse({ status: 401, description: '인증되지 않은 사용자입니다.' })
   async registerDevice(
-    @CurrentUser() user: User,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() dto: RegisterDeviceDto,
-  ) {
-    return this.deviceService.saveToken(user.id, dto.token, dto.platform);
+  ): Promise<DeviceTokenResponseDto> {
+    return this.deviceService.saveToken(
+      parseInt(user.id),
+      dto.token,
+      dto.platform,
+    );
+  }
+
+  @Patch('deactivate')
+  @ApiOperation({ summary: '디바이스 토큰 비활성화 (토글 OFF)' })
+  @ApiResponse({
+    status: 200,
+    description: '디바이스 토큰이 비활성화되었습니다.',
+    type: DeviceOperationResponseDto,
+  })
+  @ApiResponse({ status: 401, description: '인증되지 않은 사용자입니다.' })
+  async deactivateDevice(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UnregisterDeviceDto,
+  ): Promise<DeviceOperationResponseDto> {
+    return this.deviceService.deactivateToken(parseInt(user.id), dto.token);
   }
 
   @Delete('unregister')
-  @ApiOperation({ summary: '디바이스 토큰 해제' })
+  @ApiOperation({ summary: '디바이스 토큰 완전 삭제 (로그아웃)' })
   @ApiResponse({
     status: 200,
-    description: '디바이스 토큰이 성공적으로 해제되었습니다.',
+    description: '디바이스 토큰이 완전히 삭제되었습니다.',
+    type: DeviceOperationResponseDto,
   })
   @ApiResponse({ status: 401, description: '인증되지 않은 사용자입니다.' })
   async unregisterDevice(
-    @CurrentUser() user: User,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() dto: UnregisterDeviceDto,
-  ) {
-    return this.deviceService.removeToken(user.id, dto.token);
+  ): Promise<DeviceOperationResponseDto> {
+    return this.deviceService.deleteToken(parseInt(user.id), dto.token);
   }
 }

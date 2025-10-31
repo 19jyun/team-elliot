@@ -3,7 +3,11 @@ import {
   checkNotificationPermissions,
   requestNotificationPermissions,
 } from "@/capacitor/notifications/notificationService";
-import { registerDevice, unregisterDevice } from "@/api/device";
+import {
+  registerDevice,
+  deactivateDevice,
+  unregisterDevice,
+} from "@/api/device";
 import { SessionManager } from "@/lib/auth/AuthProvider";
 import { Capacitor } from "@capacitor/core";
 
@@ -253,7 +257,12 @@ class PushNotificationService {
     this.saveUserSettings();
 
     if (!enabled) {
-      // 비활성화 시 에러 초기화
+      // 비활성화 시 백엔드에 알림
+      if (this.status.token) {
+        this.deactivateTokenInBackend(this.status.token).catch((error) => {
+          console.error("토큰 비활성화 실패:", error);
+        });
+      }
       this.status.error = null;
     } else {
       // 활성화 시 기존 토큰이 있으면 백엔드로 전송
@@ -342,19 +351,35 @@ class PushNotificationService {
     }
   }
 
-  // 토큰을 백엔드에서 해제
-  async removeTokenFromBackend(token: string): Promise<void> {
+  // 토큰을 백엔드에서 비활성화 (토글 OFF)
+  private async deactivateTokenInBackend(token: string): Promise<void> {
     try {
       const session = SessionManager.get();
       if (!session || !session.accessToken) {
-        console.warn("로그인하지 않은 사용자, 토큰 해제 건너뜀");
+        console.warn("로그인하지 않은 사용자, 토큰 비활성화 건너뜀");
+        return;
+      }
+
+      await deactivateDevice({ token });
+      console.log("✅ 디바이스 토큰이 비활성화되었습니다");
+    } catch (error) {
+      console.error("❌ 디바이스 토큰 비활성화 실패:", error);
+    }
+  }
+
+  // 토큰을 백엔드에서 완전 삭제 (로그아웃)
+  async deleteTokenFromBackend(token: string): Promise<void> {
+    try {
+      const session = SessionManager.get();
+      if (!session || !session.accessToken) {
+        console.warn("로그인하지 않은 사용자, 토큰 삭제 건너뜀");
         return;
       }
 
       await unregisterDevice({ token });
-      console.log("✅ 디바이스 토큰이 백엔드에서 해제되었습니다");
+      console.log("✅ 디바이스 토큰이 완전히 삭제되었습니다");
     } catch (error) {
-      console.error("❌ 디바이스 토큰 해제 실패:", error);
+      console.error("❌ 디바이스 토큰 삭제 실패:", error);
     }
   }
 }

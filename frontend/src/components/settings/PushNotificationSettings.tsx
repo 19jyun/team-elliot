@@ -6,7 +6,7 @@ import { AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 import { usePushNotification } from '@/hooks/usePushNotification';
 
 export function PushNotificationSettings() {
-  const { status, checkAndRequestPermissions, setEnabled, clearError, getToken } = usePushNotification();
+  const { status, checkAndRequestPermissions, setEnabled, clearError } = usePushNotification();
   const [isEnabled, setIsEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -41,18 +41,6 @@ export function PushNotificationSettings() {
     }
   };
 
-  // 토큰 복사
-  const handleCopyToken = async () => {
-    const token = getToken();
-    if (token) {
-      try {
-        await navigator.clipboard.writeText(token);
-        alert('토큰이 클립보드에 복사되었습니다.');
-      } catch (error) {
-        console.error('토큰 복사 실패:', error);
-      }
-    }
-  };
 
   return (
     <div className="space-y-4">
@@ -115,26 +103,8 @@ export function PushNotificationSettings() {
             </p>
             {status.lastRegisterTime && (
               <p className="text-xs text-green-600 mt-1">
-                등록 시간: {status.lastRegisterTime.toLocaleString()}
+                마지막 업데이트: {status.lastRegisterTime.toLocaleString('ko-KR')}
               </p>
-            )}
-            {status.token && (
-              <div className="mt-2">
-                <p className="text-xs text-gray-600 mb-1">등록 토큰:</p>
-                <div className="flex items-center gap-2">
-                  <code className="text-xs bg-gray-100 p-1 rounded break-all flex-1">
-                    {status.token.substring(0, 50)}...
-                  </code>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleCopyToken}
-                    className="text-xs"
-                  >
-                    복사
-                  </Button>
-                </div>
-              </div>
             )}
           </div>
         </div>
