@@ -40,6 +40,15 @@ export class TestApp {
               DATABASE_URL: schemaUrl,
               JWT_SECRET: process.env.JWT_SECRET,
               NODE_ENV: process.env.NODE_ENV,
+              // Firebase 테스트용 더미 환경변수 (실제로는 사용되지 않지만 초기화 오류 방지)
+              TYPE: process.env.TYPE || 'service_account',
+              PROJECT_ID: process.env.PROJECT_ID || 'test-project-id',
+              PRIVATE_KEY:
+                process.env.PRIVATE_KEY ||
+                '-----BEGIN PRIVATE KEY-----\nTEST_KEY\n-----END PRIVATE KEY-----\n',
+              CLIENT_EMAIL:
+                process.env.CLIENT_EMAIL ||
+                'test@test-project-id.iam.gserviceaccount.com',
             }),
           ],
         }),
