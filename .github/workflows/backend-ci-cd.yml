@@ -1,14 +1,17 @@
 name: Backend CI/CD
 
-# GitHub Secrets 설정 필요:
-# - JWT_SECRET: JWT 토큰 서명용 시크릿 키 (Render 대시보드에서도 설정 가능)
+# GitHub Secrets 및 Variables 설정 필요:
+# - JWT_SECRET (Secret): JWT 토큰 서명용 시크릿 키 (Render 대시보드에서도 설정 가능)
+# - DOTENV (Variable): 로컬 .env 파일의 전체 내용 (Firebase Service Account 설정 포함)
 #
-# Secrets 설정 방법:
+# 설정 방법:
 # 1. GitHub 저장소 Settings > Secrets and variables > Actions
-# 2. "New repository secret" 클릭
-# 3. JWT_SECRET 변수 추가
+# 2. Variables 탭에서 "New repository variable" 클릭
+# 3. Name: DOTENV, Value: 로컬 .env 파일의 전체 내용을 복사해서 붙여넣기
 #
-# 참고: DATABASE_URL은 Render 대시보드에서 자동으로 설정됩니다.
+# 참고:
+# - DATABASE_URL은 Render 대시보드에서 자동으로 설정됩니다.
+# - DOTENV 변수는 테스트 실행 시 Firebase Service Account 환경변수를 자동으로 로드합니다.
 
 on:
   push:
@@ -61,6 +64,40 @@ jobs:
           node-version: "18"
           cache: "npm"
           cache-dependency-path: backend/package-lock.json
+
+      - name: Load environment variables from DOTENV
+        env:
+          DOTENV: ${{ vars.DOTENV }}
+        run: |
+          if [ -n "$DOTENV" ]; then
+            echo "Loading environment variables from DOTENV..."
+            # DOTENV 변수의 각 줄을 처리
+            echo "$DOTENV" | while IFS= read -r line || [ -n "$line" ]; do
+              # 주석 및 빈 줄 제거
+              line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+              if [ -z "$line" ] || [ "${line#\#}" != "$line" ]; then
+                continue
+              fi
+              
+              # KEY=VALUE 형식 파싱 (첫 번째 = 기호만 분리)
+              if echo "$line" | grep -q '='; then
+                var_name=$(echo "$line" | cut -d '=' -f 1 | xargs)
+                var_value=$(echo "$line" | cut -d '=' -f 2- | sed 's/^["'\'']//;s/["'\'']$//' | xargs)
+                
+                if [ -n "$var_name" ] && [ -n "$var_value" ]; then
+                  # Firebase 관련 환경변수만 export (보안을 위해)
+                  if echo "$var_name" | grep -qiE "^(TYPE|PROJECT_ID|PRIVATE_KEY|CLIENT_EMAIL|PRIVATE_KEY_ID|CLIENT_ID|AUTH_URI|TOKEN_URI|AUTH_PROVIDER_X509_CERT_URL|CLIENT_X509_CERT_URL|UNIVERSE_DOMAIN|FIREBASE_SERVICE_ACCOUNT_PATH)$"; then
+                    # 환경변수 값에 특수문자가 있을 수 있으므로 이스케이프 처리
+                    echo "${var_name}=${var_value}" >> $GITHUB_ENV
+                    echo "✅ Set $var_name (value hidden)"
+                  fi
+                fi
+              fi
+            done
+            echo "✅ Environment variables loaded successfully"
+          else
+            echo "⚠️ DOTENV variable is not set"
+          fi
 
       - name: Install dependencies
         working-directory: ./backend
