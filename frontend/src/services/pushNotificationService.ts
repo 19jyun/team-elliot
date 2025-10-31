@@ -1,4 +1,4 @@
-import { PushNotifications } from "@capacitor/push-notifications";
+import { PushNotifications, Channel } from "@capacitor/push-notifications";
 import {
   checkNotificationPermissions,
   requestNotificationPermissions,
@@ -206,6 +206,11 @@ class PushNotificationService {
         }
       }
 
+      // Android의 경우 알림 채널 생성
+      if ((await this.detectPlatform()) === "android") {
+        await this.createNotificationChannel();
+      }
+
       // 리스너 추가
       await this.addListeners();
 
@@ -284,6 +289,30 @@ class PushNotificationService {
     } catch (error) {
       console.error("플랫폼 감지 실패:", error);
       return "android"; // 기본값
+    }
+  }
+
+  // Android 알림 채널 생성
+  private async createNotificationChannel(): Promise<void> {
+    try {
+      // strings.xml에 정의된 채널 ID와 이름 사용
+      const channel: Channel = {
+        id: "fcm_default_channel", // AndroidManifest.xml의 default_notification_channel_id
+        name: "일반 알림", // strings.xml의 default_notification_channel_name
+        description: "Team Elliot 앱의 일반 알림 채널",
+        importance: 5, // 최대 중요도 (헤드업 알림 표시)
+        visibility: 1, // 잠금 화면에 표시
+        sound: "default", // 기본 알림음
+        vibration: true, // 진동 활성화
+        lights: true, // LED 활성화
+        lightColor: "#AC9592", // 앱 테마 색상
+      };
+
+      await PushNotifications.createChannel(channel);
+      console.log("✅ Android 알림 채널 생성 완료:", channel.id);
+    } catch (error) {
+      console.error("❌ Android 알림 채널 생성 실패:", error);
+      // 채널 생성 실패해도 푸시 알림은 동작할 수 있음 (기본 채널 사용)
     }
   }
 

@@ -40,6 +40,9 @@ describe('ClassSessionService', () => {
     class: {
       findUnique: jest.fn(),
     },
+    academy: {
+      findUnique: jest.fn(),
+    },
     teacher: {
       findUnique: jest.fn(),
     },
@@ -71,6 +74,7 @@ describe('ClassSessionService', () => {
 
   const mockPushNotificationService = {
     sendToUser: jest.fn(),
+    sendToUsers: jest.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(async () => {
@@ -319,10 +323,15 @@ describe('ClassSessionService', () => {
         studentId: studentId,
         status: 'PENDING',
         session: {
+          classId: 1,
           class: {
             academyId: 1,
             tuitionFee: 50000,
+            className: 'Test Class',
           },
+        },
+        student: {
+          name: 'Test Student',
         },
       };
 
@@ -347,6 +356,22 @@ describe('ClassSessionService', () => {
         return await callback(mockTx);
       });
 
+      // 푸시 알림을 위한 academy와 class 조회 모킹
+      prisma.academy.findUnique.mockResolvedValue({
+        id: 1,
+        principal: {
+          id: 1,
+          user: { id: 10 },
+        },
+      });
+      prisma.class.findUnique.mockResolvedValue({
+        id: 1,
+        teacher: {
+          id: 2,
+          user: { id: 20 },
+        },
+      });
+
       const result = await service.enrollSession(sessionId, studentId);
 
       expect(result).toEqual(mockEnrollment);
@@ -355,6 +380,15 @@ describe('ClassSessionService', () => {
         include: { class: true },
       });
       expect(prisma.$transaction).toHaveBeenCalled();
+
+      // 푸시 알림 전송 확인
+      expect(mockPushNotificationService.sendToUsers).toHaveBeenCalledWith(
+        expect.arrayContaining([10, 20]), // 원장과 선생의 User ID
+        expect.objectContaining({
+          title: '새로운 수강 신청',
+          body: expect.stringContaining('Test Student'),
+        }),
+      );
 
       // 타이머 복원
       jest.useRealTimers();

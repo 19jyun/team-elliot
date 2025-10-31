@@ -193,6 +193,77 @@ export class RefundService {
       refundRequest.sessionEnrollment.session.class.academyId,
     );
 
+    // ===== 푸시 알림: 원장 + 담임 선생에게 =====
+    try {
+      const academyId = refundRequest.sessionEnrollment.session.class.academyId;
+      const classId = refundRequest.sessionEnrollment.session.classId;
+      const refundAmount = refundRequest.refundAmount;
+      const studentName = refundRequest.student.name;
+      const className = refundRequest.sessionEnrollment.session.class.className;
+
+      // 원장과 선생님의 User ID 조회
+      const [academy, class_] = await Promise.all([
+        this.prisma.academy.findUnique({
+          where: { id: academyId },
+          include: {
+            principal: {
+              include: {
+                user: { select: { id: true } },
+              },
+            },
+          },
+        }),
+        this.prisma.class.findUnique({
+          where: { id: classId },
+          include: {
+            teacher: {
+              include: {
+                user: { select: { id: true } },
+              },
+            },
+          },
+        }),
+      ]);
+
+      const targetUserIds: number[] = [];
+
+      // 원장 추가
+      if (academy?.principal?.user) {
+        targetUserIds.push(academy.principal.user.id);
+      }
+
+      // 담임 선생 추가
+      if (class_?.teacher?.user) {
+        targetUserIds.push(class_.teacher.user.id);
+      }
+
+      // 푸시 알림 전송 (원장 + 선생)
+      if (targetUserIds.length > 0) {
+        await this.pushNotificationService
+          .sendToUsers(targetUserIds, {
+            title: '새로운 환불 요청',
+            body: `${studentName} 학생이 ${className} 수업 환불(${refundAmount.toLocaleString()}원)을 요청했습니다`,
+            data: {
+              type: 'refund-request',
+              refundId: String(refundRequest.id),
+              enrollmentId: String(updatedEnrollment.id),
+              sessionId: String(refundRequest.sessionEnrollment.sessionId),
+              amount: String(refundAmount),
+              studentName: studentName,
+              className: className,
+            },
+          })
+          .catch((error) => {
+            this.logger.warn('푸시 알림 전송 실패', error);
+          });
+      }
+    } catch (error) {
+      this.logger.error(
+        '환불 요청 알림 전송 실패 (비즈니스 로직에는 영향 없음)',
+        error,
+      );
+    }
+
     return refundRequest;
   }
 

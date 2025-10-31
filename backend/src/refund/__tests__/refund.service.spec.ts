@@ -38,6 +38,12 @@ describe('RefundService', () => {
     classSession: {
       findMany: jest.fn(),
     },
+    academy: {
+      findUnique: jest.fn(),
+    },
+    class: {
+      findUnique: jest.fn(),
+    },
     $transaction: jest.fn(),
   };
 
@@ -53,6 +59,7 @@ describe('RefundService', () => {
 
   const mockPushNotificationService = {
     sendToUser: jest.fn(),
+    sendToUsers: jest.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(async () => {
@@ -100,13 +107,19 @@ describe('RefundService', () => {
         id: 1,
         ...refundRequestDto,
         status: 'PENDING',
+        studentId: studentId,
         sessionEnrollment: {
           sessionId: 1,
           session: {
+            classId: 1,
             class: {
               academyId: 1,
+              className: 'Test Class',
             },
           },
+        },
+        student: {
+          name: 'Test Student',
         },
       };
       const updatedEnrollment = { id: 1, status: 'REFUND_REQUESTED' };
@@ -117,6 +130,22 @@ describe('RefundService', () => {
         createdRefundRequest,
         updatedEnrollment,
       ]);
+
+      // 푸시 알림을 위한 academy와 class 조회 모킹
+      prisma.academy.findUnique.mockResolvedValue({
+        id: 1,
+        principal: {
+          id: 1,
+          user: { id: 10 },
+        },
+      });
+      prisma.class.findUnique.mockResolvedValue({
+        id: 1,
+        teacher: {
+          id: 2,
+          user: { id: 20 },
+        },
+      });
 
       const result = await service.createRefundRequest(
         refundRequestDto,
@@ -136,6 +165,15 @@ describe('RefundService', () => {
       });
       expect(mockPrisma.$transaction).toHaveBeenCalled();
       expect(socketGateway.notifyNewRefundRequest).toHaveBeenCalled();
+
+      // 푸시 알림 전송 확인
+      expect(mockPushNotificationService.sendToUsers).toHaveBeenCalledWith(
+        expect.arrayContaining([10, 20]), // 원장과 선생의 User ID
+        expect.objectContaining({
+          title: '새로운 환불 요청',
+          body: expect.stringContaining('Test Student'),
+        }),
+      );
     });
 
     it('should throw NotFoundException when session enrollment not found', async () => {

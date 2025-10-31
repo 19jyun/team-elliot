@@ -912,6 +912,74 @@ export class ClassSessionService {
       enrollment.session.class.academyId,
     );
 
+    // ===== 푸시 알림: 원장 + 담임 선생에게 =====
+    try {
+      const academyId = enrollment.session.class.academyId;
+      const classId = enrollment.session.classId;
+      const studentName = enrollment.student.name;
+      const className = enrollment.session.class.className;
+
+      // 원장과 선생님의 User ID 조회
+      const [academy, class_] = await Promise.all([
+        this.prisma.academy.findUnique({
+          where: { id: academyId },
+          include: {
+            principal: {
+              include: {
+                user: { select: { id: true } },
+              },
+            },
+          },
+        }),
+        this.prisma.class.findUnique({
+          where: { id: classId },
+          include: {
+            teacher: {
+              include: {
+                user: { select: { id: true } },
+              },
+            },
+          },
+        }),
+      ]);
+
+      const targetUserIds: number[] = [];
+
+      // 원장 추가
+      if (academy?.principal?.user) {
+        targetUserIds.push(academy.principal.user.id);
+      }
+
+      // 담임 선생 추가
+      if (class_?.teacher?.user) {
+        targetUserIds.push(class_.teacher.user.id);
+      }
+
+      // 푸시 알림 전송 (원장 + 선생)
+      if (targetUserIds.length > 0) {
+        await this.pushNotificationService
+          .sendToUsers(targetUserIds, {
+            title: '새로운 수강 신청',
+            body: `${studentName} 학생이 ${className} 수업을 신청했습니다`,
+            data: {
+              type: 'enrollment-request',
+              enrollmentId: String(enrollment.id),
+              sessionId: String(enrollment.sessionId),
+              studentName: studentName,
+              className: className,
+            },
+          })
+          .catch((error) => {
+            this.logger.warn('푸시 알림 전송 실패', error);
+          });
+      }
+    } catch (error) {
+      this.logger.error(
+        '수강신청 알림 전송 실패 (비즈니스 로직에는 영향 없음)',
+        error,
+      );
+    }
+
     return enrollment;
   }
 
@@ -1769,7 +1837,7 @@ export class ClassSessionService {
 
     // 응답 형식 변환 (Attendance 기반)
     const enrollments = confirmedEnrollments.map((enrollment) => {
-      const attendance = attendanceMap.get(enrollment.id);
+      const attendance = attendanceMap.get(enrollment.id) as any;
       return {
         id: enrollment.id,
         studentId: enrollment.studentId,
