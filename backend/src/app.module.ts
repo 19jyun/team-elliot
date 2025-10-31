@@ -16,6 +16,9 @@ import { BalletPoseModule } from './ballet-pose/ballet-pose.module';
 import { SessionContentModule } from './session-content/session-content.module';
 import { PrincipalModule } from './principal/principal.module';
 import { SocketModule } from './socket/socket.module';
+import { DeviceModule } from './device/device.module';
+import { FirebaseModule } from './firebase/firebase.module';
+import { PushNotificationModule } from './push-notification/push-notification.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -40,6 +43,9 @@ import { AppController } from './app.controller';
     SessionContentModule,
     PrincipalModule,
     SocketModule,
+    DeviceModule,
+    FirebaseModule.forRoot(),
+    PushNotificationModule,
   ],
   controllers: [AppController],
   providers: [PrismaService],

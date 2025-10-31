@@ -4,19 +4,24 @@ import {
   BadRequestException,
   ForbiddenException,
   ConflictException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ClassSessionService } from '../class-session/class-session.service';
 import { SocketGateway } from '../socket/socket.gateway';
+import { PushNotificationService } from '../push-notification/push-notification.service';
 import { RefundRequestDto } from './dto/refund-request.dto';
 import { RefundProcessDto } from './dto/refund-process.dto';
 
 @Injectable()
 export class RefundService {
+  private readonly logger = new Logger(RefundService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly classSessionService: ClassSessionService,
     private readonly socketGateway: SocketGateway,
+    private readonly pushNotificationService: PushNotificationService,
   ) {}
 
   /**
@@ -658,23 +663,59 @@ export class RefundService {
       refundRequest.sessionEnrollmentId,
     );
 
-    // Socket 이벤트 발생 - 환불 요청 거절 알림
+    // ===== 병렬 처리: Socket.io + Push Notification =====
     try {
-      // Student의 userRefId 조회
+      // Student의 userRefId 및 User ID 조회
       const student = await this.prisma.student.findUnique({
         where: { id: result.studentId },
-        select: { userRefId: true },
+        select: {
+          userRefId: true,
+          user: {
+            select: {
+              id: true,
+            },
+          },
+        },
       });
 
-      if (student) {
-        this.socketGateway.notifyRefundRejected(
-          result.id,
-          student.userRefId,
-          result.sessionEnrollment.sessionId,
-        );
+      if (student && student.user) {
+        const className = result.sessionEnrollment.session.class.className;
+
+        // A. Socket.io 이벤트 (실시간, 앱이 켜져있는 사용자)
+        const socketPromise = Promise.resolve().then(() => {
+          try {
+            this.socketGateway.notifyRefundRejected(
+              result.id,
+              student.userRefId,
+              result.sessionEnrollment.sessionId,
+            );
+          } catch (error) {
+            this.logger.warn('Socket 알림 전송 실패', error);
+          }
+        });
+
+        // B. Push Notification (백그라운드, 앱이 꺼져있는 사용자)
+        const pushPromise = this.pushNotificationService
+          .sendToUser(student.user.id, {
+            title: '환불 요청이 거절되었습니다',
+            body: `${className} 수업의 환불 요청이 거절되었습니다`,
+            data: {
+              type: 'refund-rejected',
+              refundId: String(result.id),
+              enrollmentId: String(result.sessionEnrollmentId),
+              sessionId: String(result.sessionEnrollment.sessionId),
+              className: className,
+            },
+          })
+          .catch((error) => {
+            this.logger.warn('푸시 알림 전송 실패', error);
+          });
+
+        // 병렬 실행
+        await Promise.all([socketPromise, pushPromise]);
       }
-    } catch (e) {
-      console.warn('Socket notifyRefundRejected failed:', e);
+    } catch (error) {
+      this.logger.error('알림 전송 실패 (비즈니스 로직에는 영향 없음)', error);
     }
 
     return result;
@@ -1003,23 +1044,59 @@ export class RefundService {
       result.updatedEnrollment.id,
     );
 
-    // 소켓 알림: 환불 요청 승인
+    // ===== 병렬 처리: Socket.io + Push Notification =====
     try {
-      // Student의 userRefId 조회
+      // Student의 userRefId 및 User ID 조회
       const student = await this.prisma.student.findUnique({
         where: { id: result.updatedRefundRequest.sessionEnrollment.studentId },
-        select: { userRefId: true },
+        select: {
+          userRefId: true,
+          user: {
+            select: {
+              id: true,
+            },
+          },
+        },
       });
 
-      if (student) {
-        this.socketGateway.notifyRefundAccepted(
-          result.updatedRefundRequest.id,
-          student.userRefId,
-          result.updatedEnrollment.sessionId,
-        );
+      if (student && student.user) {
+        const refundAmount = result.updatedRefundRequest.refundAmount;
+
+        // A. Socket.io 이벤트 (실시간, 앱이 켜져있는 사용자)
+        const socketPromise = Promise.resolve().then(() => {
+          try {
+            this.socketGateway.notifyRefundAccepted(
+              result.updatedRefundRequest.id,
+              student.userRefId,
+              result.updatedEnrollment.sessionId,
+            );
+          } catch (error) {
+            this.logger.warn('Socket 알림 전송 실패', error);
+          }
+        });
+
+        // B. Push Notification (백그라운드, 앱이 꺼져있는 사용자)
+        const pushPromise = this.pushNotificationService
+          .sendToUser(student.user.id, {
+            title: '환불 요청이 승인되었습니다',
+            body: `${refundAmount.toLocaleString()}원 환불이 승인되었습니다`,
+            data: {
+              type: 'refund-approved',
+              refundId: String(result.updatedRefundRequest.id),
+              enrollmentId: String(result.updatedEnrollment.id),
+              sessionId: String(result.updatedEnrollment.sessionId),
+              amount: String(refundAmount),
+            },
+          })
+          .catch((error) => {
+            this.logger.warn('푸시 알림 전송 실패', error);
+          });
+
+        // 병렬 실행
+        await Promise.all([socketPromise, pushPromise]);
       }
-    } catch (e) {
-      console.warn('Socket notifyRefundAccepted failed:', e);
+    } catch (error) {
+      this.logger.error('알림 전송 실패 (비즈니스 로직에는 영향 없음)', error);
     }
 
     return result.updatedRefundRequest;
@@ -1134,23 +1211,64 @@ export class RefundService {
       result.updatedEnrollment.id,
     );
 
-    // 소켓 알림: 환불 요청 거절
+    // ===== 병렬 처리: Socket.io + Push Notification =====
     try {
-      // Student의 userRefId 조회
+      // Student의 userRefId 및 User ID 조회
       const student = await this.prisma.student.findUnique({
         where: { id: result.updatedRefundRequest.sessionEnrollment.studentId },
-        select: { userRefId: true },
+        select: {
+          userRefId: true,
+          user: {
+            select: {
+              id: true,
+            },
+          },
+        },
       });
 
-      if (student) {
-        this.socketGateway.notifyRefundRejected(
-          result.updatedRefundRequest.id,
-          student.userRefId,
-          result.updatedEnrollment.sessionId,
-        );
+      if (student && student.user) {
+        // 클래스 정보 조회
+        const sessionWithClass = await this.prisma.classSession.findUnique({
+          where: { id: result.updatedEnrollment.sessionId },
+          include: { class: true },
+        });
+        const className = sessionWithClass?.class.className || '수업';
+
+        // A. Socket.io 이벤트 (실시간, 앱이 켜져있는 사용자)
+        const socketPromise = Promise.resolve().then(() => {
+          try {
+            this.socketGateway.notifyRefundRejected(
+              result.updatedRefundRequest.id,
+              student.userRefId,
+              result.updatedEnrollment.sessionId,
+            );
+          } catch (error) {
+            this.logger.warn('Socket 알림 전송 실패', error);
+          }
+        });
+
+        // B. Push Notification (백그라운드, 앱이 꺼져있는 사용자)
+        const pushPromise = this.pushNotificationService
+          .sendToUser(student.user.id, {
+            title: '환불 요청이 거절되었습니다',
+            body: `${className} 수업의 환불 요청이 거절되었습니다`,
+            data: {
+              type: 'refund-rejected',
+              refundId: String(result.updatedRefundRequest.id),
+              enrollmentId: String(result.updatedEnrollment.id),
+              sessionId: String(result.updatedEnrollment.sessionId),
+              className: className,
+            },
+          })
+          .catch((error) => {
+            this.logger.warn('푸시 알림 전송 실패', error);
+          });
+
+        // 병렬 실행
+        await Promise.all([socketPromise, pushPromise]);
       }
-    } catch (e) {
-      console.warn('Socket notifyRefundRejected failed:', e);
+    } catch (error) {
+      this.logger.error('알림 전송 실패 (비즈니스 로직에는 영향 없음)', error);
     }
 
     return result.updatedRefundRequest;

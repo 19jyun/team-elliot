@@ -4,9 +4,15 @@ import { RefundService } from './refund.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ClassSessionModule } from '../class-session/class-session.module';
 import { SocketModule } from '../socket/socket.module';
+import { PushNotificationModule } from '../push-notification/push-notification.module';
 
 @Module({
-  imports: [PrismaModule, ClassSessionModule, SocketModule],
+  imports: [
+    PrismaModule,
+    ClassSessionModule,
+    SocketModule,
+    PushNotificationModule,
+  ],
   controllers: [RefundController],
   providers: [RefundService],
   exports: [RefundService],

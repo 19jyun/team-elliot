@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ClassSessionService } from '../class-session.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SocketGateway } from '../../socket/socket.gateway';
+import { PushNotificationService } from '../../push-notification/push-notification.service';
 import {
   NotFoundException,
   BadRequestException,
@@ -68,12 +69,20 @@ describe('ClassSessionService', () => {
     notifyNewEnrollmentRequest: jest.fn(),
   };
 
+  const mockPushNotificationService = {
+    sendToUser: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ClassSessionService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: SocketGateway, useValue: mockSocketGateway },
+        {
+          provide: PushNotificationService,
+          useValue: mockPushNotificationService,
+        },
       ],
     }).compile();
     service = module.get<ClassSessionService>(ClassSessionService);

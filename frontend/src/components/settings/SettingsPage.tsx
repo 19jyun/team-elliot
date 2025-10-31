@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { CalendarSyncSettings } from './CalendarSyncSettings';
+import { PushNotificationSettings } from './PushNotificationSettings';
 import { SlideUpModal } from '@/components/common/SlideUpModal';
 import { CalendarSelectionList } from '@/components/calendar/CalendarSelectionList';
 import { calendarSyncService } from '@/services/calendarSyncService';
@@ -70,6 +71,10 @@ export function SettingsPage({ role }: SettingsPageProps) {
               role={role} 
               onCalendarSelect={handleCalendarSelect}
             />
+          </div>
+          <div>
+            <h2 className="text-base font-medium mb-4">알림</h2>
+            <PushNotificationSettings />
           </div>
         </div>
       </div>

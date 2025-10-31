@@ -44,3 +44,6 @@ lerna-debug.log*
 # Ignore generated and temporary files
 prisma/schema_merged.prisma
 prisma/schema.prisma.backup
+
+# Firebase
+config/firebase-service-account.json

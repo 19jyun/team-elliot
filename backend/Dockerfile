@@ -11,9 +11,6 @@ COPY scripts ./scripts/
 # Install all dependencies (including dev dependencies for build)
 RUN npm ci
 
-# Merge multi-schema files before Prisma commands
-RUN node scripts/merge-schemas.js
-
 # Generate Prisma client
 RUN npx prisma generate
 
@@ -62,5 +59,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD node scripts/health-check.js || exit 1
 
 # Start the application with migration
-# Note: Schema is already merged during build, so we can use the merged schema.prisma
 CMD ["sh", "-c", "npx prisma migrate deploy && npm run seed:deploy && node dist/src/main"] 
