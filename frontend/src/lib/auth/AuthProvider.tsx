@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { login, logout, getSession as apiGetSession, refreshToken } from "@/api/auth";
 import { toast } from "sonner";
 import { AuthRouter } from "./AuthRouter";
+import { pushNotificationService } from "@/services/pushNotificationService";
 
 // NextAuth와 호환되는 타입 정의
 interface User {
@@ -120,6 +121,12 @@ export const SessionProvider = ({ children, session: initialSession }: SessionPr
             setSession(savedSession);
             // 세션 복원 성공 시 자동 리디렉션 플래그 설정
             setIsAutoRedirecting(true);
+            // 세션 복원 시에도 device token 동기화
+            try {
+              await pushNotificationService.syncTokenIfExists();
+            } catch (error) {
+              console.error("세션 복원 시 Device token 동기화 실패:", error);
+            }
           } else {
             // 토큰 갱신 시도
             try {
@@ -138,6 +145,12 @@ export const SessionProvider = ({ children, session: initialSession }: SessionPr
                 setSession(newSession);
                 // 토큰 갱신 성공 시 자동 리디렉션 플래그 설정
                 setIsAutoRedirecting(true);
+                // 토큰 갱신 시에도 device token 동기화
+                try {
+                  await pushNotificationService.syncTokenIfExists();
+                } catch (error) {
+                  console.error("토큰 갱신 시 Device token 동기화 실패:", error);
+                }
               }
             } catch (_error) {
               // 갱신 실패 시 로그아웃
@@ -217,6 +230,14 @@ export const SessionProvider = ({ children, session: initialSession }: SessionPr
           TokenManager.set(newSession.accessToken);
         }
         setSession(newSession);
+        
+        // 로그인 성공 후 device token 동기화
+        try {
+          await pushNotificationService.syncTokenIfExists();
+        } catch (error) {
+          console.error("Device token 동기화 실패:", error);
+          // 토큰 동기화 실패해도 로그인은 성공으로 처리
+        }
         
         return { ok: true, error: null };
       }
