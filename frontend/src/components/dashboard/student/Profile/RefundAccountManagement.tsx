@@ -2,20 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Building, CreditCard, Edit, Save, X } from 'lucide-react';
+import { Building, CreditCard, Edit, Save, X, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStudentApi } from '@/hooks/student/useStudentApi';
 import { UpdateStudentRefundAccountRequest } from '@/types/api/student';
 import { useApiError } from '@/hooks/useApiError';
 import { useSession } from '@/lib/auth/AuthProvider';
+import { BANKS } from '@/constants/banks';
+import { InfoBubble } from '@/components/common/InfoBubble';
 
 export function RefundAccountManagement() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedInfo, setEditedInfo] = useState<UpdateStudentRefundAccountRequest>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [customBankName, setCustomBankName] = useState(''); // 기타 은행명 입력
   
   // Validation 관련 상태
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -67,8 +69,11 @@ export function RefundAccountManagement() {
   };
 
   const handleSave = async () => {
+    // 실제 은행명 결정 (기타 선택 시 customBankName 사용)
+    const finalBankName = editedInfo.refundBankName === '기타' ? customBankName : editedInfo.refundBankName;
+    
     // 프론트엔드 validation 수행
-    const bankNameValidation = validateBankName(editedInfo.refundBankName || '');
+    const bankNameValidation = validateBankName(finalBankName || '');
     const accountNumberValidation = validateAccountNumber(editedInfo.refundAccountNumber || '');
     const accountHolderValidation = validateAccountHolder(editedInfo.refundAccountHolder || '');
     
@@ -106,7 +111,11 @@ export function RefundAccountManagement() {
       clearErrors(); // 요청 시작 시 에러 초기화
       setValidationErrors({}); // validation 에러도 초기화
       
-      await updateRefundAccountInfo(editedInfo);
+      // 실제 저장 시 finalBankName 사용
+      await updateRefundAccountInfo({
+        ...editedInfo,
+        refundBankName: finalBankName,
+      });
       
       setIsEditing(false);
       toast.success('환불 계좌 정보가 성공적으로 업데이트되었습니다.');
@@ -187,7 +196,7 @@ export function RefundAccountManagement() {
   }
 
   return (
-    <div className="flex flex-col pb-2 mx-auto w-full bg-white max-w-[480px] py-5 h-full">
+    <div className="flex flex-col pb-2 mx-auto w-full bg-white max-w-[480px] py-5 h-full overflow-y-auto">
       {/* 헤더 */}
       <div className="flex items-center justify-between px-5 pb-4 flex-shrink-0">
         <div>
@@ -246,89 +255,104 @@ export function RefundAccountManagement() {
             <CardContent className="space-y-4">
               {/* 은행명 */}
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">
-                  <Building className="h-4 w-4" />
-                  은행명 *
-                </label>
                 {isEditing ? (
-                  <Input
-                    value={editedInfo.refundBankName || ''}
-                    onChange={(e) => handleInputChange('refundBankName', e.target.value)}
-                    placeholder="은행명을 입력하세요 (예: 신한은행)"
-                    disabled={isLoading}
-                    className={`transition-all duration-200 ${
-                      (fieldErrors.refundBankName || validationErrors.refundBankName) ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                    } ${
-                      isShaking && (fieldErrors.refundBankName || validationErrors.refundBankName) ? 'animate-shake' : ''
-                    }`}
-                  />
+                  <div className="relative">
+                    <InfoBubble
+                      label="은행명"
+                      type="select"
+                      selectValue={editedInfo.refundBankName || ''}
+                      onSelectChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleInputChange('refundBankName', e.target.value)}
+                      options={[
+                        { value: '', label: '은행명 선택' },
+                        ...BANKS
+                      ]}
+                      className={isShaking && (fieldErrors.refundBankName || validationErrors.refundBankName) ? 'animate-shake border-red-500' : ''}
+                    />
+                    {(fieldErrors.refundBankName || validationErrors.refundBankName) && (
+                      <p className="text-red-500 text-xs mt-1 ml-2 animate-in fade-in">
+                        {fieldErrors.refundBankName || validationErrors.refundBankName}
+                      </p>
+                    )}
+                  </div>
                 ) : (
-                  <p className="text-gray-700 py-2">{refundAccount?.refundBankName || '미입력'}</p>
-                )}
-                {(fieldErrors.refundBankName || validationErrors.refundBankName) && (
-                  <p className="text-red-500 text-sm animate-in fade-in">
-                    {fieldErrors.refundBankName || validationErrors.refundBankName}
-                  </p>
+                  <InfoBubble
+                    label="은행명"
+                    value={refundAccount?.refundBankName || '미입력'}
+                  />
                 )}
               </div>
 
-              <Separator />
+              {/* 기타 은행명 입력 (기타 선택 시에만 표시) */}
+              {isEditing && editedInfo.refundBankName === '기타' && (
+                <div className="space-y-2">
+                  <div className="relative">
+                    <InfoBubble
+                      label="은행명 입력"
+                      type="input"
+                      inputValue={customBankName}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomBankName(e.target.value)}
+                      placeholder="은행명을 입력하세요"
+                      className={isShaking && !customBankName.trim() ? 'animate-shake border-red-500' : ''}
+                    />
+                    {isShaking && !customBankName.trim() && (
+                      <p className="text-red-500 text-xs mt-1 ml-2 animate-in fade-in">
+                        은행명을 입력해주세요
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* 계좌번호 */}
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">
-                  <CreditCard className="h-4 w-4" />
-                  계좌번호 *
-                </label>
                 {isEditing ? (
-                  <Input
-                    value={editedInfo.refundAccountNumber || ''}
-                    onChange={(e) => handleInputChange('refundAccountNumber', e.target.value)}
-                    placeholder="계좌번호를 입력하세요 (예: 110-123-456789)"
-                    disabled={isLoading}
-                    className={`transition-all duration-200 ${
-                      (fieldErrors.refundAccountNumber || validationErrors.refundAccountNumber) ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                    } ${
-                      isShaking && (fieldErrors.refundAccountNumber || validationErrors.refundAccountNumber) ? 'animate-shake' : ''
-                    }`}
-                  />
+                  <div className="relative">
+                    <InfoBubble
+                      label="계좌번호"
+                      type="input"
+                      inputValue={editedInfo.refundAccountNumber || ''}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('refundAccountNumber', e.target.value)}
+                      placeholder="계좌번호 입력"
+                      className={isShaking && (fieldErrors.refundAccountNumber || validationErrors.refundAccountNumber) ? 'animate-shake border-red-500' : ''}
+                    />
+                    {(fieldErrors.refundAccountNumber || validationErrors.refundAccountNumber) && (
+                      <p className="text-red-500 text-xs mt-1 ml-2 animate-in fade-in">
+                        {fieldErrors.refundAccountNumber || validationErrors.refundAccountNumber}
+                      </p>
+                    )}
+                  </div>
                 ) : (
-                  <p className="text-gray-700 py-2 font-mono">{refundAccount?.refundAccountNumber || '미입력'}</p>
-                )}
-                {(fieldErrors.refundAccountNumber || validationErrors.refundAccountNumber) && (
-                  <p className="text-red-500 text-sm animate-in fade-in">
-                    {fieldErrors.refundAccountNumber || validationErrors.refundAccountNumber}
-                  </p>
+                  <InfoBubble
+                    label="계좌번호"
+                    value={refundAccount?.refundAccountNumber || '미입력'}
+                    valueClassName="font-mono"
+                  />
                 )}
               </div>
 
-              <Separator />
-
               {/* 예금주 */}
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">
-                  <Building className="h-4 w-4" />
-                  예금주 *
-                </label>
                 {isEditing ? (
-                  <Input
-                    value={editedInfo.refundAccountHolder || ''}
-                    onChange={(e) => handleInputChange('refundAccountHolder', e.target.value)}
-                    placeholder="예금주를 입력하세요"
-                    disabled={isLoading}
-                    className={`transition-all duration-200 ${
-                      (fieldErrors.refundAccountHolder || validationErrors.refundAccountHolder) ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                    } ${
-                      isShaking && (fieldErrors.refundAccountHolder || validationErrors.refundAccountHolder) ? 'animate-shake' : ''
-                    }`}
-                  />
+                  <div className="relative">
+                    <InfoBubble
+                      label="예금주"
+                      type="input"
+                      inputValue={editedInfo.refundAccountHolder || ''}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('refundAccountHolder', e.target.value)}
+                      placeholder="예금주 입력"
+                      className={isShaking && (fieldErrors.refundAccountHolder || validationErrors.refundAccountHolder) ? 'animate-shake border-red-500' : ''}
+                    />
+                    {(fieldErrors.refundAccountHolder || validationErrors.refundAccountHolder) && (
+                      <p className="text-red-500 text-xs mt-1 ml-2 animate-in fade-in">
+                        {fieldErrors.refundAccountHolder || validationErrors.refundAccountHolder}
+                      </p>
+                    )}
+                  </div>
                 ) : (
-                  <p className="text-gray-700 py-2">{refundAccount?.refundAccountHolder || '미입력'}</p>
-                )}
-                {(fieldErrors.refundAccountHolder || validationErrors.refundAccountHolder) && (
-                  <p className="text-red-500 text-sm animate-in fade-in">
-                    {fieldErrors.refundAccountHolder || validationErrors.refundAccountHolder}
-                  </p>
+                  <InfoBubble
+                    label="예금주"
+                    value={refundAccount?.refundAccountHolder || '미입력'}
+                  />
                 )}
               </div>
 

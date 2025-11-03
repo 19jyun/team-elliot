@@ -11,6 +11,7 @@ import {
   getRefundReasonOptions,
   RefundReason
 } from '@/utils/refundRequestValidation';
+import { BANKS } from '@/constants/banks';
 import type { ModificationSessionVM } from '@/types/view/student';
 
 interface RefundRequestStepProps {
@@ -18,25 +19,6 @@ interface RefundRequestStepProps {
   cancelledSessionsCount: number;
   onComplete: () => void;
 }
-
-const banks = [
-  { value: 'shinhan', label: '신한은행' },
-  { value: 'kb', label: 'KB국민은행' },
-  { value: 'woori', label: '우리은행' },
-  { value: 'hana', label: '하나은행' },
-  { value: 'nh', label: 'NH농협은행' },
-  { value: 'ibk', label: 'IBK기업은행' },
-  { value: 'kakao', label: '카카오뱅크' },
-  { value: 'toss', label: '토스뱅크' },
-  { value: 'kbank', label: '케이뱅크' },
-  { value: 'other', label: '기타' },
-];
-
-// 은행명을 value로 변환하는 함수
-const getBankValueFromName = (bankName: string): string => {
-  const bank = banks.find(b => b.label === bankName);
-  return bank ? bank.value : '';
-};
 
 export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestStepProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,6 +29,7 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
     accountNumber: '',
     accountHolder: '',
   });
+  const [customBankName, setCustomBankName] = useState(''); // 기타 은행명 입력
   const [saveAccount, setSaveAccount] = useState(false);
   const [refundReason, setRefundReason] = useState<RefundReason>(RefundReason.PERSONAL_SCHEDULE);
   const [detailedReason, setDetailedReason] = useState('');
@@ -62,7 +45,7 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
     if (refundAccount) {
       setAccountInfo(prev => ({
         ...prev,
-        bank: getBankValueFromName(refundAccount.refundBankName || ''),
+        bank: refundAccount.refundBankName || '', // 한글 은행명을 그대로 사용
         accountNumber: refundAccount.refundAccountNumber || '',
         accountHolder: refundAccount.refundAccountHolder || '',
       }));
@@ -185,6 +168,9 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
       }
     );
 
+    // 실제 은행명 결정 (기타 선택 시 customBankName 사용)
+    const finalBankName = accountInfo.bank === '기타' ? customBankName : accountInfo.bank;
+
     // 각 취소된 세션에 대해 validation 수행
     for (const cancelledSession of cancelledSessions) {
       const sessionPrice = parseInt(cancelledSession.class?.tuitionFee || '50000');
@@ -194,7 +180,7 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
         reason: refundReason,
         detailedReason: refundReason === RefundReason.OTHER ? detailedReason : undefined,
         refundAmount: sessionPrice,
-        bankName: accountInfo.bank,
+        bankName: finalBankName,
         accountNumber: accountInfo.accountNumber,
         accountHolder: accountInfo.accountHolder
       };
@@ -263,11 +249,8 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
       // 계좌 정보 저장 (선택사항)
       if (saveAccount) {
         try {
-          // 은행 value를 실제 은행명으로 변환
-          const bankLabel = banks.find(b => b.value === accountInfo.bank)?.label || accountInfo.bank;
-          
           const accountData = {
-            refundBankName: bankLabel,
+            refundBankName: finalBankName, // 기타 선택 시 customBankName 사용
             refundAccountNumber: accountInfo.accountNumber,
             refundAccountHolder: accountInfo.accountHolder,
           };
@@ -291,13 +274,14 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
   // 입력값 모두 채워져야 버튼 활성화 (은행명, 계좌번호(숫자 8~16자리), 예금주 2글자 이상, 환불 사유, 기타 선택 시 상세 사유)
   const isFormValid =
     accountInfo.bank &&
+    (accountInfo.bank !== '기타' || customBankName.trim().length >= 2) && // 기타 선택 시 customBankName 검증
     /^[0-9]{8,16}$/.test(accountInfo.accountNumber) &&
     accountInfo.accountHolder.length >= 2 &&
     refundReason &&
     (refundReason !== RefundReason.OTHER || detailedReason.trim().length > 0);
 
   return (
-    <div className="flex flex-col min-h-screen bg-white font-[Pretendard Variable] items-center">
+    <div className="flex flex-col min-h-screen bg-white font-[Pretendard Variable] items-center overflow-y-auto">
       {/* 헤더 */}
       <header className="sticky top-0 z-40 flex flex-col bg-white border-b py-5 border-gray-200">
         <div className="flex gap-10 self-center w-full text-sm font-medium tracking-normal leading-snug max-w-[297px] mt-2 mb-2">
@@ -376,7 +360,7 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
             onSelectChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleInputChange('bank', e.target.value)}
             options={[
               { value: '', label: '은행명 선택' },
-              ...banks
+              ...BANKS
             ]}
             className={isShaking && validationErrors.bankName ? 'animate-shake border-red-500' : ''}
           />
@@ -384,6 +368,23 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
             <div className="text-red-500 text-xs mt-1 ml-2">{validationErrors.bankName}</div>
           )}
         </div>
+        
+        {/* 기타 은행명 입력 (기타 선택 시에만 표시) */}
+        {accountInfo.bank === '기타' && (
+          <div className="relative">
+            <InfoBubble
+              label="은행명 입력"
+              type="input"
+              placeholder="은행명을 입력하세요"
+              inputValue={customBankName}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomBankName(e.target.value)}
+              className={isShaking && !customBankName.trim() ? 'animate-shake border-red-500' : ''}
+            />
+            {isShaking && !customBankName.trim() && (
+              <div className="text-red-500 text-xs mt-1 ml-2">은행명을 입력해주세요</div>
+            )}
+          </div>
+        )}
         
         <div className="relative">
           <InfoBubble
