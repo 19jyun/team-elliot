@@ -85,18 +85,50 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('withdrawal')
-  @ApiOperation({ summary: '회원 탈퇴' })
+  @Post('withdrawal/student')
+  @ApiOperation({ summary: '학생 회원 탈퇴' })
   @ApiBody({ type: WithdrawalReasonDto })
   @ApiOkResponse({
     description: '탈퇴 성공',
     schema: { example: { message: '회원 탈퇴가 완료되었습니다.' } },
   })
-  async withdrawal(
+  async withdrawalStudent(
     @GetUser() user: AuthenticatedUser,
     @Body() body: WithdrawalReasonDto,
   ): Promise<{ message: string }> {
-    await this.authService.withdrawal(parseInt(user.id), body.reason);
+    await this.authService.withdrawalStudent(parseInt(user.id), body.reason);
+    return { message: '회원 탈퇴가 완료되었습니다.' };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('withdrawal/teacher')
+  @ApiOperation({ summary: '강사 회원 탈퇴' })
+  @ApiBody({ type: WithdrawalReasonDto })
+  @ApiOkResponse({
+    description: '탈퇴 성공',
+    schema: { example: { message: '회원 탈퇴가 완료되었습니다.' } },
+  })
+  async withdrawalTeacher(
+    @GetUser() user: AuthenticatedUser,
+    @Body() body: WithdrawalReasonDto,
+  ): Promise<{ message: string }> {
+    await this.authService.withdrawalTeacher(parseInt(user.id), body.reason);
+    return { message: '회원 탈퇴가 완료되었습니다.' };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('withdrawal/principal')
+  @ApiOperation({ summary: '원장 회원 탈퇴' })
+  @ApiBody({ type: WithdrawalReasonDto })
+  @ApiOkResponse({
+    description: '탈퇴 성공',
+    schema: { example: { message: '회원 탈퇴가 완료되었습니다.' } },
+  })
+  async withdrawalPrincipal(
+    @GetUser() user: AuthenticatedUser,
+    @Body() body: WithdrawalReasonDto,
+  ): Promise<{ message: string }> {
+    await this.authService.withdrawalPrincipal(parseInt(user.id), body.reason);
     return { message: '회원 탈퇴가 완료되었습니다.' };
   }
 

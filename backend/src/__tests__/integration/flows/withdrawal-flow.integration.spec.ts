@@ -89,7 +89,7 @@ describe('Withdrawal Flow Integration Tests', () => {
       const withdrawalReason = '개인적인 이유로 탈퇴합니다';
       const withdrawalResponse = await testApp
         .request()
-        .post('/auth/withdrawal')
+        .post('/auth/withdrawal/student')
         .set('Authorization', `Bearer ${studentToken}`)
         .send({ reason: withdrawalReason })
         .expect(201); // POST 엔드포인트는 기본적으로 201 반환
@@ -166,7 +166,7 @@ describe('Withdrawal Flow Integration Tests', () => {
       const withdrawalReason = '데이터 없는 학생 탈퇴';
       const withdrawalResponse = await testApp
         .request()
-        .post('/auth/withdrawal')
+        .post('/auth/withdrawal/student')
         .set('Authorization', `Bearer ${studentToken}`)
         .send({ reason: withdrawalReason })
         .expect(201); // POST 엔드포인트는 기본적으로 201 반환
@@ -200,7 +200,7 @@ describe('Withdrawal Flow Integration Tests', () => {
 
       await testApp
         .request()
-        .post('/auth/withdrawal')
+        .post('/auth/withdrawal/student')
         .set('Authorization', `Bearer ${fakeToken}`)
         .send({ reason: '테스트' })
         .expect(401); // JWT 인증 실패
@@ -211,7 +211,7 @@ describe('Withdrawal Flow Integration Tests', () => {
 
       await testApp
         .request()
-        .post('/auth/withdrawal')
+        .post('/auth/withdrawal/student')
         .set('Authorization', `Bearer ${teacherToken}`)
         .send({ reason: '선생님 탈퇴 시도' })
         .expect(404); // 학생이 아니므로 NotFoundException
@@ -285,7 +285,7 @@ describe('Withdrawal Flow Integration Tests', () => {
       // 6. 회원탈퇴 실행
       await testApp
         .request()
-        .post('/auth/withdrawal')
+        .post('/auth/withdrawal/student')
         .set('Authorization', `Bearer ${studentToken}`)
         .send({ reason: '데이터 무결성 테스트' })
         .expect(201); // POST 엔드포인트는 기본적으로 201 반환
@@ -361,7 +361,7 @@ describe('Withdrawal Flow Integration Tests', () => {
       const withdrawalDate = new Date();
       await testApp
         .request()
-        .post('/auth/withdrawal')
+        .post('/auth/withdrawal/student')
         .set('Authorization', `Bearer ${studentToken}`)
         .send({ reason: '보관 기간 테스트' })
         .expect(201); // POST 엔드포인트는 기본적으로 201 반환
@@ -391,6 +391,318 @@ describe('Withdrawal Flow Integration Tests', () => {
       );
 
       expect(differenceInDays).toBeLessThan(1); // 1일 이내 오차 허용
+    });
+  });
+
+  describe('5. 강사 회원탈퇴 플로우', () => {
+    it('should successfully withdraw teacher with class history', async () => {
+      // 1. Principal, Teacher 생성
+      const { token: principalToken, academy } =
+        await createAuthenticatedUser('PRINCIPAL');
+      const {
+        token: teacherToken,
+        user: teacherUser,
+        teacher: teacherEntity,
+      } = await createAuthenticatedUser('TEACHER');
+
+      // 2. Teacher를 academy에 연결
+      const prisma = testApp.prisma;
+      await prisma.teacher.update({
+        where: { id: teacherEntity.id },
+        data: { academyId: academy.id },
+      });
+
+      // 3. 클래스 생성 (이미 종료된 클래스)
+      const classData = testData.classes.basic({
+        className: '강사 탈퇴 테스트 클래스',
+        level: 'BEGINNER',
+        maxStudents: 10,
+        tuitionFee: 150000,
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-12-31'), // 과거 날짜
+        registrationStartDate: new Date('2023-12-15'),
+        registrationEndDate: new Date('2023-12-30'),
+        teacherId: teacherEntity.id,
+        academyId: academy.id,
+      });
+
+      await testApp
+        .request()
+        .post('/classes')
+        .set('Authorization', `Bearer ${principalToken}`)
+        .send(classData)
+        .expect(201);
+
+      // 4. 회원탈퇴 실행
+      const withdrawalReason = '개인 사정으로 강사 탈퇴';
+      const withdrawalResponse = await testApp
+        .request()
+        .post('/auth/withdrawal/teacher')
+        .set('Authorization', `Bearer ${teacherToken}`)
+        .send({ reason: withdrawalReason })
+        .expect(201);
+
+      expect(withdrawalResponse.body).toEqual({
+        message: '회원 탈퇴가 완료되었습니다.',
+      });
+
+      // 5. 익명화 데이터 확인
+      const anonymizedUsers = await prisma.anonymizedUser.findMany({
+        where: {
+          originalUserRole: 'TEACHER',
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+      });
+
+      expect(anonymizedUsers.length).toBeGreaterThan(0);
+      const anonymizedUser = anonymizedUsers[0];
+      expect(anonymizedUser.anonymousId).toMatch(/^ANON_TEACHER_/);
+
+      // 6. AnonymizedTeacherActivity 확인
+      const anonymizedTeacherActivities =
+        await prisma.anonymizedTeacherActivity.findMany({
+          where: {
+            anonymousUserId: anonymizedUser.id,
+          },
+        });
+
+      expect(anonymizedTeacherActivities.length).toBeGreaterThan(0);
+      expect(anonymizedTeacherActivities[0].activityType).toBe(
+        'CLASS_OPERATION',
+      );
+
+      // 7. Teacher 테이블 마스킹 확인
+      const maskedTeacher = await prisma.teacher.findUnique({
+        where: { id: teacherEntity.id },
+      });
+
+      expect(maskedTeacher).toBeDefined();
+      expect(maskedTeacher.academyId).toBeNull(); // 학원 연결 해제 확인
+      expect(maskedTeacher.name).toBe('탈퇴한 강사');
+      expect(maskedTeacher.phoneNumber).toBeNull();
+
+      // 8. User 테이블 마스킹 확인
+      const maskedUser = await prisma.user.findUnique({
+        where: { id: teacherUser.id },
+      });
+
+      expect(maskedUser).toBeDefined();
+      expect(maskedUser.userId).toContain('WITHDRAWN_TEACHER_');
+      expect(maskedUser.name).toBe('탈퇴한 강사');
+
+      // 9. WithdrawalHistory 확인
+      const withdrawalHistory = await prisma.withdrawalHistory.findFirst({
+        where: {
+          userId: teacherUser.userId,
+        },
+      });
+
+      expect(withdrawalHistory).toBeDefined();
+      expect(withdrawalHistory.userRole).toBe('TEACHER');
+      expect(withdrawalHistory.reason).toBe(withdrawalReason);
+    });
+
+    it('should reject withdrawal when teacher has ongoing classes', async () => {
+      // 1. Principal, Teacher 생성
+      const { token: principalToken, academy } =
+        await createAuthenticatedUser('PRINCIPAL');
+      const { token: teacherToken, teacher: teacherEntity } =
+        await createAuthenticatedUser('TEACHER');
+
+      // 2. 진행 중인 클래스 생성
+      const classData = testData.classes.basic({
+        className: '진행 중인 클래스',
+        level: 'BEGINNER',
+        maxStudents: 10,
+        tuitionFee: 150000,
+        startDate: new Date('2025-01-01'),
+        endDate: new Date('2025-12-31'), // 미래 날짜
+        registrationStartDate: new Date('2024-12-15'),
+        registrationEndDate: new Date('2024-12-30'),
+        teacherId: teacherEntity.id,
+        academyId: academy.id,
+      });
+
+      await testApp
+        .request()
+        .post('/classes')
+        .set('Authorization', `Bearer ${principalToken}`)
+        .send(classData)
+        .expect(201);
+
+      // 3. 회원탈퇴 시도 (실패해야 함)
+      const withdrawalResponse = await testApp
+        .request()
+        .post('/auth/withdrawal/teacher')
+        .set('Authorization', `Bearer ${teacherToken}`)
+        .send({ reason: '탈퇴 시도' })
+        .expect(400);
+
+      expect(withdrawalResponse.body.code).toBe('HAS_ONGOING_CLASSES');
+    });
+  });
+
+  describe('6. 원장 회원탈퇴 플로우', () => {
+    it('should successfully withdraw principal with academy closure', async () => {
+      // 1. Principal 생성
+      const {
+        token: principalToken,
+        user: principalUser,
+        academy,
+        principal,
+      } = await createAuthenticatedUser('PRINCIPAL');
+
+      // 2. Teacher 생성 및 academy에 연결
+      const { teacher: teacherEntity } =
+        await createAuthenticatedUser('TEACHER');
+      const prisma = testApp.prisma;
+      await prisma.teacher.update({
+        where: { id: teacherEntity.id },
+        data: { academyId: academy.id },
+      });
+
+      // 3. 클래스 생성 (이미 종료된 클래스)
+      const classData = testData.classes.basic({
+        className: '원장 탈퇴 테스트 클래스',
+        level: 'BEGINNER',
+        maxStudents: 10,
+        tuitionFee: 150000,
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-12-31'), // 과거 날짜
+        registrationStartDate: new Date('2023-12-15'),
+        registrationEndDate: new Date('2023-12-30'),
+        teacherId: teacherEntity.id,
+        academyId: academy.id,
+      });
+
+      await testApp
+        .request()
+        .post('/classes')
+        .set('Authorization', `Bearer ${principalToken}`)
+        .send(classData)
+        .expect(201);
+
+      // 4. 회원탈퇴 실행
+      const withdrawalReason = '학원 폐업으로 인한 탈퇴';
+      const withdrawalResponse = await testApp
+        .request()
+        .post('/auth/withdrawal/principal')
+        .set('Authorization', `Bearer ${principalToken}`)
+        .send({ reason: withdrawalReason })
+        .expect(201);
+
+      expect(withdrawalResponse.body).toEqual({
+        message: '회원 탈퇴가 완료되었습니다.',
+      });
+
+      // 5. 익명화 데이터 확인
+      const anonymizedUsers = await prisma.anonymizedUser.findMany({
+        where: {
+          originalUserRole: 'PRINCIPAL',
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+      });
+
+      expect(anonymizedUsers.length).toBeGreaterThan(0);
+      const anonymizedUser = anonymizedUsers[0];
+      expect(anonymizedUser.anonymousId).toMatch(/^ANON_PRINCIPAL_/);
+
+      // 6. AnonymizedPrincipalActivity 확인
+      const anonymizedPrincipalActivities =
+        await prisma.anonymizedPrincipalActivity.findMany({
+          where: {
+            anonymousUserId: anonymizedUser.id,
+          },
+        });
+
+      expect(anonymizedPrincipalActivities.length).toBeGreaterThan(0);
+
+      // 7. Academy 테이블 마스킹 확인
+      const maskedAcademy = await prisma.academy.findUnique({
+        where: { id: academy.id },
+      });
+
+      expect(maskedAcademy).toBeDefined();
+      expect(maskedAcademy.name).toBe('탈퇴한 학원');
+      expect(maskedAcademy.phoneNumber).toBe('000-0000-0000');
+
+      // 8. Teacher의 academyId가 null이 되었는지 확인
+      const disconnectedTeacher = await prisma.teacher.findUnique({
+        where: { id: teacherEntity.id },
+      });
+
+      expect(disconnectedTeacher).toBeDefined();
+      expect(disconnectedTeacher.academyId).toBeNull();
+
+      // 9. Principal 테이블 마스킹 확인
+      const maskedPrincipal = await prisma.principal.findUnique({
+        where: { id: principal.id },
+      });
+
+      expect(maskedPrincipal).toBeDefined();
+      expect(maskedPrincipal.name).toBe('탈퇴한 원장');
+      expect(maskedPrincipal.phoneNumber).toBeNull();
+
+      // 10. User 테이블 마스킹 확인
+      const maskedUser = await prisma.user.findUnique({
+        where: { id: principalUser.id },
+      });
+
+      expect(maskedUser).toBeDefined();
+      expect(maskedUser.userId).toContain('WITHDRAWN_PRINCIPAL_');
+      expect(maskedUser.name).toBe('탈퇴한 원장');
+
+      // 11. WithdrawalHistory 확인
+      const withdrawalHistory = await prisma.withdrawalHistory.findFirst({
+        where: {
+          userId: principalUser.userId,
+        },
+      });
+
+      expect(withdrawalHistory).toBeDefined();
+      expect(withdrawalHistory.userRole).toBe('PRINCIPAL');
+      expect(withdrawalHistory.reason).toBe(withdrawalReason);
+    });
+
+    it('should reject withdrawal when principal has ongoing classes', async () => {
+      // 1. Principal 생성
+      const { token: principalToken, academy } =
+        await createAuthenticatedUser('PRINCIPAL');
+      const { teacher: teacherEntity } =
+        await createAuthenticatedUser('TEACHER');
+
+      // 2. 진행 중인 클래스 생성
+      const classData = testData.classes.basic({
+        className: '진행 중인 클래스',
+        level: 'BEGINNER',
+        maxStudents: 10,
+        tuitionFee: 150000,
+        startDate: new Date('2025-01-01'),
+        endDate: new Date('2025-12-31'), // 미래 날짜
+        registrationStartDate: new Date('2024-12-15'),
+        registrationEndDate: new Date('2024-12-30'),
+        teacherId: teacherEntity.id,
+        academyId: academy.id,
+      });
+
+      await testApp
+        .request()
+        .post('/classes')
+        .set('Authorization', `Bearer ${principalToken}`)
+        .send(classData)
+        .expect(201);
+
+      // 3. 회원탈퇴 시도 (실패해야 함)
+      const withdrawalResponse = await testApp
+        .request()
+        .post('/auth/withdrawal/principal')
+        .set('Authorization', `Bearer ${principalToken}`)
+        .send({ reason: '탈퇴 시도' })
+        .expect(400);
+
+      expect(withdrawalResponse.body.code).toBe('HAS_ONGOING_CLASSES');
     });
   });
 });

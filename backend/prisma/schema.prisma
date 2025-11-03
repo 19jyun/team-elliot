@@ -504,6 +504,8 @@ model AnonymizedUser {
   attendances        AnonymizedAttendance[]
   disputes           AnonymizedDispute[]
   sessionEnrollments AnonymizedSessionEnrollment[]
+  teacherActivities  AnonymizedTeacherActivity[]
+  principalActivities AnonymizedPrincipalActivity[]
   
   @@index([dataRetentionUntil])
   @@index([withdrawalDate])
@@ -1054,6 +1056,112 @@ enum DisputeSeverity {
   HIGH      // 높음
   CRITICAL  // 긴급
   
+  @@schema("retention")
+}
+
+// ============================================================================
+// 익명화된 강사 활동 기록 (5년 보관)
+// ============================================================================
+
+/// 강사 활동 기록 (수업 운영 및 처리 내역)
+/// 보관 기간: 5년
+model AnonymizedTeacherActivity {
+  id                  Int      @id @default(autoincrement())
+  
+  // 익명화된 강사 참조
+  anonymousUserId     Int      @map("anonymous_user_id")
+  anonymousUser       AnonymizedUser @relation(fields: [anonymousUserId], references: [id], onDelete: Cascade)
+  
+  // 활동 유형 (CLASS_OPERATION만 사용)
+  activityType        String   @map("activity_type") @db.VarChar(50)
+  // CLASS_OPERATION: 수업 운영
+  
+  // 수업 운영 정보
+  classId             Int      @map("class_id")
+  className           String   @map("class_name") @db.VarChar(200)
+  academyId           Int      @map("academy_id")
+  tuitionFee          Decimal  @map("tuition_fee") @db.Decimal(10, 2)
+  operationStartDate  DateTime @map("operation_start_date")
+  operationEndDate    DateTime @map("operation_end_date")
+  totalSessions       Int      @map("total_sessions")
+  totalEnrollments    Int      @map("total_enrollments")
+  totalRevenue        Decimal  @map("total_revenue") @db.Decimal(10, 2)
+  
+  // 법적 보관 정보
+  dataRetentionUntil  DateTime @map("data_retention_until")
+  createdAt           DateTime @default(now()) @map("created_at")
+  
+  @@index([anonymousUserId])
+  @@index([activityType])
+  @@index([dataRetentionUntil])
+  @@index([academyId])
+  @@index([classId])
+  @@map("anonymized_teacher_activities")
+  @@schema("retention")
+}
+
+// ============================================================================
+// 익명화된 원장 활동 기록 (5년 보관)
+// ============================================================================
+
+/// 원장 활동 기록 (학원 운영 및 관리 내역)
+/// 보관 기간: 5년
+model AnonymizedPrincipalActivity {
+  id                  Int      @id @default(autoincrement())
+  
+  // 익명화된 원장 참조
+  anonymousUserId     Int      @map("anonymous_user_id")
+  anonymousUser       AnonymizedUser @relation(fields: [anonymousUserId], references: [id], onDelete: Cascade)
+  
+  // 활동 유형
+  activityType        String   @map("activity_type") @db.VarChar(50)
+  // ACADEMY_OPERATION: 학원 운영
+  // REFUND_PROCESS: 환불 처리
+  // ENROLLMENT_REJECTION: 수강 신청 거절
+  // TEACHER_MANAGEMENT: 강사 관리
+  
+  // 학원 운영 정보 (activityType = ACADEMY_OPERATION)
+  academyId           Int?     @map("academy_id")
+  academyName         String?  @map("academy_name") @db.VarChar(200)
+  // 탈퇴 시점의 학원명 스냅샷
+  academyCode         String?  @map("academy_code") @db.VarChar(50)
+  operationStartDate  DateTime? @map("operation_start_date")
+  operationEndDate    DateTime? @map("operation_end_date")
+  totalClasses        Int?     @map("total_classes")
+  totalTeachers       Int?     @map("total_teachers")
+  totalStudents       Int?     @map("total_students")
+  totalRevenue        Decimal? @map("total_revenue") @db.Decimal(10, 2)
+  
+  // 은행 계좌 정보 (익명화 처리)
+  accountHolderMasked String?  @map("account_holder_masked") @db.VarChar(50)
+  // 예금주 익명화: "홍*동"
+  accountNumberMasked String?  @map("account_number_masked") @db.VarChar(30)
+  // 계좌번호 마스킹: "110-***-******"
+  bankName            String?  @map("bank_name") @db.VarChar(50)
+  
+  // 환불/거절 처리 정보 (activityType = REFUND_PROCESS or ENROLLMENT_REJECTION)
+  processedEntityType String?  @map("processed_entity_type") @db.VarChar(50)
+  processedEntityId   Int?     @map("processed_entity_id")
+  processAction       String?  @map("process_action") @db.VarChar(20)
+  processReason       String?  @map("process_reason") @db.Text
+  processedAmount     Decimal? @map("processed_amount") @db.Decimal(10, 2)
+  processedAt         DateTime? @map("processed_at")
+  
+  // 강사 관리 정보 (activityType = TEACHER_MANAGEMENT)
+  managedTeacherId    Int?     @map("managed_teacher_id")
+  managementAction    String?  @map("management_action") @db.VarChar(30)
+  // TEACHER_ADDED, TEACHER_REMOVED
+  managedAt           DateTime? @map("managed_at")
+  
+  // 법적 보관 정보
+  dataRetentionUntil  DateTime @map("data_retention_until")
+  createdAt           DateTime @default(now()) @map("created_at")
+  
+  @@index([anonymousUserId])
+  @@index([activityType])
+  @@index([dataRetentionUntil])
+  @@index([academyId])
+  @@map("anonymized_principal_activities")
   @@schema("retention")
 }
 

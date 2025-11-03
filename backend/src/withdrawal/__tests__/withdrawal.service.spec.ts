@@ -20,6 +20,12 @@ jest.mock('../migrator/attendance-migrator', () => ({
 jest.mock('../migrator/session-enrollment-migrator', () => ({
   migrateSessionEnrollments: jest.fn(),
 }));
+jest.mock('../migrator/teacher-activity.migrator', () => ({
+  migrateTeacherActivities: jest.fn(),
+}));
+jest.mock('../migrator/principal-activity.migrator', () => ({
+  migratePrincipalActivities: jest.fn(),
+}));
 jest.mock('../masker/masking-rules');
 
 describe('WithdrawalService', () => {
@@ -32,16 +38,40 @@ describe('WithdrawalService', () => {
     student: {
       findUnique: jest.fn(),
     },
+    teacher: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn(),
+    },
+    principal: {
+      findUnique: jest.fn(),
+      update: jest.fn(),
+    },
+    academy: {
+      update: jest.fn(),
+    },
+    class: {
+      findMany: jest.fn(),
+    },
     payment: {
       findMany: jest.fn(),
     },
     refundRequest: {
       findMany: jest.fn(),
+      count: jest.fn(),
     },
     sessionEnrollment: {
       findMany: jest.fn(),
+      count: jest.fn(),
     },
     attendance: {
+      findMany: jest.fn(),
+    },
+    studentAcademy: {
+      deleteMany: jest.fn(),
+    },
+    rejectionDetail: {
       findMany: jest.fn(),
     },
     withdrawalHistory: {
@@ -431,6 +461,637 @@ describe('WithdrawalService', () => {
       await expect(service.withdrawStudent(userId, reason)).rejects.toThrow(
         error,
       );
+    });
+  });
+
+  describe('withdrawTeacher', () => {
+    const userId = 2;
+    const teacherId = 200;
+    const reason = '개인적인 이유';
+
+    const mockUser = {
+      id: userId,
+      userId: 'teacher123',
+      password: 'hashed_password',
+      name: '테스트 강사',
+      role: 'TEACHER',
+    };
+
+    const mockTeacher = {
+      id: teacherId,
+      userId: 'teacher123',
+      password: 'hashed_password',
+      name: '테스트 강사',
+      userRefId: userId,
+      academyId: 1,
+      classes: [], // no ongoing classes
+      user: mockUser,
+    };
+
+    const mockClasses = [
+      {
+        id: 1,
+        className: '발레 초급반',
+        academyId: 1,
+        tuitionFee: new Decimal(150000),
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-03-31'),
+        classSessions: [
+          {
+            id: 10,
+            enrollments: [
+              {
+                id: 100,
+                payment: {
+                  amount: new Decimal(150000),
+                },
+              },
+              {
+                id: 101,
+                payment: {
+                  amount: new Decimal(150000),
+                },
+              },
+            ],
+          },
+        ],
+      },
+    ];
+
+    const mockAnonymizedUser = {
+      id: 2,
+      anonymousId: 'ANON_TEACHER_1234567890_ABC123',
+    };
+
+    const mockMaskedUserData = {
+      userId: 'WITHDRAWN_USER_2',
+      password: 'hashed_random_password',
+      name: '탈퇴한 사용자',
+    };
+
+    const mockMaskedTeacherData = {
+      userId: 'WITHDRAWN_TEACHER_200',
+      password: 'hashed_random_password',
+      name: '탈퇴한 강사',
+      phoneNumber: null,
+      introduction: null,
+      photoUrl: null,
+      education: [],
+      specialties: [],
+      certifications: [],
+      yearsOfExperience: null,
+      availableTimes: null,
+      academyId: null,
+    };
+
+    beforeEach(() => {
+      mockPrismaService.teacher.findUnique.mockResolvedValue(mockTeacher);
+      mockPrismaService.class.findMany.mockResolvedValue(mockClasses);
+
+      jest
+        .spyOn(withdrawalMigrators, 'createAnonymizedUser')
+        .mockResolvedValue(mockAnonymizedUser);
+
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const teacherActivityMigrator = require('../migrator/teacher-activity.migrator');
+      jest
+        .spyOn(teacherActivityMigrator, 'migrateTeacherActivities')
+        .mockResolvedValue(1);
+
+      jest
+        .spyOn(maskingRules, 'createMaskedUserData')
+        .mockReturnValue(mockMaskedUserData);
+      jest
+        .spyOn(maskingRules, 'createMaskedTeacherData')
+        .mockReturnValue(mockMaskedTeacherData as any);
+
+      mockPrismaService.$transaction.mockImplementation(async (callback) => {
+        const mockTx = {
+          anonymizedUser: {
+            create: jest.fn().mockResolvedValue(mockAnonymizedUser),
+          },
+          user: {
+            update: jest.fn().mockResolvedValue({}),
+          },
+          teacher: {
+            update: jest.fn().mockResolvedValue({}),
+          },
+          withdrawalHistory: {
+            create: jest.fn().mockResolvedValue({}),
+          },
+        };
+        return await callback(mockTx);
+      });
+    });
+
+    it('should successfully withdraw teacher', async () => {
+      await service.withdrawTeacher(userId, reason);
+
+      expect(mockPrismaService.teacher.findUnique).toHaveBeenCalledWith({
+        where: { userRefId: userId },
+        include: {
+          classes: {
+            where: {
+              endDate: { gte: expect.any(Date) },
+            },
+          },
+          user: true,
+        },
+      });
+      expect(mockPrismaService.class.findMany).toHaveBeenCalled();
+      expect(mockPrismaService.$transaction).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException when teacher not found', async () => {
+      mockPrismaService.teacher.findUnique.mockResolvedValue(null);
+
+      await expect(service.withdrawTeacher(userId, reason)).rejects.toThrow(
+        '강사 정보를 찾을 수 없습니다.',
+      );
+    });
+
+    it('should throw BadRequestException when has ongoing classes', async () => {
+      const teacherWithOngoingClasses = {
+        ...mockTeacher,
+        classes: [
+          {
+            id: 1,
+            className: '진행 중인 수업',
+            endDate: new Date(Date.now() + 86400000), // tomorrow
+          },
+        ],
+      };
+      mockPrismaService.teacher.findUnique.mockResolvedValue(
+        teacherWithOngoingClasses,
+      );
+
+      await expect(service.withdrawTeacher(userId, reason)).rejects.toThrow(
+        '진행 중인 수업이 있어 탈퇴할 수 없습니다.',
+      );
+    });
+
+    it('should create anonymized user and teacher activities', async () => {
+      await service.withdrawTeacher(userId, reason);
+
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const teacherActivityMigrator = require('../migrator/teacher-activity.migrator');
+
+      expect(withdrawalMigrators.createAnonymizedUser).toHaveBeenCalled();
+      expect(
+        teacherActivityMigrator.migrateTeacherActivities,
+      ).toHaveBeenCalledWith(
+        expect.anything(),
+        {
+          classes: mockClasses,
+        },
+        mockAnonymizedUser.id,
+        expect.any(Date),
+      );
+    });
+
+    it('should mask teacher and user data', async () => {
+      await service.withdrawTeacher(userId, reason);
+
+      // createMaskedTeacherData만 호출됨 (User 데이터는 Teacher 마스킹 데이터에서 가져옴)
+      expect(maskingRules.createMaskedTeacherData).toHaveBeenCalledWith(
+        teacherId,
+      );
+    });
+
+    it('should set teacher academyId to null', async () => {
+      await service.withdrawTeacher(userId, reason);
+
+      const transactionCallback =
+        mockPrismaService.$transaction.mock.calls[0][0];
+      const mockTx = {
+        anonymizedUser: {
+          create: jest.fn().mockResolvedValue(mockAnonymizedUser),
+        },
+        user: { update: jest.fn() },
+        teacher: { update: jest.fn() },
+        withdrawalHistory: { create: jest.fn() },
+      };
+
+      await transactionCallback(mockTx);
+
+      expect(mockTx.teacher.update).toHaveBeenCalledWith({
+        where: { id: teacherId },
+        data: expect.objectContaining({
+          academyId: null,
+        }),
+      });
+    });
+
+    it('should create withdrawal history', async () => {
+      await service.withdrawTeacher(userId, reason);
+
+      const transactionCallback =
+        mockPrismaService.$transaction.mock.calls[0][0];
+      const mockTx = {
+        anonymizedUser: {
+          create: jest.fn().mockResolvedValue(mockAnonymizedUser),
+        },
+        user: { update: jest.fn() },
+        teacher: { update: jest.fn() },
+        withdrawalHistory: { create: jest.fn() },
+      };
+
+      await transactionCallback(mockTx);
+
+      expect(mockTx.withdrawalHistory.create).toHaveBeenCalledWith({
+        data: {
+          userId: mockUser.userId,
+          userName: mockUser.name,
+          userRole: 'TEACHER',
+          reason: reason,
+          reasonCategory: 'OTHER',
+        },
+      });
+    });
+  });
+
+  describe('withdrawPrincipal', () => {
+    const userId = 3;
+    const principalId = 300;
+    const academyId = 1;
+    const reason = '개인적인 이유';
+
+    const mockUser = {
+      id: userId,
+      userId: 'principal123',
+      password: 'hashed_password',
+      name: '테스트 원장',
+      role: 'PRINCIPAL',
+    };
+
+    const mockAcademy = {
+      id: academyId,
+      name: '테스트 학원',
+      code: 'ACADEMY_123',
+      createdAt: new Date('2023-01-01'),
+      classes: [], // no ongoing classes
+      teachers: [{ id: 200 }],
+      students: [{ id: 100, student: { id: 100 } }],
+    };
+
+    const mockPrincipal = {
+      id: principalId,
+      userId: 'principal123',
+      password: 'hashed_password',
+      name: '테스트 원장',
+      userRefId: userId,
+      academyId: academyId,
+      accountHolder: '테스트원장',
+      accountNumber: '123-456-789012',
+      bankName: '국민은행',
+      academy: mockAcademy,
+      user: mockUser,
+    };
+
+    const mockClasses = [
+      {
+        id: 1,
+        className: '발레 초급반',
+        academyId: academyId,
+        tuitionFee: new Decimal(150000),
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-03-31'),
+        classSessions: [
+          {
+            id: 10,
+            enrollments: [
+              {
+                id: 100,
+                payment: {
+                  amount: new Decimal(150000),
+                },
+              },
+            ],
+          },
+        ],
+        teacher: { id: 200, name: '테스트 강사' },
+      },
+    ];
+
+    const mockRefunds = [];
+    const mockRejections = [];
+    const mockTeachers = [{ id: 200, createdAt: new Date('2023-06-01') }];
+
+    const mockAnonymizedUser = {
+      id: 3,
+      anonymousId: 'ANON_PRINCIPAL_1234567890_ABC123',
+    };
+
+    const mockMaskedUserData = {
+      userId: 'WITHDRAWN_USER_3',
+      password: 'hashed_random_password',
+      name: '탈퇴한 사용자',
+    };
+
+    const mockMaskedPrincipalData = {
+      userId: 'WITHDRAWN_PRINCIPAL_300',
+      password: 'hashed_random_password',
+      name: '탈퇴한 원장',
+      phoneNumber: null,
+      email: null,
+      introduction: null,
+      photoUrl: null,
+      education: [],
+      certifications: [],
+      yearsOfExperience: null,
+      accountHolder: null,
+      accountNumber: null,
+      bankName: null,
+    };
+
+    const mockMaskedAcademyData = {
+      name: '탈퇴한 학원',
+      phoneNumber: '000-0000-0000',
+      address: '주소 정보 없음',
+      description: '탈퇴한 학원입니다',
+    };
+
+    beforeEach(() => {
+      mockPrismaService.principal.findUnique.mockResolvedValue(mockPrincipal);
+      mockPrismaService.refundRequest.count.mockResolvedValue(0);
+      mockPrismaService.sessionEnrollment.count.mockResolvedValue(0);
+      mockPrismaService.class.findMany.mockResolvedValue(mockClasses);
+      mockPrismaService.refundRequest.findMany.mockResolvedValue(mockRefunds);
+      mockPrismaService.rejectionDetail.findMany.mockResolvedValue(
+        mockRejections,
+      );
+      mockPrismaService.teacher.findMany.mockResolvedValue(mockTeachers);
+
+      jest
+        .spyOn(withdrawalMigrators, 'createAnonymizedUser')
+        .mockResolvedValue(mockAnonymizedUser);
+
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const principalActivityMigrator = require('../migrator/principal-activity.migrator');
+      jest
+        .spyOn(principalActivityMigrator, 'migratePrincipalActivities')
+        .mockResolvedValue(1);
+
+      jest
+        .spyOn(maskingRules, 'createMaskedUserData')
+        .mockReturnValue(mockMaskedUserData);
+      jest
+        .spyOn(maskingRules, 'createMaskedPrincipalData')
+        .mockReturnValue(mockMaskedPrincipalData as any);
+      jest
+        .spyOn(maskingRules, 'createMaskedAcademyData')
+        .mockReturnValue(mockMaskedAcademyData);
+
+      mockPrismaService.$transaction.mockImplementation(async (callback) => {
+        const mockTx = {
+          anonymizedUser: {
+            create: jest.fn().mockResolvedValue(mockAnonymizedUser),
+          },
+          studentAcademy: {
+            deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+          },
+          teacher: {
+            updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+          },
+          academy: {
+            update: jest.fn().mockResolvedValue({}),
+          },
+          user: {
+            update: jest.fn().mockResolvedValue({}),
+          },
+          principal: {
+            update: jest.fn().mockResolvedValue({}),
+          },
+          withdrawalHistory: {
+            create: jest.fn().mockResolvedValue({}),
+          },
+        };
+        return await callback(mockTx);
+      });
+    });
+
+    it('should successfully withdraw principal', async () => {
+      await service.withdrawPrincipal(userId, reason);
+
+      expect(mockPrismaService.principal.findUnique).toHaveBeenCalledWith({
+        where: { userRefId: userId },
+        include: {
+          academy: {
+            include: {
+              classes: {
+                where: {
+                  endDate: { gte: expect.any(Date) },
+                },
+              },
+              teachers: true,
+              students: {
+                include: {
+                  student: true,
+                },
+              },
+            },
+          },
+          user: true,
+        },
+      });
+      expect(mockPrismaService.$transaction).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException when principal not found', async () => {
+      mockPrismaService.principal.findUnique.mockResolvedValue(null);
+
+      await expect(service.withdrawPrincipal(userId, reason)).rejects.toThrow(
+        '원장 또는 학원 정보를 찾을 수 없습니다.',
+      );
+    });
+
+    it('should throw BadRequestException when has ongoing classes', async () => {
+      const principalWithOngoingClasses = {
+        ...mockPrincipal,
+        academy: {
+          ...mockAcademy,
+          classes: [
+            {
+              id: 1,
+              className: '진행 중인 수업',
+              endDate: new Date(Date.now() + 86400000), // tomorrow
+            },
+          ],
+        },
+      };
+      mockPrismaService.principal.findUnique.mockResolvedValue(
+        principalWithOngoingClasses,
+      );
+
+      await expect(service.withdrawPrincipal(userId, reason)).rejects.toThrow(
+        '진행 중인 수업이 있어 탈퇴할 수 없습니다.',
+      );
+    });
+
+    it('should throw BadRequestException when has pending refunds', async () => {
+      mockPrismaService.refundRequest.count.mockResolvedValue(1);
+
+      await expect(service.withdrawPrincipal(userId, reason)).rejects.toThrow(
+        '처리되지 않은 환불 요청이 있어 탈퇴할 수 없습니다.',
+      );
+    });
+
+    it('should throw BadRequestException when has pending enrollments', async () => {
+      mockPrismaService.sessionEnrollment.count.mockResolvedValue(1);
+
+      await expect(service.withdrawPrincipal(userId, reason)).rejects.toThrow(
+        '처리되지 않은 수강 신청이 있어 탈퇴할 수 없습니다.',
+      );
+    });
+
+    it('should delete all students from academy', async () => {
+      await service.withdrawPrincipal(userId, reason);
+
+      const transactionCallback =
+        mockPrismaService.$transaction.mock.calls[0][0];
+      const mockTx = {
+        anonymizedUser: {
+          create: jest.fn().mockResolvedValue(mockAnonymizedUser),
+        },
+        studentAcademy: {
+          deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+        },
+        teacher: {
+          updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        },
+        academy: { update: jest.fn() },
+        user: { update: jest.fn() },
+        principal: { update: jest.fn() },
+        withdrawalHistory: { create: jest.fn() },
+      };
+
+      await transactionCallback(mockTx);
+
+      expect(mockTx.studentAcademy.deleteMany).toHaveBeenCalledWith({
+        where: { academyId: academyId },
+      });
+    });
+
+    it('should disconnect all teachers from academy', async () => {
+      await service.withdrawPrincipal(userId, reason);
+
+      const transactionCallback =
+        mockPrismaService.$transaction.mock.calls[0][0];
+      const mockTx = {
+        anonymizedUser: {
+          create: jest.fn().mockResolvedValue(mockAnonymizedUser),
+        },
+        studentAcademy: { deleteMany: jest.fn() },
+        teacher: {
+          updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        },
+        academy: { update: jest.fn() },
+        user: { update: jest.fn() },
+        principal: { update: jest.fn() },
+        withdrawalHistory: { create: jest.fn() },
+      };
+
+      await transactionCallback(mockTx);
+
+      expect(mockTx.teacher.updateMany).toHaveBeenCalledWith({
+        where: { academyId: academyId },
+        data: { academyId: null },
+      });
+    });
+
+    it('should mask academy data', async () => {
+      await service.withdrawPrincipal(userId, reason);
+
+      const transactionCallback =
+        mockPrismaService.$transaction.mock.calls[0][0];
+      const mockTx = {
+        anonymizedUser: {
+          create: jest.fn().mockResolvedValue(mockAnonymizedUser),
+        },
+        studentAcademy: { deleteMany: jest.fn() },
+        teacher: { updateMany: jest.fn() },
+        academy: { update: jest.fn() },
+        user: { update: jest.fn() },
+        principal: { update: jest.fn() },
+        withdrawalHistory: { create: jest.fn() },
+      };
+
+      await transactionCallback(mockTx);
+
+      expect(maskingRules.createMaskedAcademyData).toHaveBeenCalledWith(
+        academyId,
+      );
+      expect(mockTx.academy.update).toHaveBeenCalledWith({
+        where: { id: academyId },
+        data: mockMaskedAcademyData,
+      });
+    });
+
+    it('should mask principal and user data', async () => {
+      await service.withdrawPrincipal(userId, reason);
+
+      // createMaskedPrincipalData만 호출됨 (User 데이터는 Principal 마스킹 데이터에서 가져옴)
+      expect(maskingRules.createMaskedPrincipalData).toHaveBeenCalledWith(
+        principalId,
+      );
+    });
+
+    it('should create anonymized user and principal activities', async () => {
+      await service.withdrawPrincipal(userId, reason);
+
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const principalActivityMigrator = require('../migrator/principal-activity.migrator');
+
+      expect(withdrawalMigrators.createAnonymizedUser).toHaveBeenCalled();
+      expect(
+        principalActivityMigrator.migratePrincipalActivities,
+      ).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          academy: mockAcademy,
+          classes: mockClasses,
+          refundProcessHistory: mockRefunds,
+          rejectionHistory: mockRejections,
+          teacherManagementHistory: mockTeachers,
+          accountInfo: {
+            accountHolder: mockPrincipal.accountHolder,
+            accountNumber: mockPrincipal.accountNumber,
+            bankName: mockPrincipal.bankName,
+          },
+        }),
+        mockAnonymizedUser.id,
+        expect.any(Date),
+      );
+    });
+
+    it('should create withdrawal history', async () => {
+      await service.withdrawPrincipal(userId, reason);
+
+      const transactionCallback =
+        mockPrismaService.$transaction.mock.calls[0][0];
+      const mockTx = {
+        anonymizedUser: {
+          create: jest.fn().mockResolvedValue(mockAnonymizedUser),
+        },
+        studentAcademy: { deleteMany: jest.fn() },
+        teacher: { updateMany: jest.fn() },
+        academy: { update: jest.fn() },
+        user: { update: jest.fn() },
+        principal: { update: jest.fn() },
+        withdrawalHistory: { create: jest.fn() },
+      };
+
+      await transactionCallback(mockTx);
+
+      expect(mockTx.withdrawalHistory.create).toHaveBeenCalledWith({
+        data: {
+          userId: mockUser.userId,
+          userName: mockUser.name,
+          userRole: 'PRINCIPAL',
+          reason: reason,
+          reasonCategory: 'OTHER',
+        },
+      });
     });
   });
 });

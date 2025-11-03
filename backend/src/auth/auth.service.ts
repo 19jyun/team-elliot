@@ -372,9 +372,19 @@ export class AuthService {
     return `ACADEMY_${timestamp}_${random1}_${random2}_${random3}`;
   }
 
-  async withdrawal(userId: number, reason: string) {
+  async withdrawalStudent(userId: number, reason: string) {
     // WithdrawalService를 사용하여 회원 탈퇴 처리
     await this.withdrawalService.withdrawStudent(userId, reason);
+  }
+
+  async withdrawalTeacher(userId: number, reason: string) {
+    // WithdrawalService를 사용하여 강사 회원 탈퇴 처리
+    await this.withdrawalService.withdrawTeacher(userId, reason);
+  }
+
+  async withdrawalPrincipal(userId: number, reason: string) {
+    // WithdrawalService를 사용하여 원장 회원 탈퇴 처리
+    await this.withdrawalService.withdrawPrincipal(userId, reason);
   }
 
   async checkUserId(userId: string): Promise<{ available: boolean }> {
