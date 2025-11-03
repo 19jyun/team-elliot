@@ -38,26 +38,22 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
     {
       icon: '/icons/CourseRegistrationsStatusSteps1.svg',
       label: '학원 선택',
-      isActive: false,
       isCompleted: true,
     },
     {
       icon: '/icons/CourseRegistrationsStatusSteps1.svg',
       label: '클래스 선택',
-      isActive: false,
       isCompleted: true,
     },
     {
       icon: '/icons/CourseRegistrationsStatusSteps1.svg',
       label: '일자 선택',
-      isActive: false,
       isCompleted: true,
     },
     {
       icon: '/icons/CourseRegistrationsStatusSteps2.svg',
       label: '결제하기',
       isActive: true,
-      isCompleted: false,
     },
   ]
 
@@ -273,47 +269,42 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
 
   return (
     <div className="flex flex-col h-full bg-white font-[Pretendard Variable]">
-      <header className="flex-shrink-0 flex flex-col bg-white border-b border-gray-200 py-5 min-h-[120px] relative">
-
-        <div className="flex gap-10 self-center w-full text-sm font-medium tracking-normal leading-snug max-w-[297px] mt-2 mb-2">
+      {/* Header - 자동 크기 조정 */}
+      <header className="flex-shrink-0 flex flex-col bg-white border-b border-gray-200 py-5 relative">
+        <div className="flex gap-6 self-center w-full text-sm font-medium tracking-normal leading-snug max-w-[320px] mt-2 mb-2">
           {statusSteps.map((step, index) => (
             <StatusStep key={index} {...step} />
           ))}
         </div>
 
-        <div className="self-center pb-4 text-base font-medium tracking-normal leading-snug text-center" style={{ color: '#595959' }}>
+        <div className="self-center pb-4 text-base font-medium tracking-normal leading-snug text-center px-4" style={{ color: '#595959' }}>
           <span className="font-bold text-[#595959]">신청 완료 전, 수강료 송금을 마무리 해주세요!</span><br />
           <span className="text-[#595959]">입금이 확인되지 않으면 신청이 취소될 수 있습니다.</span>
         </div>
       </header>
 
-      {/* Payment Box Container */}
-      <main className="flex-1 min-h-0 bg-white">
-        <div className="w-full overflow-auto" style={{ 
-          height: 'calc(100vh - 450px)',
-          minHeight: 0 
-        }}>
-          <div className="flex flex-col items-center px-4 py-8 gap-6">
-            {isLoadingPaymentInfo ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700 mb-4" />
-                <p className="text-gray-600">결제 정보를 불러오는 중...</p>
-              </div>
-            ) : principalPayment ? (
-              <PrincipalPaymentBox 
-                principal={principalPayment} 
-                onCopy={handleCopy}
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12">
-                <p className="text-gray-600">결제 정보가 없습니다.</p>
-              </div>
-            )}
-          </div>
+      {/* Main Content - Flex를 사용한 자동 높이 조정 */}
+      <main className="flex-1 min-h-0 overflow-y-auto bg-white">
+        <div className="flex flex-col items-center px-4 py-8 gap-6 min-h-full">
+          {isLoadingPaymentInfo ? (
+            <div className="flex flex-col items-center justify-center flex-1">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700 mb-4" />
+              <p className="text-gray-600">결제 정보를 불러오는 중...</p>
+            </div>
+          ) : principalPayment ? (
+            <PrincipalPaymentBox 
+              principal={principalPayment} 
+              onCopy={handleCopy}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center flex-1">
+              <p className="text-gray-600">결제 정보가 없습니다.</p>
+            </div>
+          )}
         </div>
       </main>
       
-      {/* Fixed Footer - 고정 크기 */}
+      {/* Footer - 자동 크기 조정 */}
       <footer className="flex-shrink-0 bg-white border-t border-gray-200">
         <PaymentConfirmFooter 
           confirmed={confirmed} 

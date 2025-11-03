@@ -187,6 +187,21 @@ export const FormsProvider: React.FC<FormsProviderProps> = ({ children }) => {
     stateSyncRef.current.publish('forms', formsState);
   }, [enrollment, createClass, auth, personManagement, principalCreateClass, principalPersonManagement]);
 
+  // 📢 탭 변경 이벤트 구독 - 모든 폼 초기화
+  useEffect(() => {
+    const unsubscribe = contextEventBus.subscribe('tabChanged', () => {
+      // 탭이 변경되면 모든 폼 상태를 초기화
+      enrollmentManager.reset();
+      createClassManager.reset();
+      authManager.reset();
+      personManagementManager.reset();
+      principalCreateClassManager.reset();
+      principalPersonManagementManager.reset();
+    });
+
+    return unsubscribe;
+  }, [enrollmentManager, createClassManager, authManager, personManagementManager, principalCreateClassManager, principalPersonManagementManager]);
+
   // 폼 상태 업데이트
   const updateForm = useCallback(<T extends keyof FormsState>(
     formType: T,

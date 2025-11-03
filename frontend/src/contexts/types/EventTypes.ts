@@ -3,6 +3,7 @@
 
 export interface EventMap {
   navigationChanged: { subPage: string | null; activeTab: number };
+  tabChanged: { activeTab: number };
   formStateChanged: { formType: string; step: string };
   goBackExecuted: {
     commandId: string;
