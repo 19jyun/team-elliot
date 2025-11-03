@@ -200,9 +200,14 @@ export function EnrollmentModificationDateStep({
       return { netChangeCount: 0, hasChanges: false };
     }
     
-    // 기존에 신청된 세션들 (백엔드에서 계산된 isAlreadyEnrolled 사용)
+    // 기존에 신청된 세션들 (활성 상태인 것만: CONFIRMED, PENDING, REFUND_REJECTED_CONFIRMED)
+    // REFUND_REQUESTED는 환불 요청 중이므로 제외
     const originalEnrolledSessions = existingEnrollments.filter(
-      (enrollment) => enrollment.isAlreadyEnrolled === true
+      (enrollment) => 
+        enrollment.enrollment &&
+        (enrollment.enrollment.status === "CONFIRMED" ||
+          enrollment.enrollment.status === "PENDING" ||
+          enrollment.enrollment.status === "REFUND_REJECTED_CONFIRMED")
     );
 
     // 기존 수강 세션의 ID들

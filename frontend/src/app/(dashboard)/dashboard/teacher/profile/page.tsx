@@ -81,33 +81,39 @@ export default function TeacherProfilePage() {
   // 에러 처리 - 로그아웃 버튼은 항상 표시
   if (error) {
     return (
-      <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px] relative">
-        <div className="flex flex-col px-5 py-6">
+      <div className="flex flex-col h-full mx-auto w-full bg-white max-w-[480px] relative">
+        {/* Header - 고정 */}
+        <header className="flex-shrink-0 flex flex-col px-5 py-6">
           <h1 className="text-2xl font-bold text-stone-700">
             프로필 정보
           </h1>
-        </div>
+        </header>
 
-        <div className="flex flex-col items-center justify-center flex-1 px-5">
-          <p className="text-red-500 text-center">데이터를 불러오는데 실패했습니다.</p>
-          <button
-            onClick={() => loadProfile()}
-            className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
-          >
-            다시 시도
-          </button>
-        </div>
+        {/* Main Content - 스크롤 가능 */}
+        <main className="flex-1 min-h-0 overflow-y-auto">
+          <div className="flex flex-col items-center justify-center min-h-full px-5">
+            <p className="text-red-500 text-center">데이터를 불러오는데 실패했습니다.</p>
+            <button
+              onClick={() => loadProfile()}
+              className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
+            >
+              다시 시도
+            </button>
+          </div>
+        </main>
 
-        <div className="flex flex-col px-5 py-10 mt-auto">
-          <button
-            onClick={() => setShowLogoutModal(true)}
-            className="mt-6 w-full py-4 text-base font-semibold text-neutral-400 rounded-lg border border-zinc-300"
-          >
-            로그아웃
-          </button>
-        </div>
-
-        <FooterLinks />
+        {/* Footer - 하단 고정 */}
+        <footer className="flex-shrink-0 flex flex-col pb-2">
+          <div className="flex flex-col px-5 py-10">
+            <button
+              onClick={() => setShowLogoutModal(true)}
+              className="mt-6 w-full py-4 text-base font-semibold text-neutral-400 rounded-lg border border-zinc-300"
+            >
+              로그아웃
+            </button>
+          </div>
+          <FooterLinks />
+        </footer>
 
         {showLogoutModal && (
           <LogoutModal
@@ -120,25 +126,31 @@ export default function TeacherProfilePage() {
   }
 
   return (
-    <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px] relative">
-      <div className="flex flex-col px-5 py-6">
+    <div className="flex flex-col h-full mx-auto w-full bg-white max-w-[480px] relative">
+      {/* Header - 고정 */}
+      <header className="flex-shrink-0 flex flex-col px-5 py-6">
         <h1 className="text-2xl font-bold text-stone-700">
           {profile?.name || session?.user?.name}님의 정보
         </h1>
-      </div>
+      </header>
 
-      <MenuLinks links={menuLinks} />
+      {/* Main Content - 스크롤 가능 */}
+      <main className="flex-1 min-h-0 overflow-y-auto">
+        <MenuLinks links={menuLinks} />
+      </main>
 
-      <div className="flex flex-col px-5 py-10 mt-auto">
-        <button
-          onClick={() => setShowLogoutModal(true)}
-          className="mt-6 w-full py-4 text-base font-semibold text-neutral-400 rounded-lg border border-zinc-300"
-        >
-          로그아웃
-        </button>
-      </div>
-
-      <FooterLinks />
+      {/* Footer - 하단 고정 */}
+      <footer className="flex-shrink-0 flex flex-col pb-2">
+        <div className="flex flex-col px-5 py-10">
+          <button
+            onClick={() => setShowLogoutModal(true)}
+            className="mt-6 w-full py-4 text-base font-semibold text-neutral-400 rounded-lg border border-zinc-300"
+          >
+            로그아웃
+          </button>
+        </div>
+        <FooterLinks />
+      </footer>
 
       {showLogoutModal && (
         <LogoutModal

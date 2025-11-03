@@ -12,6 +12,7 @@ import {
   RefundReason
 } from '@/utils/refundRequestValidation';
 import { BANKS } from '@/constants/banks';
+import { processBankInfo, getBankNameToSave } from '@/utils/bankUtils';
 import type { ModificationSessionVM } from '@/types/view/student';
 
 interface RefundRequestStepProps {
@@ -43,19 +44,26 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
   // 환불 계좌 정보가 로드되면 폼에 자동 입력
   useEffect(() => {
     if (refundAccount) {
+      // processBankInfo를 사용하여 은행명 처리
+      const { selectedBank, customBankName: customBank } = processBankInfo(
+        refundAccount.refundBankName
+      );
+      
       setAccountInfo(prev => ({
         ...prev,
-        bank: refundAccount.refundBankName || '', // 한글 은행명을 그대로 사용
+        bank: selectedBank,
         accountNumber: refundAccount.refundAccountNumber || '',
         accountHolder: refundAccount.refundAccountHolder || '',
       }));
+      
+      setCustomBankName(customBank); // 기타 은행명 설정
       
       // 기존 계좌 정보가 있으면 저장 체크박스를 기본으로 체크
       if (refundAccount.refundBankName && refundAccount.refundAccountNumber && refundAccount.refundAccountHolder) {
         setSaveAccount(true);
       }
     }
-  }, [refundAccount, loadRefundAccount]);
+  }, [refundAccount]);
 
   const statusSteps = [
     {
@@ -168,8 +176,8 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
       }
     );
 
-    // 실제 은행명 결정 (기타 선택 시 customBankName 사용)
-    const finalBankName = accountInfo.bank === '기타' ? customBankName : accountInfo.bank;
+    // 실제 은행명 결정 (getBankNameToSave 사용)
+    const finalBankName = getBankNameToSave(accountInfo.bank, customBankName);
 
     // 각 취소된 세션에 대해 validation 수행
     for (const cancelledSession of cancelledSessions) {
@@ -233,7 +241,7 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
           reason: refundReason,
           detailedReason: refundReason === RefundReason.OTHER ? detailedReason : undefined,
           refundAmount: sessionPrice,
-          bankName: accountInfo.bank,
+          bankName: finalBankName,
           accountNumber: accountInfo.accountNumber,
           accountHolder: accountInfo.accountHolder
         };
@@ -281,9 +289,9 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
     (refundReason !== RefundReason.OTHER || detailedReason.trim().length > 0);
 
   return (
-    <div className="flex flex-col min-h-screen bg-white font-[Pretendard Variable] items-center overflow-y-auto">
+    <div className="flex flex-col h-full bg-white font-[Pretendard Variable]">
       {/* 헤더 */}
-      <header className="sticky top-0 z-40 flex flex-col bg-white border-b py-5 border-gray-200">
+      <header className="flex-shrink-0 flex flex-col bg-white border-b py-5 border-gray-200">
         <div className="flex gap-10 self-center w-full text-sm font-medium tracking-normal leading-snug max-w-[297px] mt-2 mb-2">
           {statusSteps.map((step, index) => (
             <StatusStep key={index} {...step} />
@@ -295,8 +303,11 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
         </div>
       </header>
 
+      {/* 메인 컨텐츠 영역 */}
+      <main className="flex-1 min-h-0 overflow-y-auto">
+      <div className="flex flex-col items-center px-4 py-6">
       {/* 환불금액 카드 */}
-      <div className="mt-8 mb-4 w-[335px]">
+      <div className="mb-4 w-[335px]">
         <InfoBubble
           label="환불금액"
           value={refundAmount.toLocaleString() + '원'}
@@ -436,21 +447,25 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
         </div>
         <div className="text-xs text-[#8C8C8C] ml-6">다음 환불 신청 시 이 정보를 자동으로 사용합니다</div>
       </div>
+      </div>
+      </main>
 
       {/* 하단 버튼 */}
-      <div className="w-[335px] mb-4">
-        <button
-          onClick={handleSubmit}
-          disabled={!isFormValid || isSubmitting}
-          className={`w-full py-4 rounded-lg text-base font-semibold leading-snug transition-colors
-            ${isFormValid && !isSubmitting
-              ? 'bg-[#AC9592] text-white hover:bg-[#8c7a74] cursor-pointer opacity-100'
-              : 'bg-[#D9D9D9] text-white cursor-not-allowed opacity-60'}
-          `}
-        >
-          환불 신청
-        </button>
-      </div>
+      <footer className="flex-shrink-0 bg-white border-t border-gray-200 py-4">
+        <div className="flex justify-center px-4">
+          <button
+            onClick={handleSubmit}
+            disabled={!isFormValid || isSubmitting}
+            className={`w-full max-w-[335px] py-4 rounded-lg text-base font-semibold leading-snug transition-colors
+              ${isFormValid && !isSubmitting
+                ? 'bg-[#AC9592] text-white hover:bg-[#8c7a74] cursor-pointer opacity-100'
+                : 'bg-[#D9D9D9] text-white cursor-not-allowed opacity-60'}
+            `}
+          >
+            환불 신청
+          </button>
+        </div>
+      </footer>
     </div>
   );
 } 

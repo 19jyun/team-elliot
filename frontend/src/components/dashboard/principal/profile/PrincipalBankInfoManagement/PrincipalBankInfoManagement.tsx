@@ -4,13 +4,14 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Building, CreditCard, Edit, Save, X, User } from 'lucide-react';
+import { Building, CreditCard, Edit, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { UpdatePrincipalProfileRequest } from '@/types/api/principal';
 import { validatePrincipalBankName, validatePrincipalAccountNumber, validatePrincipalAccountHolder } from '@/utils/validation';
 import { useApiError } from '@/hooks/useApiError';
 import { BANKS } from '@/constants/banks';
+import { processBankInfo, getBankNameToSave } from '@/utils/bankUtils';
 import { InfoBubble } from '@/components/common/InfoBubble';
 
 export function PrincipalBankInfoManagement() {
@@ -47,11 +48,18 @@ export function PrincipalBankInfoManagement() {
 
   const handleEdit = () => {
     if (profile) {
+      // processBankInfo를 사용하여 은행명 처리
+      const { selectedBank, customBankName: customBank } = processBankInfo(
+        profile.bankName
+      );
+      
       setEditedInfo({
-        bankName: profile.bankName || '',
+        bankName: selectedBank,
         accountNumber: profile.accountNumber || '',
         accountHolder: profile.accountHolder || '',
       });
+      
+      setCustomBankName(customBank); // 기타 은행명 설정
     }
     setIsEditing(true);
   };
@@ -66,8 +74,8 @@ export function PrincipalBankInfoManagement() {
   };
 
   const handleSave = async () => {
-    // 실제 은행명 결정 (기타 선택 시 customBankName 사용)
-    const finalBankName = editedInfo.bankName === '기타' ? customBankName : editedInfo.bankName;
+    // 실제 은행명 결정 (getBankNameToSave 사용)
+    const finalBankName = getBankNameToSave(editedInfo.bankName || '', customBankName);
     
     // 프론트엔드 validation 수행
     const bankNameValidation = validatePrincipalBankName(finalBankName || '');

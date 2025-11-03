@@ -152,7 +152,8 @@ export default function TeacherDashboardPage() {
 
   return (
     <div className="flex flex-col h-full bg-white">
-      <header className="flex-shrink-0">
+      {/* 상단 헤더 - 고정 */}
+      <header className="flex-shrink-0 border-b border-gray-200">
         {/* 환영 메시지 + 캘린더 아이콘 버튼 */}
         <div className="flex flex-col px-5 py-6">
           <div className="flex items-center justify-between">
@@ -184,32 +185,36 @@ export default function TeacherDashboardPage() {
             </button>
           </div>
         </div>
-
-
-        {/* 캘린더 섹션 - 기존 크기 복원 */}
-        <div className="flex flex-col w-full bg-white text-stone-700" style={{ height: 'calc(100vh - 500px)' }}>
-          <CalendarProvider
-            mode="teacher-view"
-            sessions={classSessionsForCalendar}
-            selectedSessionIds={new Set()}
-            onSessionSelect={() => {}} // teacher-view에서는 선택 기능 없음
-            onDateClick={handleDateClick}
-            calendarRange={calendarRangeForCalendar}
-            selectedDate={selectedDateString}
-          >
-            <ConnectedCalendar />
-          </CalendarProvider>
-        </div>
       </header>
 
-      {/* 세션 카드 표시 섹션 */}
-      <div className="flex-1 bg-white px-5 py-4">
-        <SessionCardDisplay
-          selectedDate={selectedDate}
-          sessions={selectedSessions}
-          onSessionClick={handleSessionClick}
-          role="teacher"
-        />
+      {/* 캘린더 섹션 - 고정 높이 + 내부 스크롤 */}
+      <div 
+        className="flex-shrink-0 bg-white"
+        style={{ height: 'calc(100vh - 435px)' }}
+      >
+        <CalendarProvider
+          mode="teacher-view"
+          sessions={classSessionsForCalendar}
+          selectedSessionIds={new Set()}
+          onSessionSelect={() => {}} // teacher-view에서는 선택 기능 없음
+          onDateClick={handleDateClick}
+          calendarRange={calendarRangeForCalendar}
+          selectedDate={selectedDateString}
+        >
+          <ConnectedCalendar />
+        </CalendarProvider>
+      </div>
+
+      {/* 세션 카드 표시 섹션 - 하단 고정 */}
+      <div className="flex-shrink-0 px-5 py-4 border-t border-gray-200 bg-white">
+        <div className="flex flex-col self-center w-full font-semibold leading-snug text-center max-w-[375px] mx-auto h-full">
+          <SessionCardDisplay
+            selectedDate={selectedDate}
+            sessions={selectedSessions}
+            onSessionClick={handleSessionClick}
+            role="teacher"
+          />
+        </div>
       </div>
     </div>
   )

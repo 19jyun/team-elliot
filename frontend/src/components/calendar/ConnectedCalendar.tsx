@@ -157,81 +157,45 @@ export function ConnectedCalendar() {
   // 스크롤 위치에 따른 월 감지 및 업데이트 (감도 조정)
   useEffect(() => {
     let scrollTimeout: NodeJS.Timeout;
-    
+
     const handleScroll = () => {
       if (!scrollContainerRef.current) return;
-      
+
       setIsScrolling(true);
-      
-      // 스크롤 중에는 업데이트하지 않음
+
       clearTimeout(scrollTimeout);
-      
+
       scrollTimeout = setTimeout(() => {
         setIsScrolling(false);
-        
+
         const container = scrollContainerRef.current;
-        if (!container) return;
-        
+        if (!container || continuousCalendarDays.length === 0) return;
+
         const scrollTop = container.scrollTop;
         const containerHeight = container.clientHeight;
         const scrollCenter = scrollTop + containerHeight / 2;
-        
-        // 스크롤 위치에 따라 현재 보이는 월 계산
+
         const weekHeight = 80; // 주당 높이
         const weekIndex = Math.floor(scrollCenter / weekHeight);
-        
-        // 캘린더 범위 내에서만 월 변경 허용
-        if (calendarBounds) {
-          // 실제 캘린더 범위를 기반으로 월 계산
-          const totalWeeks = Math.ceil((calendarBounds.endMonth - calendarBounds.startMonth + 1) * 4.33); // 월당 약 4.33주
-          const weekRatio = weekIndex / totalWeeks;
-          
-          let newMonth, newYear;
-          
-          if (calendarBounds.startYear === calendarBounds.endYear) {
-            // 같은 년도 내에서
-            const monthDiff = calendarBounds.endMonth - calendarBounds.startMonth;
-            const targetMonthIndex = Math.floor(weekRatio * (monthDiff + 1));
-            newMonth = calendarBounds.startMonth + targetMonthIndex;
-            newYear = calendarBounds.startYear;
-          } else {
-            // 년도가 다른 경우 (복잡한 경우는 나중에 처리)
-            newMonth = calendarBounds.startMonth;
-            newYear = calendarBounds.startYear;
-          }
-          
-          if (newMonth !== currentVisibleMonth.month || newYear !== currentVisibleMonth.year) {
-            setCurrentVisibleMonth({ year: newYear, month: newMonth });
-            updateFocusedMonth(newYear, newMonth);
-          }
-        } else {
-          // 캘린더 범위가 없는 경우 기존 로직 사용
-          const monthIndex = Math.floor(weekIndex / 6); // 6주 = 1개월
-          const newMonth = focusedMonth.month + (monthIndex - 1);
-          let newYear = focusedMonth.year;
-          
-          if (newMonth < 1) {
-            newYear = focusedMonth.year - 1;
-            const adjustedMonth = 12 + newMonth;
-            if (adjustedMonth !== currentVisibleMonth.month || newYear !== currentVisibleMonth.year) {
-              setCurrentVisibleMonth({ year: newYear, month: adjustedMonth });
-              updateFocusedMonth(newYear, adjustedMonth);
-            }
-          } else if (newMonth > 12) {
-            newYear = focusedMonth.year + 1;
-            const adjustedMonth = newMonth - 12;
-            if (adjustedMonth !== currentVisibleMonth.month || newYear !== currentVisibleMonth.year) {
-              setCurrentVisibleMonth({ year: newYear, month: adjustedMonth });
-              updateFocusedMonth(newYear, adjustedMonth);
-            }
-          } else {
-            if (newMonth !== currentVisibleMonth.month) {
-              setCurrentVisibleMonth({ year: newYear, month: newMonth });
-              updateFocusedMonth(newYear, newMonth);
-            }
-          }
+
+        // 주 중앙을 기준으로 해당 날짜 인덱스 계산
+        const dayIndex = Math.min(
+          continuousCalendarDays.length - 1,
+          Math.max(0, weekIndex * 7 + 3)
+        );
+        const targetDay = continuousCalendarDays[dayIndex];
+        if (!targetDay) return;
+
+        const { year: newYear, month: newMonth } = targetDay;
+
+        if (
+          newYear !== currentVisibleMonth.year ||
+          newMonth !== currentVisibleMonth.month
+        ) {
+          setCurrentVisibleMonth({ year: newYear, month: newMonth });
+          updateFocusedMonth(newYear, newMonth);
         }
-      }, 150); // 스크롤이 끝난 후 150ms 후에 업데이트
+      }, 150);
     };
 
     const container = scrollContainerRef.current;
@@ -242,7 +206,7 @@ export function ConnectedCalendar() {
         clearTimeout(scrollTimeout);
       };
     }
-  }, [focusedMonth, currentVisibleMonth, updateFocusedMonth, calendarBounds]);
+  }, [continuousCalendarDays, currentVisibleMonth, updateFocusedMonth]);
 
   // focusedMonth가 변경되면 currentVisibleMonth도 업데이트
   useEffect(() => {
@@ -297,39 +261,11 @@ export function ConnectedCalendar() {
   };
 
   const handleNavigationClick = (direction: 'prev' | 'next') => {
-    // 캘린더 범위 내에서만 네비게이션 허용
-    if (calendarBounds) {
-      const currentMonthIndex = (currentVisibleMonth.year - calendarBounds.startYear) * 12 + (currentVisibleMonth.month - calendarBounds.startMonth);
-      const newMonthIndex = direction === 'prev' ? currentMonthIndex - 1 : currentMonthIndex + 1;
-      
-      const totalMonths = (calendarBounds.endYear - calendarBounds.startYear) * 12 + (calendarBounds.endMonth - calendarBounds.startMonth + 1);
-      if (newMonthIndex >= 0 && newMonthIndex < totalMonths) {
-        onMonthChange(direction);
-        // 월 변경 후 해당 월로 스크롤
-        setTimeout(() => {
-          scrollToMonth(direction === 'prev' ? 'prev' : 'next');
-        }, 100);
-      }
-    } else {
-      onMonthChange(direction);
-      // 월 변경 후 해당 월로 스크롤
-      setTimeout(() => {
-        scrollToMonth(direction === 'prev' ? 'prev' : 'next');
-      }, 100);
-    }
-  };
+    const { year: currentYear, month: currentMonth } = currentVisibleMonth;
 
-  // 특정 월로 스크롤하는 함수
-  const scrollToMonth = (direction: 'prev' | 'next') => {
-    if (!scrollContainerRef.current || isScrolling) return;
-    
-    const container = scrollContainerRef.current;
-    const weekHeight = 80; // 주당 높이 (스크롤 계산과 동일)
-    
-    // 다음/이전 월 계산
-    let targetYear = currentVisibleMonth.year;
-    let targetMonth = currentVisibleMonth.month;
-    
+    let targetYear = currentYear;
+    let targetMonth = currentMonth;
+
     if (direction === 'prev') {
       if (targetMonth === 1) {
         targetMonth = 12;
@@ -345,6 +281,30 @@ export function ConnectedCalendar() {
         targetMonth++;
       }
     }
+
+    // 캘린더 범위 내에서만 네비게이션 허용
+    if (calendarBounds) {
+      const startMonthIndex = calendarBounds.startYear * 12 + (calendarBounds.startMonth - 1);
+      const endMonthIndex = calendarBounds.endYear * 12 + (calendarBounds.endMonth - 1);
+      const targetMonthIndex = targetYear * 12 + (targetMonth - 1);
+
+      if (targetMonthIndex < startMonthIndex || targetMonthIndex > endMonthIndex) {
+        return;
+      }
+    }
+
+    onMonthChange(direction);
+    setTimeout(() => {
+      scrollToMonth(targetYear, targetMonth);
+    }, 100);
+  };
+
+  // 특정 월로 스크롤하는 함수
+  const scrollToMonth = (targetYear: number, targetMonth: number) => {
+    if (!scrollContainerRef.current || isScrolling) return;
+    
+    const container = scrollContainerRef.current;
+    const weekHeight = 80; // 주당 높이 (스크롤 계산과 동일)
     
     // continuousCalendarDays에서 해당 월의 첫 번째 날짜 찾기
     const targetDayIndex = continuousCalendarDays.findIndex(day => 
