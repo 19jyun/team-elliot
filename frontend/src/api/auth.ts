@@ -89,9 +89,29 @@ export const verifyToken = (): Promise<ApiResponse<VerifyResponse>> => {
   return get<ApiResponse<VerifyResponse>>("/auth/verify");
 };
 
-// 회원 탈퇴
-export const withdrawal = (data: {
+// 회원 탈퇴 (학생)
+export const withdrawalStudent = (data: {
   reason: string;
 }): Promise<ApiResponse<{ message: string }>> => {
   return post<ApiResponse<{ message: string }>>("/auth/withdrawal", data);
+};
+
+// 회원 탈퇴 (강사)
+export const withdrawalTeacher = (data: {
+  reason: string;
+}): Promise<ApiResponse<{ message: string }>> => {
+  return post<ApiResponse<{ message: string }>>(
+    "/auth/withdrawal/teacher",
+    data
+  );
+};
+
+// 회원 탈퇴 (원장)
+export const withdrawalPrincipal = (data: {
+  reason: string;
+}): Promise<ApiResponse<{ message: string }>> => {
+  return post<ApiResponse<{ message: string }>>(
+    "/auth/withdrawal/principal",
+    data
+  );
 };

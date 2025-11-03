@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { login, logout, getSession as apiGetSession, refreshToken } from "@/api/auth";
-import { toast } from "sonner";
 import { AuthRouter } from "./AuthRouter";
 import { pushNotificationService } from "@/services/pushNotificationService";
 
@@ -34,6 +33,7 @@ interface SignOutOptions {
 interface AuthContextType {
   data: Session | null;
   status: 'loading' | 'authenticated' | 'unauthenticated';
+  isInitializing: boolean;
   update: (data?: Partial<Session>) => Promise<void>;
   signIn: (provider: string, options?: SignInOptions) => Promise<{ ok: boolean; error: string | null }>;
   signOut: (options?: SignOutOptions) => Promise<void>;
@@ -42,6 +42,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   data: null,
   status: 'unauthenticated',
+  isInitializing: false,
   update: async () => {},
   signIn: async () => ({ ok: false, error: "Not initialized" }),
   signOut: async () => {},
@@ -186,8 +187,6 @@ export const SessionProvider = ({ children, session: initialSession }: SessionPr
       };
 
       // 로그인 성공과 동일한 플로우 적용
-      toast.success('자동 로그인되었습니다.');
-      
       // AuthRouter 대기 후 리디렉션
       waitForAuthRouter().then(() => {
         // 로그인 성공과 동일한 지연 적용
@@ -321,6 +320,7 @@ export const SessionProvider = ({ children, session: initialSession }: SessionPr
   const value: AuthContextType = {
     data: session,
     status: loading ? 'loading' : (session ? 'authenticated' : 'unauthenticated'),
+    isInitializing: loading || isAutoRedirecting,
     update,
     signIn,
     signOut,
@@ -343,6 +343,7 @@ export const useSession = () => {
   return {
     data: context.data,
     status: context.status,
+    initializing: context.isInitializing,
     update: context.update,
   };
 };
