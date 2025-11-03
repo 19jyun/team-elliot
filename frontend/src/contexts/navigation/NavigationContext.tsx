@@ -326,14 +326,20 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
     setActiveTabState(tab);
     setSubPageState(null);
     
+    // Virtual History 완전히 비우기
+    virtualHistory.clear();
+    
+    // 📢 중요: 탭 변경 이벤트 발행 (FormsContext에서 구독하여 폼 상태 초기화)
+    contextEventBus.emit('tabChanged', { activeTab: tab });
+    
     // StateSync에 상태 발행
     const navigationState: NavigationState = {
       activeTab: tab,
       subPage: null,
-      canGoBack: virtualHistory.getState().currentIndex > 0,
+      canGoBack: false,  // 히스토리를 비웠으므로 false
       isTransitioning: false,
       navigationItems: getNavigationItems(),
-      history: history,
+      history: [],  // 히스토리를 비웠으므로 빈 배열
     };
     stateSync.publish('navigation', navigationState);
 
@@ -342,7 +348,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
       subPage: null,
       activeTab: tab,
     });
-  }, [getNavigationItems, history, stateSync, virtualHistory]);
+  }, [getNavigationItems, stateSync, virtualHistory]);
 
   const handleTabChange = useCallback((tab: number) => {
     if (tab === activeTab) return;

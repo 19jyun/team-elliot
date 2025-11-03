@@ -27,10 +27,31 @@ describe('AcademyService', () => {
     student: {
       findUnique: jest.fn(),
     },
+    teacher: {
+      findUnique: jest.fn(),
+    },
+    principal: {
+      findUnique: jest.fn(),
+    },
     class: {
       deleteMany: jest.fn(),
     },
     classSession: {
+      deleteMany: jest.fn(),
+    },
+    refundRequest: {
+      deleteMany: jest.fn(),
+    },
+    payment: {
+      deleteMany: jest.fn(),
+    },
+    attendance: {
+      deleteMany: jest.fn(),
+    },
+    sessionEnrollment: {
+      deleteMany: jest.fn(),
+    },
+    enrollment: {
       deleteMany: jest.fn(),
     },
     $transaction: jest.fn(),
@@ -452,6 +473,133 @@ describe('AcademyService', () => {
       await expect(service.getMyAcademies(studentId)).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe('removeStudentFromAcademyByTeacherComplete', () => {
+    it('should remove student from academy with all related data in correct order', async () => {
+      const principalTeacherId = 1;
+      const studentId = 2;
+
+      const mockPrincipalTeacher = {
+        id: principalTeacherId,
+        userRefId: 100,
+        academy: {
+          id: 1,
+          name: '테스트 학원',
+          principal: {
+            id: principalTeacherId, // principal.id should match teacher.id for isPrincipal check
+            userRefId: 100,
+          },
+        },
+      };
+
+      const mockStudentAcademy = {
+        id: 1,
+        studentId: studentId,
+        academyId: 1,
+      };
+
+      mockPrismaService.teacher.findUnique.mockResolvedValue(
+        mockPrincipalTeacher,
+      );
+      mockPrismaService.studentAcademy.findUnique.mockResolvedValue(
+        mockStudentAcademy,
+      );
+
+      mockPrismaService.$transaction.mockImplementation(async (callback) => {
+        const mockTx = {
+          refundRequest: {
+            deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+          },
+          payment: {
+            deleteMany: jest.fn().mockResolvedValue({ count: 3 }),
+          },
+          attendance: {
+            deleteMany: jest.fn().mockResolvedValue({ count: 5 }),
+          },
+          sessionEnrollment: {
+            deleteMany: jest.fn().mockResolvedValue({ count: 3 }),
+          },
+          enrollment: {
+            deleteMany: jest.fn().mockResolvedValue({ count: 2 }),
+          },
+          studentAcademy: {
+            delete: jest.fn().mockResolvedValue(mockStudentAcademy),
+          },
+        };
+        return await callback(mockTx);
+      });
+
+      const result = await service.removeStudentFromAcademyByTeacherComplete(
+        principalTeacherId,
+        studentId,
+      );
+
+      expect(result).toEqual({ message: '수강생이 학원에서 제거되었습니다.' });
+      expect(mockPrismaService.teacher.findUnique).toHaveBeenCalledWith({
+        where: { id: principalTeacherId },
+        include: {
+          academy: {
+            include: {
+              principal: true,
+            },
+          },
+        },
+      });
+      expect(mockPrismaService.studentAcademy.findUnique).toHaveBeenCalledWith({
+        where: {
+          studentId_academyId: {
+            studentId: studentId,
+            academyId: mockPrincipalTeacher.academy.id,
+          },
+        },
+      });
+      expect(mockPrismaService.$transaction).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException when principal teacher not found', async () => {
+      const principalTeacherId = 999;
+      const studentId = 2;
+
+      mockPrismaService.teacher.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.removeStudentFromAcademyByTeacherComplete(
+          principalTeacherId,
+          studentId,
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException when student not in academy', async () => {
+      const principalTeacherId = 1;
+      const studentId = 999;
+
+      const mockPrincipalTeacher = {
+        id: principalTeacherId,
+        userRefId: 100,
+        academy: {
+          id: 1,
+          name: '테스트 학원',
+          principal: {
+            id: principalTeacherId,
+            userRefId: 100,
+          },
+        },
+      };
+
+      mockPrismaService.teacher.findUnique.mockResolvedValue(
+        mockPrincipalTeacher,
+      );
+      mockPrismaService.studentAcademy.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.removeStudentFromAcademyByTeacherComplete(
+          principalTeacherId,
+          studentId,
+        ),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

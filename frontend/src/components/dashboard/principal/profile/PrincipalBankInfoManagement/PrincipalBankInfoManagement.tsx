@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Building, CreditCard, Edit, Save, X } from 'lucide-react';
@@ -11,11 +10,15 @@ import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { UpdatePrincipalProfileRequest } from '@/types/api/principal';
 import { validatePrincipalBankName, validatePrincipalAccountNumber, validatePrincipalAccountHolder } from '@/utils/validation';
 import { useApiError } from '@/hooks/useApiError';
+import { BANKS } from '@/constants/banks';
+import { processBankInfo, getBankNameToSave } from '@/utils/bankUtils';
+import { InfoBubble } from '@/components/common/InfoBubble';
 
 export function PrincipalBankInfoManagement() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedInfo, setEditedInfo] = useState<UpdatePrincipalProfileRequest>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [customBankName, setCustomBankName] = useState(''); // 기타 은행명 입력
   
   // Validation 관련 상태
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -45,11 +48,18 @@ export function PrincipalBankInfoManagement() {
 
   const handleEdit = () => {
     if (profile) {
+      // processBankInfo를 사용하여 은행명 처리
+      const { selectedBank, customBankName: customBank } = processBankInfo(
+        profile.bankName
+      );
+      
       setEditedInfo({
-        bankName: profile.bankName || '',
+        bankName: selectedBank,
         accountNumber: profile.accountNumber || '',
         accountHolder: profile.accountHolder || '',
       });
+      
+      setCustomBankName(customBank); // 기타 은행명 설정
     }
     setIsEditing(true);
   };
@@ -64,8 +74,11 @@ export function PrincipalBankInfoManagement() {
   };
 
   const handleSave = async () => {
+    // 실제 은행명 결정 (getBankNameToSave 사용)
+    const finalBankName = getBankNameToSave(editedInfo.bankName || '', customBankName);
+    
     // 프론트엔드 validation 수행
-    const bankNameValidation = validatePrincipalBankName(editedInfo.bankName || '');
+    const bankNameValidation = validatePrincipalBankName(finalBankName || '');
     const accountNumberValidation = validatePrincipalAccountNumber(editedInfo.accountNumber || '');
     const accountHolderValidation = validatePrincipalAccountHolder(editedInfo.accountHolder || '');
     
@@ -109,7 +122,11 @@ export function PrincipalBankInfoManagement() {
       clearErrors(); // 요청 시작 시 에러 초기화
       setValidationErrors({}); // validation 에러도 초기화
       
-      await updateProfile(editedInfo);
+      // 실제 저장 시 finalBankName 사용
+      await updateProfile({
+        ...editedInfo,
+        bankName: finalBankName,
+      });
       
       setIsEditing(false);
       toast.success('은행 정보가 성공적으로 업데이트되었습니다.');
@@ -150,7 +167,7 @@ export function PrincipalBankInfoManagement() {
   }
 
   return (
-    <div className="flex flex-col pb-2 mx-auto w-full bg-white max-w-[480px] py-5 h-full">
+    <div className="flex flex-col pb-2 mx-auto w-full bg-white max-w-[480px] py-5 h-full overflow-y-auto">
       {/* 헤더 */}
       <div className="flex items-center justify-between px-5 pb-4 flex-shrink-0">
         <div>
@@ -209,59 +226,80 @@ export function PrincipalBankInfoManagement() {
             <CardContent className="space-y-4">
               {/* 은행명 */}
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">
-                  <Building className="h-4 w-4" />
-                  은행명 *
-                </label>
                 {isEditing ? (
-                  <Input
-                    value={editedInfo.bankName || ''}
-                    onChange={(e) => handleInputChange('bankName', e.target.value)}
-                    placeholder="은행명을 입력하세요 (예: 신한은행)"
-                    disabled={isLoading}
-                    className={`transition-all duration-200 ${
-                      (fieldErrors.bankName || validationErrors.bankName) ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                    } ${
-                      isShaking && (fieldErrors.bankName || validationErrors.bankName) ? 'animate-shake' : ''
-                    }`}
-                  />
+                  <div className="relative">
+                    <InfoBubble
+                      label="은행명"
+                      type="select"
+                      selectValue={editedInfo.bankName || ''}
+                      onSelectChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleInputChange('bankName', e.target.value)}
+                      options={[
+                        { value: '', label: '은행명 선택' },
+                        ...BANKS
+                      ]}
+                      className={isShaking && (fieldErrors.bankName || validationErrors.bankName) ? 'animate-shake border-red-500' : ''}
+                    />
+                    {(fieldErrors.bankName || validationErrors.bankName) && (
+                      <p className="text-red-500 text-xs mt-1 ml-2 animate-in fade-in">
+                        {fieldErrors.bankName || validationErrors.bankName}
+                      </p>
+                    )}
+                  </div>
                 ) : (
-                  <p className="text-gray-700 py-2">{profile?.bankName || '미입력'}</p>
-                )}
-                {(fieldErrors.bankName || validationErrors.bankName) && (
-                  <p className="text-red-500 text-sm animate-in fade-in">
-                    {fieldErrors.bankName || validationErrors.bankName}
-                  </p>
+                  <InfoBubble
+                    label="은행명"
+                    value={profile?.bankName || '미입력'}
+                  />
                 )}
               </div>
+
+              {/* 기타 은행명 입력 (기타 선택 시에만 표시) */}
+              {isEditing && editedInfo.bankName === '기타' && (
+                <div className="space-y-2">
+                  <div className="relative">
+                    <InfoBubble
+                      label="은행명 입력"
+                      type="input"
+                      inputValue={customBankName}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomBankName(e.target.value)}
+                      placeholder="은행명을 입력하세요"
+                      className={isShaking && !customBankName.trim() ? 'animate-shake border-red-500' : ''}
+                    />
+                    {isShaking && !customBankName.trim() && (
+                      <p className="text-red-500 text-xs mt-1 ml-2 animate-in fade-in">
+                        은행명을 입력해주세요
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <Separator />
 
               {/* 계좌번호 */}
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">
-                  <CreditCard className="h-4 w-4" />
-                  계좌번호 *
-                </label>
                 {isEditing ? (
-                  <Input
-                    value={editedInfo.accountNumber || ''}
-                    onChange={(e) => handleInputChange('accountNumber', e.target.value)}
-                    placeholder="계좌번호를 입력하세요 (예: 110-123-456789)"
-                    disabled={isLoading}
-                    className={`transition-all duration-200 ${
-                      (fieldErrors.accountNumber || validationErrors.accountNumber) ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                    } ${
-                      isShaking && (fieldErrors.accountNumber || validationErrors.accountNumber) ? 'animate-shake' : ''
-                    }`}
-                  />
+                  <div className="relative">
+                    <InfoBubble
+                      label="계좌번호"
+                      type="input"
+                      inputValue={editedInfo.accountNumber || ''}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('accountNumber', e.target.value)}
+                      placeholder="계좌번호 입력"
+                      className={isShaking && (fieldErrors.accountNumber || validationErrors.accountNumber) ? 'animate-shake border-red-500' : ''}
+                    />
+                    {(fieldErrors.accountNumber || validationErrors.accountNumber) && (
+                      <p className="text-red-500 text-xs mt-1 ml-2 animate-in fade-in">
+                        {fieldErrors.accountNumber || validationErrors.accountNumber}
+                      </p>
+                    )}
+                  </div>
                 ) : (
-                  <p className="text-gray-700 py-2 font-mono">{profile?.accountNumber || '미입력'}</p>
-                )}
-                {(fieldErrors.accountNumber || validationErrors.accountNumber) && (
-                  <p className="text-red-500 text-sm animate-in fade-in">
-                    {fieldErrors.accountNumber || validationErrors.accountNumber}
-                  </p>
+                  <InfoBubble
+                    label="계좌번호"
+                    value={profile?.accountNumber || '미입력'}
+                    valueClassName="font-mono"
+                  />
                 )}
               </div>
 
@@ -269,29 +307,27 @@ export function PrincipalBankInfoManagement() {
 
               {/* 계좌주 */}
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">
-                  <Building className="h-4 w-4" />
-                  계좌주 *
-                </label>
                 {isEditing ? (
-                  <Input
-                    value={editedInfo.accountHolder || ''}
-                    onChange={(e) => handleInputChange('accountHolder', e.target.value)}
-                    placeholder="계좌주를 입력하세요"
-                    disabled={isLoading}
-                    className={`transition-all duration-200 ${
-                      (fieldErrors.accountHolder || validationErrors.accountHolder) ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                    } ${
-                      isShaking && (fieldErrors.accountHolder || validationErrors.accountHolder) ? 'animate-shake' : ''
-                    }`}
-                  />
+                  <div className="relative">
+                    <InfoBubble
+                      label="계좌주"
+                      type="input"
+                      inputValue={editedInfo.accountHolder || ''}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('accountHolder', e.target.value)}
+                      placeholder="계좌주 입력"
+                      className={isShaking && (fieldErrors.accountHolder || validationErrors.accountHolder) ? 'animate-shake border-red-500' : ''}
+                    />
+                    {(fieldErrors.accountHolder || validationErrors.accountHolder) && (
+                      <p className="text-red-500 text-xs mt-1 ml-2 animate-in fade-in">
+                        {fieldErrors.accountHolder || validationErrors.accountHolder}
+                      </p>
+                    )}
+                  </div>
                 ) : (
-                  <p className="text-gray-700 py-2">{profile?.accountHolder || '미입력'}</p>
-                )}
-                {(fieldErrors.accountHolder || validationErrors.accountHolder) && (
-                  <p className="text-red-500 text-sm animate-in fade-in">
-                    {fieldErrors.accountHolder || validationErrors.accountHolder}
-                  </p>
+                  <InfoBubble
+                    label="계좌주"
+                    value={profile?.accountHolder || '미입력'}
+                  />
                 )}
               </div>
 

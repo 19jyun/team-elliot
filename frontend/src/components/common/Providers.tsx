@@ -7,6 +7,7 @@ import { store } from '@/store'
 import { Toaster } from 'sonner'
 import { AppProvider } from '@/contexts/AppContext'
 import { SlidingSessionProvider } from '@/components/auth/SlidingSessionProvider'
+import { SplashController } from '@/components/common/SplashController'
 
 const queryClient = new QueryClient()
 
@@ -17,6 +18,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         <QueryClientProvider client={queryClient}>
           <AppProvider>
             <SlidingSessionProvider>
+              <SplashController />
               {children}
               <Toaster position="top-right" />
             </SlidingSessionProvider>

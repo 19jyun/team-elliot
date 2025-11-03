@@ -546,41 +546,74 @@ export class ClassService {
     }
 
     // 트랜잭션으로 클래스와 관련된 모든 데이터를 안전하게 삭제
+    // ⚠️ 중요: 외래 키 제약 조건으로 인해 순서대로 삭제
     return this.prisma.$transaction(async (prisma) => {
       console.log(`클래스 ID ${id} 삭제 시작...`);
 
-      // 1. 세션별 수강신청의 결제 정보 삭제
-      let deletedPayments = 0;
-      for (const session of existingClass.classSessions) {
-        for (const enrollment of session.enrollments) {
-          if (enrollment.payment) {
-            await prisma.payment.delete({
-              where: { id: enrollment.payment.id },
-            });
-            deletedPayments++;
-          }
-        }
-      }
-      console.log(`${deletedPayments}개의 결제 정보가 삭제되었습니다.`);
+      const sessionIds = existingClass.classSessions.map((s) => s.id);
 
-      // 2. 세션별 수강신청 삭제
+      // 1. 환불 요청 삭제 (RefundRequest → SessionEnrollment 참조)
+      const deletedRefundRequests = await prisma.refundRequest.deleteMany({
+        where: {
+          sessionEnrollment: {
+            sessionId: { in: sessionIds },
+          },
+        },
+      });
+      console.log(
+        `${deletedRefundRequests.count}개의 환불 요청이 삭제되었습니다.`,
+      );
+
+      // 2. 결제 정보 삭제 (Payment → SessionEnrollment 참조)
+      const deletedPayments = await prisma.payment.deleteMany({
+        where: {
+          sessionEnrollment: {
+            sessionId: { in: sessionIds },
+          },
+        },
+      });
+      console.log(`${deletedPayments.count}개의 결제 정보가 삭제되었습니다.`);
+
+      // 3. 출석 정보 삭제 (Attendance → SessionEnrollment 참조)
+      const deletedAttendances = await prisma.attendance.deleteMany({
+        where: {
+          sessionEnrollment: {
+            sessionId: { in: sessionIds },
+          },
+        },
+      });
+      console.log(
+        `${deletedAttendances.count}개의 출석 정보가 삭제되었습니다.`,
+      );
+
+      // 4. 세션별 수강신청 삭제 (이제 참조하는 데이터가 없으므로 안전)
       const deletedSessionEnrollments =
         await prisma.sessionEnrollment.deleteMany({
           where: {
-            sessionId: { in: existingClass.classSessions.map((s) => s.id) },
+            sessionId: { in: sessionIds },
           },
         });
       console.log(
         `${deletedSessionEnrollments.count}개의 세션 수강신청이 삭제되었습니다.`,
       );
 
-      // 3. 클래스 세션들 삭제
+      // 5. 세션 콘텐츠 삭제
+      const deletedSessionContents = await prisma.sessionContent.deleteMany({
+        where: {
+          sessionId: { in: sessionIds },
+        },
+      });
+      console.log(
+        `${deletedSessionContents.count}개의 세션 콘텐츠가 삭제되었습니다.`,
+      );
+
+      // 6. 클래스 세션들 삭제
       const deletedSessions = await prisma.classSession.deleteMany({
         where: { classId: id },
       });
       console.log(`${deletedSessions.count}개의 클래스 세션이 삭제되었습니다.`);
 
-      // 4. 마지막으로 클래스 삭제
+      // 7. 마지막으로 클래스 삭제
       const deletedClass = await prisma.class.delete({
         where: { id },
       });
@@ -592,7 +625,10 @@ export class ClassService {
           class: 1,
           sessions: deletedSessions.count,
           sessionEnrollments: deletedSessionEnrollments.count,
-          payments: deletedPayments,
+          payments: deletedPayments.count,
+          refundRequests: deletedRefundRequests.count,
+          attendances: deletedAttendances.count,
+          sessionContents: deletedSessionContents.count,
         },
       };
     });

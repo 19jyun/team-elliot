@@ -1,7 +1,7 @@
 'use client'
 
 import { useSession } from '@/lib/auth/AuthProvider'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useSelector } from 'react-redux'
 
 import { CalendarProvider } from '@/contexts/CalendarContext'
@@ -10,10 +10,8 @@ import { SessionCardDisplay } from '@/components/calendar/SessionCardDisplay'
 import { StudentSessionDetailModal } from '@/components/features/student/classes/StudentSessionDetailModal'
 import { useApp } from '@/contexts/AppContext'
 import type { RootState } from '@/store/index'
-import type { StudentCalendarSessionVM, StudentCalendarRangeVM } from '@/types/view/student'
 import type { ClassSession, ClassSessionWithCounts } from '@/types/api/class'
 import type { ClassSession as Session } from '@/types/api/class-session'
-import { toStudentCalendarSessionVM, toStudentCalendarRangeVM } from '@/lib/adapters/student'
 
 export default function StudentDashboard() {
   const { data: session, status } = useSession()
@@ -26,31 +24,39 @@ export default function StudentDashboard() {
   const rawCalendarSessions = studentData?.calendarSessions || [];
   const rawCalendarRange = studentData?.calendarRange || null;
   
-  // StudentClass를 StudentCalendarSessionVM으로 변환 (어댑터 사용)
-  const calendarSessions: StudentCalendarSessionVM[] = rawCalendarSessions
+  // Session을 ClassSession 타입으로 변환 (ConnectedCalendar에 전달용)
+  const calendarSessions: ClassSession[] = rawCalendarSessions
     .filter((session: Session) => session.date) // 날짜가 있는 세션만
-    .map((session: Session) => toStudentCalendarSessionVM({
+    .map((session: Session) => ({
       id: session.id,
+      classId: session.class?.id || 0,
       date: session.date!,
       startTime: session.startTime,
       endTime: session.endTime,
-      className: session.class?.className || '클래스명 없음',
-      teacherName: session.class?.teacher?.name || '선생님 정보 없음',
-      level: session.class?.level || 'BEGINNER',
-      classId: session.class?.id || 0,
-      teacherId: session.class?.teacher?.id || 0,
-      maxStudents: session.maxStudents || 0,
-      currentEnrollments: session.currentStudents || 0,
-      tuitionFee: parseInt(session.class?.tuitionFee || '50000'),
-      isEnrolled: session.isAlreadyEnrolled || false,
-      enrollmentId: undefined,
-      enrollmentStatus: session.studentEnrollmentStatus || undefined
+      currentStudents: session.currentStudents,
+      maxStudents: session.maxStudents,
+      isEnrollable: session.isEnrollable,
+      isFull: session.isFull,
+      isPastStartTime: session.isPastStartTime,
+      isAlreadyEnrolled: session.isAlreadyEnrolled,
+      studentEnrollmentStatus: session.studentEnrollmentStatus,
+      class: session.class,
     }));
   
-  // calendarRange를 StudentCalendarRangeVM으로 변환 (어댑터 사용)
-  const calendarRange: StudentCalendarRangeVM | undefined = rawCalendarRange 
-    ? toStudentCalendarRangeVM(rawCalendarRange)
-    : undefined;
+  // Redux에서 가져온 캘린더 범위를 Date 객체로 변환
+  const calendarRange = useMemo(() => {
+    if (rawCalendarRange) {
+      return {
+        startDate: new Date(rawCalendarRange.startDate),
+        endDate: new Date(rawCalendarRange.endDate),
+      };
+    }
+    const now = new Date();
+    return {
+      startDate: new Date(now.getFullYear(), now.getMonth(), 1),
+      endDate: new Date(now.getFullYear(), now.getMonth() + 2, 0),
+    };
+  }, [rawCalendarRange]);
   
   // Redux store에서 데이터만 사용 (student initialization에서 이미 로드됨)
   const isLoading = false
@@ -108,17 +114,17 @@ export default function StudentDashboard() {
       return sessionDate === dateString;
     });
     
-    // StudentCalendarSessionVM을 ClassSessionWithCounts 형태로 변환
+    // ClassSession을 ClassSessionWithCounts 형태로 변환
     const sessionsAsClassSessions: ClassSessionWithCounts[] = sessionsForDate.map(session => ({
       id: session.id,
       date: session.date,
       startTime: session.startTime,
       endTime: session.endTime,
-      maxStudents: session.capacityText ? parseInt(session.capacityText.split('/')[1]) : 0,
-      currentStudents: session.capacityText ? parseInt(session.capacityText.split('/')[0]) : 0,
-      enrollmentCount: session.capacityText ? parseInt(session.capacityText.split('/')[0]) : 0,
-      confirmedCount: session.isEnrolled ? (session.capacityText ? parseInt(session.capacityText.split('/')[0]) : 0) : 0,
-      studentEnrollmentStatus: session.isEnrolled ? 'CONFIRMED' : undefined,
+      maxStudents: session.maxStudents || 0,
+      currentStudents: session.currentStudents || 0,
+      enrollmentCount: session.currentStudents || 0,
+      confirmedCount: session.isAlreadyEnrolled ? (session.currentStudents || 0) : 0,
+      studentEnrollmentStatus: session.studentEnrollmentStatus,
       class: session.class ? {
         id: session.class.id,
         className: session.class.className,
@@ -160,7 +166,8 @@ export default function StudentDashboard() {
 
   return (
     <div className="flex flex-col h-full bg-white">
-      <header className="flex-shrink-0">
+      {/* 상단 헤더 - 고정 */}
+      <header className="flex-shrink-0 border-b border-gray-200">
         {/* 환영 메시지 + 캘린더 아이콘 버튼 */}
         <div className="flex flex-col px-5 py-6">
           <div className="flex items-center justify-between">
@@ -192,32 +199,36 @@ export default function StudentDashboard() {
             </button>
           </div>
         </div>
-
-
-        {/* 캘린더 섹션 - 기존 크기 복원 */}
-        <div className="flex flex-col w-full bg-white text-stone-700" style={{ height: 'calc(100vh - 500px)' }}>
-          <CalendarProvider
-            mode="student-view"
-            sessions={calendarSessions}
-            selectedSessionIds={new Set()}
-            onSessionSelect={() => {}} // student-view에서는 선택 기능 없음
-            onDateClick={handleDateClick}
-            calendarRange={calendarRange}
-            selectedDate={selectedDate ? selectedDate.toISOString().split('T')[0] : undefined}
-          >
-            <ConnectedCalendar />
-          </CalendarProvider>
-        </div>
       </header>
 
-      {/* 세션 카드 표시 섹션 */}
-      <div className="flex-1 bg-white px-5 py-4">
-        <SessionCardDisplay
-          selectedDate={selectedDate}
-          sessions={selectedSessions}
-          onSessionClick={handleSessionClick}
-          role="student"
-        />
+      {/* 캘린더 섹션 - 고정 높이 + 내부 스크롤 */}
+      <div 
+        className="flex-shrink-0 bg-white"
+        style={{ height: 'calc(100vh - 435px)' }}
+      >
+        <CalendarProvider
+          mode="student-view"
+          sessions={calendarSessions}
+          selectedSessionIds={new Set()}
+          onSessionSelect={() => {}} // student-view에서는 선택 기능 없음
+          onDateClick={handleDateClick}
+          calendarRange={calendarRange}
+          selectedDate={selectedDate ? selectedDate.toISOString().split('T')[0] : undefined}
+        >
+          <ConnectedCalendar />
+        </CalendarProvider>
+      </div>
+
+      {/* 세션 카드 표시 섹션 - 하단 고정 */}
+      <div className="flex-shrink-0 px-5 py-4 border-t border-gray-200 bg-white">
+        <div className="flex flex-col self-center w-full font-semibold leading-snug text-center max-w-[375px] mx-auto h-full">
+          <SessionCardDisplay
+            selectedDate={selectedDate}
+            sessions={selectedSessions}
+            onSessionClick={handleSessionClick}
+            role="student"
+          />
+        </div>
       </div>
 
       {/* Student Session Detail Modal */}

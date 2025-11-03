@@ -11,7 +11,7 @@ interface RefundCompleteStepProps {
 }
 
 export function RefundCompleteStep({ isModification }: RefundCompleteStepProps) {
-  const { navigation, resetEnrollment } = useApp();
+  const { navigation, resetEnrollment, clearHistory } = useApp();
   const { clearSubPage } = navigation;
 
   const handleConfirm = async () => {
@@ -42,6 +42,9 @@ export function RefundCompleteStep({ isModification }: RefundCompleteStepProps) 
     
     // 수강신청 상태 초기화
     resetEnrollment();
+    
+    // Virtual History 초기화
+    clearHistory();
     
     // enrollment 컨테이너(subpage) 완전히 닫기
     clearSubPage();

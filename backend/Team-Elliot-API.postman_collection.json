@@ -115,7 +115,7 @@
           "response": []
         },
         {
-          "name": "Withdrawal",
+          "name": "Student Withdrawal",
           "request": {
             "method": "POST",
             "header": [
@@ -133,9 +133,61 @@
               "raw": "{\n  \"reason\": \"개인적인 사정으로 인한 탈퇴\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/auth/withdrawal",
+              "raw": "{{baseUrl}}/auth/withdrawal/student",
               "host": ["{{baseUrl}}"],
-              "path": ["auth", "withdrawal"]
+              "path": ["auth", "withdrawal", "student"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Teacher Withdrawal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"개인적인 사정으로 인한 탈퇴\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/withdrawal/teacher",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "withdrawal", "teacher"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Principal Withdrawal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"개인적인 사정으로 인한 탈퇴\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/withdrawal/principal",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "withdrawal", "principal"]
             }
           },
           "response": []

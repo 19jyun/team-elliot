@@ -14,12 +14,12 @@ export const StatusStep: React.FC<StatusStepProps> = ({
   isActive = false,
   isCompleted = false,
 }) => {
-  // 아이콘 경로 분기 (Principal Dashboard와 동일한 로직)
+  // 아이콘 경로 분기
   let iconSrc = icon;
   if (isCompleted) {
     iconSrc = '/icons/CourseRegistrationsStatusSteps1.svg'; // 완료(갈색 체크)
   } else if (isActive) {
-    iconSrc = '/icons/CourseRegistrationsStatusSteps2.svg'; // 진행중(갈색 테두리)
+    iconSrc = '/icons/CourseRegistrationsStatusSteps1.svg'; // 진행중(갈색 체크) - 활성 단계도 체크 표시
   } else {
     iconSrc = '/icons/CourseRegistrationsStatusSteps2.svg'; // 비활성(회색 테두리)
   }
@@ -35,7 +35,7 @@ export const StatusStep: React.FC<StatusStepProps> = ({
         className="object-contain w-8 aspect-square"
       />
       <div
-        className={`mt-1.5 ${isCompleted || isActive ? 'text-stone-700' : 'text-stone-300'}`}
+        className={`mt-1 text-xs ${isCompleted || isActive ? 'text-stone-700' : 'text-stone-300'}`}
       >
         {label}
       </div>

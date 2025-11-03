@@ -564,7 +564,7 @@ describe('AuthService', () => {
 
       mockWithdrawalService.withdrawStudent.mockResolvedValue(undefined);
 
-      await service.withdrawal(userId, reason);
+      await service.withdrawalStudent(userId, reason);
 
       expect(mockWithdrawalService.withdrawStudent).toHaveBeenCalledWith(
         userId,
@@ -580,10 +580,10 @@ describe('AuthService', () => {
         new NotFoundException('사용자를 찾을 수 없습니다.'),
       );
 
-      await expect(service.withdrawal(userId, reason)).rejects.toThrow(
+      await expect(service.withdrawalStudent(userId, reason)).rejects.toThrow(
         NotFoundException,
       );
-      await expect(service.withdrawal(userId, reason)).rejects.toThrow(
+      await expect(service.withdrawalStudent(userId, reason)).rejects.toThrow(
         '사용자를 찾을 수 없습니다.',
       );
     });

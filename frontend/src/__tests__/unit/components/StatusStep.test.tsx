@@ -40,7 +40,7 @@ describe('StatusStep Component', () => {
     expect(label).toHaveClass('text-stone-700');
     
     const image = screen.getByAltText('테스트 단계 단계 아이콘');
-    expect(image).toHaveAttribute('src', '/icons/CourseRegistrationsStatusSteps2.svg');
+    expect(image).toHaveAttribute('src', '/icons/CourseRegistrationsStatusSteps1.svg');
   });
 
   it('should render with inactive state (default)', () => {

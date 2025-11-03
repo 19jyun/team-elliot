@@ -46,9 +46,9 @@ export function SessionCardDisplay({
 
   return (
       <div className="h-full overflow-y-auto">
-        <span className="text-base font-semibold text-stone-700">
+        <div className="text-base font-semibold text-stone-700 text-left mb-2">
           {role === 'student' ? '세션 정보 보기' : '클래스 출석부 관리'}
-        </span>
+        </div>
       <div className="space-y-3 pb-6 max-h-96">
         {sortedSessions.map((session, index) => (
           <SessionCard

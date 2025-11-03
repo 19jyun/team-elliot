@@ -96,6 +96,7 @@ export function EnrollmentClassStep() {
     {
       icon: '/icons/CourseRegistrationsStatusSteps1.svg',
       label: '학원 선택',
+      isCompleted: true,
     },
     {
       icon: '/icons/CourseRegistrationsStatusSteps2.svg',
@@ -105,10 +106,12 @@ export function EnrollmentClassStep() {
     {
       icon: '/icons/CourseRegistrationsStatusSteps2.svg',
       label: '일자 선택',
+      isCompleted: false,
     },
     {
       icon: '/icons/CourseRegistrationsStatusSteps2.svg',
       label: '결제하기',
+      isCompleted: false,
     },
   ];
 
@@ -187,12 +190,12 @@ export function EnrollmentClassStep() {
     <div className="flex flex-col h-full bg-white relative">
       {/* Header */}
       <header className="flex-shrink-0 flex flex-col bg-white border-b border-gray-200 py-5 min-h-[120px] relative">
-        <div className="flex gap-10 self-center w-full text-sm font-medium tracking-normal leading-snug max-w-[297px] mt-2 mb-2">
+        <div className="flex gap-6 self-center w-full text-sm font-medium tracking-normal leading-snug max-w-[320px] mt-2 mb-2">
           {statusSteps.map((step, index) => (
             <StatusStep key={index} {...step} />
           ))}
         </div>
-        <div className="self-center pb-4 text-base font-medium tracking-normal leading-snug text-center text-zinc-600">
+        <div className="self-center pb-1 text-base font-medium tracking-normal leading-snug text-center text-zinc-600">
           수강하실 클래스를 모두 선택해주세요.
         </div>
       </header>

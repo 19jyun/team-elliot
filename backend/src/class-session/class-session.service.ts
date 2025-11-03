@@ -770,13 +770,46 @@ export class ClassSessionService {
       }
 
       // 비활성 상태(CANCELLED, REJECTED 등)인 경우 기존 수강신청을 삭제하고 새로운 수강신청 생성
-      await this.prisma.sessionEnrollment.delete({
-        where: {
-          studentId_sessionId: {
-            studentId,
-            sessionId,
+      await this.prisma.$transaction(async (tx) => {
+        // 1. 연관된 RefundRequest 삭제
+        await tx.refundRequest.deleteMany({
+          where: {
+            sessionEnrollment: {
+              studentId,
+              sessionId,
+            },
           },
-        },
+        });
+
+        // 2. 연관된 Payment 삭제
+        await tx.payment.deleteMany({
+          where: {
+            sessionEnrollment: {
+              studentId,
+              sessionId,
+            },
+          },
+        });
+
+        // 3. 연관된 Attendance 삭제 (있는 경우)
+        await tx.attendance.deleteMany({
+          where: {
+            sessionEnrollment: {
+              studentId,
+              sessionId,
+            },
+          },
+        });
+
+        // 4. SessionEnrollment 삭제
+        await tx.sessionEnrollment.delete({
+          where: {
+            studentId_sessionId: {
+              studentId,
+              sessionId,
+            },
+          },
+        });
       });
 
       // 세션 정보 조회 (tuitionFee 필요)

@@ -5,16 +5,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Settings, Edit, Save, X } from 'lucide-react';
+import { Settings, Edit, Save, X, Eye, EyeOff } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useSession } from '@/lib/auth/AuthProvider';
 import { UpdatePrincipalAcademyRequest } from '@/types/api/principal';
 import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
+import { useClipboard } from '@/hooks/useClipboard';
 
 export default function PrincipalAcademyManagementPage() {
   const { status } = useSession()
   const [isEditing, setIsEditing] = useState(false);
+  const [showFullCode, setShowFullCode] = useState(false);
   const [formData, setFormData] = useState<UpdatePrincipalAcademyRequest>({
     name: '',
     address: '',
@@ -22,6 +24,10 @@ export default function PrincipalAcademyManagementPage() {
     description: '',
   });
 
+  // 복사 기능
+  const { copy } = useClipboard({
+    successMessage: '학원 코드가 복사되었습니다',
+  });
 
   // API 기반 데이터 관리
   const { academy, loadAcademy, updateAcademy, isLoading, error } = usePrincipalApi();
@@ -82,6 +88,18 @@ export default function PrincipalAcademyManagementPage() {
     updateAcademyMutation.mutate(formData);
   };
 
+  // 학원 코드 복사 핸들러
+  const handleCopyCode = () => {
+    if (academy?.code) {
+      copy(academy.code);
+    }
+  };
+
+  // 학원 코드 표시/숨김 토글
+  const toggleShowFullCode = () => {
+    setShowFullCode(!showFullCode);
+  };
+
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {
     return (
@@ -138,7 +156,40 @@ export default function PrincipalAcademyManagementPage() {
                 </div>
                 <div>
                   <label className="text-sm font-medium">학원 코드</label>
-                  <p className="text-sm text-gray-600 mt-1">{academy?.code}</p>
+                  <div className="mt-1 border border-gray-200 rounded-lg p-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 min-w-0 max-w-[60%]">
+                        {showFullCode ? (
+                          <p className="text-sm text-gray-600 break-all">{academy?.code}</p>
+                        ) : (
+                          <p className="text-sm text-gray-600">••••••••••••••••</p>
+                        )}
+                      </div>
+                      {academy?.code && (
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <button
+                            onClick={toggleShowFullCode}
+                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            title={showFullCode ? "코드 숨기기" : "코드 보기"}
+                          >
+                            {showFullCode ? (
+                              <Eye className="h-5 w-5 text-gray-600" />
+                            ) : (
+                              <EyeOff className="h-5 w-5 text-gray-600" />
+                            )}
+                          </button>
+                          <button
+                            onClick={handleCopyCode}
+                            className="flex flex-row justify-center items-center px-3 py-1 gap-2 min-w-[60px] h-[32px] border border-[#573B30] rounded-full text-[#573B30] hover:bg-[#573B30] hover:text-white active:bg-[#573B30] active:text-white transition-all duration-200 ease-in-out"
+                          >
+                            <span className="flex items-center font-normal text-[14px] leading-[19px]">
+                              복사
+                            </span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <label className="text-sm font-medium">주소</label>

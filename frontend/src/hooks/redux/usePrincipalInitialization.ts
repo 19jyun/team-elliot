@@ -95,10 +95,6 @@ export function usePrincipalInitialization() {
             calendarRange,
           })
         );
-
-        toast.success("Principal 실시간 데이터가 로드되었습니다.", {
-          id: "principal-init",
-        });
       } catch (error: unknown) {
         console.error("❌ Principal 실시간 데이터 초기화 실패:", error);
 

@@ -42,7 +42,9 @@ describe('AuthController', () => {
   const mockAuthService = {
     login: jest.fn(),
     signup: jest.fn(),
-    withdrawal: jest.fn(),
+    withdrawalStudent: jest.fn(),
+    withdrawalTeacher: jest.fn(),
+    withdrawalPrincipal: jest.fn(),
     checkUserId: jest.fn(),
   };
 
@@ -142,16 +144,16 @@ describe('AuthController', () => {
     });
   });
 
-  describe('withdrawal', () => {
-    it('should call service.withdrawal and return success message', async () => {
-      mockAuthService.withdrawal.mockResolvedValue(undefined);
+  describe('withdrawalStudent', () => {
+    it('should call service.withdrawalStudent and return success message', async () => {
+      mockAuthService.withdrawalStudent.mockResolvedValue(undefined);
 
-      const result = await controller.withdrawal(
+      const result = await controller.withdrawalStudent(
         mockUser,
         mockWithdrawalReasonDto,
       );
 
-      expect(service.withdrawal).toHaveBeenCalledWith(
+      expect(service.withdrawalStudent).toHaveBeenCalledWith(
         parseInt(mockUser.id),
         mockWithdrawalReasonDto.reason,
       );
@@ -160,12 +162,12 @@ describe('AuthController', () => {
 
     it('should handle withdrawal errors', async () => {
       const error = new Error('Withdrawal failed');
-      mockAuthService.withdrawal.mockRejectedValue(error);
+      mockAuthService.withdrawalStudent.mockRejectedValue(error);
 
       await expect(
-        controller.withdrawal(mockUser, mockWithdrawalReasonDto),
+        controller.withdrawalStudent(mockUser, mockWithdrawalReasonDto),
       ).rejects.toThrow('Withdrawal failed');
-      expect(service.withdrawal).toHaveBeenCalledWith(
+      expect(service.withdrawalStudent).toHaveBeenCalledWith(
         parseInt(mockUser.id),
         mockWithdrawalReasonDto.reason,
       );
@@ -218,7 +220,7 @@ describe('AuthController', () => {
 
     it('should be protected by JwtAuthGuard for withdrawal endpoint', async () => {
       // JwtAuthGuard가 적용되어 있는지 확인
-      expect(controller.withdrawal).toBeDefined();
+      expect(controller.withdrawalStudent).toBeDefined();
     });
   });
 });

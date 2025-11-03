@@ -4,7 +4,7 @@ import { useApp } from '@/contexts/AppContext';
 import { CompleteIcon } from '@/components/icons';
 
 export function EnrollmentCompleteStep() {
-  const { navigation, resetEnrollment } = useApp();
+  const { navigation, resetEnrollment, clearHistory } = useApp();
   const { clearSubPage } = navigation;
 
   const handleConfirm = async () => {
@@ -33,6 +33,9 @@ export function EnrollmentCompleteStep() {
     
     // 수강신청 상태 초기화
     resetEnrollment();
+    
+    // Virtual History 초기화
+    clearHistory();
     
     // enrollment 컨테이너(subpage) 완전히 닫기
     clearSubPage();

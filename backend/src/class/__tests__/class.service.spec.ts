@@ -32,6 +32,18 @@ describe('ClassService', () => {
     sessionEnrollment: {
       deleteMany: jest.fn(),
     },
+    refundRequest: {
+      deleteMany: jest.fn(),
+    },
+    payment: {
+      deleteMany: jest.fn(),
+    },
+    attendance: {
+      deleteMany: jest.fn(),
+    },
+    sessionContent: {
+      deleteMany: jest.fn(),
+    },
     academy: {
       findUnique: jest.fn(),
     },
@@ -240,21 +252,43 @@ describe('ClassService', () => {
   });
 
   describe('deleteClass', () => {
-    it('should delete a class', async () => {
+    it('should delete a class with all related data in correct order', async () => {
       const classId = 1;
       const deletedClass = { id: classId, className: 'Deleted Class' };
 
       prisma.class.findUnique.mockResolvedValue({
         id: classId,
         enrollments: [],
-        classSessions: [],
+        classSessions: [{ id: 1 }, { id: 2 }],
       });
+
       prisma.$transaction.mockImplementation(async (callback) => {
-        return await callback(mockPrisma);
+        const mockTx = {
+          ...mockPrisma,
+          refundRequest: {
+            deleteMany: jest.fn().mockResolvedValue({ count: 2 }),
+          },
+          payment: {
+            deleteMany: jest.fn().mockResolvedValue({ count: 5 }),
+          },
+          attendance: {
+            deleteMany: jest.fn().mockResolvedValue({ count: 3 }),
+          },
+          sessionEnrollment: {
+            deleteMany: jest.fn().mockResolvedValue({ count: 5 }),
+          },
+          sessionContent: {
+            deleteMany: jest.fn().mockResolvedValue({ count: 4 }),
+          },
+          classSession: {
+            deleteMany: jest.fn().mockResolvedValue({ count: 2 }),
+          },
+          class: {
+            delete: jest.fn().mockResolvedValue(deletedClass),
+          },
+        };
+        return await callback(mockTx);
       });
-      prisma.sessionEnrollment.deleteMany.mockResolvedValue({ count: 0 });
-      prisma.classSession.deleteMany.mockResolvedValue({ count: 0 });
-      prisma.class.delete.mockResolvedValue(deletedClass);
 
       const result = await service.deleteClass(classId);
 
@@ -263,18 +297,19 @@ describe('ClassService', () => {
           '클래스 "Deleted Class"과 관련된 모든 데이터가 성공적으로 삭제되었습니다.',
         deletedData: {
           class: 1,
-          payments: 0,
-          sessionEnrollments: 0,
-          sessions: 0,
+          sessions: 2,
+          sessionEnrollments: 5,
+          payments: 5,
+          refundRequests: 2,
+          attendances: 3,
+          sessionContents: 4,
         },
       });
       expect(prisma.class.findUnique).toHaveBeenCalledWith({
         where: { id: classId },
         include: expect.any(Object),
       });
-      expect(prisma.class.delete).toHaveBeenCalledWith({
-        where: { id: classId },
-      });
+      expect(prisma.$transaction).toHaveBeenCalled();
     });
 
     it('should throw NotFoundException when class not found', async () => {

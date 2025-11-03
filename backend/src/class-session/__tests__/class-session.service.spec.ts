@@ -394,6 +394,123 @@ describe('ClassSessionService', () => {
       jest.useRealTimers();
     });
 
+    it('should re-enroll after cancellation by deleting related data', async () => {
+      const sessionId = 1;
+      const studentId = 1;
+
+      // 현재 시간을 고정
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2025-01-15T12:00:00.000Z'));
+
+      const sessionDate = new Date('2025-01-15');
+      const startTime = new Date('1970-01-01T23:00:00');
+      const mockSession = {
+        id: sessionId,
+        currentStudents: 5,
+        date: sessionDate,
+        startTime: startTime,
+        class: {
+          maxStudents: 10,
+          tuitionFee: 50000,
+        },
+        enrollments: [],
+      };
+
+      // 기존 수강 신청이 CANCELLED 상태
+      const existingEnrollment = {
+        id: 1,
+        status: 'CANCELLED',
+        studentId,
+        sessionId,
+      };
+
+      prisma.classSession.findUnique.mockResolvedValue(mockSession);
+      prisma.student.findUnique.mockResolvedValue({ id: studentId });
+      prisma.sessionEnrollment.findUnique.mockResolvedValue(existingEnrollment);
+
+      const mockEnrollment = {
+        id: 2,
+        sessionId: sessionId,
+        studentId: studentId,
+        status: 'PENDING',
+        session: {
+          classId: 1,
+          class: {
+            academyId: 1,
+            tuitionFee: 50000,
+            className: 'Test Class',
+          },
+        },
+        student: {
+          name: 'Test Student',
+        },
+      };
+
+      // 삭제 트랜잭션 모킹
+      prisma.$transaction
+        .mockImplementationOnce(async (callback) => {
+          const mockTx = {
+            refundRequest: {
+              deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+            },
+            payment: {
+              deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+            },
+            attendance: {
+              deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+            },
+            sessionEnrollment: {
+              delete: jest.fn().mockResolvedValue(existingEnrollment),
+            },
+          };
+          return await callback(mockTx);
+        })
+        // 새 등록 트랜잭션 모킹
+        .mockImplementationOnce(async (callback) => {
+          const mockTx = {
+            ...mockPrisma,
+            sessionEnrollment: {
+              ...mockPrisma.sessionEnrollment,
+              create: jest.fn().mockResolvedValue(mockEnrollment),
+            },
+            payment: {
+              create: jest.fn().mockResolvedValue({
+                id: 2,
+                sessionEnrollmentId: mockEnrollment.id,
+                amount: 50000,
+                method: 'BANK_TRANSFER',
+                status: 'PENDING',
+              }),
+            },
+          };
+          return await callback(mockTx);
+        });
+
+      // 푸시 알림을 위한 academy와 class 조회 모킹
+      prisma.academy.findUnique.mockResolvedValue({
+        id: 1,
+        principal: {
+          id: 1,
+          user: { id: 10 },
+        },
+      });
+      prisma.class.findUnique.mockResolvedValue({
+        id: 1,
+        teacher: {
+          id: 2,
+          user: { id: 20 },
+        },
+      });
+
+      const result = await service.enrollSession(sessionId, studentId);
+
+      expect(result).toEqual(mockEnrollment);
+      expect(prisma.$transaction).toHaveBeenCalledTimes(2); // 삭제 + 생성
+
+      // 타이머 복원
+      jest.useRealTimers();
+    });
+
     it('should throw BadRequestException when already enrolled', async () => {
       const sessionId = 1;
       const studentId = 1;

@@ -48,7 +48,7 @@ export function PrincipalRequestCard({
   return (
     <div className="flex flex-col w-full transition-all duration-300 ease-in-out">
       <div 
-        className="flex flex-row items-center px-5 py-6 gap-4 w-[375px] bg-white border-b border-[#D9D9D9] cursor-pointer box-border"
+        className="flex flex-row items-center px-5 py-6 gap-4 w-full bg-white border-b border-[#D9D9D9] cursor-pointer box-border"
         onClick={onClick}
       >
         {/* 메인 콘텐츠 */}
@@ -148,7 +148,7 @@ export function PrincipalRequestCard({
           isExpanded && !isCompleted ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
-        <div className="w-[375px] bg-white border-b border-[#D9D9D9] px-5 py-4">
+        <div className="w-full bg-white border-b border-[#D9D9D9] px-5 py-4">
           <div className="flex flex-col gap-4">
             {/* 전화번호 정보 */}
             {request.studentPhoneNumber && (

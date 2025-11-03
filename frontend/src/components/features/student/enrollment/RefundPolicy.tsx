@@ -14,46 +14,20 @@ interface RefundPolicyProps {
 }
 
 export const RefundPolicy: React.FC<RefundPolicyProps> = ({ isOpen, onClose }) => {
-  const [isBottom, setIsBottom] = React.useState(false)
   const [isChecked, setIsChecked] = React.useState(false)
   const contentRef = React.useRef<HTMLDivElement>(null)
   const { goBack } = useApp()
-
-  const scrollToBottom = () => {
-    if (contentRef.current) {
-      contentRef.current.scrollTo({
-        top: contentRef.current.scrollHeight,
-        behavior: 'smooth',
-      })
-    }
-  }
-
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const element = e.currentTarget
-    const isAtBottom =
-      Math.abs(
-        element.scrollHeight - element.scrollTop - element.clientHeight,
-      ) < 1
-    setIsBottom(isAtBottom)
-  }
 
   const handleCheckboxChange = (checked: boolean) => {
     setIsChecked(checked)
   }
 
   const handleButtonClick = async () => {
-    if (!isBottom) {
-      scrollToBottom()
-    } else {
-      if (isChecked) {
-        // 동의하고 수강신청 진행 - RefundPolicy를 닫음
-        const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
-        SyncStorage.setItem('refundPolicyAgreed', 'true')
-        onClose()
-      } else {
-        // 체크하지 않고 닫기
-        onClose()
-      }
+    if (isChecked) {
+      // 동의하고 수강신청 진행 - RefundPolicy를 닫음
+      const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
+      SyncStorage.setItem('refundPolicyAgreed', 'true')
+      onClose()
     }
   }
 
@@ -78,7 +52,6 @@ export const RefundPolicy: React.FC<RefundPolicyProps> = ({ isOpen, onClose }) =
         <main className="flex-1 min-h-0 bg-white px-5">
           <div
             ref={contentRef}
-            onScroll={handleScroll}
             className="w-full overflow-y-auto"
             style={{ 
               height: 'calc(90vh - 250px)',
@@ -106,12 +79,10 @@ export const RefundPolicy: React.FC<RefundPolicyProps> = ({ isOpen, onClose }) =
           </div>
           <div className="flex gap-3 justify-center px-5 pt-1 pb-4 w-full text-base font-semibold leading-snug text-white">
             <Button
-              text={isBottom ? '수강신청 하러 가기' : '아래로 내리기'}
+              text="수강신청 하러 가기"
               onClick={handleButtonClick}
-              disabled={isBottom ? !isChecked : false}
-              className={
-                isBottom && isChecked ? 'bg-[#AC9592]' : 'bg-zinc-300'
-              }
+              disabled={!isChecked}
+              className={isChecked ? 'bg-[#AC9592]' : 'bg-zinc-300'}
             />
           </div>
           <div className="flex flex-col items-center px-20 pt-2 pb-3 w-full max-sm:hidden">
