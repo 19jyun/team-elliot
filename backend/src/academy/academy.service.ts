@@ -728,40 +728,23 @@ export class AcademyService {
     }
 
     // 수강생의 모든 세션 수강 내역과 관련 데이터 삭제
+    // ⚠️ 중요: 외래 키 제약 조건으로 인해 순서대로 삭제
     await this.prisma.$transaction(async (tx) => {
-      // 1. 수강생의 세션 수강 신청 내역 삭제
-      await tx.sessionEnrollment.deleteMany({
+      // 1. 수강생의 환불 요청 내역 삭제 (RefundRequest → SessionEnrollment 참조)
+      await tx.refundRequest.deleteMany({
         where: {
           studentId: studentId,
-          session: {
-            class: {
-              academyId: principalTeacher.academy.id,
+          sessionEnrollment: {
+            session: {
+              class: {
+                academyId: principalTeacher.academy.id,
+              },
             },
           },
         },
       });
 
-      // 2. 수강생의 클래스 수강 신청 내역 삭제
-      await tx.enrollment.deleteMany({
-        where: {
-          studentId: studentId,
-          class: {
-            academyId: principalTeacher.academy.id,
-          },
-        },
-      });
-
-      // 3. 수강생의 출석 기록 삭제
-      await tx.attendance.deleteMany({
-        where: {
-          studentId: studentId,
-          class: {
-            academyId: principalTeacher.academy.id,
-          },
-        },
-      });
-
-      // 4. 수강생의 결제 내역 삭제
+      // 2. 수강생의 결제 내역 삭제 (Payment → SessionEnrollment 참조)
       await tx.payment.deleteMany({
         where: {
           studentId: studentId,
@@ -775,16 +758,34 @@ export class AcademyService {
         },
       });
 
-      // 5. 수강생의 환불 요청 내역 삭제
-      await tx.refundRequest.deleteMany({
+      // 3. 수강생의 출석 기록 삭제 (Attendance → SessionEnrollment 참조)
+      await tx.attendance.deleteMany({
         where: {
           studentId: studentId,
-          sessionEnrollment: {
-            session: {
-              class: {
-                academyId: principalTeacher.academy.id,
-              },
+          class: {
+            academyId: principalTeacher.academy.id,
+          },
+        },
+      });
+
+      // 4. 수강생의 세션 수강 신청 내역 삭제 (이제 참조하는 데이터가 없으므로 안전)
+      await tx.sessionEnrollment.deleteMany({
+        where: {
+          studentId: studentId,
+          session: {
+            class: {
+              academyId: principalTeacher.academy.id,
             },
+          },
+        },
+      });
+
+      // 5. 수강생의 클래스 수강 신청 내역 삭제
+      await tx.enrollment.deleteMany({
+        where: {
+          studentId: studentId,
+          class: {
+            academyId: principalTeacher.academy.id,
           },
         },
       });
