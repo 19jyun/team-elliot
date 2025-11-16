@@ -6,10 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Settings, Edit, Save, X, Eye, EyeOff } from 'lucide-react';
-import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useSession } from '@/lib/auth/AuthProvider';
-import { UpdatePrincipalAcademyRequest } from '@/types/api/principal';
+import { UpdatePrincipalAcademyRequest, PrincipalAcademy } from '@/types/api/principal';
 import { usePrincipalAcademy } from '@/hooks/queries/principal/usePrincipalAcademy';
 import { useUpdatePrincipalAcademy } from '@/hooks/mutations/principal/useUpdatePrincipalAcademy';
 import { useClipboard } from '@/hooks/useClipboard';
@@ -32,27 +31,28 @@ export default function PrincipalAcademyManagementPage() {
 
   // React Query 기반 데이터 관리
   const { data: academy, isLoading, error } = usePrincipalAcademy();
+  const typedAcademy = academy as PrincipalAcademy | null | undefined;
   const updateAcademyMutation = useUpdatePrincipalAcademy();
 
   // academy 데이터가 로드되면 formData 업데이트
   useEffect(() => {
-    if (academy) {
+    if (typedAcademy) {
       setFormData({
-        name: academy.name || '',
-        address: academy.address || '',
-        phoneNumber: academy.phoneNumber || '',
-        description: academy.description || '',
+        name: typedAcademy.name || '',
+        address: typedAcademy.address || '',
+        phoneNumber: typedAcademy.phoneNumber || '',
+        description: typedAcademy.description || '',
       });
     }
-  }, [academy]);
+  }, [typedAcademy]);
 
   const handleEdit = () => {
-    if (academy) {
+    if (typedAcademy) {
       setFormData({
-        name: academy.name || '',
-        address: academy.address || '',
-        phoneNumber: academy.phoneNumber || '',
-        description: academy.description || '',
+        name: typedAcademy.name || '',
+        address: typedAcademy.address || '',
+        phoneNumber: typedAcademy.phoneNumber || '',
+        description: typedAcademy.description || '',
       });
     }
     setIsEditing(true);
@@ -76,8 +76,8 @@ export default function PrincipalAcademyManagementPage() {
 
   // 학원 코드 복사 핸들러
   const handleCopyCode = () => {
-    if (academy?.code) {
-      copy(academy.code);
+    if (typedAcademy?.code) {
+      copy(typedAcademy.code);
     }
   };
 
@@ -137,7 +137,7 @@ export default function PrincipalAcademyManagementPage() {
                       className="mt-1"
                     />
                   ) : (
-                    <p className="text-sm text-gray-600 mt-1">{academy?.name}</p>
+                    <p className="text-sm text-gray-600 mt-1">{typedAcademy?.name}</p>
                   )}
                 </div>
                 <div>
@@ -146,12 +146,12 @@ export default function PrincipalAcademyManagementPage() {
                     <div className="flex items-center gap-3">
                       <div className="flex-1 min-w-0 max-w-[60%]">
                         {showFullCode ? (
-                          <p className="text-sm text-gray-600 break-all">{academy?.code}</p>
+                          <p className="text-sm text-gray-600 break-all">{typedAcademy?.code}</p>
                         ) : (
                           <p className="text-sm text-gray-600">••••••••••••••••</p>
                         )}
                       </div>
-                      {academy?.code && (
+                      {typedAcademy?.code && (
                         <div className="flex items-center gap-3 flex-shrink-0">
                           <button
                             onClick={toggleShowFullCode}
@@ -187,7 +187,7 @@ export default function PrincipalAcademyManagementPage() {
                       className="mt-1"
                     />
                   ) : (
-                    <p className="text-sm text-gray-600 mt-1">{academy?.address || '등록되지 않음'}</p>
+                    <p className="text-sm text-gray-600 mt-1">{typedAcademy?.address || '등록되지 않음'}</p>
                   )}
                 </div>
                 <div>
@@ -200,7 +200,7 @@ export default function PrincipalAcademyManagementPage() {
                       className="mt-1"
                     />
                   ) : (
-                    <p className="text-sm text-gray-600 mt-1">{academy?.phoneNumber || '등록되지 않음'}</p>
+                    <p className="text-sm text-gray-600 mt-1">{typedAcademy?.phoneNumber || '등록되지 않음'}</p>
                   )}
                 </div>
                 <div>
@@ -214,7 +214,7 @@ export default function PrincipalAcademyManagementPage() {
                       rows={3}
                     />
                   ) : (
-                    <p className="text-sm text-gray-600 mt-1">{academy?.description || '등록되지 않음'}</p>
+                    <p className="text-sm text-gray-600 mt-1">{typedAcademy?.description || '등록되지 않음'}</p>
                   )}
                 </div>
               </div>

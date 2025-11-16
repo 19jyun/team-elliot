@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import React, { useState, useRef } from 'react';
 import { UpdateProfileRequest, TeacherProfileResponse } from '@/types/api/teacher';
 import { toast } from 'sonner';
 import { getImageUrl } from '@/utils/imageUtils';
@@ -67,14 +66,15 @@ export function TeacherProfileCard({
 
   // React Query 기반 데이터 관리 (현재 로그인한 선생님용)
   const { data: profile, isLoading: profileLoading, error } = useTeacherProfile();
+  const typedProfile = profile as TeacherProfileResponse | null | undefined;
   const updateProfileMutation = useUpdateTeacherProfile();
   const updatePhotoMutation = useUpdateTeacherProfilePhoto();
 
   // 현재 사용자가 선생님이고, 특정 선생님 ID가 없거나 현재 선생님의 프로필을 조회하는 경우
-  const isCurrentTeacher = !teacherId || teacherId === profile?.id;
+  const isCurrentTeacher = !teacherId || teacherId === typedProfile?.id;
   
   // 실제 사용할 프로필 데이터와 로딩/에러 상태
-  const currentProfile = teacherId ? specificTeacherProfile : profile;
+  const currentProfile = teacherId ? specificTeacherProfile : typedProfile;
   const currentError = teacherId ? errorSpecific : error;
 
   // 편집 가능 여부 결정

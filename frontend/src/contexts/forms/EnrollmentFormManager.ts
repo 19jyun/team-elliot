@@ -6,9 +6,7 @@ export type EnrollmentStep =
   | "class-selection"
   | "date-selection"
   | "payment"
-  | "complete"
-  | "refund-request"
-  | "refund-complete";
+  | "complete";
 
 // 수강 변경 계산 데이터 타입
 export interface EnrollmentModificationData {
@@ -82,8 +80,6 @@ export interface EnrollmentFormState {
   selectedClassIds: number[];
   selectedAcademyId: number | null;
   selectedClassesWithSessions: ClassesWithSessionsByMonthResponse[];
-  // 수강 변경 관련 상태
-  modificationData: EnrollmentModificationData | null;
 }
 
 export class EnrollmentFormManager {
@@ -143,12 +139,6 @@ export class EnrollmentFormManager {
     classes: ClassesWithSessionsByMonthResponse[]
   ): void {
     this.state.selectedClassesWithSessions = classes;
-    this.emitStateChange();
-    this.notifyListeners();
-  }
-
-  setModificationData(data: EnrollmentModificationData | null): void {
-    this.state.modificationData = data;
     this.emitStateChange();
     this.notifyListeners();
   }
@@ -248,7 +238,6 @@ export class EnrollmentFormManager {
       selectedClassIds: [],
       selectedAcademyId: null,
       selectedClassesWithSessions: [],
-      modificationData: null,
     };
   }
 

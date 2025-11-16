@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { SessionEnrollmentsResponse } from '@/types/api/teacher'

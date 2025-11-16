@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Building, CreditCard, Edit, Save, X } from 'lucide-react';
-import { toast } from 'sonner';
 import { usePrincipalProfile } from '@/hooks/queries/principal/usePrincipalProfile';
 import { useUpdatePrincipalProfile } from '@/hooks/mutations/principal/useUpdatePrincipalProfile';
 import { UpdatePrincipalProfileRequest, PrincipalProfile } from '@/types/api/principal';

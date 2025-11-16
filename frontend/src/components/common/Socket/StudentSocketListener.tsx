@@ -52,22 +52,22 @@ export function StudentSocketListener() {
   })
 
   // 세션 관련 이벤트
-  useSocketEvent('session_created', (data) => {
+  useSocketEvent('session_created' as SocketEventName, (data) => {
     console.log('📨 세션 생성 패킷 수신:', data)
     
-    socketSync.handleSocketEvent('session_created', data as SocketEventData<'session_created'>)
+    socketSync.handleSocketEvent('session_created', data as Record<string, unknown>)
   })
 
-  useSocketEvent('session_updated', (data) => {
+  useSocketEvent('session_updated' as SocketEventName, (data) => {
     console.log('📨 세션 업데이트 패킷 수신:', data)
     
-    socketSync.handleSocketEvent('session_updated', data as SocketEventData<'session_updated'>)
+    socketSync.handleSocketEvent('session_updated', data as Record<string, unknown>)
   })
 
-  useSocketEvent('session_deleted', (data) => {
+  useSocketEvent('session_deleted' as SocketEventName, (data) => {
     console.log('📨 세션 삭제 패킷 수신:', data)
     
-    socketSync.handleSocketEvent('session_deleted', data as SocketEventData<'session_deleted'>)
+    socketSync.handleSocketEvent('session_deleted', data as Record<string, unknown>)
   })
 
   // 연결 확인

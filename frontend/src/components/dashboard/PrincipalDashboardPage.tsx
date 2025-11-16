@@ -17,8 +17,6 @@ import { PrincipalProfileManagement } from './principal/profile/PrincipalProfile
 import { PrincipalPersonalInfoManagement } from './principal/profile/PrincipalPersonalInfoManagement/PrincipalPersonalInfoManagement';
 import { PrincipalBankInfoManagement } from './principal/profile/PrincipalBankInfoManagement/PrincipalBankInfoManagement';
 import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSocketListener';
-
-import { usePrincipalInitialization } from '@/hooks/redux/usePrincipalInitialization';
 import { SettingsPage } from '@/components/settings/SettingsPage';
 import { SessionDetailContainer } from './teacher/SessionDetail/SessionDetailContainer';
 import { WithdrawalPage } from '@/components/common/WithdrawalPage';
@@ -28,10 +26,7 @@ import { WithdrawalPage } from '@/components/common/WithdrawalPage';
 function PrincipalDashboardContent() {
   const { navigation } = useApp();
   const { activeTab, handleTabChange, subPage, isTransitioning } = navigation;
-
-  // Principal 데이터 초기화
-  usePrincipalInitialization();
-
+  
   // SubPage 렌더링 함수
   const renderSubPage = () => {
     if (!subPage) return null;

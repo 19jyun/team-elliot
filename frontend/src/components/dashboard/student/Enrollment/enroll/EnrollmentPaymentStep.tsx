@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { toast } from 'sonner';
 import { useEnrollment } from '@/hooks/student/useEnrollment';
@@ -12,6 +12,8 @@ import {
 import { PrincipalPaymentBox } from '@/components/features/student/enrollment/month/date/payment/PrincipalPaymentBox';
 import { PaymentConfirmFooter } from '@/components/features/student/enrollment/month/date/payment/PaymentConfirmFooter';
 import { useApp } from '@/contexts/AppContext';
+import { useStudentEnrollmentPayment } from '@/hooks/queries/student/useStudentEnrollmentPayment';
+import type { GetSessionPaymentInfoResponse } from '@/types/api/student';
 import type { 
   EnrollmentPaymentStepVM, 
   SelectedSessionVM, 
@@ -30,7 +32,30 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
   const [principalPayment, setPrincipalPayment] = useState<PrincipalPaymentInfoVM | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isLoadingPaymentInfo, setIsLoadingPaymentInfo] = useState(false);
+  
+  // 선택된 세션 ID 배열
+  const sessionIds = useMemo(() => {
+    const validSessions = filterValidSessions(selectedSessions);
+    return validSessions.map(session => session.id);
+  }, [selectedSessions]);
+  
+  // React Query를 사용하여 여러 세션의 결제 정보 조회
+  const paymentInfoQueries = useStudentEnrollmentPayment(
+    sessionIds,
+    selectedSessions.length > 0
+  );
+  
+  // 로딩 상태 계산
+  const isLoadingPaymentInfo = paymentInfoQueries.some(query => query.isLoading);
+  
+  // 결제 정보 데이터 추출
+  const paymentInfoData = useMemo(() => {
+    return paymentInfoQueries.map((query, index) => ({
+      session: selectedSessions[index],
+      paymentInfo: query.data as GetSessionPaymentInfoResponse | null,
+      error: query.error,
+    }));
+  }, [paymentInfoQueries, selectedSessions]);
   
   const statusSteps = [
     {
@@ -56,9 +81,7 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
   ]
 
   // 세션별 결제 정보 로드 - 원장 기준으로 통합
-  const loadPaymentInfoForSessions = useCallback(async (sessions: SelectedSessionVM[]) => {
-    setIsLoadingPaymentInfo(true);
-    
+  const loadPaymentInfoForSessions = useCallback((sessions: SelectedSessionVM[]) => {
     try {
       // 어댑터를 사용하여 유효한 세션만 필터링
       const validSessions = filterValidSessions(sessions);
@@ -70,6 +93,12 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
         return;
       }
       
+      // React Query hook이 자동으로 데이터를 가져오므로, 
+      // 여기서는 paymentInfoData를 사용하여 결제 정보 처리
+      if (isLoadingPaymentInfo) {
+        return; // 아직 로딩 중
+      }
+      
       let principalInfo: {
         bankName: string;
         accountNumber: string;
@@ -78,22 +107,8 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
       const classFees: ClassFeeVM[] = [];
       let totalAmount = 0;
       
-      // 각 세션별로 결제 정보를 병렬로 가져옴
-      const paymentInfoPromises = validSessions.map(async (session) => {
-        try {
-          // API 직접 호출 (React Query 캐싱은 나중에 활용 가능)
-          const { getSessionPaymentInfo } = await import('@/api/student');
-          const response = await getSessionPaymentInfo(session.id);
-          return { session, paymentInfo: response.data };
-        } catch (error) {
-          console.error(`세션 ${session.id}의 결제 정보 로드 실패:`, error);
-          return { session, paymentInfo: null };
-        }
-      });
-      
-      const paymentResults = await Promise.all(paymentInfoPromises);
-      
-      for (const { session, paymentInfo } of paymentResults) {
+      // paymentInfoData를 사용하여 결제 정보 처리
+      for (const { session, paymentInfo } of paymentInfoData) {
         if (paymentInfo && paymentInfo.principal) {
           // 원장 정보는 첫 번째 세션에서 가져옴 (모든 세션이 같은 원장)
           if (!principalInfo) {
@@ -161,12 +176,17 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
         });
       }
     } catch (error) {
-      console.error('결제 정보 로드 실패:', error);
-      toast.error('결제 정보를 불러오는데 실패했습니다.');
-    } finally {
-      setIsLoadingPaymentInfo(false);
+      console.error('결제 정보 처리 실패:', error);
+      toast.error('결제 정보를 처리하는데 실패했습니다.');
     }
-  }, [setEnrollmentStep]);
+  }, [setEnrollmentStep, paymentInfoData, isLoadingPaymentInfo]);
+  
+  // paymentInfoData가 변경되면 자동으로 결제 정보 업데이트
+  useEffect(() => {
+    if (selectedSessions.length > 0 && !isLoadingPaymentInfo && paymentInfoData.length > 0) {
+      loadPaymentInfoForSessions(selectedSessions);
+    }
+  }, [selectedSessions, paymentInfoData, isLoadingPaymentInfo, loadPaymentInfoForSessions]);
 
   useEffect(() => {
     const loadSessions = async () => {

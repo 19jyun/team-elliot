@@ -24,15 +24,37 @@ export function PrincipalStudentSessionHistoryModal({ student, onClose }: Princi
   const history = useMemo(() => {
     if (!historyData || !Array.isArray(historyData)) return [];
     
-    return historyData.map((enrollment: any) => {
+    type EnrollmentWithSession = {
+      id: number;
+      status: string;
+      enrolledAt: string;
+      session?: {
+        date: string;
+        class?: {
+          className?: string;
+          name?: string;
+        };
+      };
+    };
+    
+    return historyData.map((enrollment: EnrollmentWithSession) => {
       // SessionEnrollment 구조에서 데이터 추출
-      const session = enrollment.session || {};
-      const classData = session.class || {};
+      const session = (enrollment.session || {}) as {
+        date?: string;
+        class?: {
+          className?: string;
+          name?: string;
+        };
+      };
+      const classData = (session.class || {}) as {
+        className?: string;
+        name?: string;
+      };
       
       return {
         id: enrollment.id,
         session: {
-          date: session.date, // session.date는 DateTime 객체
+          date: session.date || '', // session.date는 DateTime 객체
           class: {
             className: classData.className || classData.name || '알 수 없음',
           },

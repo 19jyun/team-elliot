@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { UpdatePrincipalProfileRequest } from '@/types/api/principal';
+import React, { useState, useRef } from 'react';
+import { UpdatePrincipalProfileRequest, PrincipalProfile } from '@/types/api/principal';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -57,19 +56,20 @@ export function PrincipalProfileCard({
 
   // React Query 기반 데이터 관리
   const { data: profile, isLoading: profileLoading, error } = usePrincipalProfile();
+  const typedProfile = profile as PrincipalProfile | null | undefined;
   const updateProfileMutation = useUpdatePrincipalProfile();
   const updatePhotoMutation = useUpdatePrincipalProfilePhoto();
 
   // 편집 모드 시작
   const handleEdit = () => {
-    if (profile) {
+    if (typedProfile) {
       setFormData({
-        introduction: profile.introduction || '',
-        education: profile.education || [],
-        certifications: profile.certifications || [],
+        introduction: typedProfile.introduction || '',
+        education: typedProfile.education || [],
+        certifications: typedProfile.certifications || [],
       });
-      setTempEducation(profile.education || []);
-      setTempCertifications(profile.certifications || []);
+      setTempEducation(typedProfile.education || []);
+      setTempCertifications(typedProfile.certifications || []);
     }
     setIsEditing(true);
   };
@@ -201,7 +201,7 @@ export function PrincipalProfileCard({
     );
   }
 
-  if (error || !profile) {
+  if (error || !typedProfile) {
     return (
       <Card className="w-full max-w-2xl mx-auto">
         <CardContent className="p-6">
@@ -245,17 +245,17 @@ export function PrincipalProfileCard({
                   className="h-12 w-12 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center relative z-10"
                   onClick={handlePhotoClick}
                 >
-                  {previewUrl || getImageUrl(profile.photoUrl) ? (
+                  {previewUrl || getImageUrl(typedProfile.photoUrl) ? (
                     <Image 
-                      src={previewUrl || getImageUrl(profile.photoUrl) || ''} 
-                      alt={profile.name}
+                      src={previewUrl || getImageUrl(typedProfile.photoUrl) || ''} 
+                      alt={typedProfile.name}
                       width={48}
                       height={48}
                       className="w-full h-full object-cover"
                     />
                   ) : (
                     <div className="text-sm font-semibold text-gray-600">
-                      {profile.name?.charAt(0)}
+                      {typedProfile.name?.charAt(0)}
                     </div>
                   )}
                 </div>
@@ -285,8 +285,8 @@ export function PrincipalProfileCard({
               )}
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold">{profile.name}</h3>
-              <p className="text-sm text-gray-600">{profile.introduction}</p>
+              <h3 className="font-semibold">{typedProfile.name}</h3>
+              <p className="text-sm text-gray-600">{typedProfile.introduction}</p>
             </div>
           </div>
         </CardContent>
@@ -331,17 +331,17 @@ export function PrincipalProfileCard({
                 className="h-20 w-20 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center relative z-10"
                 onClick={handlePhotoClick}
               >
-                {previewUrl || getImageUrl(profile.photoUrl) ? (
+                {previewUrl || getImageUrl(typedProfile.photoUrl) ? (
                   <Image 
-                    src={previewUrl || getImageUrl(profile.photoUrl) || ''} 
-                    alt={profile.name}
+                    src={previewUrl || getImageUrl(typedProfile.photoUrl) || ''} 
+                    alt={typedProfile.name}
                     width={80}
                     height={80}
                     className="w-full h-full object-cover"
                   />
                 ) : (
                   <div className="text-lg font-semibold text-gray-600">
-                    {profile.name?.charAt(0)}
+                    {typedProfile.name?.charAt(0)}
                   </div>
                 )}
               </div>
@@ -372,8 +372,8 @@ export function PrincipalProfileCard({
           </div>
           
           <div className="flex-1 space-y-3">
-            <h3 className="text-lg font-semibold">{profile.name}</h3>
-            <p className="text-gray-600">{profile.phoneNumber}</p>
+            <h3 className="text-lg font-semibold">{typedProfile.name}</h3>
+            <p className="text-gray-600">{typedProfile.phoneNumber}</p>
             {isEditing && (
               <div className="text-xs text-gray-500 space-y-1">
                 <p>• 이름 및 전화번호는 개인정보 관리 페이지에서 수정하실 수 있습니다.</p>
@@ -399,7 +399,7 @@ export function PrincipalProfileCard({
             />
           ) : (
             <p className="text-gray-700 whitespace-pre-wrap">
-              {profile.introduction || '소개가 없습니다.'}
+              {typedProfile.introduction || '소개가 없습니다.'}
             </p>
           )}
         </div>
@@ -444,8 +444,8 @@ export function PrincipalProfileCard({
             </div>
           ) : (
             <div className="space-y-2">
-              {profile.education && profile.education.length > 0 ? (
-                profile.education.map((education: string, index: number) => (
+              {typedProfile.education && typedProfile.education.length > 0 ? (
+                typedProfile.education.map((education: string, index: number) => (
                   <Badge key={index} variant="secondary">
                     {education}
                   </Badge>
@@ -495,8 +495,8 @@ export function PrincipalProfileCard({
             </div>
           ) : (
             <div className="space-y-2">
-              {profile.certifications && profile.certifications.length > 0 ? (
-                profile.certifications.map((certification: string, index: number) => (
+              {typedProfile.certifications && typedProfile.certifications.length > 0 ? (
+                typedProfile.certifications.map((certification: string, index: number) => (
                   <Badge key={index} variant="default">
                     {certification}
                   </Badge>

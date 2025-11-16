@@ -14,7 +14,6 @@ import { useSession } from '@/lib/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSocketListener';
-import { useTeacherInitialization } from '@/hooks/redux/useTeacherInitialization';
 import { SettingsPage } from '@/components/settings/SettingsPage';
 import { SessionDetailContainer } from './teacher/SessionDetail/SessionDetailContainer';
 import { WithdrawalPage } from '@/components/common/WithdrawalPage';
@@ -23,9 +22,6 @@ import { WithdrawalPage } from '@/components/common/WithdrawalPage';
 function TeacherDashboardContent() {
   const { navigation } = useApp();
   const { activeTab, handleTabChange, subPage, clearSubPage, isTransitioning } = navigation;
-
-  // Teacher 데이터 초기화
-  useTeacherInitialization();
 
   // SubPage 렌더링 함수
   const renderSubPage = () => {

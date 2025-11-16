@@ -227,6 +227,15 @@ export const queryKeys = {
         classId,
       ],
     },
+
+    teacherProfile: {
+      all: ["student", "teacherProfile"] as const,
+      detail: (teacherId: number) => [
+        ...queryKeys.student.teacherProfile.all,
+        "detail",
+        teacherId,
+      ],
+    },
   },
 
   // ==================== Teacher ====================

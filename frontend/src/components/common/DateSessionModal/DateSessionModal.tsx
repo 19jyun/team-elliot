@@ -1,12 +1,17 @@
 'use client'
 
-import React, { useMemo } from 'react'
+import React, { useMemo, useCallback } from 'react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { SessionCardList } from '@/components/common/Session/SessionCardList'
-import { useRoleCalendarApi } from '@/hooks/calendar/useRoleCalendarApi'
+import { useStudentCalendarSessions } from '@/hooks/queries/student/useStudentCalendarSessions'
+import { useTeacherCalendarSessions } from '@/hooks/queries/teacher/useTeacherCalendarSessions'
+import { usePrincipalCalendarSessions } from '@/hooks/queries/principal/usePrincipalCalendarSessions'
 import type { ClassSession, ClassSessionWithCounts } from '@/types/api/class'
+import type { ClassSessionForEnrollment } from '@/types/api/student'
+import type { TeacherSession } from '@/types/api/teacher'
+import type { PrincipalClassSession } from '@/types/api/principal'
 import { Session } from '@/lib/auth/AuthProvider'
 
 interface DateSessionModalProps {
@@ -33,13 +38,35 @@ export function DateSessionModal({
   onClose, 
   onSessionClick,
   role,
-  session 
+  session: _session 
 }: DateSessionModalProps) {
   
-  // Role별 API 기반 데이터 관리
-  const { getSessionsByDate } = useRoleCalendarApi(role.toUpperCase() as 'STUDENT' | 'TEACHER' | 'PRINCIPAL', session);
+  // React Query 기반 데이터 관리 (모든 hook 호출, enabled로 제어)
+  const { data: studentSessionsData } = useStudentCalendarSessions(undefined, role === 'student');
+  const { data: teacherSessionsData } = useTeacherCalendarSessions(undefined, role === 'teacher');
+  const { data: principalSessionsData } = usePrincipalCalendarSessions(undefined, role === 'principal');
 
-  // 선택된 날짜의 세션들을 API에서 가져오기
+  // Role에 따라 적절한 세션 데이터 선택
+  const allSessions = useMemo(() => {
+    if (role === 'student') {
+      return (studentSessionsData as ClassSessionForEnrollment[]) || [];
+    } else if (role === 'teacher') {
+      return (teacherSessionsData as TeacherSession[]) || [];
+    } else if (role === 'principal') {
+      return (principalSessionsData as PrincipalClassSession[]) || [];
+    }
+    return [];
+  }, [role, studentSessionsData, teacherSessionsData, principalSessionsData]);
+
+  // 날짜별 세션 조회 헬퍼 함수
+  const getSessionsByDate = useCallback((date: Date) => {
+    return allSessions.filter((session) => {
+      const sessionDate = new Date(session.date);
+      return sessionDate.toDateString() === date.toDateString();
+    });
+  }, [allSessions]);
+
+  // 선택된 날짜의 세션들을 가져오기
   const sessions = useMemo(() => {
     if (!selectedDate) return [];
     const result = getSessionsByDate(selectedDate);

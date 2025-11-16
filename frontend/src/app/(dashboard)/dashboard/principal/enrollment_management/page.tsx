@@ -2,7 +2,6 @@
 
 import { useSession, useSignOut } from '@/lib/auth/AuthProvider'
 import { usePrincipalAcademy } from '@/hooks/queries/principal/usePrincipalAcademy'
-import { useEffect } from 'react'
 import { EnrollmentRefundManagementContainer } from '@/components/dashboard/principal/person_management/enrollment_refund_management/containers/EnrollmentRefundManagementContainer'
 
 export default function PrincipalEnrollmentManagementPage() {

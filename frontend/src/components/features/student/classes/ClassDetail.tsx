@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import cn from 'classnames';
 import { useApp } from '@/contexts/AppContext';
 import { TeacherProfileCardForStudent } from '@/components/features/student/classes/TeacherProfileCardForStudent';
@@ -22,7 +21,7 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
   // View Model 생성
   const displayVM: ClassDetailDisplayVM = toClassDetailDisplayVM(
     classId,
-    classDetails,
+    classDetails ?? null,
     isLoading,
     error,
     showModificationButton

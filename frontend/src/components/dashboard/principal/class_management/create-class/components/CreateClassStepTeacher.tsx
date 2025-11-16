@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { StatusStep } from './StatusStep';
 import { useApp } from '@/contexts/AppContext';
@@ -24,7 +24,7 @@ export function CreateClassStepTeacher() {
   const [selectedTeacher, setSelectedTeacher] = useState<number | null>(selectedTeacherId);
 
   // React Query 기반 데이터 관리
-  const { data: teachers = [], isLoading, error } = usePrincipalTeachers();
+  const { data: teachers = [], isLoading, error, refetch } = usePrincipalTeachers();
 
   const handleTeacherSelect = (teacherId: number) => {
     setSelectedTeacher(teacherId);
@@ -115,7 +115,7 @@ export function CreateClassStepTeacher() {
           <div className="text-center">
             <p className="text-red-500 mb-4">선생님 목록을 불러오는데 실패했습니다.</p>
             <button
-              onClick={() => loadTeachers()}
+              onClick={() => refetch()}
               className="px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
             >
               다시 시도

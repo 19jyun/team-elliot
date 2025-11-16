@@ -17,7 +17,6 @@ import {
 } from '@/utils/refundRequestValidation';
 import { BANKS } from '@/constants/banks';
 import { processBankInfo, getBankNameToSave } from '@/utils/bankUtils';
-import type { ModificationSessionVM } from '@/types/view/student';
 import { EnrollmentModificationData } from '@/contexts/forms/EnrollmentFormManager';
 
 interface RefundRequestStepProps {

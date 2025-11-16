@@ -18,7 +18,10 @@ export function EnrollmentDateStep() {
 
   // React Query 기반 데이터 관리
   const { data: availableSessionsData, isLoading, error } = useStudentAvailableSessions(selectedAcademyId || 0);
-  const availableSessions = availableSessionsData || [];
+  const availableSessions = React.useMemo(
+    () => availableSessionsData || [],
+    [availableSessionsData]
+  );
 
   const [selectedSessionIds, setSelectedSessionIds] = React.useState<Set<number>>(new Set());
 

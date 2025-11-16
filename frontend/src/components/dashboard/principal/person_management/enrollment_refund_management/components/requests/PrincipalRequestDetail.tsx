@@ -34,7 +34,10 @@ export function PrincipalRequestDetail() {
   } = usePrincipalRefundRequests();
   
   // Type-safe access to refundRequests
-  const refundRequests = (refundRequestsData as RefundRequestListResponse | undefined)?.refundRequests || [];
+  const refundRequests = useMemo(
+    () => (refundRequestsData as RefundRequestListResponse | undefined)?.refundRequests || [],
+    [refundRequestsData]
+  );
   
   // Mutations
   const approveEnrollmentMutation = useApproveEnrollment();
@@ -56,10 +59,49 @@ export function PrincipalRequestDetail() {
     if (selectedTab === 'enrollment') {
       // 세션 수강생 목록에서 enrollment 정보 추출
       const enrollments = sessionEnrollmentsData?.enrollments || [];
-      return enrollments.map((enrollment: any) => ({
-        ...enrollment,
-        sessionId: selectedSessionId,
-      })) as PrincipalEnrollment[];
+      const session = sessionEnrollmentsData?.session;
+      
+      return enrollments.map((enrollment) => {
+        // TeacherSessionEnrollment를 PrincipalEnrollment로 변환
+        const principalEnrollment: PrincipalEnrollment = {
+          id: enrollment.id,
+          studentId: enrollment.studentId,
+          sessionId: enrollment.sessionId,
+          status: enrollment.status,
+          enrolledAt: enrollment.enrolledAt,
+          student: enrollment.student,
+          session: session ? {
+            id: session.id,
+            date: session.date,
+            startTime: session.startTime,
+            endTime: session.endTime,
+            class: {
+              id: session.class.id,
+              className: session.class.className,
+              level: '', // TeacherSessionEnrollment에는 level이 없으므로 빈 문자열
+              tuitionFee: 0, // TeacherSessionEnrollment에는 tuitionFee가 없으므로 0
+              teacher: {
+                name: session.class.teacher.name,
+              },
+            },
+          } : {
+            id: selectedSessionId,
+            date: '',
+            startTime: '',
+            endTime: '',
+            class: {
+              id: 0,
+              className: '',
+              level: '',
+              tuitionFee: 0,
+              teacher: {
+                name: '',
+              },
+            },
+          },
+        };
+        return principalEnrollment;
+      });
     } else {
       // 환불 요청 목록에서 특정 세션의 것만 필터링
       return refundRequests.filter((refund: RefundRequestResponse) => {

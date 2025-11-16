@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useTeacherSessionEnrollments } from '@/hooks/queries/teacher/useTeacherSessionEnrollments'
 import { usePrincipalSessionEnrollments } from '@/hooks/queries/principal/usePrincipalSessionEnrollments'
 import { useSession } from '@/lib/auth/AuthProvider'

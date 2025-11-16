@@ -33,8 +33,6 @@ export default function AcademyManagement() {
     withdrawalType,
     academyStatus,
     isLoadingStatus,
-    loadCurrentAcademy,
-    loadAcademyStatus,
     handleJoinAcademy,
     handleWithdrawalConfirm,
     handleLeaveAcademy,

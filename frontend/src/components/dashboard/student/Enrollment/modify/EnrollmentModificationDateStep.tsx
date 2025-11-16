@@ -18,7 +18,7 @@ import type { EnrollmentModificationDateStepVM } from '@/types/view/student'
 export function EnrollmentModificationDateStep({ 
   classId, 
   existingEnrollments, 
-  month
+  month: _month
 }: EnrollmentModificationDateStepVM) {
   const { setSelectedSessions, setEnrollmentModificationStep, setEnrollmentModificationData } = useApp()
   
@@ -26,7 +26,7 @@ export function EnrollmentModificationDateStep({
   const { data: modificationData, isLoading: isLoadingSessions, error: queryError } = useClassSessionsForModification(classId);
   
   // 에러 핸들러 훅 사용
-  const { handleError, handleRetry } = useModificationErrorHandler({
+  const { handleRetry } = useModificationErrorHandler({
     onRetry: () => {
       // React Query가 자동으로 재시도하므로 별도 처리 불필요
     }
@@ -150,13 +150,10 @@ export function EnrollmentModificationDateStep({
   const {
     netChangeCount,
     totalAmount,
-    hasChanges,
     hasRealChanges,
     changeType,
     newlyAddedSessionsCount,
     newlyCancelledSessionsCount,
-    newlyAddedSessionIds,
-    newlyCancelledSessionIds,
     sessionPrice,
     nextStep,
   } = useEnrollmentModificationCalculation({

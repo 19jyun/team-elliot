@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { toast } from 'sonner';
 import { PrincipalPaymentBox } from '@/components/features/student/enrollment/month/date/payment/PrincipalPaymentBox';
@@ -8,23 +8,60 @@ import { SelectedSession, PrincipalPaymentInfo } from '@/components/features/stu
 import { useApp } from '@/contexts/AppContext';
 import { useBatchModifyEnrollments } from '@/hooks/mutations/student/useBatchModifyEnrollments';
 import { useModificationErrorHandler } from '@/hooks/student/useModificationErrorHandler';
+import { useClassSessionsForModification } from '@/hooks/queries/student/useClassSessionsForModification';
 import { 
   validateModificationData
 } from '@/lib/adapters/student';
 import type { ModificationSessionVM } from '@/types/view/student';
 import { EnrollmentModificationData } from '@/contexts/forms/EnrollmentFormManager';
+import type { ClassSessionForModification } from '@/types/api/class';
 
 interface EnrollmentModificationPaymentStepProps {
   modificationData: EnrollmentModificationData;
+  classId: number;
 }
 
 export function EnrollmentModificationPaymentStep({ 
-  modificationData
+  modificationData,
+  classId
 }: EnrollmentModificationPaymentStepProps) {
-  const { form, setEnrollmentModificationStep } = useApp();
-  const { enrollment } = form;
-  const { selectedSessions: contextSessions } = enrollment;
+  const { setEnrollmentModificationStep } = useApp();
   const modifyEnrollmentsMutation = useBatchModifyEnrollments();
+  
+  // 세션 정보를 다시 가져와서 selectedSessionIds로 필터링
+  const { data: modificationSessionsData } = useClassSessionsForModification(classId);
+  
+  // modificationData.selectedSessionIds를 사용하여 선택된 세션 재구성
+  const contextSessions = useMemo(() => {
+    if (!modificationSessionsData?.sessions || !modificationData.selectedSessionIds) {
+      return [];
+    }
+    
+    const selectedSessionIdsSet = new Set(modificationData.selectedSessionIds);
+    const selectedSessions = modificationSessionsData.sessions
+      .filter((session: ClassSessionForModification) => selectedSessionIdsSet.has(session.id))
+      .map((session: ClassSessionForModification): SelectedSession => ({
+        sessionId: session.id,
+        id: session.id,
+        startTime: session.startTime,
+        endTime: session.endTime,
+        date: session.date,
+        isAlreadyEnrolled: session.isAlreadyEnrolled || false,
+        isEnrollable: session.isEnrollable || true,
+        class: {
+          id: session.class?.id || 0,
+          className: session.class?.className || 'Unknown Class',
+          level: session.class?.level || 'BEGINNER',
+          tuitionFee: session.class?.tuitionFee || '0',
+          teacher: {
+            id: session.class?.teacher?.id || 0,
+            name: session.class?.teacher?.name || 'Unknown Teacher',
+          },
+        },
+      }));
+    
+    return selectedSessions;
+  }, [modificationSessionsData?.sessions, modificationData.selectedSessionIds]);
   
   // 에러 핸들러 훅 사용
   // setEnrollmentStep은 useModificationErrorHandler에서 date-selection으로 돌아갈 때만 사용
@@ -70,13 +107,13 @@ export function EnrollmentModificationPaymentStep({
         return;
       }
       
-      // Context에서 세션 정보 사용
+      // modificationData에서 재구성된 세션 정보 사용
       if (!contextSessions || contextSessions.length === 0) {
         console.warn('No sessions found in context');
         return;
       }
       
-      const sessions = contextSessions as unknown as SelectedSession[];
+      const sessions = contextSessions;
       setSelectedSessions(sessions);
       
       // 실제 API에서 원장 결제 정보 가져오기
@@ -163,7 +200,7 @@ export function EnrollmentModificationPaymentStep({
         throw new Error('수강 변경 정보를 찾을 수 없습니다.');
       }
 
-      // Context에서 세션 정보 가져오기
+      // modificationData에서 재구성된 세션 정보 사용
       if (!contextSessions || contextSessions.length === 0) {
         throw new Error('선택된 세션 정보를 찾을 수 없습니다.');
       }

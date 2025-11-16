@@ -11,6 +11,7 @@ import { RefundPolicy } from '@/components/features/student/enrollment/RefundPol
 import { useState } from 'react';
 import { useStudentAvailableSessions } from '@/hooks/queries/student/useStudentAvailableSessions';
 import type { EnrollmentClassVM } from '@/types/view/student';
+import type { AvailableSessionForEnrollment } from '@/types/api/student';
 import { toEnrollmentClassVMs } from '@/lib/adapters/student';
 
 const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
@@ -56,7 +57,7 @@ export function EnrollmentClassStep() {
     if (!selectedAcademyId || !availableSessions) return [];
     
     // availableSessions를 availableClasses 형식으로 변환 (어댑터가 기대하는 형식)
-    const converted = toEnrollmentClassVMs(availableSessions as any, selectedAcademyId);
+    const converted = toEnrollmentClassVMs(availableSessions as AvailableSessionForEnrollment[], selectedAcademyId);
     
     // 요일 계산 추가
     return converted.map(classItem => {

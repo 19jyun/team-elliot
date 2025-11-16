@@ -1,56 +1,29 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { User, Clock, GraduationCap, Award } from 'lucide-react'
 import { getImageUrl } from '@/utils/imageUtils'
-import { useStudentApi } from '@/hooks/student/useStudentApi'
-import type { TeacherProfileResponse } from '@/types/api/teacher'
+import { useStudentTeacherProfile } from '@/hooks/queries/student/useStudentTeacherProfile'
 import type { TeacherProfileCardForStudentVM, TeacherProfileDisplayVM } from '@/types/view/student'
 import { toTeacherProfileDisplayVM, toTeacherProfileForStudentVM } from '@/lib/adapters/student'
 
 export function TeacherProfileCardForStudent({ teacherId }: TeacherProfileCardForStudentVM) {
-  const { getTeacherProfileForStudent } = useStudentApi()
-  const [profile, setProfile] = useState<TeacherProfileResponse | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  // React Query 기반 데이터 관리
+  const { data: profileData, isLoading, error: queryError } = useStudentTeacherProfile(teacherId)
+
+  // ViewModel 생성
+  const profile = useMemo(() => {
+    if (!profileData) return null
+    return toTeacherProfileForStudentVM(profileData)
+  }, [profileData])
+
+  const error = queryError ? (queryError instanceof Error ? queryError.message : '선생님 정보를 불러오지 못했습니다.') : null
 
   // View Model 생성
   const displayVM: TeacherProfileDisplayVM = toTeacherProfileDisplayVM(profile, isLoading, error)
-
-  useEffect(() => {
-    let mounted = true
-    const load = async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
-        const data = await getTeacherProfileForStudent(teacherId)
-        
-        if (mounted && data) {
-          // 어댑터 패턴을 사용하여 데이터 변환
-          const transformedData = toTeacherProfileForStudentVM(data)
-          setProfile(transformedData)
-        }
-      } catch (e: unknown) {
-        if (mounted) {
-          const errorMessage = e && typeof e === 'object' && 'response' in e && 
-            e.response && typeof e.response === 'object' && 'data' in e.response &&
-            e.response.data && typeof e.response.data === 'object' && 'message' in e.response.data
-            ? String(e.response.data.message)
-            : '선생님 정보를 불러오지 못했습니다.';
-          setError(errorMessage);
-        }
-      } finally {
-        if (mounted) setIsLoading(false)
-      }
-    }
-    load()
-    return () => {
-      mounted = false
-    }
-  }, [teacherId, getTeacherProfileForStudent])
 
   if (displayVM.isLoading) {
     return (

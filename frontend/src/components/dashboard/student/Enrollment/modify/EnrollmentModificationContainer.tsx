@@ -86,6 +86,7 @@ export function EnrollmentModificationContainer({ classId, month }: EnrollmentMo
         return (
           <EnrollmentModificationPaymentStep
             modificationData={modificationData}
+            classId={classId}
           />
         );
       case 'refund-request':

@@ -45,7 +45,7 @@ export function useCreateRefundRequest() {
     },
 
     // 에러 시
-    onError: (error) => {
+    onError: () => {
       toast.error("환불 요청에 실패했습니다.");
     },
   });

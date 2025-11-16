@@ -1,7 +1,7 @@
 'use client'
 
 import { useSession, useSignOut } from '@/lib/auth/AuthProvider'
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 
 import { usePrincipalCalendarSessions } from '@/hooks/queries/principal/usePrincipalCalendarSessions'
 import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessionModal'
@@ -11,7 +11,6 @@ import { useApp } from '@/contexts/AppContext'
 import { toClassSessionForCalendar, convertPrincipalSessionToClassSessionWithCounts } from '@/lib/adapters/principal'
 import type { PrincipalClassSession } from '@/types/api/principal'
 import type { ClassSession } from '@/types/api/class'
-import { Session } from '@/lib/auth/AuthProvider'
 
 // 강의 개설 카드 컴포넌트
 const CreateClassCard: React.FC<{

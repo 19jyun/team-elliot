@@ -9,7 +9,7 @@ export default function PrincipalPersonManagementPage() {
   const signOut = useSignOut()
 
   // React Query 기반 데이터 관리
-  const { data: academy, isLoading, error } = usePrincipalAcademy()
+  const { isLoading, error } = usePrincipalAcademy()
 
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {

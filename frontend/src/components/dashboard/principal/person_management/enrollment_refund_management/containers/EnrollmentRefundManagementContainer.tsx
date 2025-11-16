@@ -8,8 +8,6 @@ import { useApproveEnrollment } from '@/hooks/mutations/principal/useApproveEnro
 import { useRejectEnrollment } from '@/hooks/mutations/principal/useRejectEnrollment';
 import { useApproveRefund } from '@/hooks/mutations/principal/useApproveRefund';
 import { useRejectRefund } from '@/hooks/mutations/principal/useRejectRefund';
-import { extractErrorMessage } from '@/types/api/error';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { PrincipalRequestCard } from '../components/requests/PrincipalRequestCard';
 import { PrincipalRejectionFormModal } from '../components/modals/PrincipalRejectionFormModal';
@@ -27,8 +25,14 @@ export function EnrollmentRefundManagementContainer() {
   const { data: enrollmentsData, isLoading: enrollmentsLoading, error: enrollmentsError } = usePrincipalEnrollments();
   const { data: refundRequestsData, isLoading: refundRequestsLoading, error: refundRequestsError } = usePrincipalRefundRequests();
   
-  const enrollments = enrollmentsData || [];
-  const refundRequests = (refundRequestsData as RefundRequestListResponse | undefined)?.refundRequests || [];
+  const enrollments = useMemo(
+    () => enrollmentsData || [],
+    [enrollmentsData]
+  );
+  const refundRequests = useMemo(
+    () => (refundRequestsData as RefundRequestListResponse | undefined)?.refundRequests || [],
+    [refundRequestsData]
+  );
   const isLoading = enrollmentsLoading || refundRequestsLoading;
   const error = enrollmentsError || refundRequestsError;
   
