@@ -15,32 +15,15 @@ export function RefundCompleteStep({ isModification }: RefundCompleteStepProps) 
   const { clearSubPage } = navigation;
 
   const handleConfirm = async () => {
-    // localStorage에서 모든 enrollment 관련 데이터 삭제
+    // Context 기반으로 변경되었으므로 localStorage 정리는 최소화
+    // (다른 플로우에서 사용할 수 있는 데이터는 유지)
     if (typeof window !== 'undefined') {
       const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
-      // 기본 enrollment 관련 데이터
-      SyncStorage.removeItem('selectedSessions');
-      SyncStorage.removeItem('selectedClassCards');
-      SyncStorage.removeItem('selectedClasses');
-      SyncStorage.removeItem('existingEnrollments');
-      
-      // 수강 변경 관련 데이터
-      SyncStorage.removeItem('modificationChangeAmount');
-      SyncStorage.removeItem('modificationChangeType');
-      SyncStorage.removeItem('modificationNetChangeCount');
-      SyncStorage.removeItem('modificationNewSessionsCount');
-      
-      // 환불 정책 동의 상태
-      SyncStorage.removeItem('refundPolicyAgreed');
-      
-      // 기타 enrollment 관련 데이터들
-      SyncStorage.removeItem('enrollmentStep');
-      SyncStorage.removeItem('selectedMonth');
-      SyncStorage.removeItem('selectedAcademyId');
-      SyncStorage.removeItem('selectedClassIds');
+      // 수강 변경 플로우에서만 사용하던 데이터만 정리
+      SyncStorage.removeItem('refundPolicyAgreement');
     }
     
-    // 수강신청 상태 초기화
+    // 수강신청 상태 초기화 (일반 enrollment)
     resetEnrollment();
     
     // Virtual History 초기화

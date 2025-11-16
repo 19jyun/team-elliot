@@ -2,7 +2,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { toast } from 'sonner';
-import { useStudentApi } from '@/hooks/student/useStudentApi';
 import { useEnrollment } from '@/hooks/student/useEnrollment';
 import { useEnrollmentErrorHandler } from '@/hooks/student/useEnrollmentErrorHandler';
 import { 
@@ -25,7 +24,6 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
   const { form, setEnrollmentStep } = useApp();
   const { enrollment } = form;
   const { selectedSessions: contextSessions } = enrollment;
-  const { loadSessionPaymentInfo } = useStudentApi();
   const { enrollSessions } = useEnrollment();
   const { handlePartialFailure, handleError } = useEnrollmentErrorHandler({ setEnrollmentStep });
   const [selectedSessions, setSelectedSessions] = useState<SelectedSessionVM[]>([]);
@@ -80,38 +78,47 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
       const classFees: ClassFeeVM[] = [];
       let totalAmount = 0;
       
-             // 각 세션별로 결제 정보를 가져옴
-       for (const session of validSessions) {
-         try {
-           const paymentInfo = await loadSessionPaymentInfo(session.id);
-           
-              if (paymentInfo && paymentInfo.data && paymentInfo.data.principal) {
-              // 원장 정보는 첫 번째 세션에서 가져옴 (모든 세션이 같은 원장)
-              if (!principalInfo) {
-                principalInfo = paymentInfo.data.principal;
-              }
-              
-              // 실제 클래스의 tuitionFee를 사용하여 수강료 계산
-              const className = session.class?.className || '클래스';
-              const sessionFee = Number(paymentInfo.data.tuitionFee) || 0;
-            
-            // 클래스 수강료 정보 추가
-            const existingFee = classFees.find(fee => fee.name === className);
-            if (existingFee) {
-              existingFee.count += 1;
-              existingFee.price += sessionFee;
-            } else {
-              classFees.push({
-                name: className,
-                count: 1,
-                price: sessionFee,
-              });
-            }
-            
-            totalAmount += sessionFee;
-          }
+      // 각 세션별로 결제 정보를 병렬로 가져옴
+      const paymentInfoPromises = validSessions.map(async (session) => {
+        try {
+          // API 직접 호출 (React Query 캐싱은 나중에 활용 가능)
+          const { getSessionPaymentInfo } = await import('@/api/student');
+          const response = await getSessionPaymentInfo(session.id);
+          return { session, paymentInfo: response.data };
         } catch (error) {
           console.error(`세션 ${session.id}의 결제 정보 로드 실패:`, error);
+          return { session, paymentInfo: null };
+        }
+      });
+      
+      const paymentResults = await Promise.all(paymentInfoPromises);
+      
+      for (const { session, paymentInfo } of paymentResults) {
+        if (paymentInfo && paymentInfo.principal) {
+          // 원장 정보는 첫 번째 세션에서 가져옴 (모든 세션이 같은 원장)
+          if (!principalInfo) {
+            principalInfo = paymentInfo.principal;
+          }
+          
+          // 실제 클래스의 tuitionFee를 사용하여 수강료 계산
+          const className = session.class?.className || '클래스';
+          const sessionFee = Number(paymentInfo.tuitionFee) || 0;
+        
+          // 클래스 수강료 정보 추가
+          const existingFee = classFees.find(fee => fee.name === className);
+          if (existingFee) {
+            existingFee.count += 1;
+            existingFee.price += sessionFee;
+          } else {
+            classFees.push({
+              name: className,
+              count: 1,
+              price: sessionFee,
+            });
+          }
+          
+          totalAmount += sessionFee;
+        } else {
           // 에러가 발생한 경우 기본값 사용
           if (!principalInfo) {
             principalInfo = {
@@ -159,7 +166,7 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
     } finally {
       setIsLoadingPaymentInfo(false);
     }
-  }, [loadSessionPaymentInfo, setEnrollmentStep]);
+  }, [setEnrollmentStep]);
 
   useEffect(() => {
     const loadSessions = async () => {
@@ -213,7 +220,7 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
     }
     };
     loadSessions();
-  }, [contextSessions, loadSessionPaymentInfo, setEnrollmentStep, loadPaymentInfoForSessions]);
+  }, [contextSessions, setEnrollmentStep, loadPaymentInfoForSessions]);
 
   // 복사 버튼 클릭 시 toast
   const handleCopy = () => {

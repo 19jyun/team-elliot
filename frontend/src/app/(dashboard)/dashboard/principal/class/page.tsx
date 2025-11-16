@@ -3,7 +3,7 @@
 import { useSession, useSignOut } from '@/lib/auth/AuthProvider'
 import { useState, useMemo, useEffect } from 'react'
 
-import { usePrincipalCalendarApi } from '@/hooks/calendar/usePrincipalCalendarApi'
+import { usePrincipalCalendarSessions } from '@/hooks/queries/principal/usePrincipalCalendarSessions'
 import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessionModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
@@ -71,34 +71,22 @@ export default function PrincipalClassPage() {
   const { navigation, data } = useApp()
   const { navigateToSubPage } = navigation
   
-  // API 기반 데이터 관리 (Redux 기반)
-  const { calendarSessions, calendarRange, loadSessions, isLoading, error } = usePrincipalCalendarApi(session as Session)
+  // React Query 기반 데이터 관리
+  const { data: calendarSessionsData, isLoading, error, refetch } = usePrincipalCalendarSessions();
+  const calendarSessions = (calendarSessionsData as PrincipalClassSession[]) || [];
   
   // 날짜 클릭 관련 상태 추가
   const [clickedDate, setClickedDate] = useState<Date | null>(null)
   const [isDateModalOpen, setIsDateModalOpen] = useState(false)
   
-
-  // 초기 데이터 로드
-  useEffect(() => {
-    loadSessions();
-  }, [loadSessions]);
-
-  // Redux에서 가져온 캘린더 범위를 Date 객체로 변환
+  // 캘린더 범위 계산 (현재 월부터 3개월)
   const calendarRangeForCalendar = useMemo(() => {
-    if (calendarRange) {
-      return {
-        startDate: new Date(calendarRange.startDate),
-        endDate: new Date(calendarRange.endDate),
-      };
-    }
-    // 기본값 사용 (현재 월부터 3개월)
     const now = new Date();
     return {
       startDate: new Date(now.getFullYear(), now.getMonth(), 1),
       endDate: new Date(now.getFullYear(), now.getMonth() + 2, 0),
     };
-  }, [calendarRange]);
+  }, []);
 
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {
@@ -123,7 +111,7 @@ export default function PrincipalClassPage() {
       <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">데이터를 불러오는데 실패했습니다.</p>
         <button
-          onClick={() => loadSessions()}
+          onClick={() => refetch()}
           className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
         >
           다시 시도

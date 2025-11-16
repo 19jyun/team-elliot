@@ -2,6 +2,7 @@
 // StateSync 시스템의 타입 정의
 
 import { EnrollmentFormState } from "../forms/EnrollmentFormManager";
+import { EnrollmentModificationFormState } from "../forms/EnrollmentModificationFormManager";
 import { CreateClassFormState } from "../forms/CreateClassFormManager";
 import { AuthFormState } from "../forms/AuthFormManager";
 import { PersonManagementFormState } from "../forms/PersonManagementFormManager";
@@ -24,6 +25,7 @@ export interface NavigationState {
 // 폼 상태 통합 타입
 export interface FormsState {
   enrollment: EnrollmentFormState;
+  enrollmentModification: EnrollmentModificationFormState;
   createClass: CreateClassFormState;
   auth: AuthFormState;
   personManagement: PersonManagementFormState;

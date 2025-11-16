@@ -10,6 +10,30 @@ export type EnrollmentStep =
   | "refund-request"
   | "refund-complete";
 
+// 수강 변경 계산 데이터 타입
+export interface EnrollmentModificationData {
+  changeType: "additional_payment" | "refund" | "no_change";
+  changeAmount: number;
+  netChangeCount: number;
+  newSessionsCount: number;
+  cancelledSessionsCount: number;
+  sessionPrice: number;
+  selectedSessionIds: number[];
+  // 기존 수강 정보 (비교용)
+  originalEnrollments: Array<{
+    id: number;
+    date: string;
+    startTime: string;
+    endTime: string;
+    isAlreadyEnrolled?: boolean;
+    enrollment?: {
+      id: number;
+      status: string;
+      enrolledAt: string;
+    };
+  }>;
+}
+
 export interface ClassesWithSessionsByMonthResponse {
   month: number;
   classes: {
@@ -58,6 +82,8 @@ export interface EnrollmentFormState {
   selectedClassIds: number[];
   selectedAcademyId: number | null;
   selectedClassesWithSessions: ClassesWithSessionsByMonthResponse[];
+  // 수강 변경 관련 상태
+  modificationData: EnrollmentModificationData | null;
 }
 
 export class EnrollmentFormManager {
@@ -117,6 +143,12 @@ export class EnrollmentFormManager {
     classes: ClassesWithSessionsByMonthResponse[]
   ): void {
     this.state.selectedClassesWithSessions = classes;
+    this.emitStateChange();
+    this.notifyListeners();
+  }
+
+  setModificationData(data: EnrollmentModificationData | null): void {
+    this.state.modificationData = data;
     this.emitStateChange();
     this.notifyListeners();
   }
@@ -216,6 +248,7 @@ export class EnrollmentFormManager {
       selectedClassIds: [],
       selectedAcademyId: null,
       selectedClassesWithSessions: [],
+      modificationData: null,
     };
   }
 

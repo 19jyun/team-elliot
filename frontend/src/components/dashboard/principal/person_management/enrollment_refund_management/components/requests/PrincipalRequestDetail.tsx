@@ -1,18 +1,19 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '@/contexts/AppContext';
-import { usePrincipalData } from '@/hooks/redux/usePrincipalData';
-import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
+import { usePrincipalSessionEnrollments } from '@/hooks/queries/principal/usePrincipalSessionEnrollments';
+import { usePrincipalRefundRequests } from '@/hooks/queries/principal/usePrincipalRefundRequests';
+import { useApproveEnrollment } from '@/hooks/mutations/principal/useApproveEnrollment';
+import { useRejectEnrollment } from '@/hooks/mutations/principal/useRejectEnrollment';
+import { useApproveRefund } from '@/hooks/mutations/principal/useApproveRefund';
+import { useRejectRefund } from '@/hooks/mutations/principal/useRejectRefund';
 import { PrincipalRequestCard } from './PrincipalRequestCard';
 import { PrincipalRejectionFormModal } from '../modals/PrincipalRejectionFormModal';
-import { toast } from 'sonner';
-import { useAppDispatch } from '@/store/hooks';
-import { updatePrincipalEnrollment, updatePrincipalRefundRequest } from '@/store/slices/principalSlice';
-import { extractErrorMessage } from '@/types/api/error';
 import { toPrincipalRequestDetailVM, toUnifiedRequestVM } from '@/lib/adapters/principal';
 import type { PrincipalEnrollment } from '@/types/api/principal';
 import type { PrincipalRequestDetailVM, UnifiedRequest } from '@/types/view/principal';
+import type { RefundRequestResponse, RefundRequestListResponse } from '@/types/api/refund';
 
 export function PrincipalRequestDetail() {
   const { form } = useApp();
@@ -20,34 +21,56 @@ export function PrincipalRequestDetail() {
   const { selectedTab, selectedSessionId } = principalPersonManagement;
   const [showRejectionModal, setShowRejectionModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<{ id: number } | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const dispatch = useAppDispatch();
   
-  // usePrincipalApi 훅 사용
+  // React Query 기반 데이터 관리
   const { 
-    approveEnrollment, 
-    rejectEnrollment, 
-    approveRefund, 
-    rejectRefund
-  } = usePrincipalApi();
-
-  // Redux store에서 데이터 가져오기
+    data: sessionEnrollmentsData, 
+    isLoading: enrollmentsLoading 
+  } = usePrincipalSessionEnrollments(selectedSessionId || 0);
+  
   const { 
-    getSessionEnrollments, 
-    getSessionRefundRequests, 
-    isLoading,
-    error 
-  } = usePrincipalData();
+    data: refundRequestsData, 
+    isLoading: refundRequestsLoading 
+  } = usePrincipalRefundRequests();
+  
+  // Type-safe access to refundRequests
+  const refundRequests = (refundRequestsData as RefundRequestListResponse | undefined)?.refundRequests || [];
+  
+  // Mutations
+  const approveEnrollmentMutation = useApproveEnrollment();
+  const rejectEnrollmentMutation = useRejectEnrollment();
+  const approveRefundMutation = useApproveRefund();
+  const rejectRefundMutation = useRejectRefund();
+  
+  const isLoading = enrollmentsLoading || refundRequestsLoading;
+  const isProcessing = 
+    approveEnrollmentMutation.isPending || 
+    rejectEnrollmentMutation.isPending ||
+    approveRefundMutation.isPending ||
+    rejectRefundMutation.isPending;
 
   // 선택된 세션의 요청 목록
-  const rawRequests = selectedSessionId 
-    ? selectedTab === 'enrollment'
-      ? (getSessionEnrollments(selectedSessionId) as unknown as PrincipalEnrollment[])
-      : getSessionRefundRequests(selectedSessionId)
-    : [];
+  const rawRequests = useMemo(() => {
+    if (!selectedSessionId) return [];
+    
+    if (selectedTab === 'enrollment') {
+      // 세션 수강생 목록에서 enrollment 정보 추출
+      const enrollments = sessionEnrollmentsData?.enrollments || [];
+      return enrollments.map((enrollment: any) => ({
+        ...enrollment,
+        sessionId: selectedSessionId,
+      })) as PrincipalEnrollment[];
+    } else {
+      // 환불 요청 목록에서 특정 세션의 것만 필터링
+      return refundRequests.filter((refund: RefundRequestResponse) => {
+        const refundSessionId = refund.sessionEnrollment?.session?.id;
+        return refundSessionId === selectedSessionId;
+      });
+    }
+  }, [selectedSessionId, selectedTab, sessionEnrollmentsData, refundRequests]);
 
   // 통합된 요청 데이터로 변환
-  const requests: UnifiedRequest[] = rawRequests.map(request => 
+  const requests: UnifiedRequest[] = rawRequests.map((request: PrincipalEnrollment | RefundRequestResponse) => 
     toUnifiedRequestVM(request, selectedTab)
   );
 
@@ -56,37 +79,20 @@ export function PrincipalRequestDetail() {
   const requestDetailVM: PrincipalRequestDetailVM = toPrincipalRequestDetailVM({
     requests: rawRequests,
     selectedTab,
-    selectedSessionId,
+    selectedSessionId: selectedSessionId || 0,
     isLoading,
-    error,
+    error: null, // React Query가 에러를 처리하므로 null로 설정
     isProcessing,
     showRejectionModal,
     selectedRequest,
   });
 
   // 승인 처리 함수
-  const handleApprove = async (requestId: number) => {
-    setIsProcessing(true);
-    try {
-      let data;
-      if (selectedTab === 'enrollment') {
-        data = await approveEnrollment(requestId);
-      } else {
-        data = await approveRefund(requestId);
-      }
-      
-      toast.success('승인 처리가 완료되었습니다.');
-      // Redux 상태 즉시 업데이트
-      if (selectedTab === 'enrollment') {
-        dispatch(updatePrincipalEnrollment(data));
-      } else {
-        dispatch(updatePrincipalRefundRequest(data));
-      }
-    } catch (error: unknown) {
-      toast.error(extractErrorMessage(error, '승인 처리 중 오류가 발생했습니다.'));
-      console.error('Approval error:', error);
-    } finally {
-      setIsProcessing(false);
+  const handleApprove = (requestId: number) => {
+    if (selectedTab === 'enrollment') {
+      approveEnrollmentMutation.mutate(requestId);
+    } else {
+      approveRefundMutation.mutate(requestId);
     }
   };
 
@@ -96,32 +102,29 @@ export function PrincipalRequestDetail() {
     setShowRejectionModal(true);
   };
 
-  const handleRejectionSubmit = async (reason: string, detailedReason?: string) => {
+  const handleRejectionSubmit = (reason: string, detailedReason?: string) => {
     if (!selectedRequest) return;
     
-    setIsProcessing(true);
-    try {
-      let data;
-      if (selectedTab === 'enrollment') {
-        data = await rejectEnrollment(selectedRequest.id, reason, detailedReason);
-      } else {
-        data = await rejectRefund(selectedRequest.id, reason, detailedReason);
-      }
-      
-      toast.success('거절 처리가 완료되었습니다.');
-      // Redux 상태 즉시 업데이트
-      if (selectedTab === 'enrollment') {
-        dispatch(updatePrincipalEnrollment(data));
-      } else {
-        dispatch(updatePrincipalRefundRequest(data));
-      }
-      setShowRejectionModal(false);
-      setSelectedRequest(null);
-    } catch (error: unknown) {
-      toast.error(extractErrorMessage(error, '거절 처리 중 오류가 발생했습니다.'));
-      console.error('Rejection error:', error);
-    } finally {
-      setIsProcessing(false);
+    if (selectedTab === 'enrollment') {
+      rejectEnrollmentMutation.mutate(
+        { enrollmentId: selectedRequest.id, data: { reason, detailedReason } },
+        {
+          onSuccess: () => {
+            setShowRejectionModal(false);
+            setSelectedRequest(null);
+          },
+        }
+      );
+    } else {
+      rejectRefundMutation.mutate(
+        { refundId: selectedRequest.id, data: { reason, detailedReason } },
+        {
+          onSuccess: () => {
+            setShowRejectionModal(false);
+            setSelectedRequest(null);
+          },
+        }
+      );
     }
   };
 

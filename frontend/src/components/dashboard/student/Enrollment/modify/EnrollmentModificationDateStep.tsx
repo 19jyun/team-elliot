@@ -6,9 +6,10 @@ import DateSelectFooter from '@/components/features/student/enrollment/month/dat
 import { useState } from 'react'
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep'
 import { useApp } from '@/contexts/AppContext'
-import { useStudentApi } from '@/hooks/student/useStudentApi'
+import { useClassSessionsForModification } from '@/hooks/queries/student/useClassSessionsForModification'
 import { useModificationErrorHandler } from '@/hooks/student/useModificationErrorHandler'
-import { ExtendedSessionData } from '@/contexts/forms/EnrollmentFormManager'
+import { useEnrollmentModificationCalculation } from '@/hooks/useEnrollmentModificationCalculation'
+import { ExtendedSessionData, EnrollmentModificationData } from '@/contexts/forms/EnrollmentFormManager'
 import { toast } from 'sonner'
 import type { ClassSessionForModification } from '@/types/api/class'
 import type { ClassSession } from '@/types/api/class'
@@ -17,138 +18,85 @@ import type { EnrollmentModificationDateStepVM } from '@/types/view/student'
 export function EnrollmentModificationDateStep({ 
   classId, 
   existingEnrollments, 
-  onComplete 
+  month
 }: EnrollmentModificationDateStepVM) {
-  const { setSelectedSessions } = useApp()
-  const { loadModificationSessions, clearErrors } = useStudentApi();
+  const { setSelectedSessions, setEnrollmentModificationStep, setEnrollmentModificationData } = useApp()
+  
+  // React Query 기반 데이터 관리
+  const { data: modificationData, isLoading: isLoadingSessions, error: queryError } = useClassSessionsForModification(classId);
   
   // 에러 핸들러 훅 사용
   const { handleError, handleRetry } = useModificationErrorHandler({
     onRetry: () => {
-      clearErrors();
-      setError(null);
-      loadSessions();
+      // React Query가 자동으로 재시도하므로 별도 처리 불필요
     }
   });
-  
-  // 수강 변경용 세션 데이터 로드 함수
-  const loadSessions = React.useCallback(async () => {
-    setIsLoadingSessions(true);
-    setError(null);
-    
-    try {
-      const response = await loadModificationSessions(classId);
-      
-      if (response) {
-        setModificationSessions(response.sessions);
-        setCalendarRange(response.calendarRange);
-        toast.success('수강 변경 세션을 성공적으로 불러왔습니다.');
-      }
-      
-      // 세션 데이터가 로드된 후 미리 선택 로직 실행
-      if (response) {
-        const preSelectedSessionIds = new Set<number>();
-        
-        // 1. 기존 수강 신청 세션 미리 선택
-        if (existingEnrollments && existingEnrollments.length > 0) {
-          const activeEnrollmentDates = existingEnrollments
-            .filter((enrollment) => {
-              return enrollment.enrollment &&
-                (enrollment.enrollment.status === "CONFIRMED" ||
-                  enrollment.enrollment.status === "PENDING" ||
-                  enrollment.enrollment.status === "REFUND_REJECTED_CONFIRMED");
-            })
-            .map((enrollment) => {
-              return new Date(enrollment.date).toISOString().split("T")[0];
-            });
-
-          response.sessions.forEach((session: ClassSessionForModification) => {
-            const sessionDate = new Date(session.date).toISOString().split("T")[0];
-            
-            if (activeEnrollmentDates.includes(sessionDate)) {
-              preSelectedSessionIds.add(session.id);
-            }
-          });
-        }
-        
-        // 2. 취소 가능한 세션 미리 선택
-        response.sessions.forEach((session: ClassSessionForModification) => {
-          if (session.canBeCancelled && !preSelectedSessionIds.has(session.id)) {
-            preSelectedSessionIds.add(session.id);
-          }
-        });
-        
-        setSelectedSessionIds(preSelectedSessionIds);
-      }
-    } catch (error) {
-      const shouldContinue = handleError(error);
-      if (!shouldContinue) {
-        setError('수강 변경 세션을 불러올 수 없습니다.');
-      }
-    } finally {
-      setIsLoadingSessions(false);
-    }
-  }, [classId, loadModificationSessions, existingEnrollments, handleError]);
 
   const [selectedCount, setSelectedCount] = useState(0);
   const [_selectedClasses, setSelectedClasses] = useState<Array<{ id: number; sessions: ClassSessionForModification[] }>>([]);
-  const [modificationSessions, setModificationSessions] = useState<ClassSessionForModification[]>([]);
-  const [calendarRange, setCalendarRange] = useState<{startDate: string, endDate: string} | null>(null);
-  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
   const [selectedSessionIds, setSelectedSessionIds] = useState<Set<number>>(new Set());
-  const [error, setError] = useState<string | null>(null);
   
-  // 수강 변경용 세션 데이터 로드
+  // modificationData에서 세션 및 캘린더 범위 추출 (메모이제이션으로 무한 루프 방지)
+  const modificationSessions = React.useMemo(() => {
+    return modificationData?.sessions || [];
+  }, [modificationData?.sessions]);
+  
+  // 세션 ID 배열을 메모이제이션하여 안정적인 의존성 생성
+  const modificationSessionIds = React.useMemo(() => {
+    return modificationSessions.map(s => s.id).join(',');
+  }, [modificationSessions]);
+  
+  const calendarRange = React.useMemo(() => {
+    return modificationData?.calendarRange ? {
+      startDate: modificationData.calendarRange.startDate,
+      endDate: modificationData.calendarRange.endDate,
+    } : null;
+  }, [modificationData?.calendarRange]);
+  
+  // 세션 데이터가 로드된 후 미리 선택 로직 실행 (한 번만 실행)
+  const hasInitialized = React.useRef(false);
   React.useEffect(() => {
-    loadSessions();
-  }, [loadSessions]);
-
-  // existingEnrollments가 변경될 때 미리 선택 로직 재실행
-  React.useEffect(() => {
-    if (modificationSessions.length > 0 && existingEnrollments && existingEnrollments.length > 0) {
+    if (modificationSessions.length > 0 && !hasInitialized.current) {
       const preSelectedSessionIds = new Set<number>();
       
-      // 기존 수강 신청 세션 미리 선택
-      const activeEnrollmentDates = existingEnrollments
-        .filter((enrollment) => {
-          return enrollment.enrollment &&
-            (enrollment.enrollment.status === "CONFIRMED" ||
-              enrollment.enrollment.status === "PENDING" ||
-              enrollment.enrollment.status === "REFUND_REJECTED_CONFIRMED");
-        })
-        .map((enrollment) => {
-          return new Date(enrollment.date).toISOString().split("T")[0];
-        });
+      // 1. 기존 수강 신청 세션 미리 선택
+      if (existingEnrollments && existingEnrollments.length > 0) {
+        const activeEnrollmentDates = existingEnrollments
+          .filter((enrollment) => {
+            return enrollment.enrollment &&
+              (enrollment.enrollment.status === "CONFIRMED" ||
+                enrollment.enrollment.status === "PENDING" ||
+                enrollment.enrollment.status === "REFUND_REJECTED_CONFIRMED");
+          })
+          .map((enrollment) => {
+            return new Date(enrollment.date).toISOString().split("T")[0];
+          });
 
-      modificationSessions.forEach((session: ClassSessionForModification) => {
-        const sessionDate = new Date(session.date).toISOString().split("T")[0];
-        
-        if (activeEnrollmentDates.includes(sessionDate)) {
-          preSelectedSessionIds.add(session.id);
-        }
-      });
+        modificationSessions.forEach((session: ClassSessionForModification) => {
+          const sessionDate = new Date(session.date).toISOString().split("T")[0];
+          
+          if (activeEnrollmentDates.includes(sessionDate)) {
+            preSelectedSessionIds.add(session.id);
+          }
+        });
+      }
       
-      // 취소 가능한 세션도 미리 선택
+      // 2. 취소 가능한 세션 미리 선택
       modificationSessions.forEach((session: ClassSessionForModification) => {
         if (session.canBeCancelled && !preSelectedSessionIds.has(session.id)) {
           preSelectedSessionIds.add(session.id);
         }
       });
       
-      setSelectedSessionIds(preSelectedSessionIds);
+      if (preSelectedSessionIds.size > 0) {
+        setSelectedSessionIds(preSelectedSessionIds);
+      }
+      
+      hasInitialized.current = true;
     }
-  }, [existingEnrollments, modificationSessions]);
+  }, [modificationSessions, existingEnrollments]);
 
-  React.useEffect(() => {
-    const saveClassCards = async () => {
-      const selectedClassCards = [{
-        id: classId,
-      }];
-      const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
-      SyncStorage.setItem('selectedClassCards', JSON.stringify(selectedClassCards));
-    };
-    saveClassCards();
-  }, [classId]);
+  // selectedClassCards는 더 이상 localStorage에 저장하지 않음 (Context 사용)
     
   const statusSteps = [
     {
@@ -180,8 +128,11 @@ export function EnrollmentModificationDateStep({
 
 
   // selectedSessionIds가 변경되면 selectedClasses 업데이트
+  // selectedSessionIds의 size와 modificationSessionIds를 의존성으로 사용하여 무한 루프 방지
+  const selectedSessionIdsSize = selectedSessionIds.size;
+  
   React.useEffect(() => {
-    const selectedSessions = modificationSessions.filter(session => 
+    const selectedSessions = modificationSessions.filter((session: ClassSessionForModification) => 
       selectedSessionIds.has(session.id)
     );
     
@@ -192,45 +143,27 @@ export function EnrollmentModificationDateStep({
     
     setSelectedClasses([selectedClassInfo]);
     setSelectedCount(selectedSessions.length);
-  }, [selectedSessionIds, modificationSessions, classId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSessionIdsSize, modificationSessionIds, classId]);
 
-  // 변경된 강의 개수 계산 및 변경 사항 여부 확인 (간단한 계산만)
-  const { netChangeCount, hasChanges } = React.useMemo(() => {
-    if (!existingEnrollments) {
-      return { netChangeCount: 0, hasChanges: false };
-    }
-    
-    // 기존에 신청된 세션들 (활성 상태인 것만: CONFIRMED, PENDING, REFUND_REJECTED_CONFIRMED)
-    // REFUND_REQUESTED는 환불 요청 중이므로 제외
-    const originalEnrolledSessions = existingEnrollments.filter(
-      (enrollment) => 
-        enrollment.enrollment &&
-        (enrollment.enrollment.status === "CONFIRMED" ||
-          enrollment.enrollment.status === "PENDING" ||
-          enrollment.enrollment.status === "REFUND_REJECTED_CONFIRMED")
-    );
-
-    // 기존 수강 세션의 ID들
-    const originalSessionIds = new Set(originalEnrolledSessions.map(session => session.id));
-
-    // 새로 추가될 세션 수 (기존에 없던 세션들)
-    const newlyAddedSessionsCount = Array.from(selectedSessionIds).filter(
-      sessionId => !originalSessionIds.has(sessionId)
-    ).length;
-
-    // 새로 취소될 세션 수 (기존에 있던 세션들)
-    const newlyCancelledSessionsCount = Array.from(originalSessionIds).filter(
-      sessionId => !selectedSessionIds.has(sessionId)
-    ).length;
-
-    // 순 변경 세션 수 = 새로 추가 - 새로 취소
-    const netChange = newlyAddedSessionsCount - newlyCancelledSessionsCount;
-    
-    // 실제 변경 사항이 있는지 확인
-    const hasChanges = newlyAddedSessionsCount > 0 || newlyCancelledSessionsCount > 0;
-    
-    return { netChangeCount: netChange, hasChanges };
-  }, [existingEnrollments, selectedSessionIds]);
+  // 수강 변경 계산 hook 사용
+  const {
+    netChangeCount,
+    totalAmount,
+    hasChanges,
+    hasRealChanges,
+    changeType,
+    newlyAddedSessionsCount,
+    newlyCancelledSessionsCount,
+    newlyAddedSessionIds,
+    newlyCancelledSessionIds,
+    sessionPrice,
+    nextStep,
+  } = useEnrollmentModificationCalculation({
+    existingEnrollments,
+    selectedSessionIds,
+    modificationSessions,
+  });
 
   // 세션 선택 핸들러
   const handleSessionSelect = (sessionId: number) => {
@@ -246,66 +179,83 @@ export function EnrollmentModificationDateStep({
   };
 
 
-  // 수강 변경 완료 처리
-  const handleModificationComplete = async () => {
-    if (typeof window !== 'undefined') {
-      // 선택된 세션 정보 저장
-      const selectedSessions = modificationSessions.filter(session => 
-        selectedSessionIds.has(session.id)
-      );
-      
-      // 기존 수강 신청 정보도 저장 (Payment Step에서 비교용)
-      if (existingEnrollments) {
-        const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
-        SyncStorage.setItem('existingEnrollments', JSON.stringify(existingEnrollments));
-      }
-      
-      // 선택된 세션 정보도 저장 (환불 시 필요할 수 있음)
-      const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
-      SyncStorage.setItem('selectedSessions', JSON.stringify(selectedSessions));
-      SyncStorage.setItem('selectedClasses', JSON.stringify([{
-        id: classId,
-        sessions: selectedSessions
-      }]));
-      
-      // Context에도 저장 (ExtendedSessionData 타입으로 변환)
-      const convertedSessions: ExtendedSessionData[] = selectedSessions.map(session => ({
-        sessionId: session.id,
-        sessionName: session.class?.className || 'Unknown Class',
+  // 수강 변경 완료 처리 - EnrollmentContainer 패턴 적용
+  const handleModificationComplete = () => {
+    // netChange가 0이고 실제 변경이 없으면 처리하지 않음
+    if (netChangeCount === 0 && !hasRealChanges) {
+      toast.error('변경 사항이 없습니다.');
+      return;
+    }
+    
+    // 기존에 신청된 세션들 (활성 상태인 것만)
+    const originalEnrolledSessions = existingEnrollments?.filter(
+      (enrollment) => 
+        enrollment.enrollment &&
+        (enrollment.enrollment.status === "CONFIRMED" ||
+          enrollment.enrollment.status === "PENDING" ||
+          enrollment.enrollment.status === "REFUND_REJECTED_CONFIRMED")
+    ) || [];
+
+    // 선택된 세션 정보를 Context에 저장 (ExtendedSessionData 타입으로 변환)
+    const selectedSessions = modificationSessions.filter(session => 
+      selectedSessionIds.has(session.id)
+    );
+    
+    const convertedSessions: ExtendedSessionData[] = selectedSessions.map(session => ({
+      sessionId: session.id,
+      sessionName: session.class?.className || 'Unknown Class',
+      startTime: session.startTime,
+      endTime: session.endTime,
+      date: session.date,
+      isAlreadyEnrolled: session.isAlreadyEnrolled || false,
+      isEnrollable: session.isEnrollable || true,
+      class: {
+        id: session.class?.id || 0,
+        className: session.class?.className || 'Unknown Class',
+        level: session.class?.level || 'BEGINNER',
+        tuitionFee: session.class?.tuitionFee || '0',
+        teacher: {
+          id: session.class?.teacher?.id || 0,
+          name: session.class?.teacher?.name || 'Unknown Teacher',
+        },
+        academy: {
+          id: 0,
+          name: 'Unknown Academy',
+        },
+      },
+    }));
+    setSelectedSessions(convertedSessions);
+    
+    // Context에 수강 변경 데이터 저장
+    const modData: EnrollmentModificationData = {
+      changeType,
+      changeAmount: Math.abs(totalAmount),
+      netChangeCount,
+      newSessionsCount: newlyAddedSessionsCount,
+      cancelledSessionsCount: newlyCancelledSessionsCount,
+      sessionPrice,
+      selectedSessionIds: Array.from(selectedSessionIds),
+      originalEnrollments: originalEnrolledSessions.map(session => ({
+        id: session.id,
+        date: session.date,
         startTime: session.startTime,
         endTime: session.endTime,
-        date: session.date,
-        isAlreadyEnrolled: session.isAlreadyEnrolled || false,
-        isEnrollable: session.isEnrollable || true,
-        class: {
-          id: session.class?.id || 0,
-          className: session.class?.className || 'Unknown Class',
-          level: session.class?.level || 'BEGINNER',
-          tuitionFee: session.class?.tuitionFee || '0',
-          teacher: {
-            id: session.class?.teacher?.id || 0,
-            name: session.class?.teacher?.name || 'Unknown Teacher',
-          },
-          academy: {
-            id: 0,
-            name: 'Unknown Academy',
-          },
-        },
-      }));
-      setSelectedSessions(convertedSessions);
-      
-      // 실제 수강료 계산
-      const actualSessionPrice = modificationSessions.length > 0 
-        ? parseInt(modificationSessions[0].class?.tuitionFee || '50000')
-        : 50000;
-      
-      // onComplete 콜백 호출 (세션 ID와 수강료 정보 전달)
-      onComplete(selectedSessionIds, actualSessionPrice);
-    }
+        isAlreadyEnrolled: session.isAlreadyEnrolled,
+        enrollment: session.enrollment ? {
+          id: session.enrollment.id,
+          status: session.enrollment.status,
+          enrolledAt: session.enrollment.enrolledAt,
+        } : undefined
+      }))
+    };
+    
+    // Context에 저장하고 다음 단계로 이동
+    setEnrollmentModificationData({ modificationData: modData });
+    setEnrollmentModificationStep(nextStep);
   }
 
   // 에러 처리 - 기본적인 패턴
-  if (error && modificationSessions.length === 0) {
+  if (queryError && modificationSessions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">수강 변경 세션을 불러오는데 실패했습니다.</p>
@@ -365,7 +315,8 @@ export function EnrollmentModificationDateStep({
           onGoToPayment={handleModificationComplete}
           mode="modification"
           netChange={netChangeCount}
-          hasChanges={hasChanges}
+          hasChanges={hasRealChanges}
+          changeType={changeType}
         />
       </footer>
     </div>

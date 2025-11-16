@@ -9,17 +9,18 @@ import { Separator } from '@/components/ui/separator';
 import { User, Phone, Calendar, Edit, Save, X } from 'lucide-react';
 import { CloseCircleIcon } from '@/components/icons';
 import { toast } from 'sonner';
-import { UpdateStudentProfileRequest } from '@/types/api/student';
-import { useStudentApi } from '@/hooks/student/useStudentApi';
-import { useApiError } from '@/hooks/useApiError';
+import { UpdateStudentProfileRequest, StudentProfile } from '@/types/api/student';
+import { useStudentProfile } from '@/hooks/queries/student/useStudentProfile';
+import { useUpdateStudentProfile } from '@/hooks/mutations/student/useUpdateStudentProfile';
 import { validateProfileData } from '@/utils/validation';
 
 export function PersonalInfoManagement() {
-  const { userProfile, isLoading, error, loadUserProfile, updateUserProfile } = useStudentApi();
-  const { handleApiError, fieldErrors, clearErrors, setFieldErrors } = useApiError();
+  const { data: userProfileData, isLoading: profileLoading, error: profileError } = useStudentProfile();
+  const userProfile = userProfileData as StudentProfile | null | undefined;
+  const updateProfileMutation = useUpdateStudentProfile();
+  
   const [isEditing, setIsEditing] = useState(false);
   const [editedInfo, setEditedInfo] = useState<UpdateStudentProfileRequest>({});
-  const [isSaving, setIsSaving] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
   
   // 전화번호 인증 관련 상태
@@ -29,16 +30,13 @@ export function PersonalInfoManagement() {
   const [timeLeft, setTimeLeft] = useState(180); // 3분 = 180초
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
-  // 컴포넌트 마운트 시 프로필 로드
-  useEffect(() => {
-    loadUserProfile();
-  }, [loadUserProfile]);
+  const isLoading = profileLoading || updateProfileMutation.isPending;
 
   // API에서 가져온 데이터로 초기화
   useEffect(() => {
-    if (userProfile) {
+    if (userProfile && !isEditing) {
       setEditedInfo({
-        name: userProfile.name,
+        name: userProfile.name || '',
         phoneNumber: userProfile.phoneNumber || '',
         emergencyContact: userProfile.emergencyContact || '',
         birthDate: userProfile.birthDate ? userProfile.birthDate.split('T')[0] : '',
@@ -46,7 +44,7 @@ export function PersonalInfoManagement() {
         level: userProfile.level || '',
       });
     }
-  }, [userProfile]);
+  }, [userProfile, isEditing]);
 
   // 타이머 효과
   useEffect(() => {
@@ -103,28 +101,12 @@ export function PersonalInfoManagement() {
     }
   }, [editedInfo.phoneNumber, userProfile, isEditing]);
 
-  // 입력 필드 변경 시 에러 초기화 (새로 타이핑할 때만)
-  const [previousInputs, setPreviousInputs] = useState<UpdateStudentProfileRequest>({});
-  
-  useEffect(() => {
-    // 각 필드별로 이전 값과 현재 값을 비교하여 새로 타이핑된 경우에만 에러 제거
-    const fieldsToCheck = ['name', 'phoneNumber', 'emergencyContact', 'birthDate', 'level', 'notes'] as const;
-    
-    fieldsToCheck.forEach(field => {
-      const previousValue = previousInputs[field] || '';
-      const currentValue = editedInfo[field] || '';
-      
-      if (fieldErrors[field] && currentValue.length > previousValue.length) {
-        clearErrors();
-      }
-    });
-    
-    setPreviousInputs(editedInfo);
-  }, [editedInfo, fieldErrors, clearErrors, previousInputs]);
+  // Validation 에러 상태
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   // 에러 발생 시 흔들리는 애니메이션 트리거
   useEffect(() => {
-    if (Object.keys(fieldErrors).length > 0) {
+    if (Object.keys(validationErrors).length > 0) {
       setIsShaking(true);
       const timer = setTimeout(() => {
         setIsShaking(false);
@@ -132,7 +114,7 @@ export function PersonalInfoManagement() {
       
       return () => clearTimeout(timer);
     }
-  }, [fieldErrors]);
+  }, [validationErrors]);
 
   const handleEdit = () => {
     if (userProfile) {
@@ -177,35 +159,34 @@ export function PersonalInfoManagement() {
     // 프론트엔드 validation 수행
     const validation = validateProfileData(editedInfo);
     if (!validation.isValid) {
-      // validation 에러를 fieldErrors로 변환
+      // validation 에러를 validationErrors로 변환
       const fieldErrorMap: Record<string, string> = {};
       validation.errors.forEach(error => {
         fieldErrorMap[error.field] = error.message;
       });
       
-      // setFieldErrors를 사용하여 에러 설정
-      setFieldErrors(fieldErrorMap);
+      setValidationErrors(fieldErrorMap);
+      setIsShaking(true);
+      setTimeout(() => {
+        setIsShaking(false);
+        setTimeout(() => {
+          setValidationErrors({});
+        }, 1000);
+      }, 1000);
       return;
     }
 
-    try {
-      setIsSaving(true);
-      clearErrors(); // 요청 시작 시 에러 초기화
-      
-      await updateUserProfile(editedInfo);
-      setIsEditing(false);
-      setIsPhoneVerificationRequired(false);
-      setIsPhoneVerified(false);
-      setIsTimerRunning(false);
-      setTimeLeft(180);
-      toast.success('개인 정보가 성공적으로 수정되었습니다.');
-    } catch (error) {
-      //toast와 콘솔 출력
-      handleApiError(error, { disableToast: false, disableConsole: true });
-      // 컴포넌트 상태는 유지 (사용자가 다시 시도할 수 있도록)
-    } finally {
-      setIsSaving(false);
-    }
+    setValidationErrors({});
+    
+    updateProfileMutation.mutate(editedInfo, {
+      onSuccess: () => {
+        setIsEditing(false);
+        setIsPhoneVerificationRequired(false);
+        setIsPhoneVerified(false);
+        setIsTimerRunning(false);
+        setTimeLeft(180);
+      },
+    });
   };
 
   const handleVerifyPhone = () => {
@@ -265,15 +246,12 @@ export function PersonalInfoManagement() {
   };
 
   // 에러 상태 - 컴포넌트가 깨지지 않도록 안전하게 처리
-  if (error && !userProfile) {
+  if (profileError && !userProfile) {
     return (
       <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">개인 정보를 불러오는데 실패했습니다.</p>
         <Button
-          onClick={() => {
-            clearErrors();
-            loadUserProfile();
-          }}
+          onClick={() => window.location.reload()}
           className="mt-4"
         >
           다시 시도
@@ -297,10 +275,7 @@ export function PersonalInfoManagement() {
       <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">개인 정보를 불러올 수 없습니다.</p>
         <Button
-          onClick={() => {
-            clearErrors();
-            loadUserProfile();
-          }}
+          onClick={() => window.location.reload()}
           className="mt-4"
         >
           다시 시도
@@ -357,10 +332,10 @@ export function PersonalInfoManagement() {
                     onClick={handleSave}
                     size="sm"
                     className="flex items-center gap-2"
-                    disabled={isSaving || (isPhoneVerificationRequired && !isPhoneVerified)}
+                    disabled={isLoading || (isPhoneVerificationRequired && !isPhoneVerified)}
                   >
                     <Save className="h-4 w-4" />
-                    {isSaving ? '저장 중...' : '저장'}
+                    {isLoading ? '저장 중...' : '저장'}
                   </Button>
                 </div>
               )}
@@ -380,14 +355,14 @@ export function PersonalInfoManagement() {
                      onChange={(e) => handleInputChange('name', e.target.value)}
                      placeholder="이름을 입력하세요"
                      className={`transition-all duration-200 ${
-                       fieldErrors.name ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                       validationErrors.name ? 'border-red-500 bg-red-50' : 'border-gray-300'
                      } ${
-                       isShaking && fieldErrors.name ? 'animate-shake' : ''
+                       isShaking && validationErrors.name ? 'animate-shake' : ''
                      }`}
                    />
-                   {fieldErrors.name && (
+                   {validationErrors.name && (
                      <p className="text-sm text-red-500 animate-in fade-in duration-200">
-                       {fieldErrors.name}
+                       {validationErrors.name}
                      </p>
                    )}
                 </div>
@@ -409,9 +384,9 @@ export function PersonalInfoManagement() {
                        onChange={(value) => handleInputChange('phoneNumber', value)}
                        placeholder="전화번호를 입력하세요"
                        className={`flex-1 transition-all duration-200 ${
-                         fieldErrors.phoneNumber ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                         validationErrors.phoneNumber ? 'border-red-500 bg-red-50' : 'border-gray-300'
                        } ${
-                         isShaking && fieldErrors.phoneNumber ? 'animate-shake' : ''
+                         isShaking && validationErrors.phoneNumber ? 'animate-shake' : ''
                        }`}
                      />
                     {isPhoneVerificationRequired && !isPhoneVerified && (
@@ -469,9 +444,9 @@ export function PersonalInfoManagement() {
                   )}
                   
                                      {/* 전화번호 에러 메시지 */}
-                   {fieldErrors.phoneNumber && (
+                   {validationErrors.phoneNumber && (
                      <p className="text-sm text-red-500 animate-in fade-in duration-200">
-                       {fieldErrors.phoneNumber}
+                       {validationErrors.phoneNumber}
                      </p>
                    )}
                 </div>
@@ -498,14 +473,14 @@ export function PersonalInfoManagement() {
                      onChange={(value) => handleInputChange('emergencyContact', value)}
                      placeholder="비상연락처를 입력하세요"
                      className={`transition-all duration-200 ${
-                       fieldErrors.emergencyContact ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                       validationErrors.emergencyContact ? 'border-red-500 bg-red-50' : 'border-gray-300'
                      } ${
-                       isShaking && fieldErrors.emergencyContact ? 'animate-shake' : ''
+                       isShaking && validationErrors.emergencyContact ? 'animate-shake' : ''
                      }`}
                    />
-                   {fieldErrors.emergencyContact && (
+                   {validationErrors.emergencyContact && (
                      <p className="text-sm text-red-500 animate-in fade-in duration-200">
-                       {fieldErrors.emergencyContact}
+                       {validationErrors.emergencyContact}
                      </p>
                    )}
                 </div>
@@ -533,14 +508,14 @@ export function PersonalInfoManagement() {
                      placeholder="생년월일을 입력하세요"
                      type="date"
                      className={`transition-all duration-200 ${
-                       fieldErrors.birthDate ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                       validationErrors.birthDate ? 'border-red-500 bg-red-50' : 'border-gray-300'
                      } ${
-                       isShaking && fieldErrors.birthDate ? 'animate-shake' : ''
+                       isShaking && validationErrors.birthDate ? 'animate-shake' : ''
                      }`}
                    />
-                   {fieldErrors.birthDate && (
+                   {validationErrors.birthDate && (
                      <p className="text-sm text-red-500 animate-in fade-in duration-200">
-                       {fieldErrors.birthDate}
+                       {validationErrors.birthDate}
                      </p>
                    )}
                 </div>
@@ -561,9 +536,9 @@ export function PersonalInfoManagement() {
                      value={editedInfo.level || ''}
                      onChange={(e) => handleInputChange('level', e.target.value)}
                      className={`w-full p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 ${
-                       fieldErrors.level ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                       validationErrors.level ? 'border-red-500 bg-red-50' : 'border-gray-300'
                      } ${
-                       isShaking && fieldErrors.level ? 'animate-shake' : ''
+                       isShaking && validationErrors.level ? 'animate-shake' : ''
                      }`}
                    >
                      <option value="">레벨 선택</option>
@@ -571,9 +546,9 @@ export function PersonalInfoManagement() {
                      <option value="중급">중급</option>
                      <option value="고급">고급</option>
                    </select>
-                   {fieldErrors.level && (
+                   {validationErrors.level && (
                      <p className="text-sm text-red-500 animate-in fade-in duration-200">
-                       {fieldErrors.level}
+                       {validationErrors.level}
                      </p>
                    )}
                 </div>
@@ -594,14 +569,14 @@ export function PersonalInfoManagement() {
                      onChange={(e) => handleInputChange('notes', e.target.value)}
                      placeholder="특이사항을 입력하세요 (알러지, 부상 이력 등)"
                      className={`transition-all duration-200 ${
-                       fieldErrors.notes ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                       validationErrors.notes ? 'border-red-500 bg-red-50' : 'border-gray-300'
                      } ${
-                       isShaking && fieldErrors.notes ? 'animate-shake' : ''
+                       isShaking && validationErrors.notes ? 'animate-shake' : ''
                      }`}
                    />
-                   {fieldErrors.notes && (
+                   {validationErrors.notes && (
                      <p className="text-sm text-red-500 animate-in fade-in duration-200">
-                       {fieldErrors.notes}
+                       {validationErrors.notes}
                      </p>
                    )}
                 </div>

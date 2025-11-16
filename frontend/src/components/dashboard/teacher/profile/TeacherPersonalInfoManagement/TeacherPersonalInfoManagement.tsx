@@ -9,10 +9,10 @@ import { Separator } from '@/components/ui/separator';
 import { User, Phone, Building, Edit, Save, X } from 'lucide-react';
 import { CloseCircleIcon } from '@/components/icons';
 import { toast } from 'sonner';
-import { UpdateProfileRequest } from '@/types/api/teacher';
-import { useTeacherApi } from '@/hooks/teacher/useTeacherApi';
+import { UpdateProfileRequest, TeacherProfileResponse } from '@/types/api/teacher';
+import { useTeacherProfile } from '@/hooks/queries/teacher/useTeacherProfile';
+import { useUpdateTeacherProfile } from '@/hooks/mutations/teacher/useUpdateTeacherProfile';
 import { validateTeacherProfileData } from '@/utils/validation';
-import { useApiError } from '@/hooks/useApiError';
 
 export function TeacherPersonalInfoManagement() {
   const [isEditing, setIsEditing] = useState(false);
@@ -28,19 +28,13 @@ export function TeacherPersonalInfoManagement() {
   // Validation 관련 상태
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [isShaking, setIsShaking] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
-  // API 기반 데이터 관리
-  const { profile, academy, loadProfile, loadAcademy, isTeacher, updateProfile } = useTeacherApi();
-  const { handleApiError, fieldErrors, clearErrors } = useApiError();
-
-  // 컴포넌트 마운트 시 프로필 로드
-  useEffect(() => {
-    if (isTeacher && !profile) {
-      loadProfile();
-      loadAcademy();
-    }
-  }, [isTeacher, profile, loadProfile, loadAcademy]);
+  // React Query 기반 데이터 관리
+  const { data: profileData, isLoading: profileLoading } = useTeacherProfile();
+  const profile = profileData as TeacherProfileResponse | null | undefined;
+  const updateProfileMutation = useUpdateTeacherProfile();
+  
+  const isLoading = profileLoading || updateProfileMutation.isPending;
 
   // profile 데이터가 로드되면 editedInfo 업데이트 (편집 모드가 아닐 때만)
   useEffect(() => {
@@ -166,24 +160,17 @@ export function TeacherPersonalInfoManagement() {
       return;
     }
 
-    try {
-      setIsLoading(true);
-      clearErrors(); // 요청 시작 시 에러 초기화
-      setValidationErrors({}); // validation 에러도 초기화
-      
-      await updateProfile(editedInfo);
-      
-      setIsEditing(false);
-      setIsPhoneVerificationRequired(false);
-      setIsPhoneVerified(false);
-      setIsTimerRunning(false);
-      setTimeLeft(180);
-      toast.success('개인 정보가 성공적으로 수정되었습니다.');
-    } catch (error) {
-      handleApiError(error, { disableToast: false, disableConsole: true });
-    } finally {
-      setIsLoading(false);
-    }
+    setValidationErrors({}); // validation 에러 초기화
+    
+    updateProfileMutation.mutate(editedInfo, {
+      onSuccess: () => {
+        setIsEditing(false);
+        setIsPhoneVerificationRequired(false);
+        setIsPhoneVerified(false);
+        setIsTimerRunning(false);
+        setTimeLeft(180);
+      },
+    });
   };
 
   const handleVerifyPhone = () => {
@@ -237,12 +224,22 @@ export function TeacherPersonalInfoManagement() {
     });
   };
 
+  if (profileLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-gray-500">개인 정보를 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!profile) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <p className="text-gray-500">개인 정보를 불러올 수 없습니다.</p>
-          <Button onClick={() => loadProfile()} className="mt-4">
+          <Button onClick={() => window.location.reload()} className="mt-4">
             다시 시도
           </Button>
         </div>
@@ -320,9 +317,9 @@ export function TeacherPersonalInfoManagement() {
                   onChange={(e) => handleInputChange('name', e.target.value)}
                   placeholder="이름을 입력하세요"
                   className={`transition-all duration-200 ${
-                    (fieldErrors.name || validationErrors.name) ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                    validationErrors.name ? 'border-red-500 bg-red-50' : 'border-gray-300'
                   } ${
-                    isShaking && (fieldErrors.name || validationErrors.name) ? 'animate-shake' : ''
+                    isShaking && validationErrors.name ? 'animate-shake' : ''
                   }`}
                 />
               ) : (
@@ -330,9 +327,9 @@ export function TeacherPersonalInfoManagement() {
                   <span className="text-gray-900">{profile.name}</span>
                 </div>
               )}
-              {(fieldErrors.name || validationErrors.name) && (
+              {validationErrors.name && (
                 <p className="text-red-500 text-sm animate-in fade-in">
-                  {fieldErrors.name || validationErrors.name}
+                  {validationErrors.name}
                 </p>
               )}
               </div>
@@ -348,9 +345,9 @@ export function TeacherPersonalInfoManagement() {
                         onChange={(value) => handleInputChange('phoneNumber', value)}
                         placeholder="전화번호를 입력하세요"
                         className={`flex-1 transition-all duration-200 ${
-                          (fieldErrors.phoneNumber || validationErrors.phoneNumber) ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                          validationErrors.phoneNumber ? 'border-red-500 bg-red-50' : 'border-gray-300'
                         } ${
-                          isShaking && (fieldErrors.phoneNumber || validationErrors.phoneNumber) ? 'animate-shake' : ''
+                          isShaking && validationErrors.phoneNumber ? 'animate-shake' : ''
                         }`}
                       />
                       {isPhoneVerificationRequired && !isPhoneVerified && (
@@ -418,9 +415,9 @@ export function TeacherPersonalInfoManagement() {
                     </span>
                   </div>
                 )}
-                {(fieldErrors.phoneNumber || validationErrors.phoneNumber) && (
+                {validationErrors.phoneNumber && (
                   <p className="text-red-500 text-sm animate-in fade-in">
-                    {fieldErrors.phoneNumber || validationErrors.phoneNumber}
+                    {validationErrors.phoneNumber}
                   </p>
                 )}
               </div>
@@ -431,7 +428,7 @@ export function TeacherPersonalInfoManagement() {
                 <div className="p-3 bg-gray-50 rounded-md flex items-center gap-2">
                   <Building className="h-4 w-4 text-gray-500" />
                   <span className="text-gray-900">
-                    {academy?.name || '소속된 학원이 없습니다.'}
+                    {profile.academy?.name || '소속된 학원이 없습니다.'}
                   </span>
                 </div>
                 <p className="text-xs text-gray-500">학원 정보는 학원 관리 탭에서 수정할 수 있습니다.</p>

@@ -9,7 +9,8 @@ import { FormsProvider, useForms } from './forms/FormsContext';
 import { UIContextProvider, useUI } from './UIContext';
 import { DataContextProvider, useData } from './DataContext';
 import { FormsState } from './state/StateSyncTypes';
-import { EnrollmentStep, ClassesWithSessionsByMonthResponse, ExtendedSessionData } from './forms/EnrollmentFormManager';
+import { EnrollmentStep, ClassesWithSessionsByMonthResponse, ExtendedSessionData, EnrollmentModificationData } from './forms/EnrollmentFormManager';
+import { EnrollmentModificationStep } from './forms/EnrollmentModificationFormManager';
 import { CreateClassStep, ClassFormData } from './forms/CreateClassFormManager';
 import { AuthMode, SignupStep, SignupData, LoginData } from './forms/AuthFormManager';
 import { PrincipalPersonManagementStep } from './forms/PersonManagementFormManager';
@@ -65,6 +66,7 @@ interface AppContextType {
   // 하위 호환성을 위한 폼 접근
   form: {
     enrollment: ReturnType<typeof useForms>['enrollment'];
+    enrollmentModification: ReturnType<typeof useForms>['enrollmentModification'];
     createClass: ReturnType<typeof useForms>['createClass'];
     principalCreateClass: ReturnType<typeof useForms>['principalCreateClass'];
     auth: ReturnType<typeof useForms>['auth'];
@@ -88,7 +90,13 @@ interface AppContextType {
   setSelectedClassIds: (classIds: number[]) => void;
   setSelectedAcademyId: (academyId: number | null) => void;
   setSelectedClassesWithSessions: (classes: ClassesWithSessionsByMonthResponse[]) => void;
+  setModificationData: (data: EnrollmentModificationData | null) => void;
   resetEnrollment: () => void;
+  
+  // 수강 변경 관련
+  setEnrollmentModificationStep: (step: EnrollmentModificationStep) => void;
+  setEnrollmentModificationData: (data: Partial<ReturnType<typeof useForms>['enrollmentModification']>) => void;
+  resetEnrollmentModification: () => void;
   
   // 클래스 생성 관련
   setCreateClassStep: (step: CreateClassStep) => void;
@@ -161,12 +169,13 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
   // formsState를 navigation에 전달
   const formsState: FormsState = useMemo(() => ({
     enrollment: forms.enrollment,
+    enrollmentModification: forms.enrollmentModification,
     createClass: forms.createClass,
     auth: forms.auth,
     personManagement: forms.personManagement,
     principalCreateClass: forms.principalCreateClass,
     principalPersonManagement: forms.principalPersonManagement,
-  }), [forms.enrollment, forms.createClass, forms.auth, forms.personManagement, forms.principalCreateClass, forms.principalPersonManagement]);
+  }), [forms.enrollment, forms.enrollmentModification, forms.createClass, forms.auth, forms.personManagement, forms.principalCreateClass, forms.principalPersonManagement]);
 
   // SessionDetail 상태 관리
   const [sessionDetailCurrentStep, setSessionDetailCurrentStep] = useState<SessionDetailStep>('main');
@@ -274,6 +283,7 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     // 하위 호환성을 위한 폼 접근
     form: {
       enrollment: forms.enrollment,
+      enrollmentModification: forms.enrollmentModification,
       createClass: forms.createClass,
       principalCreateClass: forms.principalCreateClass,
       auth: forms.auth,
@@ -297,7 +307,13 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     setSelectedClassIds: (classIds: number[]) => forms.setEnrollmentData({ selectedClassIds: classIds }),
     setSelectedAcademyId: (academyId: number | null) => forms.setEnrollmentData({ selectedAcademyId: academyId }),
     setSelectedClassesWithSessions: (classes: ClassesWithSessionsByMonthResponse[]) => forms.setEnrollmentData({ selectedClassesWithSessions: classes }),
+    setModificationData: forms.setModificationData,
     resetEnrollment: forms.resetEnrollment,
+    
+    // 수강 변경 관련
+    setEnrollmentModificationStep: forms.setEnrollmentModificationStep,
+    setEnrollmentModificationData: forms.setEnrollmentModificationData,
+    resetEnrollmentModification: forms.resetEnrollmentModification,
     
     // 클래스 생성 관련
     setCreateClassStep: forms.setCreateClassStep,

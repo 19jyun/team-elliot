@@ -6,10 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Building, CreditCard, Edit, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
-import { UpdatePrincipalProfileRequest } from '@/types/api/principal';
+import { usePrincipalProfile } from '@/hooks/queries/principal/usePrincipalProfile';
+import { useUpdatePrincipalProfile } from '@/hooks/mutations/principal/useUpdatePrincipalProfile';
+import { UpdatePrincipalProfileRequest, PrincipalProfile } from '@/types/api/principal';
 import { validatePrincipalBankName, validatePrincipalAccountNumber, validatePrincipalAccountHolder } from '@/utils/validation';
-import { useApiError } from '@/hooks/useApiError';
 import { BANKS } from '@/constants/banks';
 import { processBankInfo, getBankNameToSave } from '@/utils/bankUtils';
 import { InfoBubble } from '@/components/common/InfoBubble';
@@ -17,23 +17,18 @@ import { InfoBubble } from '@/components/common/InfoBubble';
 export function PrincipalBankInfoManagement() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedInfo, setEditedInfo] = useState<UpdatePrincipalProfileRequest>({});
-  const [isLoading, setIsLoading] = useState(false);
   const [customBankName, setCustomBankName] = useState(''); // 기타 은행명 입력
   
   // Validation 관련 상태
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [isShaking, setIsShaking] = useState(false);
   
-  // API 기반 데이터 관리
-  const { profile, loadProfile, error, isPrincipal, updateProfile } = usePrincipalApi();
-  const { handleApiError, fieldErrors, clearErrors } = useApiError();
-
-  // 컴포넌트 마운트 시 프로필 로드
-  useEffect(() => {
-    if (isPrincipal) {
-      loadProfile();
-    }
-  }, [isPrincipal, loadProfile]);
+  // React Query 기반 데이터 관리
+  const { data: profileData, isLoading: profileLoading, error, refetch } = usePrincipalProfile();
+  const profile = profileData as PrincipalProfile | null | undefined;
+  const updateProfileMutation = useUpdatePrincipalProfile();
+  
+  const isLoading = profileLoading || updateProfileMutation.isPending;
 
   // profile 데이터가 로드되면 editedInfo 업데이트 (편집 모드가 아닐 때만)
   useEffect(() => {
@@ -117,24 +112,17 @@ export function PrincipalBankInfoManagement() {
       return;
     }
 
-    try {
-      setIsLoading(true);
-      clearErrors(); // 요청 시작 시 에러 초기화
-      setValidationErrors({}); // validation 에러도 초기화
-      
-      // 실제 저장 시 finalBankName 사용
-      await updateProfile({
-        ...editedInfo,
-        bankName: finalBankName,
-      });
-      
-      setIsEditing(false);
-      toast.success('은행 정보가 성공적으로 업데이트되었습니다.');
-    } catch (error) {
-      handleApiError(error, { disableToast: false, disableConsole: true });
-    } finally {
-      setIsLoading(false);
-    }
+    setValidationErrors({}); // validation 에러 초기화
+    
+    // 실제 저장 시 finalBankName 사용
+    updateProfileMutation.mutate({
+      ...editedInfo,
+      bankName: finalBankName,
+    }, {
+      onSuccess: () => {
+        setIsEditing(false);
+      },
+    });
   };
 
   const handleInputChange = (field: keyof UpdatePrincipalProfileRequest, value: string) => {
@@ -157,7 +145,7 @@ export function PrincipalBankInfoManagement() {
       <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">은행 정보를 불러오는데 실패했습니다.</p>
         <button
-          onClick={() => loadProfile()}
+          onClick={() => refetch()}
           className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
         >
           다시 시도
@@ -237,11 +225,11 @@ export function PrincipalBankInfoManagement() {
                         { value: '', label: '은행명 선택' },
                         ...BANKS
                       ]}
-                      className={isShaking && (fieldErrors.bankName || validationErrors.bankName) ? 'animate-shake border-red-500' : ''}
+                      className={isShaking && validationErrors.bankName ? 'animate-shake border-red-500' : ''}
                     />
-                    {(fieldErrors.bankName || validationErrors.bankName) && (
+                    {validationErrors.bankName && (
                       <p className="text-red-500 text-xs mt-1 ml-2 animate-in fade-in">
-                        {fieldErrors.bankName || validationErrors.bankName}
+                        {validationErrors.bankName}
                       </p>
                     )}
                   </div>
@@ -286,11 +274,11 @@ export function PrincipalBankInfoManagement() {
                       inputValue={editedInfo.accountNumber || ''}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('accountNumber', e.target.value)}
                       placeholder="계좌번호 입력"
-                      className={isShaking && (fieldErrors.accountNumber || validationErrors.accountNumber) ? 'animate-shake border-red-500' : ''}
+                      className={isShaking && validationErrors.accountNumber ? 'animate-shake border-red-500' : ''}
                     />
-                    {(fieldErrors.accountNumber || validationErrors.accountNumber) && (
+                    {validationErrors.accountNumber && (
                       <p className="text-red-500 text-xs mt-1 ml-2 animate-in fade-in">
-                        {fieldErrors.accountNumber || validationErrors.accountNumber}
+                        {validationErrors.accountNumber}
                       </p>
                     )}
                   </div>
@@ -315,11 +303,11 @@ export function PrincipalBankInfoManagement() {
                       inputValue={editedInfo.accountHolder || ''}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('accountHolder', e.target.value)}
                       placeholder="계좌주 입력"
-                      className={isShaking && (fieldErrors.accountHolder || validationErrors.accountHolder) ? 'animate-shake border-red-500' : ''}
+                      className={isShaking && validationErrors.accountHolder ? 'animate-shake border-red-500' : ''}
                     />
-                    {(fieldErrors.accountHolder || validationErrors.accountHolder) && (
+                    {validationErrors.accountHolder && (
                       <p className="text-red-500 text-xs mt-1 ml-2 animate-in fade-in">
-                        {fieldErrors.accountHolder || validationErrors.accountHolder}
+                        {validationErrors.accountHolder}
                       </p>
                     )}
                   </div>

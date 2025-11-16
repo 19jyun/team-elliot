@@ -1,26 +1,23 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-
-// 역할 분리: 학생 화면에서 필요 시 별도 학생용 API로 대체 또는 서버 컴포넌트에서 주입
-import { ClassDetailsResponse } from '@/types/api/class';
-import { toast } from 'sonner';
+import { useState } from 'react';
 import cn from 'classnames';
 import { useApp } from '@/contexts/AppContext';
 import { TeacherProfileCardForStudent } from '@/components/features/student/classes/TeacherProfileCardForStudent';
-import { useStudentApi } from '@/hooks/student/useStudentApi';
+import { useClassDetails } from '@/hooks/queries/common/useClassDetails';
 import type { StudentEnrolledSessionVM, ClassDetailVM, ClassDetailDisplayVM } from '@/types/view/student';
 import { toClassDetailDisplayVM } from '@/lib/adapters/student';
 import { formatTime } from '@/utils/dateTime';
 
 
 export function ClassDetail({ classId, classSessions, showModificationButton = true, onModificationClick }: ClassDetailVM) {
-  const [classDetails, setClassDetails] = useState<ClassDetailsResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const { navigation } = useApp();
   const { navigateToSubPage } = navigation;
-  const { getClassDetails } = useStudentApi();
+  
+  // React Query 기반 데이터 관리
+  const { data: classDetails, isLoading, error: queryError } = useClassDetails(classId);
+  
+  const error = queryError ? (queryError instanceof Error ? queryError.message : '클래스 정보를 불러오는데 실패했습니다.') : null;
 
   // View Model 생성
   const displayVM: ClassDetailDisplayVM = toClassDetailDisplayVM(
@@ -30,35 +27,6 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
     error,
     showModificationButton
   );
-
-  const loadClassDetails = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const response = await getClassDetails(classId);
-      setClassDetails(response || null);
-    } catch (error) {
-      console.error('클래스 상세 정보 로드 실패:', error);
-      setError('클래스 정보를 불러오는데 실패했습니다.');
-      toast.error('클래스 정보를 불러오는데 실패했습니다.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [classId, getClassDetails]);
-
-  useEffect(() => {
-    if (classId) {
-      loadClassDetails();
-    }
-  }, [classId, loadClassDetails]);
-
-  // teacher 정보 디버깅
-  useEffect(() => {
-    if (classDetails?.teacher) {
-    }
-  }, [classDetails?.teacher]);
-
-
 
   const handleModificationRequest = () => {
     

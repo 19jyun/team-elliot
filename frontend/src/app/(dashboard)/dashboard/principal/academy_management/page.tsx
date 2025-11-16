@@ -10,7 +10,8 @@ import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useSession } from '@/lib/auth/AuthProvider';
 import { UpdatePrincipalAcademyRequest } from '@/types/api/principal';
-import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
+import { usePrincipalAcademy } from '@/hooks/queries/principal/usePrincipalAcademy';
+import { useUpdatePrincipalAcademy } from '@/hooks/mutations/principal/useUpdatePrincipalAcademy';
 import { useClipboard } from '@/hooks/useClipboard';
 
 export default function PrincipalAcademyManagementPage() {
@@ -29,8 +30,9 @@ export default function PrincipalAcademyManagementPage() {
     successMessage: '학원 코드가 복사되었습니다',
   });
 
-  // API 기반 데이터 관리
-  const { academy, loadAcademy, updateAcademy, isLoading, error } = usePrincipalApi();
+  // React Query 기반 데이터 관리
+  const { data: academy, isLoading, error } = usePrincipalAcademy();
+  const updateAcademyMutation = useUpdatePrincipalAcademy();
 
   // academy 데이터가 로드되면 formData 업데이트
   useEffect(() => {
@@ -43,26 +45,6 @@ export default function PrincipalAcademyManagementPage() {
       });
     }
   }, [academy]);
-
-  // 초기 데이터 로드
-  useEffect(() => {
-    loadAcademy();
-  }, [loadAcademy]);
-
-  // 학원 정보 수정 뮤테이션
-  const updateAcademyMutation = useMutation({
-    mutationFn: updateAcademy,
-    onSuccess: () => {
-      toast.success('학원 정보가 수정되었습니다.');
-      setIsEditing(false);
-    },
-    onError: (error: unknown) => {
-      const errorMessage = error && typeof error === 'object' && 'response' in error 
-        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message 
-        : '학원 정보 수정에 실패했습니다.';
-      toast.error(errorMessage || '학원 정보 수정에 실패했습니다.');
-    },
-  });
 
   const handleEdit = () => {
     if (academy) {
@@ -85,7 +67,11 @@ export default function PrincipalAcademyManagementPage() {
       toast.error('학원명은 필수입니다.');
       return;
     }
-    updateAcademyMutation.mutate(formData);
+    updateAcademyMutation.mutate(formData, {
+      onSuccess: () => {
+        setIsEditing(false);
+      },
+    });
   };
 
   // 학원 코드 복사 핸들러
@@ -115,7 +101,7 @@ export default function PrincipalAcademyManagementPage() {
       <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">데이터를 불러오는데 실패했습니다.</p>
         <button
-          onClick={() => loadAcademy()}
+          onClick={() => window.location.reload()}
           className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
         >
           다시 시도

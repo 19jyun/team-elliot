@@ -4,8 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { InfoBubble } from '@/components/common/InfoBubble';
+import { useApp } from '@/contexts/AppContext';
 
-import { useStudentApi } from '@/hooks/student/useStudentApi';
+import { useStudentRefundAccount } from '@/hooks/queries/student/useStudentRefundAccount';
+import { useUpdateStudentRefundAccount } from '@/hooks/mutations/student/useUpdateStudentRefundAccount';
+import { useCreateRefundRequest } from '@/hooks/mutations/student/useCreateRefundRequest';
+import type { StudentRefundAccount } from '@/types/api/student';
 import { 
   validateCompleteRefundRequest, 
   getRefundReasonOptions,
@@ -14,14 +18,14 @@ import {
 import { BANKS } from '@/constants/banks';
 import { processBankInfo, getBankNameToSave } from '@/utils/bankUtils';
 import type { ModificationSessionVM } from '@/types/view/student';
+import { EnrollmentModificationData } from '@/contexts/forms/EnrollmentFormManager';
 
 interface RefundRequestStepProps {
-  refundAmount: number;
-  cancelledSessionsCount: number;
-  onComplete: () => void;
+  modificationData: EnrollmentModificationData;
 }
 
-export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestStepProps) {
+export function RefundRequestStep({ modificationData }: RefundRequestStepProps) {
+  const { setEnrollmentModificationStep } = useApp();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -34,19 +38,19 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
   const [saveAccount, setSaveAccount] = useState(false);
   const [refundReason, setRefundReason] = useState<RefundReason>(RefundReason.PERSONAL_SCHEDULE);
   const [detailedReason, setDetailedReason] = useState('');
-  const { createRefundRequest, refundAccount, loadRefundAccount, updateRefundAccountInfo } = useStudentApi();
-
-  // 컴포넌트 마운트 시 환불 계좌 정보 로드
-  useEffect(() => {
-    loadRefundAccount();
-  }, [loadRefundAccount]);
+  
+  // React Query 기반 데이터 관리
+  const { data: refundAccountData } = useStudentRefundAccount();
+  const refundAccount = refundAccountData as StudentRefundAccount | null | undefined;
+  const updateRefundAccountMutation = useUpdateStudentRefundAccount();
+  const createRefundRequestMutation = useCreateRefundRequest();
 
   // 환불 계좌 정보가 로드되면 폼에 자동 입력
   useEffect(() => {
     if (refundAccount) {
       // processBankInfo를 사용하여 은행명 처리
       const { selectedBank, customBankName: customBank } = processBankInfo(
-        refundAccount.refundBankName
+        refundAccount.refundBankName || ''
       );
       
       setAccountInfo(prev => ({
@@ -143,22 +147,19 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
       return;
     }
     
-    // localStorage에서 기존 수강 신청 정보와 선택된 세션 정보 가져오기
-    const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
-    const existingEnrollmentsData = SyncStorage.getItem('existingEnrollments');
-    const selectedSessionsData = SyncStorage.getItem('selectedSessions');
-    
-    if (!existingEnrollmentsData || !selectedSessionsData) {
+    // Context에서 수강 변경 데이터 가져오기
+    if (!modificationData) {
       toast.error('수강 변경 정보를 찾을 수 없습니다.');
       return;
     }
-
-    const existingEnrollments = JSON.parse(existingEnrollmentsData);
-    const selectedSessions = JSON.parse(selectedSessionsData);
+    
+    // modificationData에서 originalEnrollments와 selectedSessionIds 사용
+    const originalEnrollments = modificationData.originalEnrollments || [];
+    const selectedSessionIds = new Set(modificationData.selectedSessionIds || []);
 
     // 기존에 신청된 세션들 (CONFIRMED, PENDING, REFUND_REJECTED_CONFIRMED 상태)
-    const originalEnrolledSessions = existingEnrollments.filter(
-      (enrollment: ModificationSessionVM) =>
+    const originalEnrolledSessions = originalEnrollments.filter(
+      (enrollment) =>
         enrollment.enrollment &&
         (enrollment.enrollment.status === "CONFIRMED" ||
           enrollment.enrollment.status === "PENDING" ||
@@ -167,12 +168,14 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
 
     // 취소될 세션들 (기존에 신청되었지만 현재 선택되지 않은 세션들)
     const cancelledSessions = originalEnrolledSessions.filter(
-      (enrollment: ModificationSessionVM) => {
+      (enrollment) => {
         const enrollmentDate = new Date(enrollment.date).toISOString().split("T")[0];
-        const selectedDates = selectedSessions.map(
-          (session: ModificationSessionVM) => new Date(session.date).toISOString().split("T")[0]
-        );
-        return !selectedDates.includes(enrollmentDate);
+        // selectedSessionIds에 해당 날짜의 세션이 있는지 확인
+        // originalEnrollments에서 날짜로 매칭하여 확인
+        return !originalEnrollments.some(orig => {
+          const origDate = new Date(orig.date).toISOString().split("T")[0];
+          return origDate === enrollmentDate && selectedSessionIds.has(orig.id);
+        });
       }
     );
 
@@ -180,8 +183,13 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
     const finalBankName = getBankNameToSave(accountInfo.bank, customBankName);
 
     // 각 취소된 세션에 대해 validation 수행
+    // modificationData에서 sessionPrice 사용
+    const sessionPrice = modificationData.sessionPrice || 50000;
+    
     for (const cancelledSession of cancelledSessions) {
-      const sessionPrice = parseInt(cancelledSession.class?.tuitionFee || '50000');
+      if (!cancelledSession.enrollment) {
+        continue; // enrollment가 없으면 건너뛰기
+      }
       
       const refundRequestData = {
         sessionEnrollmentId: cancelledSession.enrollment.id,
@@ -226,6 +234,10 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
       const processedEnrollmentIds = new Set<number>(); // 중복 방지를 위한 Set
 
       for (const cancelledSession of cancelledSessions) {
+        if (!cancelledSession.enrollment) {
+          continue; // enrollment가 없으면 건너뛰기
+        }
+        
         // 이미 처리된 sessionEnrollmentId인지 확인
         if (processedEnrollmentIds.has(cancelledSession.enrollment.id)) {
           continue;
@@ -233,8 +245,6 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
         
         // 처리된 sessionEnrollmentId로 표시
         processedEnrollmentIds.add(cancelledSession.enrollment.id);
-        // 실제 수강료 사용 (기본값 50000)
-        const sessionPrice = parseInt(cancelledSession.class?.tuitionFee || '50000');
         
         const refundRequest = {
           sessionEnrollmentId: cancelledSession.enrollment.id,
@@ -247,7 +257,7 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
         };
 
         try {
-          const response = await createRefundRequest(refundRequest);
+          const response = await createRefundRequestMutation.mutateAsync(refundRequest);
           refundRequests.push(response);
         } catch (error) {
           throw new Error(`세션 ${cancelledSession.id}의 환불 요청 생성에 실패했습니다.`, error as Error);
@@ -263,7 +273,7 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
             refundAccountHolder: accountInfo.accountHolder,
           };
           
-          await updateRefundAccountInfo(accountData);
+          await updateRefundAccountMutation.mutateAsync(accountData);
         } catch (error) {
           // 계좌 정보 저장 실패는 환불 신청 성공에 영향을 주지 않음
           console.warn('계좌 정보 저장에 실패했습니다:', error);
@@ -271,7 +281,7 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
       }
       
       toast.success(`${refundRequests.length}개 세션의 환불 신청이 완료되었습니다.`);
-      onComplete();
+      setEnrollmentModificationStep('refund-complete');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : '환불 신청에 실패했습니다. 다시 시도해주세요.');
     } finally {
@@ -310,7 +320,7 @@ export function RefundRequestStep({ refundAmount, onComplete }: RefundRequestSte
       <div className="mb-4 w-[335px]">
         <InfoBubble
           label="환불금액"
-          value={refundAmount.toLocaleString() + '원'}
+          value={(modificationData?.changeAmount || 0).toLocaleString() + '원'}
           type="amount"
         />
       </div>

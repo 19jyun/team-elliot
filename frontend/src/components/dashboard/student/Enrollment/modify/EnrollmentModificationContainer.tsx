@@ -1,55 +1,45 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { EnrollmentModificationDateStep } from './EnrollmentModificationDateStep';
 import { EnrollmentModificationPaymentStep } from './EnrollmentModificationPaymentStep';
 import { EnrollmentCompleteStep } from '../enroll/EnrollmentCompleteStep';
 import { RefundRequestStep } from './RefundRequestStep';
 import { RefundCompleteStep } from './RefundCompleteStep';
-import { useStudentApi } from '@/hooks/student/useStudentApi';
-import { useEnrollmentCalculation } from '@/hooks/useEnrollmentCalculation';
+import { useStudentEnrollmentHistory } from '@/hooks/queries/student/useStudentEnrollmentHistory';
 import type { ModificationSessionVM } from '@/types/view/student';
 import type { EnrollmentModificationContainerVM } from '@/types/view/student';
 
 export function EnrollmentModificationContainer({ classId, month }: EnrollmentModificationContainerVM) {
-  const { form, setEnrollmentStep } = useApp();
-  const { enrollment } = form;
-  const { currentStep } = enrollment;
-  const { enrollmentHistory, isLoading, error, loadEnrollmentHistory } = useStudentApi();
-  const [selectedSessionIds, setSelectedSessionIds] = useState<Set<number>>(new Set());
-  const [refundAmount, setRefundAmount] = useState(0);
-  const [cancelledSessionsCount, setCancelledSessionsCount] = useState(0);
-  const [sessionPrice, setSessionPrice] = useState(50000); // 기본값
+  const { form, resetEnrollmentModification } = useApp();
+  const { enrollmentModification } = form;
+  const { currentStep, modificationData } = enrollmentModification;
+  
+  // React Query 기반 데이터 관리
+  const { data: enrollmentHistory = [], isLoading, error } = useStudentEnrollmentHistory();
 
-
-  // 수강 변경 모드로 설정 - 즉시 설정
+  // EnrollmentModificationContainer가 마운트될 때 진행상황 초기화
   useEffect(() => {
-    setEnrollmentStep('date-selection');
-  }, [setEnrollmentStep]);
+    // Container가 열릴 때마다 수강 변경 진행상황 초기화
+    resetEnrollmentModification();
+  }, [resetEnrollmentModification]);
 
-  // EnrollmentModificationContainer가 unmount될 때 RefundPolicy 동의 상태 초기화
+  // EnrollmentModificationContainer가 unmount될 때 정리
   useEffect(() => {
     return () => {
       // Cleanup: 컴포넌트가 unmount될 때 실행
       const clearRefundPolicyAgreement = async () => {
         const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
-        SyncStorage.removeItem('refundPolicyAgreed');
+        SyncStorage.removeItem('refundPolicyAgreement');
       };
       clearRefundPolicyAgreement();
     };
   }, []);
-
-  // 수강 신청 내역 로드
-  useEffect(() => {
-    loadEnrollmentHistory();
-  }, [loadEnrollmentHistory]);
-
-  // 수강 변경 모드에서는 항상 date-selection 단계로 강제 설정
-  const effectiveStep = (currentStep as string) === 'main' ? 'date-selection' : currentStep;
   
 
-  // Redux에서 해당 클래스의 수강 신청 정보 필터링 (ViewModel로 정규화)
+  // 해당 클래스의 수강 신청 정보 필터링 (ViewModel로 정규화)
+  // EnrollmentModificationDateStep에 props로 전달하기 위해 필요
   const existingEnrollments: ModificationSessionVM[] = React.useMemo(() => {
     if (!enrollmentHistory) {
       return [];
@@ -78,155 +68,42 @@ export function EnrollmentModificationContainer({ classId, month }: EnrollmentMo
     return result;
   }, [enrollmentHistory, classId]);
 
-  // ModificationSessionVM을 SessionInfo로 변환하는 함수
-  const convertToSessionInfo = (session: ModificationSessionVM) => {
-    return {
-      id: session.id,
-      date: session.date,
-      startTime: session.startTime,
-      endTime: session.endTime,
-      isAlreadyEnrolled: session.isAlreadyEnrolled,
-      enrollment: session.enrollment ? {
-        id: session.enrollment.id,
-        status: session.enrollment.status === "PRESENT" || session.enrollment.status === "ABSENT" 
-          ? "CONFIRMED" // 출석 상태는 CONFIRMED로 변환
-          : session.enrollment.status as "PENDING" | "CONFIRMED" | "CANCELLED" | "REJECTED" | "REFUND_REQUESTED" | "REFUND_CANCELLED" | "TEACHER_CANCELLED" | "REFUND_REJECTED_CONFIRMED",
-        enrolledAt: session.enrollment.enrolledAt,
-        cancelledAt: undefined // ModificationSessionVM에는 cancelledAt이 없음
-      } : undefined
-    };
-  };
-
-  // 수강 변경 금액 계산
-  const { change } = useEnrollmentCalculation({
-    originalEnrollments: existingEnrollments.map(convertToSessionInfo),
-    selectedSessionIds,
-    sessionPrice: sessionPrice
-  });
-  
-
-  // 세션 선택 완료 시 처리
-  const handleSessionSelectionComplete = (sessionIds: Set<number>, sessionPrice?: number) => {
-    setSelectedSessionIds(sessionIds);
-    
-    // 전달받은 sessionPrice가 있으면 사용, 없으면 기존 값 사용
-    const actualSessionPrice = sessionPrice || 50000;
-    
-    // sessionPrice 상태 업데이트
-    if (sessionPrice) {
-      setSessionPrice(sessionPrice);
-    }
-    
-    // 직접 계산 (훅은 컴포넌트 최상위에서만 호출 가능)
-    const originalEnrolledSessions = existingEnrollments.filter(
-      (enrollment) => enrollment.isAlreadyEnrolled === true
-    );
-    
-    const originalSessionIds = new Set(originalEnrolledSessions.map(session => session.id));
-    
-    const newlyAddedSessionsCount = Array.from(sessionIds).filter(
-      (sessionId) => !originalSessionIds.has(sessionId)
-    ).length;
-    
-    const newlyCancelledSessionsCount = Array.from(originalSessionIds).filter(
-      (sessionId) => !sessionIds.has(sessionId)
-    ).length;
-    
-    const netChange = newlyAddedSessionsCount - newlyCancelledSessionsCount;
-    const totalAmount = netChange * actualSessionPrice;
-    
-    let changeType: "additional_payment" | "refund" | "no_change";
-    if (totalAmount > 0) {
-      changeType = "additional_payment";
-    } else if (totalAmount < 0) {
-      changeType = "refund";
-    } else {
-      changeType = "no_change";
-    }
-    
-    // 실제 변경 사항이 있는지 확인
-    const hasChanges = newlyAddedSessionsCount > 0 || newlyCancelledSessionsCount > 0;
-    
-    if (changeType === "no_change") {
-      if (hasChanges) {
-        setEnrollmentStep('payment');
-      } else {
-        setEnrollmentStep('complete');
-      }
-    } else if (changeType === "additional_payment") {
-      setEnrollmentStep('payment');
-    } else if (changeType === "refund") {
-      setRefundAmount(Math.abs(totalAmount));
-      setCancelledSessionsCount(newlyCancelledSessionsCount);
-      setEnrollmentStep('refund-request');
-    }
-  };
-
-  // 환불 신청 완료 시 처리
-  const handleRefundComplete = async () => {
-    // localStorage 정리
-    const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
-    SyncStorage.removeItem('modificationChangeAmount');
-    SyncStorage.removeItem('modificationChangeType');
-    SyncStorage.removeItem('modificationNetChangeCount');
-    SyncStorage.removeItem('modificationNewSessionsCount');
-    SyncStorage.removeItem('existingEnrollments');
-    SyncStorage.removeItem('selectedSessions');
-    SyncStorage.removeItem('selectedClasses');
-    
-    setEnrollmentStep('refund-complete');
-  };
-
-  // 수강 변경 완료 시 처리
-  const handleModificationComplete = async () => {
-    // localStorage 정리
-    const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
-    SyncStorage.removeItem('modificationChangeAmount');
-    SyncStorage.removeItem('modificationChangeType');
-    SyncStorage.removeItem('modificationNetChangeCount');
-    SyncStorage.removeItem('modificationNewSessionsCount');
-    SyncStorage.removeItem('existingEnrollments');
-    SyncStorage.removeItem('selectedSessions');
-    SyncStorage.removeItem('selectedClasses');
-    
-    setEnrollmentStep('refund-complete');
-  };
-
   // 현재 단계에 따라 적절한 컴포넌트 렌더링
   const renderCurrentStep = () => {
-    switch (effectiveStep) {
+    switch (currentStep) {
       case 'date-selection':
         return (
           <EnrollmentModificationDateStep
             classId={classId}
             existingEnrollments={existingEnrollments}
             month={month}
-            onComplete={handleSessionSelectionComplete}
           />
         );
       case 'payment':
+        if (!modificationData) {
+          return null;
+        }
         return (
           <EnrollmentModificationPaymentStep
-            additionalAmount={change.amount}
-            newSessionsCount={change.newSessionsCount}
-            onComplete={handleModificationComplete}
+            modificationData={modificationData}
           />
         );
       case 'refund-request':
+        if (!modificationData) {
+          return null;
+        }
         return (
           <RefundRequestStep
-            refundAmount={refundAmount}
-            cancelledSessionsCount={cancelledSessionsCount}
-            onComplete={handleRefundComplete}
+            modificationData={modificationData}
           />
         );
       case 'refund-complete':
         // 환불 신청 완료인지 수강 변경 완료인지 구분
-        const isRefundRequest = change.type === 'refund';
+        const isRefundRequest = modificationData?.changeType === 'refund';
         return (
           <RefundCompleteStep
-            refundAmount={refundAmount}
-            cancelledSessionsCount={cancelledSessionsCount}
+            refundAmount={modificationData?.changeAmount || 0}
+            cancelledSessionsCount={modificationData?.cancelledSessionsCount || 0}
             isModification={!isRefundRequest}
           />
         );
@@ -238,7 +115,6 @@ export function EnrollmentModificationContainer({ classId, month }: EnrollmentMo
             classId={classId}
             existingEnrollments={existingEnrollments}
             month={month}
-            onComplete={handleSessionSelectionComplete}
           />
         );
     }

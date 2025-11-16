@@ -1,14 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 
 import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
-import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
 import { format } from 'date-fns';
-import { extractErrorMessage } from '@/types/api/error';
 
 import { SlideUpModal } from '@/components/common/SlideUpModal';
+import { usePrincipalStudentSessionHistory } from '@/hooks/queries/principal/usePrincipalStudentSessionHistory';
 import { toPrincipalStudentSessionHistoryModalVM } from '@/lib/adapters/principal';
 import type { PrincipalStudentSessionHistoryItem } from '@/types/view/principal';
 
@@ -18,38 +16,40 @@ interface PrincipalStudentSessionHistoryModalProps {
 }
 
 export function PrincipalStudentSessionHistoryModal({ student, onClose }: PrincipalStudentSessionHistoryModalProps) {
-  const [history, setHistory] = useState<PrincipalStudentSessionHistoryItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { getStudentSessionHistory } = usePrincipalApi();
+  // React Query 기반 데이터 관리
+  const { data: historyData, isLoading, error } = usePrincipalStudentSessionHistory(student.id);
+  
+  // SessionEnrollment[]를 PrincipalStudentSessionHistoryItem[]로 변환
+  // 백엔드 응답 구조: SessionEnrollment { id, status, enrolledAt, session: { date, startTime, endTime, class: { id, className, teacher } } }
+  const history = useMemo(() => {
+    if (!historyData || !Array.isArray(historyData)) return [];
+    
+    return historyData.map((enrollment: any) => {
+      // SessionEnrollment 구조에서 데이터 추출
+      const session = enrollment.session || {};
+      const classData = session.class || {};
+      
+      return {
+        id: enrollment.id,
+        session: {
+          date: session.date, // session.date는 DateTime 객체
+          class: {
+            className: classData.className || classData.name || '알 수 없음',
+          },
+        },
+        status: enrollment.status || 'UNKNOWN',
+        enrolledAt: enrollment.enrolledAt, // enrolledAt은 DateTime 객체
+      };
+    }) as PrincipalStudentSessionHistoryItem[];
+  }, [historyData]);
 
   // ViewModel 생성
-  const historyModalVM = toPrincipalStudentSessionHistoryModalVM({
+  const historyModalVM = useMemo(() => toPrincipalStudentSessionHistoryModalVM({
     student,
     history,
     isLoading,
-    error,
-  });
-
-  useEffect(() => {
-    const fetchHistory = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await getStudentSessionHistory(Number(student.id));
-        // 백엔드 인터셉터에 의해 응답이 { success, data, timestamp, path } 구조로 래핑됨
-        setHistory((response.data as unknown as PrincipalStudentSessionHistoryItem[]) || []);
-      } catch (error: unknown) {
-        const errorMessage = extractErrorMessage(error, '수강생 현황 조회에 실패했습니다.');
-        setError(errorMessage);
-        toast.error(errorMessage);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchHistory();
-  }, [student.id, getStudentSessionHistory]);
+    error: error ? (error instanceof Error ? error.message : String(error)) : null,
+  }), [student, history, isLoading, error]);
 
   // 날짜 포맷 함수
   function formatDate(dateStr?: string) {

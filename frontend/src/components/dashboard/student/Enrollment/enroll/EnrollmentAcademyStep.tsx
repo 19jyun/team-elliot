@@ -5,21 +5,17 @@ import { useSession } from '@/lib/auth/AuthProvider';
 import { toast } from 'sonner';
 import { useApp } from '@/contexts/AppContext';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
-import { useStudentApi } from '@/hooks/student/useStudentApi';
+import { useStudentAcademies } from '@/hooks/queries/student/useStudentAcademies';
 
 export function EnrollmentAcademyStep() {
   const { goBack, setSelectedAcademyId: setContextSelectedAcademyId, setEnrollmentStep } = useApp();
   const { status } = useSession()
 
-  // API에서 academies 데이터 가져오기
-  const { academies, isLoading, error, loadAcademies, clearErrors } = useStudentApi();
+  // React Query 기반 데이터 관리
+  const { data: academiesData, isLoading, error } = useStudentAcademies();
+  const academies = academiesData || [];
 
   const [localSelectedAcademyId, setLocalSelectedAcademyId] = React.useState<number | null>(null);
-
-  // 컴포넌트 마운트 시 학원 목록 로드
-  React.useEffect(() => {
-    loadAcademies();
-  }, [loadAcademies]);
 
   const statusSteps = [
     {
@@ -59,16 +55,13 @@ export function EnrollmentAcademyStep() {
     setEnrollmentStep('class-selection');
   };
 
-  // 에러 처리 - AcademyManagement와 동일한 패턴 적용
+  // 에러 처리
   if (error && academies.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">학원 정보를 불러오는데 실패했습니다.</p>
         <button
-          onClick={() => {
-            clearErrors();
-            loadAcademies();
-          }}
+          onClick={() => window.location.reload()}
           className="mt-4 px-4 py-2 bg-[#AC9592] text-white rounded-lg hover:bg-[#8B7A77] transition-colors"
         >
           다시 시도

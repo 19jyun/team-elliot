@@ -8,7 +8,7 @@ import { LogoutModal } from '@/components/user/LogoutModal'
 import { useApp } from '@/contexts/AppContext'
 import { useLogout } from '@/hooks/auth/useLogout'
 import FooterLinks from '@/components/common/FooterLinks'
-import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'
+import { useTeacherProfile } from '@/hooks/queries/teacher/useTeacherProfile'
 
 export default function TeacherProfilePage() {
   const [showLogoutModal, setShowLogoutModal] = React.useState(false)
@@ -16,13 +16,8 @@ export default function TeacherProfilePage() {
   const { navigateToSubPage } = navigation
   const { data: session, status } = useSession()
 
-  // API 기반 데이터 관리
-  const { profile, loadProfile, isLoading, error } = useTeacherApi()
-
-  // 초기 데이터 로드
-  React.useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
+  // React Query 기반 데이터 관리
+  const { data: profile, isLoading, error } = useTeacherProfile()
 
   const { logout } = useLogout()
 
@@ -94,7 +89,7 @@ export default function TeacherProfilePage() {
           <div className="flex flex-col items-center justify-center min-h-full px-5">
             <p className="text-red-500 text-center">데이터를 불러오는데 실패했습니다.</p>
             <button
-              onClick={() => loadProfile()}
+              onClick={() => window.location.reload()}
               className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
             >
               다시 시도

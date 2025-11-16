@@ -1,0 +1,22 @@
+import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/react-query/queryKeys';
+import { calendarQueryOptions } from '@/lib/react-query/queryOptions';
+import { getMyClasses } from '@/api/student';
+import type { DateRange } from '@/lib/react-query/queryKeys';
+import type { ClassSessionForEnrollment } from '@/types/api/student';
+
+/**
+ * Student 캘린더 세션 목록 조회
+ */
+export function useStudentCalendarSessions(range?: DateRange) {
+  return useQuery({
+    queryKey: queryKeys.student.calendarSessions.list(range),
+    queryFn: async (): Promise<ClassSessionForEnrollment[]> => {
+      const response = await getMyClasses();
+      return response.data?.sessions || [];
+    },
+    ...calendarQueryOptions,
+    staleTime: 2 * 60 * 1000, // 2분
+  });
+}
+

@@ -22,7 +22,9 @@ import {
   Trash2,
   Camera
 } from 'lucide-react';
-import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
+import { usePrincipalProfile } from '@/hooks/queries/principal/usePrincipalProfile';
+import { useUpdatePrincipalProfile } from '@/hooks/mutations/principal/useUpdatePrincipalProfile';
+import { useUpdatePrincipalProfilePhoto } from '@/hooks/mutations/principal/useUpdatePrincipalProfilePhoto';
 import { getImageUrl } from '@/utils/imageUtils';
 import Image from 'next/image';
 
@@ -53,48 +55,10 @@ export function PrincipalProfileCard({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // API 기반 데이터 관리
-  const { profile, loadProfile, error, isPrincipal } = usePrincipalApi();
-
-  // 컴포넌트 마운트 시 프로필 로드
-  useEffect(() => {
-    if (isPrincipal) {
-      loadProfile();
-    }
-  }, [isPrincipal, loadProfile]);
-
-
-  // 프로필 업데이트/사진 업로드 뮤테이션
-  const { updateProfile, updateProfilePhoto } = usePrincipalApi();
-  const updateProfileMutation = useMutation({
-    mutationFn: (data: UpdatePrincipalProfileRequest) => updateProfile(data),
-    onSuccess: () => {
-      // API 데이터 다시 로드
-      loadProfile();
-      toast.success('프로필이 성공적으로 업데이트되었습니다.');
-      setIsEditing(false);
-      onSave?.();
-    },
-    onError: (error: unknown) => {
-      console.error('프로필 업데이트 실패:', error);
-      toast.error('프로필 업데이트에 실패했습니다.');
-    },
-  });
-
-  const updatePhotoMutation = useMutation({
-    mutationFn: (photo: File) => updateProfilePhoto(photo),
-    onSuccess: () => {
-      // API 데이터 다시 로드
-      loadProfile();
-      toast.success('프로필 사진이 성공적으로 업로드되었습니다.');
-      setSelectedPhoto(null);
-      setPreviewUrl(null);
-    },
-    onError: (error: unknown) => {
-      console.error('사진 업로드 실패:', error);
-      toast.error('사진 업로드에 실패했습니다.');
-    },
-  });
+  // React Query 기반 데이터 관리
+  const { data: profile, isLoading: profileLoading, error } = usePrincipalProfile();
+  const updateProfileMutation = useUpdatePrincipalProfile();
+  const updatePhotoMutation = useUpdatePrincipalProfilePhoto();
 
   // 편집 모드 시작
   const handleEdit = () => {
@@ -185,12 +149,21 @@ export function PrincipalProfileCard({
     };
     
     // 프로필 데이터 업데이트
-    updateProfileMutation.mutate(updatedData);
-    
-    // 선택된 사진이 있으면 사진도 업로드
-    if (selectedPhoto) {
-      updatePhotoMutation.mutate(selectedPhoto);
-    }
+    updateProfileMutation.mutate(updatedData, {
+      onSuccess: () => {
+        setIsEditing(false);
+        onSave?.();
+        // 선택된 사진이 있으면 사진도 업로드
+        if (selectedPhoto) {
+          updatePhotoMutation.mutate(selectedPhoto, {
+            onSuccess: () => {
+              setSelectedPhoto(null);
+              setPreviewUrl(null);
+            },
+          });
+        }
+      },
+    });
   };
 
   // 교육사항 추가
@@ -219,10 +192,8 @@ export function PrincipalProfileCard({
     setTempCertifications(tempCertifications.filter((_, i) => i !== index));
   };
 
-  // 초기 로딩 상태 (프로필이 없고 Principal 권한이 있는 경우)
-  const isInitialLoading = !profile && isPrincipal && !error;
-
-  if (isInitialLoading) {
+  // 로딩 상태
+  if (profileLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -238,10 +209,10 @@ export function PrincipalProfileCard({
             <User className="h-12 w-12 mx-auto mb-4 text-gray-300" />
             <p>프로필 정보를 불러올 수 없습니다.</p>
             {error && (
-              <p className="text-sm text-red-500 mt-2">{error}</p>
+              <p className="text-sm text-red-500 mt-2">{error.message || '알 수 없는 오류가 발생했습니다.'}</p>
             )}
             <Button 
-              onClick={() => loadProfile()} 
+              onClick={() => window.location.reload()} 
               variant="outline" 
               size="sm" 
               className="mt-4"

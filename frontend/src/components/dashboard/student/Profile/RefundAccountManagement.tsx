@@ -6,37 +6,30 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Building, CreditCard, Edit, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { useStudentApi } from '@/hooks/student/useStudentApi';
+import { useStudentRefundAccount } from '@/hooks/queries/student/useStudentRefundAccount';
+import { useUpdateStudentRefundAccount } from '@/hooks/mutations/student/useUpdateStudentRefundAccount';
 import { UpdateStudentRefundAccountRequest } from '@/types/api/student';
-import { useApiError } from '@/hooks/useApiError';
 import { useSession } from '@/lib/auth/AuthProvider';
 import { BANKS } from '@/constants/banks';
 import { processBankInfo, getBankNameToSave } from '@/utils/bankUtils';
 import { InfoBubble } from '@/components/common/InfoBubble';
+import { StudentRefundAccount } from '@/types/api/student';
 
 export function RefundAccountManagement() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedInfo, setEditedInfo] = useState<UpdateStudentRefundAccountRequest>({});
-  const [isLoading, setIsLoading] = useState(false);
   const [customBankName, setCustomBankName] = useState(''); // 기타 은행명 입력
   
   // Validation 관련 상태
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [isShaking, setIsShaking] = useState(false);
   
-  // API 기반 데이터 관리
-  const { refundAccount, loadRefundAccount, updateRefundAccountInfo, error } = useStudentApi();
-  const { handleApiError, fieldErrors, clearErrors } = useApiError();
-  const { data: session, status } = useSession();
+  // React Query 기반 데이터 관리
+  const { data: refundAccountData, isLoading: accountLoading, error: accountError } = useStudentRefundAccount();
+  const refundAccount = refundAccountData as StudentRefundAccount | null | undefined;
+  const updateRefundAccountMutation = useUpdateStudentRefundAccount();
   
-  const isStudent = status === 'authenticated' && session?.user?.role === 'STUDENT';
-
-  // 컴포넌트 마운트 시 환불 계좌 정보 로드
-  useEffect(() => {
-    if (isStudent) {
-      loadRefundAccount();
-    }
-  }, [isStudent, loadRefundAccount]);
+  const isLoading = accountLoading || updateRefundAccountMutation.isPending;
 
   // refundAccount 데이터가 로드되면 editedInfo 업데이트 (편집 모드가 아닐 때만)
   useEffect(() => {
@@ -114,24 +107,20 @@ export function RefundAccountManagement() {
       return;
     }
 
-    try {
-      setIsLoading(true);
-      clearErrors(); // 요청 시작 시 에러 초기화
-      setValidationErrors({}); // validation 에러도 초기화
-      
-      // 실제 저장 시 finalBankName 사용
-      await updateRefundAccountInfo({
+    setValidationErrors({});
+    
+    // 실제 저장 시 finalBankName 사용
+    updateRefundAccountMutation.mutate(
+      {
         ...editedInfo,
         refundBankName: finalBankName,
-      });
-      
-      setIsEditing(false);
-      toast.success('환불 계좌 정보가 성공적으로 업데이트되었습니다.');
-    } catch (error) {
-      handleApiError(error, { disableToast: false, disableConsole: true });
-    } finally {
-      setIsLoading(false);
-    }
+      },
+      {
+        onSuccess: () => {
+          setIsEditing(false);
+        },
+      }
+    );
   };
 
   const handleInputChange = (field: keyof UpdateStudentRefundAccountRequest, value: string) => {
@@ -189,12 +178,12 @@ export function RefundAccountManagement() {
     return { isValid: true, message: '' };
   };
 
-  if (error) {
+  if (accountError && !refundAccount) {
     return (
       <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">환불 계좌 정보를 불러오는데 실패했습니다.</p>
         <button
-          onClick={() => loadRefundAccount()}
+          onClick={() => window.location.reload()}
           className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
         >
           다시 시도
@@ -274,11 +263,11 @@ export function RefundAccountManagement() {
                         { value: '', label: '은행명 선택' },
                         ...BANKS
                       ]}
-                      className={isShaking && (fieldErrors.refundBankName || validationErrors.refundBankName) ? 'animate-shake border-red-500' : ''}
+                      className={isShaking && (validationErrors.refundBankName || validationErrors.refundBankName) ? 'animate-shake border-red-500' : ''}
                     />
-                    {(fieldErrors.refundBankName || validationErrors.refundBankName) && (
+                    {(validationErrors.refundBankName || validationErrors.refundBankName) && (
                       <p className="text-red-500 text-xs mt-1 ml-2 animate-in fade-in">
-                        {fieldErrors.refundBankName || validationErrors.refundBankName}
+                        {validationErrors.refundBankName || validationErrors.refundBankName}
                       </p>
                     )}
                   </div>
@@ -321,11 +310,11 @@ export function RefundAccountManagement() {
                       inputValue={editedInfo.refundAccountNumber || ''}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('refundAccountNumber', e.target.value)}
                       placeholder="계좌번호 입력"
-                      className={isShaking && (fieldErrors.refundAccountNumber || validationErrors.refundAccountNumber) ? 'animate-shake border-red-500' : ''}
+                      className={isShaking && (validationErrors.refundAccountNumber || validationErrors.refundAccountNumber) ? 'animate-shake border-red-500' : ''}
                     />
-                    {(fieldErrors.refundAccountNumber || validationErrors.refundAccountNumber) && (
+                    {(validationErrors.refundAccountNumber || validationErrors.refundAccountNumber) && (
                       <p className="text-red-500 text-xs mt-1 ml-2 animate-in fade-in">
-                        {fieldErrors.refundAccountNumber || validationErrors.refundAccountNumber}
+                        {validationErrors.refundAccountNumber || validationErrors.refundAccountNumber}
                       </p>
                     )}
                   </div>
@@ -348,11 +337,11 @@ export function RefundAccountManagement() {
                       inputValue={editedInfo.refundAccountHolder || ''}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('refundAccountHolder', e.target.value)}
                       placeholder="예금주 입력"
-                      className={isShaking && (fieldErrors.refundAccountHolder || validationErrors.refundAccountHolder) ? 'animate-shake border-red-500' : ''}
+                      className={isShaking && (validationErrors.refundAccountHolder || validationErrors.refundAccountHolder) ? 'animate-shake border-red-500' : ''}
                     />
-                    {(fieldErrors.refundAccountHolder || validationErrors.refundAccountHolder) && (
+                    {(validationErrors.refundAccountHolder || validationErrors.refundAccountHolder) && (
                       <p className="text-red-500 text-xs mt-1 ml-2 animate-in fade-in">
-                        {fieldErrors.refundAccountHolder || validationErrors.refundAccountHolder}
+                        {validationErrors.refundAccountHolder || validationErrors.refundAccountHolder}
                       </p>
                     )}
                   </div>

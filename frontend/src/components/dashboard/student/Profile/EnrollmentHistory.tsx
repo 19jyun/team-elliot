@@ -8,15 +8,18 @@ import { Separator } from '@/components/ui/separator';
 import { Calendar, Clock, BookOpen, CheckCircle, XCircle, AlertCircle, Clock as ClockIcon } from 'lucide-react';
 
 import { useApp } from '@/contexts/AppContext';
-import { useStudentData } from '@/hooks/redux/useStudentData';
+import { useStudentEnrollmentHistory } from '@/hooks/queries/student/useStudentEnrollmentHistory';
 import { toStudentEnrollmentHistoryVMs } from '@/lib/adapters/student';
 import type { StudentEnrollmentHistoryVM } from '@/types/view/student';
 
 export function EnrollmentHistory() {
   const { ui } = useApp();
   const { pushFocus, popFocus } = ui;
-  const { enrollmentHistory, isLoading, error, clearErrorState } = useStudentData();
+  
+  // React Query 기반 데이터 관리
+  const { data: enrollmentHistory = [], isLoading, error: queryError } = useStudentEnrollmentHistory();
   const [selectedFilter, setSelectedFilter] = useState<string>('ALL');
+  const error = queryError ? '수강 내역을 불러오는데 실패했습니다.' : null;
 
   // API 응답을 뷰모델로 변환
   const enrollmentHistoryVMs: StudentEnrollmentHistoryVM[] = toStudentEnrollmentHistoryVMs(enrollmentHistory);
@@ -32,9 +35,7 @@ export function EnrollmentHistory() {
       <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">수강 내역을 불러오는데 실패했습니다.</p>
         <Button
-          onClick={() => {
-            clearErrorState();
-          }}
+          onClick={() => window.location.reload()}
           className="mt-4"
         >
           다시 시도

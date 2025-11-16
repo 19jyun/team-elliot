@@ -1,21 +1,15 @@
 'use client'
 
 import { useSession, useSignOut } from '@/lib/auth/AuthProvider'
-import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi'
-import { useEffect } from 'react'
+import { usePrincipalAcademy } from '@/hooks/queries/principal/usePrincipalAcademy'
 import { TeacherStudentManagementContainer } from '@/components/dashboard/principal/person_management/teacher_student_management/containers/TeacherStudentManagementContainer'
 
 export default function PrincipalPersonManagementPage() {
   const { status } = useSession()
   const signOut = useSignOut()
 
-  // API 기반 데이터 관리
-  const { academy: _academy, loadAcademy, isLoading, error } = usePrincipalApi()
-
-  // 컴포넌트 마운트 시 academy 데이터 로드
-  useEffect(() => {
-    loadAcademy();
-  }, [loadAcademy]);
+  // React Query 기반 데이터 관리
+  const { data: academy, isLoading, error } = usePrincipalAcademy()
 
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {
@@ -40,7 +34,7 @@ export default function PrincipalPersonManagementPage() {
       <div className="flex flex-col items-center justify-center min-h-screen">
         <p className="text-red-500">데이터를 불러오는데 실패했습니다.</p>
         <button
-          onClick={() => loadAcademy()}
+          onClick={() => window.location.reload()}
           className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
         >
           다시 시도

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { StatusStep } from './StatusStep';
 import { useApp } from '@/contexts/AppContext';
-import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
+import { usePrincipalTeachers } from '@/hooks/queries/principal/usePrincipalTeachers';
 import { getImageUrl } from '@/utils/imageUtils';
 import Image from 'next/image';
 
@@ -23,13 +23,8 @@ export function CreateClassStepTeacher() {
   
   const [selectedTeacher, setSelectedTeacher] = useState<number | null>(selectedTeacherId);
 
-  // Principal API 훅 사용
-  const { teachers, loadTeachers, isLoading, error } = usePrincipalApi();
-
-  // 컴포넌트 마운트 시 선생님 데이터 로드
-  useEffect(() => {
-    loadTeachers();
-  }, [loadTeachers]);
+  // React Query 기반 데이터 관리
+  const { data: teachers = [], isLoading, error } = usePrincipalTeachers();
 
   const handleTeacherSelect = (teacherId: number) => {
     setSelectedTeacher(teacherId);
