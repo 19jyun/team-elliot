@@ -8,6 +8,7 @@ import {
   NavigationState,
 } from "../state/StateSyncTypes";
 import { EnrollmentStep } from "../forms/EnrollmentFormManager";
+import { EnrollmentModificationStep } from "../forms/EnrollmentModificationFormManager";
 import { SignupStep } from "../forms/AuthFormManager";
 import { CreateClassStep } from "../forms/CreateClassFormManager";
 import { PrincipalPersonManagementStep } from "../forms/PrincipalPersonManagementFormManager";
@@ -37,6 +38,8 @@ export class GoBackManager {
         return this.handleFallbackGoBack(navigationState);
       }
 
+      const virtualHistoryState = this.virtualHistory.getState();
+
       const context: GoBackContext = {
         subPage: navigationState.subPage,
         activeTab: navigationState.activeTab,
@@ -51,13 +54,13 @@ export class GoBackManager {
             currentStep: formsState.principalPersonManagement.currentStep,
           },
         },
-        history: this.virtualHistory.getState().entries,
-        currentHistoryIndex: this.virtualHistory.getState().currentIndex,
+        history: virtualHistoryState.entries,
+        currentHistoryIndex: virtualHistoryState.currentIndex,
       };
 
       return await this.handleGoBack(context, formsState);
     } catch (error) {
-      console.error("GoBackManager execution error:", error);
+      console.error(`[GoBackManager] 실행 오류`, error);
       return {
         success: false,
         action: "none",
@@ -74,6 +77,8 @@ export class GoBackManager {
     formsState: FormsState
   ): Promise<GoBackResult> {
     try {
+      const virtualHistoryState = this.virtualHistory.getState();
+
       const context: GoBackContext = {
         subPage: navigationState.subPage,
         activeTab: navigationState.activeTab,
@@ -88,13 +93,13 @@ export class GoBackManager {
             currentStep: formsState.principalPersonManagement.currentStep,
           },
         },
-        history: this.virtualHistory.getState().entries,
-        currentHistoryIndex: this.virtualHistory.getState().currentIndex,
+        history: virtualHistoryState.entries,
+        currentHistoryIndex: virtualHistoryState.currentIndex,
       };
 
       return await this.handleGoBack(context, formsState);
     } catch (error) {
-      console.error("GoBackManager execution error:", error);
+      console.error(`[GoBackManager] 실행 오류`, error);
       return {
         success: false,
         action: "none",
@@ -105,39 +110,56 @@ export class GoBackManager {
     }
   }
 
-  // 🔑 새로운 통합 뒤로가기 로직
+  // 🔑 새로운 통합 뒤로가기 로직 (Chain of Responsibility 패턴)
   private async handleGoBack(
     context: GoBackContext,
     formsState: FormsState
   ): Promise<GoBackResult> {
-    // 1. Virtual History 우선 확인 (subpage와 form-step만)
-    if (this.virtualHistory.canGoBack()) {
+    // Chain 1: Virtual History의 form-step 확인 (우선순위 높음)
+    // 단, 현재 서브페이지가 열려 있으면 서브페이지를 먼저 닫아야 함
+    // 컨테이너 내부의 단계별 뒤로가기는 가장 우선적으로 처리
+    if (this.virtualHistory.canGoBack() && !context.subPage) {
+      // 현재 서브페이지가 없을 때만 form-step 처리
       const previousEntry = this.virtualHistory.getPreviousEntry();
-      if (previousEntry) {
-        // subpage와 form-step만 virtual history에서 처리
-        if (
-          previousEntry.type === "subpage" ||
-          previousEntry.type === "form-step"
-        ) {
-          return await this.handleVirtualHistoryBack(previousEntry, formsState);
-        }
+
+      if (previousEntry?.type === "form-step") {
+        return await this.handleVirtualHistoryBack(previousEntry, formsState);
       }
     }
 
-    // 2. subPage가 열려있으면 subPage 닫기
-    if (context.subPage) {
-      return {
-        success: true,
-        action: "close" as const,
-        data: { subPage: null },
-        message: `Closing subpage: ${context.subPage}`,
-      };
+    // Chain 2: 현재 컨테이너의 첫 단계인지 확인
+    // 첫 단계에서 뒤로가기를 누르면 서브페이지를 닫아야 함
+    const isFirstStep = this.isFirstStepOfCurrentContainer(context, formsState);
+
+    if (isFirstStep) {
+      // Virtual History에 이전 subpage 엔트리가 있는지 확인
+      const previousSubPageEntry = this.findPreviousSubPageEntry();
+
+      if (previousSubPageEntry) {
+        // 이전 서브페이지로 이동
+        return await this.handleSubPageBack(previousSubPageEntry);
+      }
+      // 없으면 현재 서브페이지 닫기
+      return await this.closeCurrentSubPage(context);
     }
 
-    // 3. 대시보드 탭 변경은 뒤로가기로 처리하지 않음
-    // (대시보드 내 탭 변경은 virtual history에 저장되지 않음)
+    // Chain 3: Virtual History의 subpage 엔트리 확인
+    // 여러 서브페이지를 거쳐온 경우 이전 서브페이지로 이동
+    if (this.virtualHistory.canGoBack()) {
+      const previousEntry = this.virtualHistory.getPreviousEntry();
 
-    // 4. 더 이상 뒤로갈 수 없음
+      if (previousEntry?.type === "subpage") {
+        return await this.handleVirtualHistoryBack(previousEntry, formsState);
+      }
+    }
+
+    // Chain 4: 현재 서브페이지 닫기
+    // 위 모든 조건에 해당하지 않으면 현재 서브페이지만 닫기
+    if (context.subPage) {
+      return await this.closeCurrentSubPage(context);
+    }
+
+    // Chain 5: 더 이상 뒤로갈 수 없음
     return {
       success: false,
       action: "none",
@@ -295,5 +317,243 @@ export class GoBackManager {
       action: "none",
       message: "더 이상 뒤로갈 수 없습니다.",
     };
+  }
+
+  // ==========================================
+  // 공개 API: Virtual History 관리 (SSOT)
+  // ==========================================
+
+  /**
+   * 서브페이지를 Virtual History에 추가
+   * NavigationContext의 navigateToSubPage에서 호출
+   *
+   * @param subPage 서브페이지 식별자
+   * @param activeTab 현재 활성 탭 인덱스
+   */
+  pushSubPage(subPage: string, activeTab: number): void {
+    // 중복 방지: 현재 엔트리가 같은 subpage이면 스킵
+    const currentEntry = this.virtualHistory.getCurrentEntry();
+
+    if (
+      currentEntry?.type === "subpage" &&
+      currentEntry.data.subPage === subPage
+    ) {
+      return;
+    }
+
+    this.virtualHistory.push({
+      type: "subpage",
+      data: {
+        subPage,
+        activeTab,
+        title: `Subpage: ${subPage}`,
+        description: `Opened subpage ${subPage}`,
+      },
+    });
+
+    // canGoBack 상태 업데이트
+    this.updateCanGoBackState();
+  }
+
+  /**
+   * 서브페이지 닫기 (Virtual History에서 제거)
+   * NavigationContext의 clearSubPage와 컨테이너 완료 시 호출
+   *
+   * @param subPage 닫을 서브페이지 식별자
+   * @returns 뒤로가기 결과
+   */
+  async closeSubPage(subPage: string | null): Promise<GoBackResult> {
+    if (!subPage) {
+      return {
+        success: false,
+        action: "none",
+        message: "No subpage to close",
+      };
+    }
+
+    // Virtual History에서 현재 subpage 엔트리 제거
+    const virtualHistoryState = this.virtualHistory.getState();
+    const currentEntry = this.virtualHistory.getCurrentEntry();
+
+    if (
+      currentEntry?.type === "subpage" &&
+      currentEntry.data.subPage === subPage
+    ) {
+      this.virtualHistory.goBack();
+    }
+
+    // 상태 변경은 StateSync를 통해서만
+    const navigationState = this.stateSync.getState("navigation");
+
+    if (navigationState) {
+      this.stateSync.publish("navigation", {
+        ...navigationState,
+        subPage: null,
+        canGoBack: this.virtualHistory.canGoBack(),
+      });
+    }
+
+    // NavigationContext가 상태를 업데이트하도록 이벤트 발생
+    // 이벤트를 통해 NavigationContext의 setSubPageState(null) 호출
+    this.eventBus.emit("subPageClosed", {
+      subPage: null,
+      activeTab: navigationState?.activeTab ?? 0,
+    });
+
+    // canGoBack 상태 업데이트
+    this.updateCanGoBackState();
+
+    return {
+      success: true,
+      action: "close",
+      data: { subPage: null },
+      message: `Closed subpage: ${subPage}`,
+    };
+  }
+
+  /**
+   * Virtual History 초기화 (탭 변경 시에만 사용)
+   * NavigationContext의 setActiveTab에서 호출
+   */
+  clearHistory(): void {
+    this.virtualHistory.clear();
+    // canGoBack 상태 업데이트
+    this.updateCanGoBackState();
+  }
+
+  /**
+   * 폼 단계를 Virtual History에 추가
+   * FormsContext의 이벤트 리스너에서 호출
+   *
+   * @param formType 폼 타입 (enrollment, createClass 등)
+   * @param formStep 폼 단계
+   */
+  pushFormStep(formType: string, formStep: string): void {
+    // 중복 방지: 현재 엔트리가 같은 form-step이면 스킵
+    const currentEntry = this.virtualHistory.getCurrentEntry();
+
+    if (
+      currentEntry?.type === "form-step" &&
+      currentEntry.data.formType === formType &&
+      currentEntry.data.formStep === formStep
+    ) {
+      return;
+    }
+
+    this.virtualHistory.push({
+      type: "form-step",
+      data: {
+        formType,
+        formStep,
+        title: `${formType} - ${formStep}`,
+        description: `Form step changed to ${formStep}`,
+      },
+    });
+
+    // canGoBack 상태 업데이트
+    this.updateCanGoBackState();
+  }
+
+  /**
+   * GoBackManager 인스턴스 반환 (BackButtonHandler에서 사용)
+   */
+  getInstance(): GoBackManager {
+    return this;
+  }
+
+  // ==========================================
+  // 내부 헬퍼 메서드들
+  // ==========================================
+
+  /**
+   * 현재 컨테이너의 첫 단계인지 확인
+   * 첫 단계에서 뒤로가기를 누르면 서브페이지를 닫아야 함
+   */
+  private isFirstStepOfCurrentContainer(
+    context: GoBackContext,
+    formsState: FormsState
+  ): boolean {
+    if (!context.subPage) return false;
+
+    // enrollment 컨테이너
+    if (context.subPage === "enroll") {
+      return formsState.enrollment.currentStep === "academy-selection";
+    }
+
+    // enrollmentModification 컨테이너 (modify-* 패턴)
+    if (context.subPage.startsWith("modify-")) {
+      return formsState.enrollmentModification.currentStep === "date-selection";
+    }
+
+    // createClass 컨테이너
+    if (context.subPage === "create-class") {
+      return formsState.createClass.currentStep === "info";
+    }
+
+    // principalCreateClass 컨테이너
+    if (context.subPage === "principal-create-class") {
+      return formsState.principalCreateClass.currentStep === "info";
+    }
+
+    // personManagement 컨테이너
+    if (context.subPage === "person-management") {
+      return formsState.personManagement.currentStep === "class-list";
+    }
+
+    // principalPersonManagement 컨테이너
+    if (context.subPage === "principal-person-management") {
+      return formsState.principalPersonManagement.currentStep === "class-list";
+    }
+
+    return false;
+  }
+
+  /**
+   * Virtual History에서 이전 subpage 엔트리 찾기
+   * 현재 인덱스 이전의 엔트리들 중 subpage 타입을 찾음
+   */
+  private findPreviousSubPageEntry(): HistoryEntry | null {
+    const state = this.virtualHistory.getState();
+
+    // 현재 인덱스 이전의 엔트리들 중 subpage 타입 찾기
+    for (let i = state.currentIndex - 1; i >= 0; i--) {
+      const entry = state.entries[i];
+      if (entry.type === "subpage") {
+        return entry;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * 현재 서브페이지 닫기
+   */
+  private async closeCurrentSubPage(
+    context: GoBackContext
+  ): Promise<GoBackResult> {
+    if (!context.subPage) {
+      return {
+        success: false,
+        action: "none",
+        message: "No subpage to close",
+      };
+    }
+
+    return await this.closeSubPage(context.subPage);
+  }
+
+  /**
+   * canGoBack 상태 업데이트
+   * Virtual History 변경 시 StateSync에 상태 발행
+   */
+  private updateCanGoBackState(): void {
+    const navigationState = this.stateSync.getState("navigation");
+    if (navigationState) {
+      this.stateSync.publish("navigation", {
+        ...navigationState,
+        canGoBack: this.virtualHistory.canGoBack(),
+      });
+    }
   }
 }

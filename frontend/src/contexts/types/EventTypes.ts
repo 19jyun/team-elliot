@@ -13,6 +13,7 @@ export interface EventMap {
   };
   modalOpened: { modalId: string; modalType: string };
   dataUpdated: { dataType: string; data: unknown };
+  subPageClosed: { subPage: string | null; activeTab: number };
 }
 
 // 이벤트 리스너 타입

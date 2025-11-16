@@ -46,19 +46,22 @@ interface NavigationContextType {
   setActiveTab: (tab: number) => void;
   handleTabChange: (tab: number) => void;
   navigateToSubPage: (page: string) => void;
-  clearSubPage: () => void;
+  clearSubPage: () => Promise<void>;
   
   // 통합된 goBack (GoBackManager 사용)
   goBack: () => Promise<boolean>;
   goBackWithForms: (formsState: FormsState) => Promise<boolean>;
   
-  // 히스토리 관리
+  // 히스토리 관리 (하위 호환성을 위해 유지)
   pushHistory: (item: NavigationHistoryItem) => void;
   clearHistory: () => void;
   
   // 권한 확인
   canAccessTab: (tabIndex: number) => boolean;
   canAccessSubPage: (page: string) => boolean;
+  
+  // GoBackManager 인스턴스 반환 (BackButtonHandler에서 사용)
+  getGoBackManager: () => GoBackManager;
 }
 
 const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
@@ -294,40 +297,52 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
     }
   }, [session?.user]);
 
-  // 이벤트 버스 구독
+  // 이벤트 버스 구독: 폼 상태 변경 시 Virtual History에 추가
   useEffect(() => {
     const unsubscribe = contextEventBus.subscribe('formStateChanged', (data) => {
-      // 중복 방지를 위한 체크
-      const currentEntry = virtualHistory.getCurrentEntry();
-      if (currentEntry && 
-          currentEntry.type === 'form-step' && 
-          currentEntry.data.formType === data.formType && 
-          currentEntry.data.formStep === data.step) {
-        return; // 이미 같은 단계가 기록되어 있으면 스킵
-      }
-
-      // 폼 상태 변경 시 히스토리에 추가
-      virtualHistory.push({
-        type: 'form-step',
-        data: {
-          formType: data.formType,
-          formStep: data.step,
-          title: `${data.formType} - ${data.step}`,
-          description: `Form step changed to ${data.step}`,
-        },
-      });
+      // GoBackManager를 통해 Virtual History에 추가 (SSOT)
+      goBackManager.pushFormStep(data.formType, data.step);
     });
 
     return unsubscribe;
-  }, [virtualHistory]);
+  }, [goBackManager]);
+
+  // 이벤트 버스 구독: GoBackManager에서 서브페이지 닫기 이벤트
+  useEffect(() => {
+    const unsubscribe = contextEventBus.subscribe('subPageClosed', (data) => {
+      // GoBackManager에서 서브페이지를 닫았으므로 상태 업데이트
+      if (subPage) {
+        setSubPageState(null);
+
+        // StateSync에 상태 발행
+        const navigationState: NavigationState = {
+          activeTab: data.activeTab,
+          subPage: null,
+          canGoBack: virtualHistory.canGoBack(),
+          isTransitioning: false,
+          navigationItems: getNavigationItems(),
+          history: history,
+        };
+        stateSync.publish('navigation', navigationState);
+
+        // 이벤트 발생
+        contextEventBus.emit('navigationChanged', {
+          subPage: null,
+          activeTab: data.activeTab,
+        });
+      }
+    });
+
+    return unsubscribe;
+  }, [subPage, activeTab, goBackManager, virtualHistory, getNavigationItems, history, stateSync]);
 
   // 네비게이션 메서드들
   const setActiveTab = useCallback((tab: number) => {
     setActiveTabState(tab);
     setSubPageState(null);
     
-    // Virtual History 완전히 비우기
-    virtualHistory.clear();
+    // GoBackManager를 통해 Virtual History 초기화 (SSOT)
+    goBackManager.clearHistory();
     
     // 📢 중요: 탭 변경 이벤트 발행 (FormsContext에서 구독하여 폼 상태 초기화)
     contextEventBus.emit('tabChanged', { activeTab: tab });
@@ -348,7 +363,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
       subPage: null,
       activeTab: tab,
     });
-  }, [getNavigationItems, stateSync, virtualHistory]);
+  }, [getNavigationItems, stateSync, goBackManager, activeTab, subPage]);
 
   const handleTabChange = useCallback((tab: number) => {
     if (tab === activeTab) return;
@@ -371,62 +386,52 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
     
     setSubPageState(page);
     
+    // GoBackManager를 통해 Virtual History에 추가 (SSOT)
+    goBackManager.pushSubPage(page, activeTab);
+    
     // StateSync에 상태 발행
     const navigationState: NavigationState = {
       activeTab,
       subPage: page,
-      canGoBack: virtualHistory.getState().currentIndex > 0,
+      canGoBack: virtualHistory.canGoBack(), // GoBackManager에서 계산된 값
       isTransitioning: false,
       navigationItems: getNavigationItems(),
       history: history,
     };
     stateSync.publish('navigation', navigationState);
+
+    // 이벤트 발생
+    contextEventBus.emit('navigationChanged', {
+      subPage: page,
+      activeTab,
+    });
+  }, [activeTab, canAccessSubPage, userRole, goBackManager, virtualHistory, getNavigationItems, history, stateSync]);
+
+  const clearSubPage = useCallback(async () => {
+    // GoBackManager에 위임 (Virtual History 관리 포함)
+    const result = await goBackManager.closeSubPage(subPage);
     
-    // 히스토리에 추가
-    virtualHistory.push({
-      type: 'subpage',
-      data: {
+    if (result.success) {
+      setSubPageState(null);
+      
+      // StateSync에 상태 발행 (GoBackManager에서도 하지만, 여기서도 명시적으로)
+      const navigationState: NavigationState = {
         activeTab,
-        subPage: page,
-        title: `Subpage: ${page}`,
-        description: `Opened subpage ${page}`,
-      },
-    });
+        subPage: null,
+        canGoBack: virtualHistory.canGoBack(),
+        isTransitioning: false,
+        navigationItems: getNavigationItems(),
+        history: history,
+      };
+      stateSync.publish('navigation', navigationState);
 
-    // 이벤트 발생
-    contextEventBus.emit('navigationChanged', {
-      subPage: page,
-      activeTab,
-    });
-  }, [activeTab, canAccessSubPage, userRole, virtualHistory, getNavigationItems, history, stateSync]);
-
-  const clearSubPage = useCallback(() => {
-    setSubPageState(null);
-    
-    // 서브페이지를 닫을 때 virtual history에서 subpage 엔트리 제거
-    const currentEntry = virtualHistory.getCurrentEntry();
-    if (currentEntry && currentEntry.type === 'subpage') {
-      // 현재 엔트리가 subpage이면 virtual history에서 제거
-      virtualHistory.goBack();
+      // 이벤트 발생
+      contextEventBus.emit('navigationChanged', {
+        subPage: null,
+        activeTab,
+      });
     }
-    
-    // StateSync에 상태 발행
-    const navigationState: NavigationState = {
-      activeTab,
-      subPage: null,
-      canGoBack: virtualHistory.getState().currentIndex > 0,
-      isTransitioning: false,
-      navigationItems: getNavigationItems(),
-      history: history,
-    };
-    stateSync.publish('navigation', navigationState);
-    
-    // 이벤트 발생
-    contextEventBus.emit('navigationChanged', {
-      subPage: null,
-      activeTab,
-    });
-  }, [activeTab, virtualHistory, getNavigationItems, history, stateSync]);
+  }, [activeTab, goBackManager, subPage, virtualHistory, getNavigationItems, history, stateSync]);
 
   const goBackWithForms = useCallback(async (formsState: FormsState): Promise<boolean> => {
     setIsTransitioning(true);
@@ -524,47 +529,16 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
   }, [virtualHistory]);
 
   const clearHistory = useCallback(() => {
-    virtualHistory.clear();
-  }, [virtualHistory]);
+    // GoBackManager를 통해 Virtual History 초기화 (SSOT)
+    goBackManager.clearHistory();
+  }, [goBackManager]);
 
-  // 네이티브 앱 뒤로가기 버튼 처리 (고급 시스템)
-  useEffect(() => {
-    const handleNativeBackButton = async () => {
-      const success = await goBack();
-      
-      // 뒤로갈 수 없으면 앱 종료
-      if (!success) {
-        if (typeof window !== 'undefined' && 'App' in window) {
-          const { App } = window as { 
-            App: { 
-              addListener: (event: string, callback: () => void) => void;
-              removeListener: (event: string, callback: () => void) => void;
-              exitApp: () => void;
-            } 
-          };
-          App.exitApp();
-        }
-      }
-    };
+  // GoBackManager 인스턴스 반환 (BackButtonHandler에서 사용)
+  const getGoBackManager = useCallback(() => {
+    return goBackManager;
+  }, [goBackManager]);
 
-    // Capacitor 네이티브 앱 뒤로가기 버튼 리스너
-    if (typeof window !== 'undefined' && 'App' in window) {
-      const { App } = window as { 
-        App: { 
-          addListener: (event: string, callback: () => void) => void;
-          removeListener: (event: string, callback: () => void) => void;
-          exitApp: () => void;
-        } 
-      };
-      App.addListener('backButton', handleNativeBackButton);
-      
-      return () => {
-        App.removeListener('backButton', handleNativeBackButton);
-      };
-    }
-  }, [goBack]);
-
-  // 브라우저 뒤로가기 처리는 AppContext에서 담당
+  // 브라우저/Capacitor 뒤로가기 처리는 AppContext에서 BackButtonHandler를 통해 처리
 
   const value: NavigationContextType = {
     activeTab,
@@ -583,6 +557,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
     clearHistory,
     canAccessTab,
     canAccessSubPage,
+    getGoBackManager,
   };
 
   return (

@@ -6,16 +6,22 @@ import { StatusStep } from './StatusStep';
 import { CompleteIcon } from '@/components/icons';
 
 export function CreateClassComplete() {
-  const { form, resetCreateClass, clearSubPage, clearHistory } = useApp();
+  const { form, resetCreateClass, navigation } = useApp();
   const { createClass } = form;
   const { classFormData } = createClass;
+  const { clearSubPage } = navigation;
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     resetCreateClass();
 
-    clearHistory();
+    // ❌ 제거: clearHistory() - Virtual History 관리는 clearSubPage에서 처리됨
+    // clearSubPage()가 GoBackManager.closeSubPage()를 호출하여
+    // Virtual History에서 현재 subpage 엔트리만 제거합니다.
+    // 전체 히스토리를 초기화하지 않아 다른 서브페이지 히스토리가 유지됩니다.
 
-    clearSubPage();
+    // 클래스 생성 컨테이너(subpage) 완전히 닫기
+    // GoBackManager가 Virtual History에서 현재 subpage만 pop합니다.
+    await clearSubPage();
   };
 
   const statusSteps = [

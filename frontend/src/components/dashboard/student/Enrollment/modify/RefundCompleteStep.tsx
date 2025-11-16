@@ -11,7 +11,7 @@ interface RefundCompleteStepProps {
 }
 
 export function RefundCompleteStep({ isModification }: RefundCompleteStepProps) {
-  const { navigation, resetEnrollment, clearHistory } = useApp();
+  const { navigation, resetEnrollment } = useApp();
   const { clearSubPage } = navigation;
 
   const handleConfirm = async () => {
@@ -26,11 +26,14 @@ export function RefundCompleteStep({ isModification }: RefundCompleteStepProps) 
     // 수강신청 상태 초기화 (일반 enrollment)
     resetEnrollment();
     
-    // Virtual History 초기화
-    clearHistory();
+    // ❌ 제거: clearHistory() - Virtual History 관리는 clearSubPage에서 처리됨
+    // clearSubPage()가 GoBackManager.closeSubPage()를 호출하여
+    // Virtual History에서 현재 subpage 엔트리만 제거합니다.
+    // 전체 히스토리를 초기화하지 않아 다른 서브페이지 히스토리가 유지됩니다.
     
     // enrollment 컨테이너(subpage) 완전히 닫기
-    clearSubPage();
+    // GoBackManager가 Virtual History에서 현재 subpage만 pop합니다.
+    await clearSubPage();
   };
 
   return (

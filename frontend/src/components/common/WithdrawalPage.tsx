@@ -34,9 +34,9 @@ export function WithdrawalPage() {
   const { navigation } = useApp();
   const { clearSubPage } = navigation;
 
-  const handleBack = () => {
+  const handleBack = async () => {
     if (isLoading) return; // 로딩 중에는 뒤로가기 불가
-    clearSubPage();
+    await clearSubPage();
   };
 
   const handleReasonSelect = (id: number) => {

@@ -1,15 +1,16 @@
 // src/contexts/AppContext.tsx
 'use client';
 
-import React, { createContext, useContext, useCallback, ReactNode, useMemo, useEffect, useState } from 'react';
+import React, { createContext, useContext, useCallback, ReactNode, useMemo, useEffect, useState, useRef } from 'react';
 import { useSession } from '@/lib/auth/AuthProvider';
 import { StateSyncProvider, useStateSync } from './state/StateSyncContext';
 import { NavigationProvider, useNavigation } from './navigation/NavigationContext';
 import { FormsProvider, useForms } from './forms/FormsContext';
 import { UIContextProvider, useUI } from './UIContext';
 import { DataContextProvider, useData } from './DataContext';
-import { FormsState } from './state/StateSyncTypes';
+import { FormsState, NavigationState } from './state/StateSyncTypes';
 import { EnrollmentStep, ClassesWithSessionsByMonthResponse, ExtendedSessionData, EnrollmentModificationData } from './forms/EnrollmentFormManager';
+import { BackButtonHandler } from './navigation/BackButtonHandler';
 import { EnrollmentModificationStep } from './forms/EnrollmentModificationFormManager';
 import { CreateClassStep, ClassFormData } from './forms/CreateClassFormManager';
 import { AuthMode, SignupStep, SignupData, LoginData } from './forms/AuthFormManager';
@@ -60,7 +61,7 @@ interface AppContextType {
   setActiveTab: (tab: number) => void;
   handleTabChange: (tab: number) => void;
   navigateToSubPage: (page: string) => void;
-  clearSubPage: () => void;
+  clearSubPage: () => Promise<void>;
   clearHistory: () => void;
   
   // 하위 호환성을 위한 폼 접근
@@ -223,31 +224,143 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     return forms.getFormState(formType);
   }, [forms]);
 
-  // 브라우저 뒤로가기 버튼 처리 (통합된 goBack 사용)
+  // BackButtonHandler 인스턴스 생성 (단일 진입점)
+  const [backButtonHandler] = useState(() => {
+    const goBackManager = navigation.getGoBackManager();
+    return new BackButtonHandler(goBackManager);
+  });
+
+  // 최신 navigation과 formsState를 참조하기 위한 ref
+  const navigationRef = useRef(navigation);
+  const formsStateRef = useRef(formsState);
+  const formsRef = useRef(forms);
+
+  // ref 업데이트 (렌더링마다 최신 값으로 갱신)
+  useEffect(() => {
+    navigationRef.current = navigation;
+    formsStateRef.current = formsState;
+    formsRef.current = forms;
+  }, [navigation, formsState, forms]);
+
+  // 브라우저 뒤로가기 버튼 처리 (BackButtonHandler 사용)
   useEffect(() => {
     const handleBrowserBackButton = async (event: PopStateEvent) => {
-      event.preventDefault();
+      // ref를 통해 최신 상태 참조
+      const currentNavigation = navigationRef.current;
+      const currentFormsState = formsStateRef.current;
+      const currentForms = formsRef.current;
       
-      // 통합된 goBack 사용 (GoBackManager를 통해 단계별 로직 처리)
-      const success = await goBack();
+      // preventDefault 제거 (효과 없음 - popstate는 read-only 이벤트)
       
-      // 뒤로갈 수 없거나 signup-roles에서 뒤로가기한 경우 로그인 페이지로
-      if (!success || navigation.subPage === 'signup-roles') {
-        forms.setAuthMode('login');
-        window.history.pushState(null, '', window.location.href);
+      // NavigationState 생성
+      const navigationState: NavigationState = {
+        activeTab: currentNavigation.activeTab,
+        subPage: currentNavigation.subPage,
+        canGoBack: currentNavigation.canGoBack,
+        isTransitioning: currentNavigation.isTransitioning,
+        navigationItems: currentNavigation.navigationItems,
+        history: currentNavigation.history,
+      };
+      
+      // BackButtonHandler를 통해 뒤로가기 처리 (상태 직접 전달)
+      const success = await backButtonHandler.handleBackButton(
+        undefined,
+        navigationState,
+        currentFormsState
+      );
+      
+      if (!success) {
+        // 히스토리 상태 동기화 (pushState 대신 replaceState 사용)
+        window.history.replaceState(null, '', window.location.href);
+      }
+      
+      // signup-roles에서 뒤로가기한 경우 로그인 페이지로
+      if (currentNavigation.subPage === 'signup-roles') {
+        currentForms.setAuthMode('login');
+        window.history.replaceState(null, '', window.location.href);
       }
     };
 
     // 브라우저 뒤로가기 버튼 리스너
     window.addEventListener('popstate', handleBrowserBackButton);
     
-    // 초기 상태를 히스토리에 추가
-    window.history.pushState(null, '', window.location.href);
-    
     return () => {
       window.removeEventListener('popstate', handleBrowserBackButton);
     };
-  }, [goBack, forms, navigation.subPage]); 
+  }, [backButtonHandler]); // backButtonHandler만 dependency에 포함 (한 번만 등록)
+
+  // 초기 히스토리 상태 설정 (한 번만 실행)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    if (!window.history.state) {
+      window.history.replaceState({ initialized: true }, '', window.location.href);
+    }
+  }, []); // 빈 dependency array - 마운트 시 한 번만 실행
+
+  // Capacitor 뒤로가기 처리 (BackButtonHandler 사용)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const initializeCapacitorBackButton = async () => {
+      try {
+        const { App } = await import('@capacitor/app');
+        const { Capacitor } = await import('@capacitor/core');
+
+        const isNative = Capacitor.isNativePlatform();
+
+        if (!isNative) {
+          return; // 웹 환경에서는 등록하지 않음
+        }
+
+        const handleNativeBackButton = async ({ canGoBack }: { canGoBack: boolean }) => {
+          // ref를 통해 최신 상태 참조
+          const currentNavigation = navigationRef.current;
+          const currentFormsState = formsStateRef.current;
+
+          // NavigationState 생성
+          const navigationState: NavigationState = {
+            activeTab: currentNavigation.activeTab,
+            subPage: currentNavigation.subPage,
+            canGoBack: currentNavigation.canGoBack,
+            isTransitioning: currentNavigation.isTransitioning,
+            navigationItems: currentNavigation.navigationItems,
+            history: currentNavigation.history,
+          };
+
+          // BackButtonHandler를 통해 뒤로가기 처리 (상태 직접 전달)
+          const success = await backButtonHandler.handleBackButton(
+            canGoBack,
+            navigationState,
+            currentFormsState
+          );
+
+          if (!success && !canGoBack) {
+            // 더 이상 뒤로갈 수 없으면 앱 종료
+            App.exitApp();
+          }
+        };
+
+        const listener = await App.addListener('backButton', handleNativeBackButton);
+
+        return () => {
+          listener.remove();
+        };
+      } catch (error) {
+        console.warn('Capacitor App plugin not available', error);
+      }
+    };
+
+    const cleanup = initializeCapacitorBackButton();
+
+    return () => {
+      cleanup.then((fn) => {
+        if (fn) {
+          fn();
+        }
+      });
+    };
+  }, [backButtonHandler]); // backButtonHandler만 dependency에 포함 (한 번만 등록) 
 
   // 메모이제이션된 value 객체
   const contextValue = useMemo(() => ({
