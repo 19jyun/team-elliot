@@ -37,25 +37,14 @@ jest.mock("@/contexts/state/StateSyncContext", () => ({
 jest.mock("@/contexts/navigation/NavigationContext", () => ({
   useNavigation: jest.fn(() => ({
     activeTab: 0,
-    subPage: "login",
-    canGoBack: false,
-    isTransitioning: false,
     navigationItems: [
-      { label: "클래스 정보", href: "/dashboard", index: 0 },
-      { label: "수강신청", href: "/dashboard", index: 1 },
-      { label: "나의 정보", href: "/dashboard", index: 2 },
+      { label: "클래스 정보", href: "/dashboard/student", index: 0 },
+      { label: "수강신청", href: "/dashboard/student", index: 1 },
+      { label: "나의 정보", href: "/dashboard/student", index: 2 },
     ],
-    history: [],
     setActiveTab: jest.fn(),
     handleTabChange: jest.fn(),
-    navigateToSubPage: jest.fn(),
-    clearSubPage: jest.fn(),
-    goBack: jest.fn(),
-    goBackWithForms: jest.fn(),
-    pushHistory: jest.fn(),
-    clearHistory: jest.fn(),
     canAccessTab: jest.fn(() => true),
-    canAccessSubPage: jest.fn(() => true),
   })),
   NavigationProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
@@ -254,25 +243,14 @@ jest.mock("@/contexts/AppContext", () => ({
     // 새로운 구조
     navigation: {
       activeTab: 0,
-      subPage: "login",
-      canGoBack: false,
-      isTransitioning: false,
       navigationItems: [
-        { label: "클래스 정보", href: "/dashboard", index: 0 },
-        { label: "수강신청", href: "/dashboard", index: 1 },
-        { label: "나의 정보", href: "/dashboard", index: 2 },
-      ],
-      history: [],
-      setActiveTab: jest.fn(),
-      handleTabChange: jest.fn(),
-      navigateToSubPage: jest.fn(),
-      clearSubPage: jest.fn(),
-      goBack: jest.fn(),
-      goBackWithForms: jest.fn(),
-      pushHistory: jest.fn(),
-      clearHistory: jest.fn(),
-      canAccessTab: jest.fn(() => true),
-      canAccessSubPage: jest.fn(() => true),
+      { label: "클래스 정보", href: "/dashboard/student", index: 0 },
+      { label: "수강신청", href: "/dashboard/student", index: 1 },
+      { label: "나의 정보", href: "/dashboard/student", index: 2 },
+    ],
+    setActiveTab: jest.fn(),
+    handleTabChange: jest.fn(),
+    canAccessTab: jest.fn(() => true),
     },
     forms: {
       forms: {
@@ -498,20 +476,13 @@ jest.mock("@/contexts/AppContext", () => ({
     
     // 하위 호환성을 위한 직접 접근
     activeTab: 0,
-    subPage: "login",
-    canGoBack: false,
-    isTransitioning: false,
     navigationItems: [
-      { label: "클래스 정보", href: "/dashboard", index: 0 },
-      { label: "수강신청", href: "/dashboard", index: 1 },
-      { label: "나의 정보", href: "/dashboard", index: 2 },
+      { label: "클래스 정보", href: "/dashboard/student", index: 0 },
+      { label: "수강신청", href: "/dashboard/student", index: 1 },
+      { label: "나의 정보", href: "/dashboard/student", index: 2 },
     ],
-    history: [],
     setActiveTab: jest.fn(),
     handleTabChange: jest.fn(),
-    navigateToSubPage: jest.fn(),
-    clearSubPage: jest.fn(),
-    clearHistory: jest.fn(),
     
     // 하위 호환성을 위한 폼 접근
     form: {

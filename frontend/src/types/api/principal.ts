@@ -78,7 +78,7 @@ export interface PrincipalClassSession {
 }
 
 // Principal 세션 수강신청 정보 (백엔드 응답 구조에 맞춤)
-interface PrincipalSessionEnrollment {
+export interface PrincipalSessionEnrollment {
   id: number;
   studentId: number;
   sessionId: number;

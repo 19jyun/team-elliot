@@ -9,8 +9,9 @@ import { Plus, Users, Building2, AlertTriangle, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useApp } from '@/contexts/AppContext';
 import { AcademyCard } from '@/components/common/AcademyCard';
-import { useStudentApi } from '@/hooks/student/useStudentApi';
-import { useApiError } from '@/hooks/useApiError';
+import { useStudentAcademies } from '@/hooks/queries/student/useStudentAcademies';
+import { useJoinAcademy } from '@/hooks/mutations/student/useJoinAcademy';
+import { useLeaveAcademy } from '@/hooks/mutations/student/useLeaveAcademy';
 import type { LeaveAcademyModalVM } from '@/types/view/student';
 
 function LeaveAcademyModal({ isOpen, onClose, onConfirm, academyName }: LeaveAcademyModalVM) {
@@ -101,51 +102,34 @@ function LeaveAcademyModal({ isOpen, onClose, onConfirm, academyName }: LeaveAca
 export function AcademyManagement() {
   const { ui } = useApp();
   const { pushFocus, popFocus } = ui;
-  const { academies, isLoading, error, loadAcademies, joinAcademyApi, leaveAcademyApi } = useStudentApi();
   
-  // 기존 useApiError 훅 사용 (이미 완성도가 높음)
-  const { handleApiError, fieldErrors, clearErrors } = useApiError();
-
+  // React Query 기반 데이터 관리
+  const { data: academies = [], isLoading, error } = useStudentAcademies();
+  const joinAcademyMutation = useJoinAcademy();
+  const leaveAcademyMutation = useLeaveAcademy();
 
   const [joinAcademyCode, setJoinAcademyCode] = useState('');
-  const [isJoining, setIsJoining] = useState(false);
   const [leaveAcademyId, setLeaveAcademyId] = useState<number | null>(null);
   const [leaveAcademyName, setLeaveAcademyName] = useState<string>('');
-  const [_isLeaving, setIsLeaving] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     pushFocus('subpage');
     return () => popFocus();
   }, [pushFocus, popFocus]);
 
-  // 컴포넌트 마운트 시 학원 목록 로드
-  useEffect(() => {
-    loadAcademies();
-  }, [loadAcademies]);
-
-  // 학원 코드 입력 시 에러 초기화 (새로 타이핑할 때만)
-  const [previousCode, setPreviousCode] = useState('');
-  
-  useEffect(() => {
-    // 이전 코드와 현재 코드가 다르고, 현재 코드가 더 길 때만 에러 제거
-    if (fieldErrors.code && joinAcademyCode.length > previousCode.length) {
-      clearErrors();
-    }
-    setPreviousCode(joinAcademyCode);
-  }, [joinAcademyCode, fieldErrors.code, clearErrors, previousCode]);
-
   // 에러 발생 시 흔들리는 애니메이션 트리거
   useEffect(() => {
-    if (fieldErrors.code) {
+    if (validationErrors.code) {
       setIsShaking(true);
       const timer = setTimeout(() => {
         setIsShaking(false);
-      }, 1000); // 1초 후 애니메이션 종료
+      }, 1000);
       
       return () => clearTimeout(timer);
     }
-  }, [fieldErrors.code]);
+  }, [validationErrors.code]);
 
   // 에러 상태 - 컴포넌트가 깨지지 않도록 안전하게 처리
   if (error && academies.length === 0) {
@@ -153,10 +137,7 @@ export function AcademyManagement() {
       <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">학원 정보를 불러오는데 실패했습니다.</p>
         <Button
-          onClick={() => {
-            clearErrors();
-            loadAcademies();
-          }}
+          onClick={() => window.location.reload()}
           className="mt-4"
         >
           다시 시도
@@ -174,27 +155,22 @@ export function AcademyManagement() {
     );
   }
 
-  const handleJoinAcademy = async () => {
+  const handleJoinAcademy = () => {
     if (!joinAcademyCode.trim()) {
       toast.error('학원 코드를 입력해주세요.');
       return;
     }
 
-    try {
-      setIsJoining(true);
-      
-      await joinAcademyApi({ code: joinAcademyCode.trim() });
-      
-      toast.success('학원 가입이 완료되었습니다.');
-      setJoinAcademyCode('');
-      
-         } catch (error) {
-       // 컴포넌트에서 시각적 피드백을 제공하므로 toast 비활성화
-       handleApiError(error, { disableToast: true });
-
-     } finally {
-      setIsJoining(false);
-    }
+    setValidationErrors({});
+    
+    joinAcademyMutation.mutate(
+      { code: joinAcademyCode.trim() },
+      {
+        onSuccess: () => {
+          setJoinAcademyCode('');
+        },
+      }
+    );
   };
 
   const handleLeaveAcademyClick = (academyId: number, academyName: string) => {
@@ -202,27 +178,20 @@ export function AcademyManagement() {
     setLeaveAcademyName(academyName);
   };
 
-  const handleLeaveAcademyConfirm = async () => {
+  const handleLeaveAcademyConfirm = () => {
     if (!leaveAcademyId) return;
 
-    try {
-      setIsLeaving(true);
-      
-      await leaveAcademyApi({ academyId: leaveAcademyId });
-      
-      // 성공 시 처리
-      toast.success('학원 탈퇴가 완료되었습니다.');
-      setLeaveAcademyId(null);
-      setLeaveAcademyName('');
-      
-    } catch (error) {
-      // 에러 처리
-      console.error('학원 탈퇴 실패:', error);
-      handleApiError(error);
-      
-    } finally {
-      setIsLeaving(false);
-    }
+    setValidationErrors({});
+    
+    leaveAcademyMutation.mutate(
+      { academyId: leaveAcademyId },
+      {
+        onSuccess: () => {
+          setLeaveAcademyId(null);
+          setLeaveAcademyName('');
+        },
+      }
+    );
   };
 
   const handleLeaveModalClose = () => {
@@ -265,25 +234,25 @@ export function AcademyManagement() {
                      value={joinAcademyCode}
                      onChange={(e) => setJoinAcademyCode(e.target.value)}
                      className={`transition-all duration-200 ${
-                       fieldErrors.code ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                       validationErrors.code ? 'border-red-500 bg-red-50' : 'border-gray-300'
                      } ${
                        isShaking ? 'animate-shake' : ''
                      }`}
                      onKeyPress={(e) => e.key === 'Enter' && handleJoinAcademy()}
                    />
-                                     {fieldErrors.code && (
+                                     {validationErrors.code && (
                      <p className="text-sm text-red-500 animate-in fade-in duration-200">
-                       {fieldErrors.code}
+                       {validationErrors.code}
                      </p>
                    )}
                 </div>
                 <Button 
                   onClick={handleJoinAcademy} 
-                  disabled={isJoining || !joinAcademyCode.trim()}
+                  disabled={joinAcademyMutation.isPending || !joinAcademyCode.trim()}
                   className="min-w-[80px] transition-all duration-300 ease-in-out"
                   size="sm"
                 >
-                  {isJoining ? '가입 중...' : '가입'}
+                  {joinAcademyMutation.isPending ? '가입 중...' : '가입'}
                 </Button>
               </div>
             </div>

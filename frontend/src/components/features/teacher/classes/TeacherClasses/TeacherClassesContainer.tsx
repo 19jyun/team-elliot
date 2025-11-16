@@ -1,11 +1,11 @@
 'use client'
 
 import { useSession, useSignOut } from '@/lib/auth/AuthProvider'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 import { ClassList } from '@/components/common/ClassContainer/ClassList'
 import { ClassSessionModal } from '@/components/common/ClassContainer/ClassSessionModal'
-import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'
+import { useTeacherClasses } from '@/hooks/queries/teacher/useTeacherClasses'
 import { toTeacherClassListVM, toTeacherClassSessionModalVM } from '@/lib/adapters/teacher'
 import type { TeacherClassListVM, TeacherClassSessionModalVM, TeacherClassCardVM } from '@/types/view/teacher'
 import { Class } from '@/types/api/class'
@@ -43,8 +43,9 @@ export function TeacherClassesContainer() {
   const [selectedClass, setSelectedClass] = useState<TeacherClassCardVM | null>(null)
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false)
 
-  // API 기반 데이터 관리
-  const { classes: myClasses, loadClasses, isLoading, error } = useTeacherApi()
+  // React Query 기반 데이터 관리
+  const { data: classesData, isLoading, error, refetch } = useTeacherClasses()
+  const myClasses = classesData?.classes || []
 
   // ViewModel 변환
   const errorMessage = error && typeof error === 'object' && 'message' in error 
@@ -58,11 +59,6 @@ export function TeacherClassesContainer() {
     selectedClass: selectedClass,
     onClose: () => setIsSessionModalOpen(false)
   });
-
-  // 초기 데이터 로드
-  useEffect(() => {
-    loadClasses();
-  }, [loadClasses]);
 
   // 로딩 상태 처리
   if (status === 'loading' || classListVM.isLoading) {
@@ -85,7 +81,7 @@ export function TeacherClassesContainer() {
       <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">데이터를 불러오는데 실패했습니다.</p>
         <button
-          onClick={() => loadClasses()}
+          onClick={() => refetch()}
           className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
         >
           다시 시도

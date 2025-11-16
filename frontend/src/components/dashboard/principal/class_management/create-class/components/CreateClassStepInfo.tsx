@@ -2,10 +2,12 @@
 
 import React, { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
+import { useRouter } from 'next/navigation';
 import { StatusStep } from './StatusStep';
 
-import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
+import { usePrincipalAcademy } from '@/hooks/queries/principal/usePrincipalAcademy';
 import { toast } from 'sonner';
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 const LEVELS = [
   { value: 'BEGINNER', label: '초급' },
@@ -14,13 +16,13 @@ const LEVELS = [
 ];
 
 export function CreateClassStepInfo() {
-  const { form, goBack, setClassFormData, setCreateClassStep } = useApp();
+  const router = useRouter();
+  const { form, goBack, setClassFormData } = useApp();
   const { createClass } = form;
   const { classFormData } = createClass;
   
-  // API 기반 데이터 관리
-  const { academy, loadAcademy, isLoading: isAcademyLoading } = usePrincipalApi();
-
+  // React Query 기반 데이터 관리
+  const { data: academy, isLoading: isAcademyLoading } = usePrincipalAcademy();
 
   const [formData, setFormData] = useState({
     name: classFormData.name,
@@ -29,11 +31,6 @@ export function CreateClassStepInfo() {
     maxStudents: classFormData.maxStudents,
     price: classFormData.price || 50000,
   });
-
-  // 학원 정보 로드
-  React.useEffect(() => {
-    loadAcademy();
-  }, [loadAcademy]);
 
   const handleInputChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -84,7 +81,7 @@ export function CreateClassStepInfo() {
       maxStudents: formData.maxStudents,
       price: formData.price,
     });
-    setCreateClassStep('teacher');
+    router.push(ensureTrailingSlash('/dashboard/principal/class/create-class/info/teacher'));
   };
 
   const handleBack = () => {

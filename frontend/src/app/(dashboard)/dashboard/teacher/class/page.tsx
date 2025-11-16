@@ -1,30 +1,32 @@
 'use client'
 
-import { Session, useSession, useSignOut } from '@/lib/auth/AuthProvider'
-import { useState, useMemo, useEffect } from 'react'
+import { useSession, useSignOut } from '@/lib/auth/AuthProvider'
+import { useState, useMemo, useCallback } from 'react'
 
-import { useTeacherCalendarApi } from '@/hooks/calendar/useTeacherCalendarApi'
+import { useTeacherCalendarSessions } from '@/hooks/queries/teacher/useTeacherCalendarSessions'
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
 import { SessionCardDisplay } from '@/components/calendar/SessionCardDisplay'
 import { useApp } from '@/contexts/AppContext'
 import { toClassSessionForCalendar } from '@/lib/adapters/teacher'
-import { useRoleCalendarApi } from '@/hooks/calendar/useRoleCalendarApi'
 import type { TeacherSession } from '@/types/api/teacher'
 import type { ClassSessionWithCounts } from '@/types/api/class'
+import { useRouter } from 'next/navigation'
+import { ensureTrailingSlash } from '@/lib/utils/router'
 
 export default function TeacherDashboardPage() {
   const { data: session, status } = useSession()
   const signOut = useSignOut()
+  const router = useRouter()
 
-  const { navigation, data } = useApp()
-  const { navigateToSubPage } = navigation
+  const { data } = useApp()
   
-  // API 기반 데이터 관리 (Redux 기반)
-  const { calendarSessions, calendarRange, loadSessions, isLoading, error } = useTeacherCalendarApi(session as Session)
-  
-  // Role별 API 기반 데이터 관리
-  const { getSessionsByDate } = useRoleCalendarApi('TEACHER', session);
+  // React Query 기반 데이터 관리
+  const { data: calendarSessionsData, isLoading, error, refetch } = useTeacherCalendarSessions();
+  const calendarSessions = useMemo(
+    () => (calendarSessionsData as TeacherSession[]) || [],
+    [calendarSessionsData]
+  );
   
   // 선택된 날짜와 세션 상태
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
@@ -33,29 +35,27 @@ export default function TeacherDashboardPage() {
   // 선택된 날짜 문자열 (YYYY-MM-DD 형식)
   const selectedDateString = selectedDate ? selectedDate.toISOString().split('T')[0] : null
 
-  // 초기 데이터 로드
-  useEffect(() => {
-    loadSessions();
-  }, [loadSessions]);
-
-  // Redux에서 가져온 캘린더 범위를 Date 객체로 변환
+  // 캘린더 범위 계산 (현재 월부터 3개월)
   const calendarRangeForCalendar = useMemo(() => {
-    if (calendarRange) {
-      return {
-        startDate: new Date(calendarRange.startDate),
-        endDate: new Date(calendarRange.endDate),
-      };
-    }
-    // 기본값 사용 (현재 월부터 3개월)
     const now = new Date();
     return {
       startDate: new Date(now.getFullYear(), now.getMonth(), 1),
       endDate: new Date(now.getFullYear(), now.getMonth() + 2, 0),
     };
-  }, [calendarRange]);
+  }, []);
+
+  // 날짜별 세션 조회 헬퍼 함수
+  const getSessionsByDate = useCallback((date: Date): TeacherSession[] => {
+    return calendarSessions.filter((session) => {
+      const sessionDate = new Date(session.date);
+      return sessionDate.toDateString() === date.toDateString();
+    });
+  }, [calendarSessions]);
 
   // CalendarProvider용 데이터 변환 (ClassSession 타입으로 변환)
-  const classSessionsForCalendar = (calendarSessions as TeacherSession[]).map(toClassSessionForCalendar);
+  const classSessionsForCalendar = useMemo(() => {
+    return calendarSessions.map(toClassSessionForCalendar);
+  }, [calendarSessions]);
 
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {
@@ -78,7 +78,7 @@ export default function TeacherDashboardPage() {
       <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">데이터를 불러오는데 실패했습니다.</p>
         <button
-          onClick={() => loadSessions()}
+          onClick={() => refetch()}
           className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
         >
           다시 시도
@@ -103,7 +103,7 @@ export default function TeacherDashboardPage() {
     
     // 선택된 날짜의 세션들을 가져와서 상태 업데이트
     const sessions = getSessionsByDate(clickedDateObj);
-    const sessionsWithCounts = sessions.map((session) => {
+    const sessionsWithCounts = sessions.map((session: TeacherSession) => {
       // TeacherSession 타입인지 확인
       if ('enrollmentCount' in session && 'confirmedCount' in session && 'class' in session) {
         return {
@@ -118,13 +118,14 @@ export default function TeacherDashboardPage() {
         } as ClassSessionWithCounts;
       }
       // 다른 타입인 경우 기본값 사용
+      const sessionObj = session as Record<string, unknown>;
       return {
-        ...session,
+        ...sessionObj,
         enrollmentCount: 0,
         confirmedCount: 0,
         sessionSummary: null,
         class: {
-          id: session.classId || 0,
+          id: sessionObj.classId || 0,
           className: 'Unknown Class',
           level: 'BEGINNER',
           tuitionFee: '50000',
@@ -135,19 +136,19 @@ export default function TeacherDashboardPage() {
     setSelectedSessions(sessionsWithCounts);
   }
 
-  // 세션 클릭 핸들러 - 서브페이지로 이동
+  // 세션 클릭 핸들러 - 쿼리 파라미터로 이동
   const handleSessionClick = (session: ClassSessionWithCounts) => {
     // 세션 정보를 DataContext에 저장
     data.setCache('selectedSession', session);
     
-    // 서브페이지로 이동
-    navigateToSubPage('session-detail');
+    // 쿼리 파라미터로 세션 상세 페이지로 이동
+    router.push(ensureTrailingSlash(`/dashboard/teacher/class/session-detail?id=${session.id}`));
   }
 
 
-  // 담당 클래스 SubPage로 이동
+  // 담당 클래스 페이지로 이동 (현재 페이지이므로 아무 동작 안 함)
   const handleTeacherClassesClick = () => {
-    navigateToSubPage('teacher-classes')
+    // 이미 담당 클래스 페이지에 있으므로 아무 동작 안 함
   }
 
   return (

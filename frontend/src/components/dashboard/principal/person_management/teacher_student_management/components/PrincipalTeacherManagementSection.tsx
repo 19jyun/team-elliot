@@ -3,76 +3,30 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Users, Trash2, Check, X } from 'lucide-react';
-import { useMutation } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
-import { useEffect } from 'react';
-import { PrincipalTeacher, TeacherJoinRequest } from '@/types/api/principal';
+import { usePrincipalTeachers } from '@/hooks/queries/principal/usePrincipalTeachers';
+import { useTeacherJoinRequests } from '@/hooks/queries/principal/useTeacherJoinRequests';
+import { useRemoveTeacher } from '@/hooks/mutations/principal/useRemoveTeacher';
+import { useApproveTeacherJoin } from '@/hooks/mutations/principal/useApproveTeacherJoin';
+import { useRejectTeacherJoin } from '@/hooks/mutations/principal/useRejectTeacherJoin';
+import { PrincipalTeacher, TeacherJoinRequest, TeacherJoinRequestsResponse } from '@/types/api/principal';
 
 export default function PrincipalTeacherManagementSection() {
-  // API 기반 데이터 관리
-  const { 
-    teachers, 
-    loadTeachers, 
-    isLoading, 
-    error, 
-    removeTeacher,
-    joinRequests,
-    loadJoinRequests,
-    approveJoinRequest,
-    rejectJoinRequest
-  } = usePrincipalApi();
+  // React Query 기반 데이터 관리
+  const { data: teachers = [], isLoading: teachersLoading, error: teachersError } = usePrincipalTeachers();
+  const { data: joinRequestsData, isLoading: joinRequestsLoading, error: joinRequestsError } = useTeacherJoinRequests();
+  const joinRequests = joinRequestsData as TeacherJoinRequestsResponse | null | undefined;
 
-  // 컴포넌트 마운트 시 데이터 로드
-  useEffect(() => {
-    loadTeachers();
-    loadJoinRequests();
-  }, [loadTeachers, loadJoinRequests]);
 
-  // 선생님 제거 뮤테이션
-  const removeTeacherMutation = useMutation({
-    mutationFn: removeTeacher,
-    onSuccess: () => {
-      // API 데이터 재로드
-      loadTeachers();
-      toast.success('선생님이 학원에서 제거되었습니다.');
-    },
-    onError: (error: unknown) => {
-      const errorMessage = error && typeof error === 'object' && 'response' in error 
-        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message 
-        : '선생님 제거에 실패했습니다.';
-      toast.error(errorMessage || '선생님 제거에 실패했습니다.');
-    },
-  });
+  // 타입 가드
+  const hasPendingRequests = joinRequests && Array.isArray(joinRequests.pendingRequests) && joinRequests.pendingRequests.length > 0;
+  
+  // Mutations
+  const removeTeacherMutation = useRemoveTeacher();
+  const approveJoinRequestMutation = useApproveTeacherJoin();
+  const rejectJoinRequestMutation = useRejectTeacherJoin();
 
-  // 가입 신청 승인 뮤테이션
-  const approveJoinRequestMutation = useMutation({
-    mutationFn: approveJoinRequest,
-    onSuccess: () => {
-      toast.success('가입 신청이 승인되었습니다.');
-    },
-    onError: (error: unknown) => {
-      const errorMessage = error && typeof error === 'object' && 'response' in error 
-        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message 
-        : '가입 신청 승인에 실패했습니다.';
-      toast.error(errorMessage || '가입 신청 승인에 실패했습니다.');
-    },
-  });
-
-  // 가입 신청 거절 뮤테이션
-  const rejectJoinRequestMutation = useMutation({
-    mutationFn: ({ requestId, reason }: { requestId: number; reason?: string }) => 
-      rejectJoinRequest(requestId, reason),
-    onSuccess: () => {
-      toast.success('가입 신청이 거절되었습니다.');
-    },
-    onError: (error: unknown) => {
-      const errorMessage = error && typeof error === 'object' && 'response' in error 
-        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message 
-        : '가입 신청 거절에 실패했습니다.';
-      toast.error(errorMessage || '가입 신청 거절에 실패했습니다.');
-    },
-  });
+  const isLoading = teachersLoading || joinRequestsLoading;
+  const error = teachersError || joinRequestsError;
 
   // 로딩 상태 처리
   if (isLoading) {
@@ -115,7 +69,7 @@ export default function PrincipalTeacherManagementSection() {
           <CardContent>
             <div className="text-center py-8">
               <p className="text-red-500 mb-4">선생님 목록을 불러오는데 실패했습니다.</p>
-              <Button onClick={() => loadTeachers()}>
+              <Button onClick={() => window.location.reload()}>
                 다시 시도
               </Button>
             </div>
@@ -128,7 +82,7 @@ export default function PrincipalTeacherManagementSection() {
   return (
     <div className="space-y-4">
       {/* 가입 신청 대기 목록 */}
-      {joinRequests?.pendingRequests && joinRequests.pendingRequests.length > 0 && (
+      {hasPendingRequests && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -136,12 +90,12 @@ export default function PrincipalTeacherManagementSection() {
               가입 신청 대기
             </CardTitle>
             <CardDescription>
-              {joinRequests.pendingRequests.length}건의 가입 신청이 대기 중입니다.
+              {joinRequests!.pendingRequests.length}건의 가입 신청이 대기 중입니다.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3 overflow-y-auto">
-              {joinRequests.pendingRequests.map((request: TeacherJoinRequest) => (
+              {joinRequests!.pendingRequests.map((request: TeacherJoinRequest) => (
                 <div key={request.id} className="flex items-center justify-between p-3 bg-[#AC9592]/5 border border-[#AC9592]/20 rounded-lg">
                   <div className="flex items-center gap-3">
                     <div>
@@ -166,7 +120,10 @@ export default function PrincipalTeacherManagementSection() {
                       size="sm" 
                       variant="outline"
                       className="text-red-600 border-red-600 hover:bg-red-50"
-                      onClick={() => rejectJoinRequestMutation.mutate({ requestId: request.id })}
+                      onClick={() => rejectJoinRequestMutation.mutate({ 
+                        requestId: request.id, 
+                        data: { reason: '관리자에 의해 거절되었습니다.' } 
+                      })}
                       disabled={rejectJoinRequestMutation.isPending}
                     >
                       <X className="h-4 w-4" />
@@ -187,12 +144,12 @@ export default function PrincipalTeacherManagementSection() {
             선생님 목록
           </CardTitle>
           <CardDescription>
-            현재 {teachers?.length || 0}명의 선생님이 소속되어 있습니다.
+            현재 {teachers.length}명의 선생님이 소속되어 있습니다.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {teachers && teachers.length > 0 ? (
+            {teachers.length > 0 ? (
               teachers.map((teacher: PrincipalTeacher) => (
                 <div key={teacher.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-3">

@@ -9,6 +9,7 @@ interface Props {
   mode?: 'enrollment' | 'modification';
   netChange?: number;
   hasChanges?: boolean; // 수강 변경에서 실제 변경 사항이 있는지 여부
+  changeType?: 'additional_payment' | 'refund' | 'no_change'; // 수강 변경 타입
 }
 
 export default function DateSelectFooter({ 
@@ -19,7 +20,8 @@ export default function DateSelectFooter({
   onGoToPayment,
   mode = 'enrollment',
   netChange = 0,
-  hasChanges = false
+  hasChanges = false,
+  changeType = 'no_change'
 }: Props) {
   // 전체선택 체크박스 클릭 핸들러
   const handleSelectAllChange = (checked: boolean) => {
@@ -35,11 +37,16 @@ export default function DateSelectFooter({
   let isButtonEnabled = selectedCount > 0;
 
   if (mode === 'modification') {
-    if (netChange >= 0) {
+    // changeType에 따라 버튼 텍스트 결정 (Container 로직과 일치)
+    if (changeType === 'additional_payment') {
       buttonText = '추가 금액 결제';
       changeCountDisplay = Math.abs(netChange);
-    } else {
+    } else if (changeType === 'refund') {
       buttonText = '환불 정보 입력';
+      changeCountDisplay = Math.abs(netChange);
+    } else {
+      // no_change인 경우에도 실제 변경이 있으면 payment로 이동
+      buttonText = hasChanges ? '변경 확인' : '수강 변경';
       changeCountDisplay = Math.abs(netChange);
     }
     // 수강 변경 모드에서는 실제 변경 사항이 있는 경우 버튼 활성화

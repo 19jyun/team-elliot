@@ -4,8 +4,9 @@ import * as React from 'react'
 import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
-import { useApp } from '@/contexts/AppContext'
+import { useRouter } from 'next/navigation'
 import { useCheckDuplicateUserId } from '@/hooks/useCheckDuplicateUserId'
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 interface InputFieldProps {
   label: string
@@ -146,8 +147,7 @@ const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
 )
 
 export function SignupAccountPage() {
-  const { navigation } = useApp()
-  const { navigateToSubPage } = navigation
+  const router = useRouter()
   const [currentStep] = useState(3)
   
   const [formData, setFormData] = useState({
@@ -238,9 +238,9 @@ export function SignupAccountPage() {
     
     // Principal인 경우 academy-info 단계로, 그 외는 terms로
     if (prevData.role === 'PRINCIPAL') {
-      navigateToSubPage('signup-academy')
+      router.push(ensureTrailingSlash('/signup/roles/personal/account/academy'))
     } else {
-      navigateToSubPage('signup-terms')
+      router.push(ensureTrailingSlash('/signup/roles/personal/account/terms'))
     }
   }
 

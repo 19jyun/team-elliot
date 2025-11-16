@@ -81,24 +81,28 @@ jest.mock('../navigation/NavigationContext', () => ({
   NavigationProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   useNavigation: jest.fn(() => ({
     activeTab: 0,
-    subPage: null,
-    canGoBack: false,
-    isTransitioning: false,
     navigationItems: [],
-    history: [],
     setActiveTab: jest.fn(),
     handleTabChange: jest.fn(),
-    navigateToSubPage: jest.fn(),
-    clearSubPage: jest.fn(),
-    goBack: jest.fn(() => Promise.resolve(true)),
-    goBackWithForms: jest.fn(() => Promise.resolve(true)),
-    pushHistory: jest.fn(),
-    clearHistory: jest.fn(),
     canAccessTab: jest.fn(() => true),
-    canAccessSubPage: jest.fn(() => true),
   })),
 }));
 
+// Mock Next.js navigation
+const mockRouter = {
+  push: jest.fn(),
+  back: jest.fn(),
+  replace: jest.fn(),
+  refresh: jest.fn(),
+  prefetch: jest.fn(),
+};
+
+let mockPathnameValue = '/dashboard/student/enroll';
+
+jest.mock('next/navigation', () => ({
+  useRouter: jest.fn(() => mockRouter),
+  usePathname: jest.fn(() => mockPathnameValue),
+}));
 
 // Mock SessionProvider
 const mockSession = {
@@ -133,7 +137,6 @@ const TestComponent = () => {
   const [result, setResult] = React.useState<string>('');
   const [enrollmentStep, setEnrollmentStep] = React.useState('academy-selection');
   const [authMode, setAuthMode] = React.useState('login');
-  const [subPage, setSubPage] = React.useState<string | null>(null);
   const [selectedAcademyId, setSelectedAcademyId] = React.useState<number | null>(null);
 
   const handleGoBack = async () => {
@@ -157,11 +160,6 @@ const TestComponent = () => {
     setResult('enrollment-data-changed');
   };
 
-  const handleNavigateToSubPage = () => {
-    app.navigateToSubPage('enroll');
-    setSubPage('enroll');
-    setResult('subpage-navigated');
-  };
 
   const handleCreateClassStep = () => {
     app.setCreateClassStep('teacher');
@@ -191,13 +189,8 @@ const TestComponent = () => {
       <button onClick={handleAuthMode} data-testid="auth-mode-button">
         Change Auth Mode
       </button>
-      <button onClick={handleNavigateToSubPage} data-testid="navigate-subpage-button">
-        Navigate to SubPage
-      </button>
       <div data-testid="result">{result}</div>
       <div data-testid="active-tab">{app.activeTab}</div>
-      <div data-testid="sub-page">{subPage || 'null'}</div>
-      <div data-testid="can-go-back">{app.canGoBack ? 'true' : 'false'}</div>
       <div data-testid="enrollment-step">{enrollmentStep}</div>
       <div data-testid="enrollment-academy-id">{selectedAcademyId || 'null'}</div>
       <div data-testid="create-class-step">{app.form.createClass.currentStep}</div>
@@ -217,27 +210,8 @@ describe('AppContext', () => {
     );
 
     expect(screen.getByTestId('active-tab')).toHaveTextContent('0');
-    expect(screen.getByTestId('sub-page')).toHaveTextContent('null');
-    expect(screen.getByTestId('can-go-back')).toHaveTextContent('false');
   });
 
-  it('should handle navigation changes', async () => {
-    render(
-      <SessionProvider session={mockSession}>
-        <AppProvider>
-          <TestComponent />
-        </AppProvider>
-      </SessionProvider>
-    );
-
-    // Navigate to subpage
-    fireEvent.click(screen.getByTestId('navigate-subpage-button'));
-    
-    await waitFor(() => {
-      expect(screen.getByTestId('result')).toHaveTextContent('subpage-navigated');
-      expect(screen.getByTestId('sub-page')).toHaveTextContent('enroll');
-    });
-  });
 
   it('should handle enrollment form state changes', async () => {
     render(
@@ -300,6 +274,9 @@ describe('AppContext', () => {
   });
 
   it('should handle goBack method', async () => {
+    // Set pathname to a non-dashboard route so goBack returns true
+    mockPathnameValue = '/dashboard/student/enroll';
+    
     render(
       <SessionProvider session={mockSession}>
         <AppProvider>
@@ -308,21 +285,12 @@ describe('AppContext', () => {
       </SessionProvider>
     );
 
-    // First navigate to subpage
-    fireEvent.click(screen.getByTestId('navigate-subpage-button'));
-    
-    await waitFor(() => {
-      expect(screen.getByTestId('sub-page')).toHaveTextContent('enroll');
-    });
-
-    // Then try to go back
+    // Try to go back
     fireEvent.click(screen.getByTestId('go-back-button'));
     
     await waitFor(() => {
       expect(screen.getByTestId('result')).toHaveTextContent('go-back-success');
-      // goBack이 성공했지만 subPage가 여전히 enroll인 경우가 있음
-      // 이는 GoBackManager의 결과 처리 로직 문제일 수 있음
-      expect(screen.getByTestId('sub-page')).toHaveTextContent('enroll');
+      expect(mockRouter.back).toHaveBeenCalled();
     });
   });
 
@@ -339,6 +307,9 @@ describe('AppContext', () => {
   });
 
   it('should maintain state synchronization between contexts', async () => {
+    // Set pathname to a non-dashboard route so goBack returns true
+    mockPathnameValue = '/dashboard/student/enroll';
+    
     render(
       <SessionProvider session={mockSession}>
         <AppProvider>
@@ -354,21 +325,12 @@ describe('AppContext', () => {
       expect(screen.getByTestId('enrollment-step')).toHaveTextContent('class-selection');
     });
 
-    // Navigate to subpage
-    fireEvent.click(screen.getByTestId('navigate-subpage-button'));
-    
-    await waitFor(() => {
-      expect(screen.getByTestId('sub-page')).toHaveTextContent('enroll');
-    });
-
     // Go back should work correctly
     fireEvent.click(screen.getByTestId('go-back-button'));
     
     await waitFor(() => {
       expect(screen.getByTestId('result')).toHaveTextContent('go-back-success');
+      expect(mockRouter.back).toHaveBeenCalled();
     });
-
-    // The goBack should work - just check that the result is success
-    expect(screen.getByTestId('result')).toHaveTextContent('go-back-success');
   });
 });

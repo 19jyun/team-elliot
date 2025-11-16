@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { UpdatePrincipalProfileRequest } from '@/types/api/principal';
+import React, { useState, useRef } from 'react';
+import { UpdatePrincipalProfileRequest, PrincipalProfile } from '@/types/api/principal';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,7 +21,9 @@ import {
   Trash2,
   Camera
 } from 'lucide-react';
-import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
+import { usePrincipalProfile } from '@/hooks/queries/principal/usePrincipalProfile';
+import { useUpdatePrincipalProfile } from '@/hooks/mutations/principal/useUpdatePrincipalProfile';
+import { useUpdatePrincipalProfilePhoto } from '@/hooks/mutations/principal/useUpdatePrincipalProfilePhoto';
 import { getImageUrl } from '@/utils/imageUtils';
 import Image from 'next/image';
 
@@ -53,59 +54,22 @@ export function PrincipalProfileCard({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // API 기반 데이터 관리
-  const { profile, loadProfile, error, isPrincipal } = usePrincipalApi();
-
-  // 컴포넌트 마운트 시 프로필 로드
-  useEffect(() => {
-    if (isPrincipal) {
-      loadProfile();
-    }
-  }, [isPrincipal, loadProfile]);
-
-
-  // 프로필 업데이트/사진 업로드 뮤테이션
-  const { updateProfile, updateProfilePhoto } = usePrincipalApi();
-  const updateProfileMutation = useMutation({
-    mutationFn: (data: UpdatePrincipalProfileRequest) => updateProfile(data),
-    onSuccess: () => {
-      // API 데이터 다시 로드
-      loadProfile();
-      toast.success('프로필이 성공적으로 업데이트되었습니다.');
-      setIsEditing(false);
-      onSave?.();
-    },
-    onError: (error: unknown) => {
-      console.error('프로필 업데이트 실패:', error);
-      toast.error('프로필 업데이트에 실패했습니다.');
-    },
-  });
-
-  const updatePhotoMutation = useMutation({
-    mutationFn: (photo: File) => updateProfilePhoto(photo),
-    onSuccess: () => {
-      // API 데이터 다시 로드
-      loadProfile();
-      toast.success('프로필 사진이 성공적으로 업로드되었습니다.');
-      setSelectedPhoto(null);
-      setPreviewUrl(null);
-    },
-    onError: (error: unknown) => {
-      console.error('사진 업로드 실패:', error);
-      toast.error('사진 업로드에 실패했습니다.');
-    },
-  });
+  // React Query 기반 데이터 관리
+  const { data: profile, isLoading: profileLoading, error } = usePrincipalProfile();
+  const typedProfile = profile as PrincipalProfile | null | undefined;
+  const updateProfileMutation = useUpdatePrincipalProfile();
+  const updatePhotoMutation = useUpdatePrincipalProfilePhoto();
 
   // 편집 모드 시작
   const handleEdit = () => {
-    if (profile) {
+    if (typedProfile) {
       setFormData({
-        introduction: profile.introduction || '',
-        education: profile.education || [],
-        certifications: profile.certifications || [],
+        introduction: typedProfile.introduction || '',
+        education: typedProfile.education || [],
+        certifications: typedProfile.certifications || [],
       });
-      setTempEducation(profile.education || []);
-      setTempCertifications(profile.certifications || []);
+      setTempEducation(typedProfile.education || []);
+      setTempCertifications(typedProfile.certifications || []);
     }
     setIsEditing(true);
   };
@@ -185,12 +149,21 @@ export function PrincipalProfileCard({
     };
     
     // 프로필 데이터 업데이트
-    updateProfileMutation.mutate(updatedData);
-    
-    // 선택된 사진이 있으면 사진도 업로드
-    if (selectedPhoto) {
-      updatePhotoMutation.mutate(selectedPhoto);
-    }
+    updateProfileMutation.mutate(updatedData, {
+      onSuccess: () => {
+        setIsEditing(false);
+        onSave?.();
+        // 선택된 사진이 있으면 사진도 업로드
+        if (selectedPhoto) {
+          updatePhotoMutation.mutate(selectedPhoto, {
+            onSuccess: () => {
+              setSelectedPhoto(null);
+              setPreviewUrl(null);
+            },
+          });
+        }
+      },
+    });
   };
 
   // 교육사항 추가
@@ -219,10 +192,8 @@ export function PrincipalProfileCard({
     setTempCertifications(tempCertifications.filter((_, i) => i !== index));
   };
 
-  // 초기 로딩 상태 (프로필이 없고 Principal 권한이 있는 경우)
-  const isInitialLoading = !profile && isPrincipal && !error;
-
-  if (isInitialLoading) {
+  // 로딩 상태
+  if (profileLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -230,7 +201,7 @@ export function PrincipalProfileCard({
     );
   }
 
-  if (error || !profile) {
+  if (error || !typedProfile) {
     return (
       <Card className="w-full max-w-2xl mx-auto">
         <CardContent className="p-6">
@@ -238,10 +209,10 @@ export function PrincipalProfileCard({
             <User className="h-12 w-12 mx-auto mb-4 text-gray-300" />
             <p>프로필 정보를 불러올 수 없습니다.</p>
             {error && (
-              <p className="text-sm text-red-500 mt-2">{error}</p>
+              <p className="text-sm text-red-500 mt-2">{error.message || '알 수 없는 오류가 발생했습니다.'}</p>
             )}
             <Button 
-              onClick={() => loadProfile()} 
+              onClick={() => window.location.reload()} 
               variant="outline" 
               size="sm" 
               className="mt-4"
@@ -274,17 +245,17 @@ export function PrincipalProfileCard({
                   className="h-12 w-12 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center relative z-10"
                   onClick={handlePhotoClick}
                 >
-                  {previewUrl || getImageUrl(profile.photoUrl) ? (
+                  {previewUrl || getImageUrl(typedProfile.photoUrl) ? (
                     <Image 
-                      src={previewUrl || getImageUrl(profile.photoUrl) || ''} 
-                      alt={profile.name}
+                      src={previewUrl || getImageUrl(typedProfile.photoUrl) || ''} 
+                      alt={typedProfile.name}
                       width={48}
                       height={48}
                       className="w-full h-full object-cover"
                     />
                   ) : (
                     <div className="text-sm font-semibold text-gray-600">
-                      {profile.name?.charAt(0)}
+                      {typedProfile.name?.charAt(0)}
                     </div>
                   )}
                 </div>
@@ -314,8 +285,8 @@ export function PrincipalProfileCard({
               )}
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold">{profile.name}</h3>
-              <p className="text-sm text-gray-600">{profile.introduction}</p>
+              <h3 className="font-semibold">{typedProfile.name}</h3>
+              <p className="text-sm text-gray-600">{typedProfile.introduction}</p>
             </div>
           </div>
         </CardContent>
@@ -360,17 +331,17 @@ export function PrincipalProfileCard({
                 className="h-20 w-20 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center relative z-10"
                 onClick={handlePhotoClick}
               >
-                {previewUrl || getImageUrl(profile.photoUrl) ? (
+                {previewUrl || getImageUrl(typedProfile.photoUrl) ? (
                   <Image 
-                    src={previewUrl || getImageUrl(profile.photoUrl) || ''} 
-                    alt={profile.name}
+                    src={previewUrl || getImageUrl(typedProfile.photoUrl) || ''} 
+                    alt={typedProfile.name}
                     width={80}
                     height={80}
                     className="w-full h-full object-cover"
                   />
                 ) : (
                   <div className="text-lg font-semibold text-gray-600">
-                    {profile.name?.charAt(0)}
+                    {typedProfile.name?.charAt(0)}
                   </div>
                 )}
               </div>
@@ -401,8 +372,8 @@ export function PrincipalProfileCard({
           </div>
           
           <div className="flex-1 space-y-3">
-            <h3 className="text-lg font-semibold">{profile.name}</h3>
-            <p className="text-gray-600">{profile.phoneNumber}</p>
+            <h3 className="text-lg font-semibold">{typedProfile.name}</h3>
+            <p className="text-gray-600">{typedProfile.phoneNumber}</p>
             {isEditing && (
               <div className="text-xs text-gray-500 space-y-1">
                 <p>• 이름 및 전화번호는 개인정보 관리 페이지에서 수정하실 수 있습니다.</p>
@@ -428,7 +399,7 @@ export function PrincipalProfileCard({
             />
           ) : (
             <p className="text-gray-700 whitespace-pre-wrap">
-              {profile.introduction || '소개가 없습니다.'}
+              {typedProfile.introduction || '소개가 없습니다.'}
             </p>
           )}
         </div>
@@ -473,8 +444,8 @@ export function PrincipalProfileCard({
             </div>
           ) : (
             <div className="space-y-2">
-              {profile.education && profile.education.length > 0 ? (
-                profile.education.map((education: string, index: number) => (
+              {typedProfile.education && typedProfile.education.length > 0 ? (
+                typedProfile.education.map((education: string, index: number) => (
                   <Badge key={index} variant="secondary">
                     {education}
                   </Badge>
@@ -524,8 +495,8 @@ export function PrincipalProfileCard({
             </div>
           ) : (
             <div className="space-y-2">
-              {profile.certifications && profile.certifications.length > 0 ? (
-                profile.certifications.map((certification: string, index: number) => (
+              {typedProfile.certifications && typedProfile.certifications.length > 0 ? (
+                typedProfile.certifications.map((certification: string, index: number) => (
                   <Badge key={index} variant="default">
                     {certification}
                   </Badge>

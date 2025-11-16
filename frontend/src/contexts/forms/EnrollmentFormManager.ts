@@ -6,9 +6,31 @@ export type EnrollmentStep =
   | "class-selection"
   | "date-selection"
   | "payment"
-  | "complete"
-  | "refund-request"
-  | "refund-complete";
+  | "complete";
+
+// 수강 변경 계산 데이터 타입
+export interface EnrollmentModificationData {
+  changeType: "additional_payment" | "refund" | "no_change";
+  changeAmount: number;
+  netChangeCount: number;
+  newSessionsCount: number;
+  cancelledSessionsCount: number;
+  sessionPrice: number;
+  selectedSessionIds: number[];
+  // 기존 수강 정보 (비교용)
+  originalEnrollments: Array<{
+    id: number;
+    date: string;
+    startTime: string;
+    endTime: string;
+    isAlreadyEnrolled?: boolean;
+    enrollment?: {
+      id: number;
+      status: string;
+      enrolledAt: string;
+    };
+  }>;
+}
 
 export interface ClassesWithSessionsByMonthResponse {
   month: number;

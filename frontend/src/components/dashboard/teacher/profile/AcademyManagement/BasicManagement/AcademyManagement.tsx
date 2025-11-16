@@ -33,8 +33,6 @@ export default function AcademyManagement() {
     withdrawalType,
     academyStatus,
     isLoadingStatus,
-    loadCurrentAcademy,
-    loadAcademyStatus,
     handleJoinAcademy,
     handleWithdrawalConfirm,
     handleLeaveAcademy,
@@ -57,13 +55,13 @@ export default function AcademyManagement() {
   useEffect(() => {
     pushFocus('subpage');
     
-    loadCurrentAcademy();
-    loadAcademyStatus();
+    // React Query가 자동으로 데이터를 로드하므로 수동 호출 불필요
+    // 필요시 loadAcademyStatus()를 호출하여 refetch 가능
     
     return () => {
       popFocus();
     };
-  }, [pushFocus, popFocus, loadCurrentAcademy, loadAcademyStatus]);
+  }, [pushFocus, popFocus]);
 
   return (
     <div className="flex overflow-hidden flex-col pb-2 mx-auto w-full bg-white max-w-[480px] py-2 relative">

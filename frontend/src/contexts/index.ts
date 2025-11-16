@@ -28,6 +28,3 @@ export { DataContextProvider, useData } from "./DataContext";
 
 // Events
 export * from "./events";
-
-// Navigation (Core)
-export * from "./navigation";

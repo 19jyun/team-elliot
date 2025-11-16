@@ -1,50 +1,85 @@
 'use client'
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { toast } from 'sonner';
 import { PrincipalPaymentBox } from '@/components/features/student/enrollment/month/date/payment/PrincipalPaymentBox';
 import { PaymentConfirmFooter } from '@/components/features/student/enrollment/month/date/payment/PaymentConfirmFooter';
 import { SelectedSession, PrincipalPaymentInfo } from '@/components/features/student/enrollment/month/date/payment/types';
-import { useApp } from '@/contexts/AppContext';
-import { useStudentApi } from '@/hooks/student/useStudentApi';
+import { useBatchModifyEnrollments } from '@/hooks/mutations/student/useBatchModifyEnrollments';
 import { useModificationErrorHandler } from '@/hooks/student/useModificationErrorHandler';
+import { useClassSessionsForModification } from '@/hooks/queries/student/useClassSessionsForModification';
 import { 
-  filterValidModificationSessions,
   validateModificationData
 } from '@/lib/adapters/student';
 import type { ModificationSessionVM } from '@/types/view/student';
+import { EnrollmentModificationData } from '@/contexts/forms/EnrollmentFormManager';
+import type { ClassSessionForModification } from '@/types/api/class';
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 interface EnrollmentModificationPaymentStepProps {
-  additionalAmount?: number;
-  newSessionsCount?: number;
-  onComplete?: () => void;
+  modificationData: EnrollmentModificationData;
+  classId: number;
 }
 
 export function EnrollmentModificationPaymentStep({ 
-  onComplete
+  modificationData,
+  classId
 }: EnrollmentModificationPaymentStepProps) {
-  const { form, setEnrollmentStep } = useApp();
-  const { enrollment } = form;
-  const { selectedSessions: contextSessions } = enrollment;
-  const { modifyEnrollments } = useStudentApi();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const enrollmentId = searchParams.get('id') || classId.toString();
+  const modifyEnrollmentsMutation = useBatchModifyEnrollments();
+  
+  // 세션 정보를 다시 가져와서 selectedSessionIds로 필터링
+  const { data: modificationSessionsData } = useClassSessionsForModification(classId);
+  
+  // modificationData.selectedSessionIds를 사용하여 선택된 세션 재구성
+  const contextSessions = useMemo(() => {
+    if (!modificationSessionsData?.sessions || !modificationData.selectedSessionIds) {
+      return [];
+    }
+    
+    const selectedSessionIdsSet = new Set(modificationData.selectedSessionIds);
+    const selectedSessions = modificationSessionsData.sessions
+      .filter((session: ClassSessionForModification) => selectedSessionIdsSet.has(session.id))
+      .map((session: ClassSessionForModification): SelectedSession => ({
+        sessionId: session.id,
+        id: session.id,
+        startTime: session.startTime,
+        endTime: session.endTime,
+        date: session.date,
+        isAlreadyEnrolled: session.isAlreadyEnrolled || false,
+        isEnrollable: session.isEnrollable || true,
+        class: {
+          id: session.class?.id || 0,
+          className: session.class?.className || 'Unknown Class',
+          level: session.class?.level || 'BEGINNER',
+          tuitionFee: session.class?.tuitionFee || '0',
+          teacher: {
+            id: session.class?.teacher?.id || 0,
+            name: session.class?.teacher?.name || 'Unknown Teacher',
+          },
+        },
+      }));
+    
+    return selectedSessions;
+  }, [modificationSessionsData?.sessions, modificationData.selectedSessionIds]);
   
   // 에러 핸들러 훅 사용
+  // setEnrollmentStep은 useModificationErrorHandler에서 date-selection으로 돌아갈 때만 사용
   const { handleModificationError, handlePartialModificationFailure } = useModificationErrorHandler({
-    setEnrollmentStep,
+    setEnrollmentStep: (step) => {
+      // EnrollmentStep을 EnrollmentModificationStep으로 변환
+      if (step === 'date-selection') {
+        router.push(ensureTrailingSlash(`/dashboard/student/modify?id=${enrollmentId}&step=date-step`));
+      }
+    },
   });
   const [_selectedSessions, setSelectedSessions] = useState<SelectedSession[]>([]);
   const [principalPayment, setPrincipalPayment] = useState<PrincipalPaymentInfo | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  
-  // 수강 변경 모드에서 사용할 상태
-  const [modificationInfo, setModificationInfo] = useState<{
-    changeAmount: number;
-    changeType: string;
-    netChangeCount: number;
-    newSessionsCount: number;
-    cancelledSessionsCount: number;
-  } | null>(null);
   
   const statusSteps = [
     {
@@ -67,104 +102,89 @@ export function EnrollmentModificationPaymentStep({
     },
   ]
 
-  // 최초 1회만 modificationInfo 세팅
-  useEffect(() => {
-    const loadModificationInfo = async () => {
-      if (typeof window !== 'undefined' && modificationInfo === null) {
-        const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
-        const changeAmount = SyncStorage.getItem('modificationChangeAmount');
-        const changeType = SyncStorage.getItem('modificationChangeType');
-        const netChangeCount = SyncStorage.getItem('modificationNetChangeCount');
-      const newSessionsCount = SyncStorage.getItem('modificationNewSessionsCount');
-      
-      if (changeAmount && changeType && netChangeCount) {
-        setModificationInfo({
-          changeAmount: parseInt(changeAmount),
-          changeType,
-          netChangeCount: parseInt(netChangeCount),
-          newSessionsCount: newSessionsCount ? parseInt(newSessionsCount) : 0,
-          cancelledSessionsCount: 0 // 기본값 설정
-        });
-      }
-    }
-    };
-    loadModificationInfo();
-    // eslint-disable-next-line
-  }, []);
-
   useEffect(() => {
     const loadSessions = async () => {
-      // Context에서 세션 정보를 우선 사용하고, 없으면 localStorage에서 가져옴
-      let sessions: SelectedSession[] = [];
-      
-      if (contextSessions && contextSessions.length > 0) {
-        sessions = contextSessions as unknown as SelectedSession[];
-      } else if (typeof window !== 'undefined') {
-        const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
-        const sessionsData = SyncStorage.getItem('selectedSessions');
-      
-      if (sessionsData) {
-        sessions = JSON.parse(sessionsData);
+      // Context에서 수강 변경 데이터 가져오기
+      if (!modificationData) {
+        console.warn('No modification data found in context');
+        return;
       }
-    }
-    
-    if (sessions.length > 0 && modificationInfo) {
+      
+      // modificationData에서 재구성된 세션 정보 사용
+      if (!contextSessions || contextSessions.length === 0) {
+        console.warn('No sessions found in context');
+        return;
+      }
+      
+      const sessions = contextSessions;
       setSelectedSessions(sessions);
       
-      // 수강 변경 모드: 원장 기준으로 통합된 결제 정보
-      if (modificationInfo.changeType === 'additional_payment' && modificationInfo.netChangeCount > 0) {
-        // 추가 결제 모드: 변경된 금액만 표시
-        setPrincipalPayment({
-          principalId: 0,
-          principalName: '원장님',
-          bankName: '신한은행', // 기본값 (실제로는 API에서 가져와야 함)
-          accountNumber: '110-123-456789',
-          accountHolder: '김원장',
-          classFees: [{
-            name: '추가 수강료',
-            count: modificationInfo.newSessionsCount,
-            price: modificationInfo.changeAmount,
-          }],
-          totalAmount: modificationInfo.changeAmount,
-          sessions: sessions,
-        });
-      } else if (modificationInfo.changeType === 'refund' && modificationInfo.netChangeCount < 0) {
-        // 환불 모드: 환불 금액 표시
-        setPrincipalPayment({
-          principalId: 0,
-          principalName: '원장님',
-          bankName: '신한은행', // 기본값
-          accountNumber: '110-123-456789',
-          accountHolder: '김원장',
-          classFees: [{
-            name: '환불 금액',
-            count: Math.abs(modificationInfo.netChangeCount),
-            price: Math.abs(modificationInfo.changeAmount),
-          }],
-          totalAmount: Math.abs(modificationInfo.changeAmount),
-          sessions: sessions,
-        });
-      } else if (modificationInfo.changeType === 'no_change' && modificationInfo.changeAmount === 0) {
-        // netChange = 0이지만 세션 변경이 있는 경우: 0원 결제 표시
-        setPrincipalPayment({
-          principalId: 0,
-          principalName: '원장님',
-          bankName: '신한은행', // 기본값
-          accountNumber: '110-123-456789',
-          accountHolder: '김원장',
-          classFees: [{
-            name: '세션 변경',
-            count: modificationInfo.newSessionsCount + modificationInfo.cancelledSessionsCount,
-            price: 0,
-          }],
-          totalAmount: 0,
-          sessions: sessions,
-        });
+      // 실제 API에서 원장 결제 정보 가져오기
+      try {
+        // 첫 번째 세션의 결제 정보를 가져옴 (모든 세션이 같은 원장에게 속함)
+        const { getSessionPaymentInfo } = await import('@/api/student');
+        const response = await getSessionPaymentInfo(sessions[0].sessionId || sessions[0].id);
+        const paymentInfo = response.data;
+        
+        if (paymentInfo && paymentInfo.principal) {
+          // 수강 변경 모드: 원장 기준으로 통합된 결제 정보
+          if (modificationData.changeType === 'additional_payment' && modificationData.netChangeCount > 0) {
+            // 추가 결제 모드: 변경된 금액만 표시
+            setPrincipalPayment({
+              principalId: paymentInfo.principal.id || 0,
+              principalName: paymentInfo.principal.name || '원장님',
+              bankName: paymentInfo.principal.bankName || '신한은행',
+              accountNumber: paymentInfo.principal.accountNumber || '110-123-456789',
+              accountHolder: paymentInfo.principal.accountHolder || '김원장',
+              classFees: [{
+                name: '추가 수강료',
+                count: modificationData.newSessionsCount,
+                price: modificationData.changeAmount,
+              }],
+              totalAmount: modificationData.changeAmount,
+              sessions: sessions,
+            });
+          } else if (modificationData.changeType === 'refund' && modificationData.netChangeCount < 0) {
+            // 환불 모드: 환불 금액 표시
+            setPrincipalPayment({
+              principalId: paymentInfo.principal.id || 0,
+              principalName: paymentInfo.principal.name || '원장님',
+              bankName: paymentInfo.principal.bankName || '신한은행',
+              accountNumber: paymentInfo.principal.accountNumber || '110-123-456789',
+              accountHolder: paymentInfo.principal.accountHolder || '김원장',
+              classFees: [{
+                name: '환불 금액',
+                count: Math.abs(modificationData.netChangeCount),
+                price: Math.abs(modificationData.changeAmount),
+              }],
+              totalAmount: Math.abs(modificationData.changeAmount),
+              sessions: sessions,
+            });
+          } else if (modificationData.changeType === 'no_change' && modificationData.changeAmount === 0) {
+            // netChange = 0이지만 세션 변경이 있는 경우: 0원 결제 표시
+            setPrincipalPayment({
+              principalId: paymentInfo.principal.id || 0,
+              principalName: paymentInfo.principal.name || '원장님',
+              bankName: paymentInfo.principal.bankName || '신한은행',
+              accountNumber: paymentInfo.principal.accountNumber || '110-123-456789',
+              accountHolder: paymentInfo.principal.accountHolder || '김원장',
+              classFees: [{
+                name: '세션 변경',
+                count: modificationData.newSessionsCount + modificationData.cancelledSessionsCount,
+                price: 0,
+              }],
+              totalAmount: 0,
+              sessions: sessions,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('결제 정보 로드 실패:', error);
+        toast.error('결제 정보를 불러오는데 실패했습니다.');
       }
-    }
     };
     loadSessions();
-  }, [contextSessions, modificationInfo]);
+  }, [contextSessions, modificationData]);
 
   // 복사 버튼 클릭 시 toast
   const handleCopy = () => {
@@ -178,90 +198,82 @@ export function EnrollmentModificationPaymentStep({
     setIsProcessing(true);
     
     try {
-      // 수강 변경 모드: batchModifyEnrollments API 호출
-      const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
-      const existingEnrollmentsData = SyncStorage.getItem('existingEnrollments');
-      const selectedSessionsData = SyncStorage.getItem('selectedSessions');
-      
-      if (!existingEnrollmentsData || !selectedSessionsData) {
+      // Context에서 수강 변경 데이터 가져오기
+      if (!modificationData) {
         throw new Error('수강 변경 정보를 찾을 수 없습니다.');
       }
 
-      const existingEnrollments = JSON.parse(existingEnrollmentsData);
-      const selectedSessions = JSON.parse(selectedSessionsData);
-
-      // 어댑터를 사용하여 유효한 세션만 필터링
-      const validExistingEnrollments = filterValidModificationSessions(existingEnrollments);
-      const validSelectedSessions = filterValidModificationSessions(selectedSessions);
-      
-      if (validExistingEnrollments.length === 0 && validSelectedSessions.length === 0) {
-        throw new Error('유효한 세션 정보가 없습니다.');
+      // modificationData에서 재구성된 세션 정보 사용
+      if (!contextSessions || contextSessions.length === 0) {
+        throw new Error('선택된 세션 정보를 찾을 수 없습니다.');
       }
 
-      // 기존에 신청된 세션들 (활성 상태)
-      const originalEnrolledSessions = validExistingEnrollments.filter(
-        (enrollment: ModificationSessionVM) =>
-          enrollment.enrollment &&
-          (enrollment.enrollment.status === "CONFIRMED" ||
-            enrollment.enrollment.status === "PENDING" ||
-            enrollment.enrollment.status === "REFUND_REJECTED_CONFIRMED")
-      );
+      // modificationData에서 originalEnrollments와 selectedSessionIds 사용
+      const originalEnrollments = modificationData.originalEnrollments || [];
+      const selectedSessionIds = new Set(modificationData.selectedSessionIds || []);
 
       // 기존 신청 세션의 날짜들
-      const originalDates = originalEnrolledSessions.map(
-        (enrollment: ModificationSessionVM) => new Date(enrollment.date).toISOString().split("T")[0]
+      const originalDates = originalEnrollments
+        .filter(enrollment => 
+          enrollment.enrollment &&
+          (enrollment.enrollment.status === "CONFIRMED" ||
+           enrollment.enrollment.status === "PENDING" ||
+           enrollment.enrollment.status === "REFUND_REJECTED_CONFIRMED")
+        )
+        .map(enrollment => new Date(enrollment.date).toISOString().split("T")[0]);
+
+      // 선택된 세션의 날짜들 (contextSessions에서)
+      const selectedDates = contextSessions.map(session => 
+        new Date(session.date).toISOString().split("T")[0]
       );
 
-      // 선택된 세션의 날짜들
-      const selectedDates = validSelectedSessions.map(
-        (session: ModificationSessionVM) => new Date(session.date).toISOString().split("T")[0]
-      );
-
-      // 어댑터를 사용하여 취소할 세션 ID 추출
-      const cancellations = originalEnrolledSessions
-        .filter((enrollment: ModificationSessionVM) => {
+      // 취소할 세션 ID 추출 (기존에 있지만 선택되지 않은 세션들)
+      const cancellations = originalEnrollments
+        .filter(enrollment => {
           const enrollmentDate = new Date(enrollment.date).toISOString().split("T")[0];
-          return !selectedDates.includes(enrollmentDate);
+          return !selectedDates.includes(enrollmentDate) &&
+                 enrollment.enrollment &&
+                 (enrollment.enrollment.status === "CONFIRMED" ||
+                  enrollment.enrollment.status === "PENDING" ||
+                  enrollment.enrollment.status === "REFUND_REJECTED_CONFIRMED");
         })
-        .map((enrollment: ModificationSessionVM) => enrollment.enrollment?.id)
+        .map(enrollment => enrollment.enrollment?.id)
         .filter((id): id is number => id !== undefined);
 
-      // 어댑터를 사용하여 신청할 세션 ID 추출
-      const newEnrollments = validSelectedSessions
-        .filter((session: ModificationSessionVM) => {
-          const sessionDate = new Date(session.date).toISOString().split("T")[0];
-          return !originalDates.includes(sessionDate);
-        })
-        .map((session: ModificationSessionVM) => session.id);
+      // 신청할 세션 ID 추출 (새로 선택된 세션들)
+      const newEnrollments = Array.from(selectedSessionIds).filter(sessionId => {
+        const session = contextSessions.find(s => s.sessionId === sessionId);
+        if (!session) return false;
+        const sessionDate = new Date(session.date).toISOString().split("T")[0];
+        return !originalDates.includes(sessionDate);
+      });
 
       // 수강 변경 데이터 유효성 검증
-      const modificationData = {
+      const modificationRequest = {
         cancellations,
         newEnrollments,
         reason: '수강 변경'
       };
 
-      if (!validateModificationData(modificationData)) {
+      if (!validateModificationData(modificationRequest)) {
         throw new Error('수강 변경 데이터가 올바르지 않습니다.');
       }
 
-      console.log('수강 변경 요청 데이터:', modificationData);
+      console.log('수강 변경 요청 데이터:', modificationRequest);
 
       // batchModifyEnrollments API 호출
-      const result = await modifyEnrollments(modificationData);
+      const result = await modifyEnrollmentsMutation.mutateAsync(modificationRequest);
 
       // 부분 실패 처리
-      if (result && result.data && typeof result.data === 'object' && 'failedOperations' in result.data) {
-        const shouldProceed = handlePartialModificationFailure(result.data, validSelectedSessions);
+      if (result && typeof result === 'object' && 'failedOperations' in result && result.failedOperations.length > 0) {
+        const selectedSessionsForError = contextSessions as unknown as ModificationSessionVM[];
+        const shouldProceed = handlePartialModificationFailure(result, selectedSessionsForError);
         if (shouldProceed.shouldProceed) {
-          setEnrollmentStep('complete');
-          onComplete?.();
+          router.push(ensureTrailingSlash(`/dashboard/student/modify?id=${enrollmentId}&step=refund-complete`));
         }
       } else {
-        // 완전 성공
-        toast.success('수강 변경이 완료되었습니다.');
-        setEnrollmentStep('complete');
-        onComplete?.();
+        // 완전 성공 (React Query mutation이 성공하면 자동으로 toast 표시)
+        router.push(ensureTrailingSlash(`/dashboard/student/modify?id=${enrollmentId}&step=refund-complete`));
       }
     } catch (error) {
       const shouldProceed = handleModificationError(error);
@@ -284,7 +296,7 @@ export function EnrollmentModificationPaymentStep({
         </div>
 
         <div className="self-center pb-4 text-base font-medium tracking-normal leading-snug text-center" style={{ color: '#595959' }}>
-          {modificationInfo?.changeType === 'additional_payment' ? (
+          {modificationData?.changeType === 'additional_payment' ? (
             <>
               <span className="font-bold text-[#595959]">추가 수강료 송금을 마무리 해주세요!</span><br />
               <span className="text-[#595959]">입금이 확인되지 않으면 변경이 취소될 수 있습니다.</span>

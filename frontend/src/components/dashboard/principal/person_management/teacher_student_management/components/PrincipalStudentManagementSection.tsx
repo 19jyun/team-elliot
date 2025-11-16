@@ -3,10 +3,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { UserPlus, Trash2, Eye } from 'lucide-react';
-import { useMutation } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
-import { useState, useEffect } from 'react';
+import { usePrincipalStudents } from '@/hooks/queries/principal/usePrincipalStudents';
+import { useRemoveStudent } from '@/hooks/mutations/principal/useRemoveStudent';
+import { useState } from 'react';
 import { PrincipalStudentSessionHistoryModal } from './PrincipalStudentSessionHistoryModal';
 import { toPrincipalStudentListVM } from '@/lib/adapters/principal';
 import type { PrincipalStudentListVM } from '@/types/view/principal';
@@ -14,36 +13,16 @@ import type { PrincipalStudentListVM } from '@/types/view/principal';
 export default function PrincipalStudentManagementSection() {
   const [selectedStudent, setSelectedStudent] = useState<{ id: number; name: string } | null>(null);
 
-  // API 기반 데이터 관리
-  const { students, loadStudents, isLoading, error, removeStudent } = usePrincipalApi();
+  // React Query 기반 데이터 관리
+  const { data: students = [], isLoading, error } = usePrincipalStudents();
+  const removeStudentMutation = useRemoveStudent();
 
   // ViewModel 생성
   const studentListVM: PrincipalStudentListVM = toPrincipalStudentListVM(
-    students || [],
+    students,
     isLoading,
-    error
+    error?.message || null
   );
-
-  // 컴포넌트 마운트 시 학생 데이터 로드
-  useEffect(() => {
-    loadStudents();
-  }, [loadStudents]);
-
-  // 수강생 제거 뮤테이션
-  const removeStudentMutation = useMutation({
-    mutationFn: removeStudent,
-    onSuccess: () => {
-      // API 데이터 재로드
-      loadStudents();
-      toast.success('수강생이 학원에서 제거되었습니다.');
-    },
-    onError: (error: unknown) => {
-      const errorMessage = error && typeof error === 'object' && 'response' in error 
-        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message 
-        : '수강생 제거에 실패했습니다.';
-      toast.error(errorMessage || '수강생 제거에 실패했습니다.');
-    },
-  });
 
   // 로딩 상태 처리
   if (studentListVM.isLoading) {
@@ -86,7 +65,7 @@ export default function PrincipalStudentManagementSection() {
           <CardContent>
             <div className="text-center py-8">
               <p className="text-red-500 mb-4">수강생 목록을 불러오는데 실패했습니다.</p>
-              <Button onClick={() => loadStudents()}>
+              <Button onClick={() => window.location.reload()}>
                 다시 시도
               </Button>
             </div>

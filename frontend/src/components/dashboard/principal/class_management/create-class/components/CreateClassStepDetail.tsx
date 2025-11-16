@@ -2,19 +2,22 @@
 
 import React, { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
+import { useRouter } from 'next/navigation';
 import { StatusStep } from './StatusStep';
-import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
+import { useCreatePrincipalClass } from '@/hooks/mutations/principal/useCreatePrincipalClass';
 import { toast } from 'sonner';
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 export function CreateClassStepDetail() {
-  const { form, setClassFormData, setCreateClassStep } = useApp();
+  const router = useRouter();
+  const { form, setClassFormData } = useApp();
   const { createClass } = form;
   const { classFormData, selectedTeacherId } = createClass;
 
-  // API 기반 데이터 관리
-  const { createClass: createClassApi } = usePrincipalApi();
+  // React Query 기반 데이터 관리
+  const createClassMutation = useCreatePrincipalClass();
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmitting = createClassMutation.isPending;
 
   const [content, setContent] = useState(classFormData.content);
 
@@ -66,26 +69,20 @@ export function CreateClassStepDetail() {
     };
 
     
-    try {
-      setIsSubmitting(true);
-      
-      // 실제 API 호출 (Principal 전용)
-      await createClassApi(requestData);
-      
-      toast.success('강의가 성공적으로 생성되었습니다!');
-      
-      // complete 단계로 이동
-      setCreateClassStep('complete');
-    } catch (error) {
-      console.error('강의 생성 실패:', error);
-      toast.error('강의 생성에 실패했습니다. 다시 시도해주세요.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    // 실제 API 호출 (Principal 전용)
+    createClassMutation.mutate(requestData, {
+      onSuccess: () => {
+        // complete 단계로 이동
+        router.push(ensureTrailingSlash('/dashboard/principal/class/create-class/info/teacher/schedule/content/complete'));
+      },
+      onError: () => {
+        toast.error('강의 생성에 실패했습니다. 다시 시도해주세요.');
+      },
+    });
   };
 
   const handleBack = () => {
-    setCreateClassStep('schedule');
+    router.push(ensureTrailingSlash('/dashboard/principal/class/create-class/info/teacher/schedule'));
   };
 
   const statusSteps = [

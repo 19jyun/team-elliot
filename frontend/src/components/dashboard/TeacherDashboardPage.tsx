@@ -1,55 +1,20 @@
 'use client';
 
 import { useApp } from '@/contexts/AppContext';
-import { CommonHeader } from '@/components/layout/CommonHeader';
 import TeacherClassPage from '@/app/(dashboard)/dashboard/teacher/class/page';
 import TeacherClassManagementPage from '@/app/(dashboard)/dashboard/teacher/class_management/page';
 import TeacherProfilePage from '@/app/(dashboard)/dashboard/teacher/profile/page';
-import { TeacherProfileManagement } from './teacher/profile/TeacherProfileManagement/TeacherProfileManagement';
-import { TeacherPersonalInfoManagement } from './teacher/profile/TeacherPersonalInfoManagement/TeacherPersonalInfoManagement';
-import AcademyManagementContainer from './teacher/profile/AcademyManagement/AcademyManagementContainer';
-import { TeacherClassesContainer } from '../features/teacher/classes/TeacherClasses/TeacherClassesContainer';
 import { DashboardContainer } from './DashboardContainer';
 import { useSession } from '@/lib/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSocketListener';
-import { useTeacherInitialization } from '@/hooks/redux/useTeacherInitialization';
-import { SettingsPage } from '@/components/settings/SettingsPage';
-import { SessionDetailContainer } from './teacher/SessionDetail/SessionDetailContainer';
-import { WithdrawalPage } from '@/components/common/WithdrawalPage';
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 
 function TeacherDashboardContent() {
   const { navigation } = useApp();
-  const { activeTab, handleTabChange, subPage, clearSubPage, isTransitioning } = navigation;
-
-  // Teacher 데이터 초기화
-  useTeacherInitialization();
-
-  // SubPage 렌더링 함수
-  const renderSubPage = () => {
-    if (!subPage) return null;
-
-    switch (subPage) {
-      case 'teacher-classes':
-        return <TeacherClassesContainer />;
-      case 'profile':
-        return <TeacherProfileManagement />;
-      case 'personal-info':
-        return <TeacherPersonalInfoManagement />;
-      case 'academy-management':
-        return <AcademyManagementContainer onBack={clearSubPage} />;
-      case 'settings':
-        return <SettingsPage role="TEACHER" />;
-      case 'session-detail':
-        return <SessionDetailContainer />;
-      case 'withdrawal':
-        return <WithdrawalPage />;
-      default:
-        return null;
-    }
-  };
+  const { activeTab, handleTabChange } = navigation;
 
   // 메인 탭 페이지들을 배열로 준비
   const tabPages = [
@@ -59,32 +24,19 @@ function TeacherDashboardContent() {
   ];
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 pb-safe">
-      <CommonHeader />
-      <main className="flex-1 overflow-hidden relative">
-        {/* DashboardContainer - 항상 렌더링 */}
-        <DashboardContainer
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-          isTransitioning={isTransitioning}
-        >
-          {tabPages}
-        </DashboardContainer>
+    <>
+      {/* DashboardContainer - 항상 렌더링 */}
+      <DashboardContainer
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+      >
+        {tabPages}
+      </DashboardContainer>
 
-        {/* SubPage 오버레이 */}
-        {subPage && (
-          <div className="absolute inset-0 bg-white z-10">
-            <div className="w-full h-full overflow-y-auto overflow-x-hidden">
-              {renderSubPage()}
-            </div>
-          </div>
-        )}
-
-        {/* Socket 관련 컴포넌트들 */}
-        <RoleBasedSocketListener />
-        {/* <SocketStatus /> */}
-      </main>
-    </div>
+      {/* Socket 관련 컴포넌트들 */}
+      <RoleBasedSocketListener />
+      {/* <SocketStatus /> */}
+    </>
   );
 }
 
@@ -94,7 +46,7 @@ export function TeacherDashboardPage() {
 
   useEffect(() => {
     if (status !== 'loading' && !session?.user) {
-      router.push('/');
+      router.push(ensureTrailingSlash('/'));
     }
   }, [session, status, router]);
 

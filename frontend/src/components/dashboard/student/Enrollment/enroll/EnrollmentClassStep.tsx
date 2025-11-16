@@ -9,9 +9,12 @@ import { ClassCard } from '@/components/features/student/enrollment/month/ClassC
 import { ClassDetailModal } from '@/components/features/student/classes/ClassDetailModal';
 import { RefundPolicy } from '@/components/features/student/enrollment/RefundPolicy';
 import { useState } from 'react';
-import { useStudentApi } from '@/hooks/student/useStudentApi';
+import { useStudentAvailableSessions } from '@/hooks/queries/student/useStudentAvailableSessions';
 import type { EnrollmentClassVM } from '@/types/view/student';
+import type { AvailableSessionForEnrollment } from '@/types/api/student';
 import { toEnrollmentClassVMs } from '@/lib/adapters/student';
+import { useRouter } from 'next/navigation';
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 const daysKor = ['월', '화', '수', '목', '금', '토', '일'];
@@ -38,31 +41,26 @@ function formatTimeForCalendar(date: string | Date) {
 }
 
 export function EnrollmentClassStep() {
-  const { form, setEnrollmentStep, setSelectedClassIds } = useApp();
+  const router = useRouter();
+  const { form, setSelectedClassIds } = useApp();
   const { enrollment } = form;
   const { selectedAcademyId } = enrollment;
   const { status } = useSession()
 
-  // API에서 수강 가능한 클래스 데이터 가져오기
-  const { availableClasses, isLoading, error, loadAvailableClasses, clearErrors } = useStudentApi();
+  // React Query 기반 데이터 관리
+  const { data: availableSessions, isLoading, error } = useStudentAvailableSessions(selectedAcademyId || 0);
 
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showClassDetailModal, setShowClassDetailModal] = useState(false);
   const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
   const [showPolicy, setShowPolicy] = useState(true);
 
-  // 선택된 학원이 변경될 때 수강 가능한 클래스 로드
-  React.useEffect(() => {
-    if (selectedAcademyId) {
-      loadAvailableClasses(selectedAcademyId);
-    }
-  }, [selectedAcademyId, loadAvailableClasses]);
-
   // 어댑터를 사용하여 EnrollmentClassVM으로 변환
   const classesWithSessions: EnrollmentClassVM[] = React.useMemo(() => {
-    if (!selectedAcademyId || !availableClasses) return [];
+    if (!selectedAcademyId || !availableSessions) return [];
     
-    const converted = toEnrollmentClassVMs(availableClasses, selectedAcademyId);
+    // availableSessions를 availableClasses 형식으로 변환 (어댑터가 기대하는 형식)
+    const converted = toEnrollmentClassVMs(availableSessions as AvailableSessionForEnrollment[], selectedAcademyId);
     
     // 요일 계산 추가
     return converted.map(classItem => {
@@ -75,7 +73,7 @@ export function EnrollmentClassStep() {
       }
       return classItem;
     });
-  }, [selectedAcademyId, availableClasses]);
+  }, [selectedAcademyId, availableSessions]);
 
   // localStorage 확인하여 이전에 동의했다면 정책 건너뛰기
   // selectedAcademyId가 변경될 때마다 다시 확인 (다른 학원을 선택했을 때)
@@ -157,19 +155,16 @@ export function EnrollmentClassStep() {
     }
     
     setSelectedClassIds(selectedIds);
-    setEnrollmentStep('date-selection');
+    router.push(ensureTrailingSlash('/dashboard/student/enroll/academy/class/date'));
   };
 
-  // 에러 처리 - AcademyManagement와 동일한 패턴 적용
-  if (error && availableClasses.length === 0) {
+  // 에러 처리
+  if (error && (!availableSessions || availableSessions.length === 0)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">클래스 정보를 불러오는데 실패했습니다.</p>
         <button
-          onClick={() => {
-            clearErrors();
-            loadAvailableClasses(selectedAcademyId || undefined);
-          }}
+          onClick={() => window.location.reload()}
           className="mt-4 px-4 py-2 bg-[#AC9592] text-white rounded-lg hover:bg-[#8B7A77] transition-colors"
         >
           다시 시도

@@ -7,15 +7,18 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Calendar, Clock, BookOpen, CheckCircle, XCircle, AlertCircle, Clock as ClockIcon, DollarSign } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
-import { useStudentData } from '@/hooks/redux/useStudentData';
+import { useStudentCancellationHistory } from '@/hooks/queries/student/useStudentCancellationHistory';
 import { toStudentCancellationHistoryVMs } from '@/lib/adapters/student';
 import type { StudentCancellationHistoryVM } from '@/types/view/student';
 
 export function CancellationHistory() {
   const { ui } = useApp();
   const { pushFocus, popFocus } = ui;
-  const { cancellationHistory, isLoading, error, clearErrorState } = useStudentData();
+  
+  // React Query 기반 데이터 관리
+  const { data: cancellationHistory = [], isLoading, error: queryError } = useStudentCancellationHistory();
   const [selectedFilter, setSelectedFilter] = useState<string>('ALL');
+  const error = queryError ? '환불/취소 내역을 불러오는데 실패했습니다.' : null;
 
   // API 응답을 뷰모델로 변환
   const cancellationHistoryVMs: StudentCancellationHistoryVM[] = toStudentCancellationHistoryVMs(cancellationHistory);
@@ -31,9 +34,7 @@ export function CancellationHistory() {
       <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">환불/취소 내역을 불러오는데 실패했습니다.</p>
         <Button
-          onClick={() => {
-            clearErrorState();
-          }}
+          onClick={() => window.location.reload()}
           className="mt-4"
         >
           다시 시도

@@ -8,6 +8,7 @@ import { clearPrincipalData } from "@/store/slices/principalSlice";
 import { clearStudentData } from "@/store/slices/studentSlice";
 import { clearApiClientSessionCache } from "@/api/apiClient";
 import { logger } from "@/lib/logger";
+import { ensureTrailingSlash } from "@/lib/utils/router";
 
 export const useLogout = () => {
   const router = useRouter();
@@ -19,7 +20,7 @@ export const useLogout = () => {
     try {
       // 세션이 없으면 이미 로그아웃된 상태
       if (!session?.user) {
-        router.replace("/auth");
+        router.replace(ensureTrailingSlash("/auth"));
         return;
       }
 
@@ -62,7 +63,7 @@ export const useLogout = () => {
 
       // 6. 세션 정리 완료 후 리디렉션
       setTimeout(() => {
-        router.replace("/auth");
+        router.replace(ensureTrailingSlash("/auth"));
       }, 500);
 
       logger.info("사용자 로그아웃 완료", {
@@ -84,7 +85,7 @@ export const useLogout = () => {
       }
 
       // 강제 리디렉션
-      router.replace("/auth");
+      router.replace(ensureTrailingSlash("/auth"));
 
       toast.error("로그아웃 처리 중 오류가 발생했습니다");
 

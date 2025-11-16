@@ -1,49 +1,37 @@
-import { useState, useCallback } from "react";
-import { useTeacherApi } from "@/hooks/teacher/useTeacherApi";
+import { useState } from "react";
 import { toast } from "sonner";
-import {
-  leaveAcademy,
-  requestJoinAcademy,
-  getTeacherAcademyStatus,
-} from "@/api/teacher";
 import { extractErrorMessage } from "@/types/api/error";
-import { TeacherAcademyStatusResponse } from "@/types/api/teacher";
+import { useTeacherAcademy } from "@/hooks/queries/teacher/useTeacherAcademy";
+import { useTeacherAcademyStatus } from "@/hooks/queries/teacher/useTeacherAcademyStatus";
+import { useLeaveAcademy } from "@/hooks/mutations/teacher/useLeaveAcademy";
+import { useRequestJoinAcademy } from "@/hooks/mutations/teacher/useRequestJoinAcademy";
+import type { TeacherAcademyStatusResponse } from "@/types/api/teacher";
+import type { Academy } from "@/types/api/common";
 
 export function useTeacherAcademyManagement() {
-  const { academy: currentAcademy, loadAcademy, isLoading } = useTeacherApi();
+  // React Query 기반 데이터 관리
+  const { data: currentAcademyData, isLoading } = useTeacherAcademy();
+  const {
+    data: academyStatusData,
+    isLoading: isLoadingStatus,
+    refetch: refetchAcademyStatus,
+  } = useTeacherAcademyStatus();
+
+  // 타입 명시적 지정
+  const currentAcademy = currentAcademyData as Academy | null | undefined;
+  const academyStatus = academyStatusData as
+    | TeacherAcademyStatusResponse
+    | null
+    | undefined;
+  const leaveAcademyMutation = useLeaveAcademy();
+  const requestJoinAcademyMutation = useRequestJoinAcademy();
 
   const [joinCode, setJoinCode] = useState("");
-  const [isJoining, setIsJoining] = useState(false);
   const [withdrawalModal, setWithdrawalModal] = useState(false);
   const [withdrawalType, setWithdrawalType] = useState<"leave" | "join">(
     "leave"
   );
   const [pendingJoinCode, setPendingJoinCode] = useState("");
-  const [academyStatus, setAcademyStatus] =
-    useState<TeacherAcademyStatusResponse | null>(null);
-  const [isLoadingStatus, setIsLoadingStatus] = useState(false);
-
-  const loadCurrentAcademy = useCallback(async () => {
-    try {
-      await loadAcademy();
-    } catch (error) {
-      console.error("학원 정보 로드 실패:", error);
-      toast.error("학원 정보를 불러오는데 실패했습니다.");
-    }
-  }, [loadAcademy]);
-
-  const loadAcademyStatus = useCallback(async () => {
-    try {
-      setIsLoadingStatus(true);
-      const response = await getTeacherAcademyStatus();
-      setAcademyStatus(response.data || null);
-    } catch (error) {
-      console.error("학원 상태 로드 실패:", error);
-      toast.error("학원 상태를 불러오는데 실패했습니다.");
-    } finally {
-      setIsLoadingStatus(false);
-    }
-  }, []);
 
   const handleJoinAcademy = async () => {
     if (!joinCode.trim()) {
@@ -65,18 +53,14 @@ export function useTeacherAcademyManagement() {
 
   const performJoinAcademyRequest = async (code: string) => {
     try {
-      setIsJoining(true);
-      await requestJoinAcademy({ code });
+      await requestJoinAcademyMutation.mutateAsync({ code });
       setJoinCode("");
       setPendingJoinCode("");
       // 가입 요청 후 상태 다시 로드
-      await loadAcademyStatus();
-      toast.success("학원 가입 요청이 완료되었습니다.");
+      await refetchAcademyStatus();
     } catch (error: unknown) {
       console.error("학원 가입 요청 실패:", error);
       toast.error(extractErrorMessage(error, "학원 가입 요청에 실패했습니다."));
-    } finally {
-      setIsJoining(false);
     }
   };
 
@@ -87,8 +71,7 @@ export function useTeacherAcademyManagement() {
     if (withdrawalType === "join" && pendingJoinCode) {
       try {
         // 먼저 현재 학원 탈퇴
-        await leaveAcademy();
-        toast.success("학원에서 탈퇴되었습니다.");
+        await leaveAcademyMutation.mutateAsync();
 
         // 그 다음 새 학원 가입 요청
         await performJoinAcademyRequest(pendingJoinCode);
@@ -99,11 +82,9 @@ export function useTeacherAcademyManagement() {
     } else if (withdrawalType === "leave") {
       // 단순 탈퇴인 경우
       try {
-        await leaveAcademy();
-        toast.success("학원에서 탈퇴되었습니다.");
-        // 데이터 재로드
-        await loadAcademy();
-        await loadAcademyStatus();
+        await leaveAcademyMutation.mutateAsync();
+        // 데이터 재로드는 mutation의 onSuccess에서 자동으로 처리됨
+        await refetchAcademyStatus();
       } catch (error: unknown) {
         console.error("학원 탈퇴 실패:", error);
         toast.error(extractErrorMessage(error, "학원 탈퇴에 실패했습니다."));
@@ -121,14 +102,14 @@ export function useTeacherAcademyManagement() {
     isLoading,
     joinCode,
     setJoinCode,
-    isJoining,
+    isJoining: requestJoinAcademyMutation.isPending,
     withdrawalModal,
     setWithdrawalModal,
     withdrawalType,
     academyStatus,
     isLoadingStatus,
-    loadCurrentAcademy,
-    loadAcademyStatus,
+    loadCurrentAcademy: () => {}, // React Query가 자동으로 관리하므로 빈 함수
+    loadAcademyStatus: () => refetchAcademyStatus(), // refetch 함수 제공
     handleJoinAcademy,
     handleWithdrawalConfirm,
     handleLeaveAcademy,

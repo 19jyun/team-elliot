@@ -5,7 +5,6 @@ import { motion } from 'framer-motion'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { ClassDetail } from '@/components/features/student/classes/ClassDetail'
 import { SessionDetailTab } from '@/components/features/student/classes/SessionDetailTab'
-import { useStudentApi } from '@/hooks/student/useStudentApi'
 import type { StudentSessionDetailModalVM, StudentEnrolledSessionVM } from '@/types/view/student'
 import type { TabType } from '@/types/ui/common'
 import { brownTheme } from '@/types/ui/common'
@@ -16,7 +15,6 @@ export function StudentSessionDetailModal({
   onClose,
   onlyDetail = false 
 }: StudentSessionDetailModalVM) {
-  const { isLoading } = useStudentApi();
   const [classDetails, setClassDetails] = useState<StudentEnrolledSessionVM['class'] | null>(null)
   const [activeTab, setActiveTab] = useState<TabType>('class')
   
@@ -112,11 +110,7 @@ export function StudentSessionDetailModal({
             {/* 클래스 정보 탭 */}
             <div className="w-1/2 flex-shrink-0 px-1">
               <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                {isLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
-                  </div>
-                ) : classDetails ? (
+                {classDetails ? (
                   <ClassDetail 
                     classId={session.class.id} 
                     classSessions={[session]} 

@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import React, { useState, useRef } from 'react';
 import { UpdateProfileRequest, TeacherProfileResponse } from '@/types/api/teacher';
 import { toast } from 'sonner';
 import { getImageUrl } from '@/utils/imageUtils';
@@ -24,7 +23,9 @@ import {
   Trash2,
   Camera
 } from 'lucide-react';
-import { useTeacherApi } from '@/hooks/teacher/useTeacherApi';
+import { useTeacherProfile } from '@/hooks/queries/teacher/useTeacherProfile';
+import { useUpdateTeacherProfile } from '@/hooks/mutations/teacher/useUpdateTeacherProfile';
+import { useUpdateTeacherProfilePhoto } from '@/hooks/mutations/teacher/useUpdateTeacherProfilePhoto';
 
 
 interface TeacherProfileCardProps {
@@ -63,64 +64,24 @@ export function TeacherProfileCard({
   const [specificTeacherProfile] = useState<TeacherProfileResponse | null>(null);
   const [errorSpecific] = useState<string | null>(null);
 
-  // API 기반 데이터 관리 (현재 로그인한 선생님용)
-  const { profile, loadProfile, error, isTeacher } = useTeacherApi();
+  // React Query 기반 데이터 관리 (현재 로그인한 선생님용)
+  const { data: profile, isLoading: profileLoading, error } = useTeacherProfile();
+  const typedProfile = profile as TeacherProfileResponse | null | undefined;
+  const updateProfileMutation = useUpdateTeacherProfile();
+  const updatePhotoMutation = useUpdateTeacherProfilePhoto();
 
   // 현재 사용자가 선생님이고, 특정 선생님 ID가 없거나 현재 선생님의 프로필을 조회하는 경우
-  const isCurrentTeacher = isTeacher && (!teacherId || teacherId === profile?.id);
+  const isCurrentTeacher = !teacherId || teacherId === typedProfile?.id;
   
   // 실제 사용할 프로필 데이터와 로딩/에러 상태
-  const currentProfile = teacherId ? specificTeacherProfile : profile;
+  const currentProfile = teacherId ? specificTeacherProfile : typedProfile;
   const currentError = teacherId ? errorSpecific : error;
-
-
-
-  // 컴포넌트 마운트 시 프로필 로드
-  useEffect(() => {
-    if (isTeacher && !profile) {
-      // 현재 로그인한 선생님 프로필 조회
-      loadProfile();
-    }
-  }, [isTeacher, profile, loadProfile]);
 
   // 편집 가능 여부 결정
   // 1. isEditable이 false이거나
   // 2. 특정 선생님을 조회하는 경우 (다른 사람의 프로필)
   // 3. 현재 사용자가 선생님이 아닌 경우
   const canEdit = isEditable && isCurrentTeacher;
-
-  // 프로필 업데이트 뮤테이션
-  const teacherApi = useTeacherApi();
-  const updateProfileMutation = useMutation({
-    mutationFn: teacherApi.updateProfile,
-    onSuccess: () => {
-      // API 데이터 다시 로드
-      loadProfile();
-      toast.success('프로필이 성공적으로 업데이트되었습니다.');
-      setIsEditing(false);
-      onSave?.();
-    },
-    onError: (error) => {
-      console.error('프로필 업데이트 실패:', error);
-      toast.error('프로필 업데이트에 실패했습니다.');
-    },
-  });
-
-  // 사진 업로드 뮤테이션
-  const updatePhotoMutation = useMutation({
-    mutationFn: teacherApi.updateProfilePhoto,
-    onSuccess: () => {
-      // API 데이터 다시 로드
-      loadProfile();
-      toast.success('프로필 사진이 성공적으로 업로드되었습니다.');
-      setSelectedPhoto(null);
-      setPreviewUrl(null);
-    },
-    onError: (error) => {
-      console.error('사진 업로드 실패:', error);
-      toast.error('사진 업로드에 실패했습니다.');
-    },
-  });
 
   // 편집 모드 시작
   const handleEdit = () => {
@@ -208,12 +169,21 @@ export function TeacherProfileCard({
     };
     
     // 프로필 데이터 업데이트
-    updateProfileMutation.mutate(updatedData);
-    
-    // 선택된 사진이 있으면 사진도 업로드
-    if (selectedPhoto) {
-      updatePhotoMutation.mutate(selectedPhoto);
-    }
+    updateProfileMutation.mutate(updatedData, {
+      onSuccess: () => {
+        setIsEditing(false);
+        onSave?.();
+        // 선택된 사진이 있으면 사진도 업로드
+        if (selectedPhoto) {
+          updatePhotoMutation.mutate(selectedPhoto, {
+            onSuccess: () => {
+              setSelectedPhoto(null);
+              setPreviewUrl(null);
+            },
+          });
+        }
+      },
+    });
   };
 
   // 교육사항 추가
@@ -255,10 +225,8 @@ export function TeacherProfileCard({
     setTempCertifications(tempCertifications.filter((_, i) => i !== index));
   };
 
-  // 초기 로딩 상태 (프로필이 없고 Teacher 권한이 있는 경우)
-  const isInitialLoading = !currentProfile && isCurrentTeacher && !currentError;
-
-  if (isInitialLoading) {
+  // 로딩 상태
+  if (profileLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700"></div>
@@ -274,10 +242,12 @@ export function TeacherProfileCard({
             <User className="h-12 w-12 mx-auto mb-4 text-gray-300" />
             <p>프로필 정보를 불러올 수 없습니다.</p>
             {currentError && (
-              <p className="text-sm text-red-500 mt-2">{currentError}</p>
+              <p className="text-sm text-red-500 mt-2">
+                {typeof currentError === 'string' ? currentError : currentError?.message || '알 수 없는 오류가 발생했습니다.'}
+              </p>
             )}
             <Button 
-              onClick={() => loadProfile()} 
+              onClick={() => window.location.reload()} 
               variant="outline" 
               size="sm" 
               className="mt-4"

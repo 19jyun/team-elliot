@@ -3,7 +3,6 @@
 import * as React from 'react'
 import { useState } from 'react'
 import { useSignIn } from '@/lib/auth/AuthProvider'
-import { AuthRouter } from '@/lib/auth/AuthRouter'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { cva } from 'class-variance-authority'
@@ -12,6 +11,8 @@ import { Visibility, VisibilityOff } from '@mui/icons-material'
 import Image from 'next/image'
 import { useApp } from '@/contexts/AppContext'
 import { useApiError } from '@/hooks/useApiError'
+import { useRouter } from 'next/navigation'
+import { ensureTrailingSlash } from '@/lib/utils/router'
 
 const buttonVariants = cva(
   'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
@@ -164,8 +165,8 @@ const InputField: React.FC<InputFieldProps> = ({
 }
 
 export function LoginPage() {
-  const { setAuthMode, navigation } = useApp()
-  const { navigateToSubPage } = navigation
+  const router = useRouter()
+  const { setAuthMode } = useApp()
   const signIn = useSignIn()
   const [formData, setFormData] = useState({
     userId: '',
@@ -200,9 +201,30 @@ export function LoginPage() {
         setIsLoading(true)
         toast.success('로그인되었습니다.')
         
-        // AuthRouter를 통한 SPA 리디렉션
+        // 역할 기반 대시보드 경로 결정
+        const userRole = result.role;
+        const getDashboardPath = (role?: string): string => {
+          if (!role) {
+            return "/dashboard/";
+          }
+          const roleUpper = role.toUpperCase();
+          switch (roleUpper) {
+            case "STUDENT":
+              return "/dashboard/student/";
+            case "TEACHER":
+              return "/dashboard/teacher/";
+            case "PRINCIPAL":
+              return "/dashboard/principal/";
+            default:
+              return "/dashboard/";
+          }
+        };
+        
+        const dashboardPath = getDashboardPath(userRole);
+        
+        // Next.js router를 직접 사용하여 리디렉션 (Capacitor 환경에서도 안정적)
         setTimeout(() => {
-          AuthRouter.redirectToDashboard()
+          router.push(ensureTrailingSlash(dashboardPath));
         }, 100) // 세션 상태 업데이트를 위한 짧은 지연
       }
     } catch (error) {
@@ -311,7 +333,7 @@ export function LoginPage() {
           <Button
             onClick={() => {
               setAuthMode('signup');
-              navigateToSubPage('signup-roles');
+              router.push(ensureTrailingSlash('/signup/roles'))
             }}
             sx={{
               fontSize: '16px',

@@ -9,17 +9,16 @@ import { Separator } from '@/components/ui/separator';
 import { User, Phone, Building, Edit, Save, X } from 'lucide-react';
 import { CloseCircleIcon } from '@/components/icons';
 import { toast } from 'sonner';
-import { UpdatePrincipalProfileRequest } from '@/types/api/principal';
-import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
+import { UpdatePrincipalProfileRequest, PrincipalProfile } from '@/types/api/principal';
+import { usePrincipalProfile } from '@/hooks/queries/principal/usePrincipalProfile';
+import { useUpdatePrincipalProfile } from '@/hooks/mutations/principal/useUpdatePrincipalProfile';
 import { validatePrincipalProfileData } from '@/utils/validation';
-import { useApiError } from '@/hooks/useApiError';
 import { toPrincipalPersonalInfoManagementVM } from '@/lib/adapters/principal';
 import type { PrincipalPersonalInfoManagementVM } from '@/types/view/principal';
 
 export function PrincipalPersonalInfoManagement() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedInfo, setEditedInfo] = useState<UpdatePrincipalProfileRequest>({});
-  const [isLoading, setIsLoading] = useState(false);
   
   // 전화번호 인증 관련 상태
   const [isPhoneVerificationRequired, setIsPhoneVerificationRequired] = useState(false);
@@ -32,18 +31,21 @@ export function PrincipalPersonalInfoManagement() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [isShaking, setIsShaking] = useState(false);
 
-  // API 기반 데이터 관리
-  const { profile, loadProfile, error, isPrincipal, updateProfile } = usePrincipalApi();
-  const { handleApiError, fieldErrors, clearErrors } = useApiError();
+  // React Query 기반 데이터 관리
+  const { data: profileData, isLoading: profileLoading, error } = usePrincipalProfile();
+  const profile = profileData as PrincipalProfile | null | undefined;
+  const updateProfileMutation = useUpdatePrincipalProfile();
+  
+  const isLoading = profileLoading || updateProfileMutation.isPending;
 
   // ViewModel 생성
   const personalInfoVM: PrincipalPersonalInfoManagementVM = toPrincipalPersonalInfoManagementVM({
-    profile,
+    profile: (profile as PrincipalProfile | null) || null,
     isEditing,
     editedInfo,
     isLoading,
-    error,
-    isPrincipal,
+    error: error?.message || null,
+    isPrincipal: true, // React Query는 Principal일 때만 호출되므로 항상 true
     isPhoneVerificationRequired,
     isPhoneVerified,
     verificationCode,
@@ -52,13 +54,6 @@ export function PrincipalPersonalInfoManagement() {
     validationErrors,
     isShaking,
   });
-
-  // 컴포넌트 마운트 시 프로필 로드
-  useEffect(() => {
-    if (isPrincipal) {
-      loadProfile();
-    }
-  }, [isPrincipal, loadProfile]);
 
   // profile 데이터가 로드되면 editedInfo 업데이트 (편집 모드가 아닐 때만)
   useEffect(() => {
@@ -175,21 +170,14 @@ export function PrincipalPersonalInfoManagement() {
       return;
     }
 
-    try {
-      setIsLoading(true);
-      clearErrors(); // 요청 시작 시 에러 초기화
-      setValidationErrors({}); // validation 에러도 초기화
-      
-      await updateProfile(editedInfo);
-      
-      setIsEditing(false);
-      handleCancelVerification();
-      toast.success('개인정보가 성공적으로 업데이트되었습니다.');
-    } catch (error) {
-      handleApiError(error, { disableToast: false, disableConsole: true });
-    } finally {
-      setIsLoading(false);
-    }
+    setValidationErrors({}); // validation 에러 초기화
+    
+    updateProfileMutation.mutate(editedInfo, {
+      onSuccess: () => {
+        setIsEditing(false);
+        handleCancelVerification();
+      },
+    });
   };
 
   const handleVerifyPhone = () => {
@@ -244,7 +232,7 @@ export function PrincipalPersonalInfoManagement() {
           <p className="text-sm text-red-500 mt-2">{personalInfoVM.error}</p>
         )}
         <Button
-          onClick={() => loadProfile()}
+          onClick={() => window.location.reload()}
           variant="outline"
           size="sm"
           className="mt-4"
@@ -334,17 +322,17 @@ export function PrincipalPersonalInfoManagement() {
                   placeholder="이름을 입력하세요"
                   disabled={personalInfoVM.isLoading}
                   className={`transition-all duration-200 ${
-                    (fieldErrors.name || personalInfoVM.validationErrors.name) ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                    personalInfoVM.validationErrors.name ? 'border-red-500 bg-red-50' : 'border-gray-300'
                   } ${
-                    personalInfoVM.isShaking && (fieldErrors.name || personalInfoVM.validationErrors.name) ? 'animate-shake' : ''
+                    personalInfoVM.isShaking && personalInfoVM.validationErrors.name ? 'animate-shake' : ''
                   }`}
                 />
               ) : (
                 <p className="text-gray-700 py-2">{personalInfoVM.profile?.name || '이름이 없습니다.'}</p>
               )}
-              {(fieldErrors.name || personalInfoVM.validationErrors.name) && (
+              {personalInfoVM.validationErrors.name && (
                 <p className="text-red-500 text-sm animate-in fade-in">
-                  {fieldErrors.name || personalInfoVM.validationErrors.name}
+                  {personalInfoVM.validationErrors.name}
                 </p>
               )}
             </div>
@@ -375,9 +363,9 @@ export function PrincipalPersonalInfoManagement() {
                       placeholder="전화번호를 입력하세요"
                       disabled={personalInfoVM.isLoading}
                       className={`flex-1 transition-all duration-200 ${
-                        (fieldErrors.phoneNumber || personalInfoVM.validationErrors.phoneNumber) ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        personalInfoVM.validationErrors.phoneNumber ? 'border-red-500 bg-red-50' : 'border-gray-300'
                       } ${
-                        personalInfoVM.isShaking && (fieldErrors.phoneNumber || personalInfoVM.validationErrors.phoneNumber) ? 'animate-shake' : ''
+                        personalInfoVM.isShaking && personalInfoVM.validationErrors.phoneNumber ? 'animate-shake' : ''
                       }`}
                     />
                     {personalInfoVM.isPhoneVerificationRequired && !personalInfoVM.isPhoneVerified && (
@@ -437,9 +425,9 @@ export function PrincipalPersonalInfoManagement() {
               ) : (
                 <p className="text-gray-700 py-2">{personalInfoVM.phoneDisplayValue}</p>
               )}
-              {(fieldErrors.phoneNumber || personalInfoVM.validationErrors.phoneNumber) && (
+              {personalInfoVM.validationErrors.phoneNumber && (
                 <p className="text-red-500 text-sm animate-in fade-in">
-                  {fieldErrors.phoneNumber || personalInfoVM.validationErrors.phoneNumber}
+                  {personalInfoVM.validationErrors.phoneNumber}
                 </p>
               )}
             </div>

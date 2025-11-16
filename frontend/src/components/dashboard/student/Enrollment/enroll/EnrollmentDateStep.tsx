@@ -8,25 +8,25 @@ import { ExtendedSessionData } from '@/contexts/forms/EnrollmentFormManager';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { CalendarProvider } from '@/contexts/CalendarContext';
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar';
-import { useStudentApi } from '@/hooks/student/useStudentApi';
+import { useStudentAvailableSessions } from '@/hooks/queries/student/useStudentAvailableSessions';
+import { useRouter } from 'next/navigation';
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 export function EnrollmentDateStep() {
-  const { form, goBack, setEnrollmentStep, setSelectedSessions } = useApp();
+  const router = useRouter();
+  const { form, goBack, setSelectedSessions } = useApp();
   const { enrollment } = form;
   const { selectedAcademyId, selectedClassIds } = enrollment;
   const { status } = useSession()
 
-  // API에서 수강 가능한 세션 데이터 가져오기
-  const { availableSessions, isLoading, error, loadAvailableClasses, clearErrors } = useStudentApi();
+  // React Query 기반 데이터 관리
+  const { data: availableSessionsData, isLoading, error } = useStudentAvailableSessions(selectedAcademyId || 0);
+  const availableSessions = React.useMemo(
+    () => availableSessionsData || [],
+    [availableSessionsData]
+  );
 
   const [selectedSessionIds, setSelectedSessionIds] = React.useState<Set<number>>(new Set());
-
-  // 선택된 학원이 변경될 때 수강 가능한 세션 로드
-  React.useEffect(() => {
-    if (selectedAcademyId) {
-      loadAvailableClasses(selectedAcademyId);
-    }
-  }, [selectedAcademyId, loadAvailableClasses]);
 
   // 선택된 클래스들의 세션만 필터링하고 ClassSession 형식으로 변환
   const selectedClassSessions = React.useMemo(() => {
@@ -144,19 +144,16 @@ export function EnrollmentDateStep() {
       }));
     
     setSelectedSessions(selectedSessionsData);
-    setEnrollmentStep('payment');
+    router.push(ensureTrailingSlash('/dashboard/student/enroll/academy/class/date/payment'));
   };
 
-  // 에러 처리 - AcademyManagement와 동일한 패턴 적용
+  // 에러 처리
   if (error && (!availableSessions || availableSessions.length === 0)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">세션 정보를 불러오는데 실패했습니다.</p>
         <button
-          onClick={() => {
-            clearErrors();
-            loadAvailableClasses(selectedAcademyId || undefined);
-          }}
+          onClick={() => window.location.reload()}
           className="mt-4 px-4 py-2 bg-[#AC9592] text-white rounded-lg hover:bg-[#8B7A77] transition-colors"
         >
           다시 시도

@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useSession } from '@/lib/auth/AuthProvider'
 
-import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi'
-import { useApiError } from '@/hooks/useApiError'
+import { usePrincipalClasses } from '@/hooks/queries/principal/usePrincipalClasses'
+import { usePrincipalCalendarSessions } from '@/hooks/queries/principal/usePrincipalCalendarSessions'
 import { ClassList } from '@/components/common/ClassContainer/ClassList'
 import { ClassSessionModal } from '@/components/common/ClassContainer/ClassSessionModal'
 import { Class } from '@/types/api/class'
@@ -19,17 +19,12 @@ export const PrincipalClassesContainer = () => {
   const [selectedClass, setSelectedClass] = useState<Class | null>(null)
   const [isClassSessionModalOpen, setIsClassSessionModalOpen] = useState(false)
 
-  // API 기반 데이터 관리
-  const { classes, sessions, loadClasses, loadSessions, isLoading, error, isPrincipal } = usePrincipalApi()
-  const { handleApiError } = useApiError()
-
-  // 컴포넌트 마운트 시 데이터 로드
-  useEffect(() => {
-    if (isPrincipal) {
-      loadClasses();
-      loadSessions();
-    }
-  }, [isPrincipal, loadClasses, loadSessions]);
+  // React Query 기반 데이터 관리
+  const { data: classes = [], isLoading: classesLoading, error: classesError } = usePrincipalClasses()
+  const { data: sessions = [], isLoading: sessionsLoading, error: sessionsError } = usePrincipalCalendarSessions()
+  
+  const isLoading = classesLoading || sessionsLoading
+  const error = classesError || sessionsError
 
   // 로딩 상태 처리
   if (status === 'loading' || isLoading) {
@@ -42,17 +37,11 @@ export const PrincipalClassesContainer = () => {
 
   // 에러 처리
   if (error) {
-    // 에러가 발생하면 useApiError로 처리
-    handleApiError(error);
-    
     return (
       <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">데이터를 불러오는데 실패했습니다.</p>
         <button
-          onClick={() => {
-            loadClasses();
-            loadSessions();
-          }}
+          onClick={() => window.location.reload()}
           className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
         >
           다시 시도
@@ -118,7 +107,7 @@ export const PrincipalClassesContainer = () => {
         <ClassSessionModal
           isOpen={isClassSessionModalOpen}
           selectedClass={selectedClass}
-          sessions={(sessions || []).map(toClassSessionForCalendar)}
+          sessions={Array.isArray(sessions) ? sessions.map(toClassSessionForCalendar) : []}
           onClose={closeClassSessionModal}
           role="principal"
         />

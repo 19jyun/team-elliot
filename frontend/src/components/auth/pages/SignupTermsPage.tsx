@@ -2,12 +2,12 @@
 
 import * as React from 'react'
 import { useState } from 'react'
-import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { signup, signupPrincipal } from '@/api/auth'
+import { useSignup, useSignupPrincipal } from '@/hooks/mutations/auth/useSignup'
 import Image from 'next/image'
 import { TermsModal } from '@/components/common/TermsModal'
 import { PrivacyPolicyModal } from '@/components/common/PrivacyPolicyModal'
+import { toast } from 'sonner'
 
 
 const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
@@ -21,7 +21,6 @@ const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
 
 export function SignupTermsPage() {
   const [currentStep] = useState(4)
-  const [isLoading, setIsLoading] = useState(false)
   const [agreements, setAgreements] = useState({
     age: false,
     terms1: false,
@@ -30,6 +29,12 @@ export function SignupTermsPage() {
   const [allChecked, setAllChecked] = useState(false)
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false)
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false)
+
+  // React Query 기반 mutation hooks
+  const signupMutation = useSignup()
+  const signupPrincipalMutation = useSignupPrincipal()
+  
+  const isLoading = signupMutation.isPending || signupPrincipalMutation.isPending
 
   const handleAllCheck = () => {
     const newValue = !allChecked
@@ -59,24 +64,20 @@ export function SignupTermsPage() {
       return
     }
 
-    setIsLoading(true)
+    // 세션 스토리지에서 이전 단계 데이터 가져오기
+    const signupData = JSON.parse(
+      sessionStorage.getItem('signupData') || '{}',
+    )
 
     try {
-      // 세션 스토리지에서 이전 단계 데이터 가져오기
-      const signupData = JSON.parse(
-        sessionStorage.getItem('signupData') || '{}',
-      )
-
-      let response
-
-      // Principal인 경우 별도 API 호출
+      // Principal인 경우 별도 mutation 사용
       if (signupData.role === 'PRINCIPAL') {
         if (!signupData.academyInfo) {
           toast.error('학원 정보가 없습니다. 다시 시도해주세요.')
           return
         }
 
-        response = await signupPrincipal({
+        await signupPrincipalMutation.mutateAsync({
           name: signupData.name,
           userId: signupData.userId,
           password: signupData.password,
@@ -85,8 +86,8 @@ export function SignupTermsPage() {
           academyInfo: signupData.academyInfo,
         })
       } else {
-        // Student, Teacher는 기존 API 사용
-        response = await signup({
+        // Student, Teacher는 일반 signup mutation 사용
+        await signupMutation.mutateAsync({
           name: signupData.name,
           userId: signupData.userId,
           password: signupData.password,
@@ -95,17 +96,13 @@ export function SignupTermsPage() {
         })
       }
 
-      if (response) {
-        toast.success('회원가입이 완료되었습니다')
-        sessionStorage.removeItem('signupData') // 세션 데이터 삭제
-        // 로그인 페이지로 이동 (기본 페이지)
-        window.location.href = '/'
-      }
+      // 성공 시 세션 데이터 삭제 및 리디렉션
+      sessionStorage.removeItem('signupData')
+      // 로그인 페이지로 이동 (기본 페이지)
+      window.location.href = '/'
     } catch (error) {
+      // 에러는 mutation hook에서 처리됨
       console.error('회원가입 오류:', error)
-      toast.error('회원가입에 실패했습니다')
-    } finally {
-      setIsLoading(false)
     }
   }
 

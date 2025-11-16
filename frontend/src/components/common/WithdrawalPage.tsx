@@ -31,12 +31,11 @@ export function WithdrawalPage() {
   const [customReason, setCustomReason] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const { navigation } = useApp();
-  const { clearSubPage } = navigation;
+  const { goBack } = useApp();
 
-  const handleBack = () => {
+  const handleBack = async () => {
     if (isLoading) return; // 로딩 중에는 뒤로가기 불가
-    clearSubPage();
+    await goBack();
   };
 
   const handleReasonSelect = (id: number) => {

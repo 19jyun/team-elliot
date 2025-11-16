@@ -2,10 +2,12 @@
 import React from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { CompleteIcon } from '@/components/icons';
+import { useRouter } from 'next/navigation';
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 export function EnrollmentCompleteStep() {
-  const { navigation, resetEnrollment, clearHistory } = useApp();
-  const { clearSubPage } = navigation;
+  const { resetEnrollment } = useApp();
+  const router = useRouter();
 
   const handleConfirm = async () => {
     // localStorage에서 모든 enrollment 관련 데이터 삭제
@@ -34,11 +36,8 @@ export function EnrollmentCompleteStep() {
     // 수강신청 상태 초기화
     resetEnrollment();
     
-    // Virtual History 초기화
-    clearHistory();
-    
-    // enrollment 컨테이너(subpage) 완전히 닫기
-    clearSubPage();
+    // 메인 대시보드로 이동
+    router.push(ensureTrailingSlash('/dashboard/student'));
   };
 
   return (

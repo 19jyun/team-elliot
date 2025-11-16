@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { StatusStep } from './StatusStep';
 import { useApp } from '@/contexts/AppContext';
-import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi';
+import { useRouter } from 'next/navigation';
+import { usePrincipalTeachers } from '@/hooks/queries/principal/usePrincipalTeachers';
 import { getImageUrl } from '@/utils/imageUtils';
 import Image from 'next/image';
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 interface Teacher {
   id: number;
@@ -17,19 +19,15 @@ interface Teacher {
 }
 
 export function CreateClassStepTeacher() {
-  const { form, goBack, setCreateClassStep, setSelectedTeacherId } = useApp();
+  const router = useRouter();
+  const { form, goBack, setSelectedTeacherId } = useApp();
   const { createClass } = form;
   const { selectedTeacherId } = createClass;
   
   const [selectedTeacher, setSelectedTeacher] = useState<number | null>(selectedTeacherId);
 
-  // Principal API 훅 사용
-  const { teachers, loadTeachers, isLoading, error } = usePrincipalApi();
-
-  // 컴포넌트 마운트 시 선생님 데이터 로드
-  useEffect(() => {
-    loadTeachers();
-  }, [loadTeachers]);
+  // React Query 기반 데이터 관리
+  const { data: teachers = [], isLoading, error, refetch } = usePrincipalTeachers();
 
   const handleTeacherSelect = (teacherId: number) => {
     setSelectedTeacher(teacherId);
@@ -49,7 +47,7 @@ export function CreateClassStepTeacher() {
     // DashboardContext의 selectedTeacherId 업데이트
     setSelectedTeacherId(selectedTeacher);
     
-    setCreateClassStep('schedule');
+    router.push(ensureTrailingSlash('/dashboard/principal/class/create-class/info/teacher/schedule'));
   };
 
   const handleBack = () => {
@@ -120,7 +118,7 @@ export function CreateClassStepTeacher() {
           <div className="text-center">
             <p className="text-red-500 mb-4">선생님 목록을 불러오는데 실패했습니다.</p>
             <button
-              onClick={() => loadTeachers()}
+              onClick={() => refetch()}
               className="px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
             >
               다시 시도

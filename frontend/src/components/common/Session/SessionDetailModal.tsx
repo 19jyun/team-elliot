@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { SlideUpModal } from '@/components/common/SlideUpModal'
 import { SessionEnrollmentsResponse } from '@/types/api/teacher'
@@ -10,8 +10,10 @@ import { SessionContentTab } from '@/components/common/Session/SessionDetailComp
 import { PoseSelectionModal } from '@/components/common/Session/SessionDetailComponents/Pose/PoseSelectionModal'
 import { useAddSessionContent } from '@/hooks/useSessionContents'
 import { BalletPose } from '@/types/api/ballet-pose'
-import { usePrincipalApi } from '@/hooks/principal/usePrincipalApi'
-import { useTeacherApi } from '@/hooks/teacher/useTeacherApi'
+import { usePrincipalCalendarSession } from '@/hooks/queries/principal/usePrincipalCalendarSessions'
+import { useTeacherCalendarSession } from '@/hooks/queries/teacher/useTeacherCalendarSessions'
+import { usePrincipalSessionEnrollments } from '@/hooks/queries/principal/usePrincipalSessionEnrollments'
+import { useTeacherSessionEnrollments } from '@/hooks/queries/teacher/useTeacherSessionEnrollments'
 
 interface SessionDetailModalProps {
   isOpen: boolean
@@ -39,81 +41,40 @@ export function SessionDetailModal({
   defaultTab = 'overview'
 }: SessionDetailModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>(defaultTab)
-  const [enrollmentData, setEnrollmentData] = useState<SessionEnrollmentsResponse | null>(null)
   const [isPoseSelectionOpen, setIsPoseSelectionOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
 
   const addContentMutation = useAddSessionContent(sessionId || 0)
 
-  // 역할에 따라 다른 API hook 사용
-  const principalApi = usePrincipalApi();
-  const teacherApi = useTeacherApi();
+  // React Query 기반 데이터 관리
+  const { 
+    data: principalSession, 
+    isLoading: principalSessionLoading 
+  } = usePrincipalCalendarSession(sessionId || 0);
   
   const { 
-    sessions: principalSessions,
-    loadSessions: loadPrincipalSessions,
-    loadSessionEnrollments: loadPrincipalSessionEnrollments
-  } = principalApi;
+    data: teacherSession, 
+    isLoading: teacherSessionLoading 
+  } = useTeacherCalendarSession(sessionId || 0);
+  
+  const { 
+    data: principalEnrollmentsData, 
+    isLoading: principalEnrollmentsLoading 
+  } = usePrincipalSessionEnrollments(sessionId || 0, role === 'principal');
+  
+  const { 
+    data: teacherEnrollmentsData, 
+    isLoading: teacherEnrollmentsLoading 
+  } = useTeacherSessionEnrollments(sessionId || 0, role === 'teacher');
 
-  const {
-    sessions: teacherSessions,
-    loadSessions: loadTeacherSessions,
-    loadSessionEnrollments: loadTeacherSessionEnrollments
-  } = teacherApi;
-
-  // 현재 역할에 맞는 데이터 선택
-  const currentSessions = role === 'teacher' ? teacherSessions : principalSessions;
-
-  // 세션 정보를 API에서 가져오기
-  const session = useMemo(() => {
-    if (!sessionId || !currentSessions) return null;
-    const result = currentSessions.find((s: { id: number }) => s.id === sessionId);
-    return result;
-  }, [sessionId, currentSessions]);
+  // 현재 역할에 맞는 세션 데이터 선택
+  const session = role === 'teacher' ? teacherSession : principalSession;
+  const enrollmentData = (role === 'teacher' ? teacherEnrollmentsData : principalEnrollmentsData) as SessionEnrollmentsResponse | null | undefined;
+  const isLoading = role === 'teacher' 
+    ? teacherSessionLoading || teacherEnrollmentsLoading
+    : principalSessionLoading || principalEnrollmentsLoading;
 
   // Teacher와 Principal은 동일한 권한을 가짐
   const canManageSessions = role === 'teacher' || role === 'principal'
-
-  const loadSessionEnrollments = useCallback(async () => {
-    try {
-      setIsLoading(true)
-      // 역할에 따라 다른 API 호출
-      let data;
-      if (role === 'principal') {
-        data = await loadPrincipalSessionEnrollments(sessionId!)
-      } else if (role === 'teacher') {
-        data = await loadTeacherSessionEnrollments(sessionId!)
-      } else {
-        throw new Error('지원하지 않는 역할입니다.')
-      }
-      setEnrollmentData(data || null)
-    } catch (error) {
-      console.error('세션 수강생 정보 로드 실패:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [role, sessionId, loadPrincipalSessionEnrollments, loadTeacherSessionEnrollments])
-
-  // 세션 수강생 정보 로드 (API 호출)
-  useEffect(() => {
-    if (isOpen && sessionId && canManageSessions) {
-      loadSessionEnrollments()
-    } else {
-      setEnrollmentData(null)
-      setIsLoading(false)
-    }
-  }, [isOpen, sessionId, canManageSessions, loadSessionEnrollments])
-
-  // 세션 데이터 로드
-  useEffect(() => {
-    if (isOpen && sessionId) {
-      if (role === 'teacher') {
-        loadTeacherSessions();
-      } else if (role === 'principal') {
-        loadPrincipalSessions();
-      }
-    }
-  }, [isOpen, sessionId, role, loadTeacherSessions, loadPrincipalSessions])
 
   useEffect(() => {
     if (isOpen && sessionId) {

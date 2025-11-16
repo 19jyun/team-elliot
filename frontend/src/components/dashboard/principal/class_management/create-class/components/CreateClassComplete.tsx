@@ -4,18 +4,20 @@ import React from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { StatusStep } from './StatusStep';
 import { CompleteIcon } from '@/components/icons';
+import { useRouter } from 'next/navigation';
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 export function CreateClassComplete() {
-  const { form, resetCreateClass, clearSubPage, clearHistory } = useApp();
+  const { form, resetCreateClass } = useApp();
   const { createClass } = form;
   const { classFormData } = createClass;
+  const router = useRouter();
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     resetCreateClass();
 
-    clearHistory();
-
-    clearSubPage();
+    // 메인 대시보드로 이동
+    router.push(ensureTrailingSlash('/dashboard/principal'));
   };
 
   const statusSteps = [

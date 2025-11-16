@@ -9,7 +9,9 @@ import { FormsProvider, useForms } from './forms/FormsContext';
 import { UIContextProvider, useUI } from './UIContext';
 import { DataContextProvider, useData } from './DataContext';
 import { FormsState } from './state/StateSyncTypes';
-import { EnrollmentStep, ClassesWithSessionsByMonthResponse, ExtendedSessionData } from './forms/EnrollmentFormManager';
+import { EnrollmentStep, ClassesWithSessionsByMonthResponse, ExtendedSessionData, EnrollmentModificationData } from './forms/EnrollmentFormManager';
+import { EnrollmentModificationStep } from './forms/EnrollmentModificationFormManager';
+import { useRouter, usePathname } from 'next/navigation';
 import { CreateClassStep, ClassFormData } from './forms/CreateClassFormManager';
 import { AuthMode, SignupStep, SignupData, LoginData } from './forms/AuthFormManager';
 import { PrincipalPersonManagementStep } from './forms/PersonManagementFormManager';
@@ -38,7 +40,7 @@ interface AppContextType {
   // StateSync
   stateSync: ReturnType<typeof useStateSync>;
   
-  // 통합된 goBack (하위 호환성)
+  // 통합된 goBack (하위 호환성 - router.back() 사용)
   goBack: () => Promise<boolean>;
   
   // 통합 폼 관리 (Legacy 호환)
@@ -51,20 +53,14 @@ interface AppContextType {
   
   // 하위 호환성을 위한 직접 접근 (Legacy API)
   activeTab: number;
-  subPage: string | null;
-  canGoBack: boolean;
-  isTransitioning: boolean;
   navigationItems: ReturnType<typeof useNavigation>['navigationItems'];
-  history: ReturnType<typeof useNavigation>['history'];
   setActiveTab: (tab: number) => void;
   handleTabChange: (tab: number) => void;
-  navigateToSubPage: (page: string) => void;
-  clearSubPage: () => void;
-  clearHistory: () => void;
   
   // 하위 호환성을 위한 폼 접근
   form: {
     enrollment: ReturnType<typeof useForms>['enrollment'];
+    enrollmentModification: ReturnType<typeof useForms>['enrollmentModification'];
     createClass: ReturnType<typeof useForms>['createClass'];
     principalCreateClass: ReturnType<typeof useForms>['principalCreateClass'];
     auth: ReturnType<typeof useForms>['auth'];
@@ -88,7 +84,13 @@ interface AppContextType {
   setSelectedClassIds: (classIds: number[]) => void;
   setSelectedAcademyId: (academyId: number | null) => void;
   setSelectedClassesWithSessions: (classes: ClassesWithSessionsByMonthResponse[]) => void;
+  setModificationData: (data: EnrollmentModificationData | null) => void;
   resetEnrollment: () => void;
+  
+  // 수강 변경 관련
+  setEnrollmentModificationStep: (step: EnrollmentModificationStep) => void;
+  setEnrollmentModificationData: (data: Partial<ReturnType<typeof useForms>['enrollmentModification']>) => void;
+  resetEnrollmentModification: () => void;
   
   // 클래스 생성 관련
   setCreateClassStep: (step: CreateClassStep) => void;
@@ -158,45 +160,46 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
   const session = useSession();
   const stateSync = useStateSync();
 
-  // formsState를 navigation에 전달
-  const formsState: FormsState = useMemo(() => ({
-    enrollment: forms.enrollment,
-    createClass: forms.createClass,
-    auth: forms.auth,
-    personManagement: forms.personManagement,
-    principalCreateClass: forms.principalCreateClass,
-    principalPersonManagement: forms.principalPersonManagement,
-  }), [forms.enrollment, forms.createClass, forms.auth, forms.personManagement, forms.principalCreateClass, forms.principalPersonManagement]);
+
+  const router = useRouter();
+  const pathname = usePathname();
 
   // SessionDetail 상태 관리
   const [sessionDetailCurrentStep, setSessionDetailCurrentStep] = useState<SessionDetailStep>('main');
   
   const sessionDetailGoBack = useCallback(async (): Promise<boolean> => {
     if (sessionDetailCurrentStep === 'main') {
-      // 메인 단계에서는 navigation의 goBack 사용
-      return await navigation.goBackWithForms(formsState);
+      // 메인 단계에서는 router.back() 사용
+      router.back();
+      return true;
     } else {
       // 하위 단계에서는 이전 단계로 이동
       setSessionDetailCurrentStep('main');
       return true;
     }
-  }, [sessionDetailCurrentStep, navigation, formsState]);
+  }, [sessionDetailCurrentStep, router]);
 
-  // 통합된 goBack (하위 호환성)
-  const unifiedGoBack = useCallback(async (): Promise<boolean> => {
-    // session-detail 서브페이지인 경우 sessionDetail 단계별 처리
-    if (navigation.subPage === 'session-detail') {
+  // 통합된 goBack (하위 호환성 - router.back() 사용)
+  const goBack = useCallback(async (): Promise<boolean> => {
+    // session-detail 페이지인 경우 sessionDetail 단계별 처리
+    if (pathname?.includes('/session/')) {
       return await sessionDetailGoBack();
     }
     
-    // 기존 navigation goBack 사용
-    return await navigation.goBackWithForms(formsState);
-  }, [navigation, sessionDetailGoBack, formsState]);
-
-  // 하위 호환성을 위한 goBack (기존 코드와의 호환성)
-  const goBack = useCallback(async (): Promise<boolean> => {
-    return await unifiedGoBack();
-  }, [unifiedGoBack]);
+    // /dashboard/{role} 경로에서는 뒤로가기 비활성화
+    const isRoleDashboard = 
+      pathname === '/dashboard/student' || 
+      pathname === '/dashboard/teacher' || 
+      pathname === '/dashboard/principal';
+    
+    if (isRoleDashboard) {
+      return false; // 뒤로가기 비활성화
+    }
+    
+    // 그 외 모든 경우 router.back() 사용
+    router.back();
+    return true;
+  }, [router, pathname, sessionDetailGoBack]);
 
   // 통합 폼 관리 메서드들 (Legacy 호환)
   const updateForm = useCallback(<T extends keyof FormsState>(
@@ -214,31 +217,83 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     return forms.getFormState(formType);
   }, [forms]);
 
-  // 브라우저 뒤로가기 버튼 처리 (통합된 goBack 사용)
+  // 브라우저 앞으로가기 방지
   useEffect(() => {
-    const handleBrowserBackButton = async (event: PopStateEvent) => {
-      event.preventDefault();
-      
-      // 통합된 goBack 사용 (GoBackManager를 통해 단계별 로직 처리)
-      const success = await goBack();
-      
-      // 뒤로갈 수 없거나 signup-roles에서 뒤로가기한 경우 로그인 페이지로
-      if (!success || navigation.subPage === 'signup-roles') {
-        forms.setAuthMode('login');
-        window.history.pushState(null, '', window.location.href);
+    if (typeof window === 'undefined') return;
+
+    const handlePopState = (_event: PopStateEvent) => {
+      // 앞으로가기 방지: 히스토리 상태를 현재로 고정
+      if (window.history.state && window.history.state.preventForward) {
+        window.history.pushState({ preventForward: true }, '', window.location.href);
       }
     };
 
-    // 브라우저 뒤로가기 버튼 리스너
-    window.addEventListener('popstate', handleBrowserBackButton);
+    // 초기 히스토리 상태 설정
+    window.history.pushState({ preventForward: true }, '', window.location.href);
     
-    // 초기 상태를 히스토리에 추가
-    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', handlePopState);
     
     return () => {
-      window.removeEventListener('popstate', handleBrowserBackButton);
+      window.removeEventListener('popstate', handlePopState);
     };
-  }, [goBack, forms, navigation.subPage]); 
+  }, []);
+
+  // Capacitor 뒤로가기 처리 (단순화)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const initializeCapacitorBackButton = async () => {
+      try {
+        const { App } = await import('@capacitor/app');
+        const { Capacitor } = await import('@capacitor/core');
+
+        const isNative = Capacitor.isNativePlatform();
+
+        if (!isNative) {
+          return; // 웹 환경에서는 등록하지 않음
+        }
+
+        const handleNativeBackButton = async () => {
+          // 현재 경로가 각 역할의 메인 대시보드인지 확인
+          const isRoleDashboard = 
+            pathname === '/dashboard/student' || 
+            pathname === '/dashboard/teacher' || 
+            pathname === '/dashboard/principal';
+          
+          const isMainDashboard = isRoleDashboard || pathname === '/dashboard';
+
+          if (isRoleDashboard) {
+            // /dashboard/{role} 경로에서는 뒤로가기 비활성화 (앱 종료)
+            App.exitApp();
+          } else if (isMainDashboard) {
+            // /dashboard 경로에서도 앱 종료
+            App.exitApp();
+          } else {
+            // 그 외 모든 페이지에서는 Next.js 라우터의 '뒤로가기'를 호출
+            router.back();
+          }
+        };
+
+        const listener = await App.addListener('backButton', handleNativeBackButton);
+
+        return () => {
+          listener.remove();
+        };
+      } catch (error) {
+        console.warn('Capacitor App plugin not available', error);
+      }
+    };
+
+    const cleanup = initializeCapacitorBackButton();
+
+    return () => {
+      cleanup.then((fn) => {
+        if (fn) {
+          fn();
+        }
+      });
+    };
+  }, [router, pathname]); // pathname이 변경될 때마다 리스너가 최신 경로를 참조 
 
   // 메모이제이션된 value 객체
   const contextValue = useMemo(() => ({
@@ -251,7 +306,7 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     stateSync,
     
     // 통합된 goBack (하위 호환성)
-    goBack: unifiedGoBack,
+    goBack,
     
     // 통합 폼 관리 (Legacy 호환)
     updateForm,
@@ -260,20 +315,14 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     
     // 하위 호환성을 위한 직접 접근
     activeTab: navigation.activeTab,
-    subPage: navigation.subPage,
-    canGoBack: navigation.canGoBack,
-    isTransitioning: navigation.isTransitioning,
     navigationItems: navigation.navigationItems,
-    history: navigation.history,
     setActiveTab: navigation.setActiveTab,
     handleTabChange: navigation.handleTabChange,
-    navigateToSubPage: navigation.navigateToSubPage,
-    clearSubPage: navigation.clearSubPage,
-    clearHistory: navigation.clearHistory,
     
     // 하위 호환성을 위한 폼 접근
     form: {
       enrollment: forms.enrollment,
+      enrollmentModification: forms.enrollmentModification,
       createClass: forms.createClass,
       principalCreateClass: forms.principalCreateClass,
       auth: forms.auth,
@@ -297,7 +346,13 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     setSelectedClassIds: (classIds: number[]) => forms.setEnrollmentData({ selectedClassIds: classIds }),
     setSelectedAcademyId: (academyId: number | null) => forms.setEnrollmentData({ selectedAcademyId: academyId }),
     setSelectedClassesWithSessions: (classes: ClassesWithSessionsByMonthResponse[]) => forms.setEnrollmentData({ selectedClassesWithSessions: classes }),
+    setModificationData: forms.setModificationData,
     resetEnrollment: forms.resetEnrollment,
+    
+    // 수강 변경 관련
+    setEnrollmentModificationStep: forms.setEnrollmentModificationStep,
+    setEnrollmentModificationData: forms.setEnrollmentModificationData,
+    resetEnrollmentModification: forms.resetEnrollmentModification,
     
     // 클래스 생성 관련
     setCreateClassStep: forms.setCreateClassStep,
@@ -351,7 +406,7 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
   }), [
     navigation, forms, ui, data, session, stateSync,
     updateForm, resetAllForms, getFormState,
-    sessionDetailCurrentStep, sessionDetailGoBack, unifiedGoBack
+    sessionDetailCurrentStep, sessionDetailGoBack, goBack
   ]);
 
   return (

@@ -7,7 +7,7 @@ import React from 'react'
 import { EnrolledClassesList } from '@/components/features/student/classes/EnrolledClassesList'
 import { ClassSessionModal } from '@/components/features/student/classes/ClassSessionModal'
 import { StudentSessionDetailModal } from '@/components/features/student/classes/StudentSessionDetailModal'
-import { useStudentApi } from '@/hooks/student/useStudentApi'
+import { useStudentCalendarSessions } from '@/hooks/queries/student/useStudentCalendarSessions'
 import type { EnrolledClassVM, ClassDataVM, StudentEnrolledSessionVM } from '@/types/view/student'
 import type { ApiError } from '@/types/ui/common'
 import { toEnrolledClassVMs, toClassDataVM } from '@/lib/adapters/student'
@@ -23,17 +23,14 @@ export function EnrolledClassesContainer() {
   const [selectedSession, setSelectedSession] = useState<StudentEnrolledSessionVM | null>(null)
   const [isSessionDetailModalOpen, setIsSessionDetailModalOpen] = useState(false)
 
-  // API 데이터 사용
-  const { 
-    sessionClasses, 
-    isLoading, 
-    error 
-  } = useStudentApi()
+  // React Query 기반 데이터 관리
+  const { data: sessionClasses, isLoading, error } = useStudentCalendarSessions()
 
   // sessionClasses에서 enrolledClasses 추출 (어댑터 사용)
   const enrolledClasses: EnrolledClassVM[] = React.useMemo(() => {
-    if (!sessionClasses || sessionClasses.length === 0) return [];
-    return toEnrolledClassVMs(sessionClasses);
+    const classesArray = Array.isArray(sessionClasses) ? sessionClasses : [];
+    if (classesArray.length === 0) return [];
+    return toEnrolledClassVMs(classesArray);
   }, [sessionClasses]);
 
   // ClassSessionModal에 전달할 ClassDataVM으로 변환 (어댑터 사용)

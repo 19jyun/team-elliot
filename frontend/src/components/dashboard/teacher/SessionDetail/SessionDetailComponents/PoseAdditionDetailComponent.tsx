@@ -67,7 +67,7 @@ function SortablePoseItem({
         {...listeners}
         className={`flex items-center justify-between p-3 border border-[#AC9592] rounded-lg transition-all duration-200 ${
           isSelected 
-            ? 'bg-[#E8F4FD] border-[#3B82F6] shadow-md' 
+            ? 'bg-[#AC9592]/10 border-[#AC9592] shadow-md' 
             : 'bg-[#F5F5F5] hover:bg-[#F0F0F0]'
         } ${isDragEnabled ? 'cursor-move touch-action-none' : 'cursor-pointer'}`}
       >
@@ -87,7 +87,7 @@ function SortablePoseItem({
         </button>
       </div>
       {isSelected && (
-        <div className="absolute top-2 right-2 bg-[#3B82F6] text-white text-xs px-2 py-1 rounded-full">
+        <div className="absolute top-2 right-2 bg-[#AC9592] text-white text-xs px-2 py-1 rounded-full">
           드래그 가능
         </div>
       )}
@@ -130,10 +130,10 @@ export function PoseAdditionDetailComponent({ session, onBack }: PoseAdditionDet
   
   // 검색된 자세들 필터링
   const filteredPoses = useMemo(() => {
-    if (!allPoses) return []
+    if (!allPoses || !Array.isArray(allPoses)) return []
     if (!searchQuery.trim()) return allPoses
     
-    return allPoses.filter(pose => 
+    return allPoses.filter((pose: BalletPose) => 
       pose.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       pose.description?.toLowerCase().includes(searchQuery.toLowerCase())
     )
@@ -253,7 +253,7 @@ export function PoseAdditionDetailComponent({ session, onBack }: PoseAdditionDet
             </div>
           ) : (
             <div className="space-y-0">
-              {filteredPoses.map((pose, _index) => {
+              {filteredPoses.map((pose: BalletPose, _index: number) => {
                 return (
                   <div
                     key={pose.id}
@@ -289,7 +289,9 @@ export function PoseAdditionDetailComponent({ session, onBack }: PoseAdditionDet
                   >
                     <div className="space-y-1.5 h-[20vh] overflow-y-auto">
                       {finalPoseIds.map((poseId, index) => {
-                        const pose = allPoses?.find(p => p.id === poseId)
+                        const pose = (allPoses && Array.isArray(allPoses)) 
+                          ? allPoses.find((p: BalletPose) => p.id === poseId)
+                          : undefined
                         if (!pose) return null
                         
                         return (
