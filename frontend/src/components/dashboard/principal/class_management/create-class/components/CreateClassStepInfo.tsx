@@ -2,10 +2,12 @@
 
 import React, { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
+import { useRouter } from 'next/navigation';
 import { StatusStep } from './StatusStep';
 
 import { usePrincipalAcademy } from '@/hooks/queries/principal/usePrincipalAcademy';
 import { toast } from 'sonner';
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 const LEVELS = [
   { value: 'BEGINNER', label: '초급' },
@@ -14,7 +16,8 @@ const LEVELS = [
 ];
 
 export function CreateClassStepInfo() {
-  const { form, goBack, setClassFormData, setCreateClassStep } = useApp();
+  const router = useRouter();
+  const { form, goBack, setClassFormData } = useApp();
   const { createClass } = form;
   const { classFormData } = createClass;
   
@@ -78,7 +81,7 @@ export function CreateClassStepInfo() {
       maxStudents: formData.maxStudents,
       price: formData.price,
     });
-    setCreateClassStep('teacher');
+    router.push(ensureTrailingSlash('/dashboard/principal/class/create-class/info/teacher'));
   };
 
   const handleBack = () => {

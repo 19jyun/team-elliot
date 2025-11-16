@@ -2,12 +2,15 @@
 
 import React, { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
+import { useRouter } from 'next/navigation';
 import { StatusStep } from './StatusStep';
 import { useCreatePrincipalClass } from '@/hooks/mutations/principal/useCreatePrincipalClass';
 import { toast } from 'sonner';
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 export function CreateClassStepDetail() {
-  const { form, setClassFormData, setCreateClassStep } = useApp();
+  const router = useRouter();
+  const { form, setClassFormData } = useApp();
   const { createClass } = form;
   const { classFormData, selectedTeacherId } = createClass;
 
@@ -70,7 +73,7 @@ export function CreateClassStepDetail() {
     createClassMutation.mutate(requestData, {
       onSuccess: () => {
         // complete 단계로 이동
-        setCreateClassStep('complete');
+        router.push(ensureTrailingSlash('/dashboard/principal/class/create-class/info/teacher/schedule/content/complete'));
       },
       onError: () => {
         toast.error('강의 생성에 실패했습니다. 다시 시도해주세요.');
@@ -79,7 +82,7 @@ export function CreateClassStepDetail() {
   };
 
   const handleBack = () => {
-    setCreateClassStep('schedule');
+    router.push(ensureTrailingSlash('/dashboard/principal/class/create-class/info/teacher/schedule'));
   };
 
   const statusSteps = [

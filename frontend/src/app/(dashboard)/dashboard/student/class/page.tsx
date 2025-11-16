@@ -8,16 +8,12 @@ import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
 import { SessionCardDisplay } from '@/components/calendar/SessionCardDisplay'
 import { StudentSessionDetailModal } from '@/components/features/student/classes/StudentSessionDetailModal'
-import { useApp } from '@/contexts/AppContext'
 import type { RootState } from '@/store/index'
 import type { ClassSession, ClassSessionWithCounts } from '@/types/api/class'
 import type { ClassSession as Session } from '@/types/api/class-session'
 
 export default function StudentDashboard() {
   const { data: session, status } = useSession()
-
-  const { navigation } = useApp()
-  const { navigateToSubPage } = navigation
 
   // Redux store에서 캘린더 데이터 가져오기
   const studentData = useSelector((state: RootState) => state.student.data);
@@ -159,9 +155,9 @@ export default function StudentDashboard() {
     setSelectedSession(null)
   }
 
-  // 수강중인 클래스 SubPage로 이동
+  // 수강중인 클래스 페이지로 이동 (현재 페이지이므로 아무 동작 안 함)
   const handleEnrolledClassesClick = () => {
-    navigateToSubPage('enrolled-classes')
+    // 이미 수강중인 클래스 페이지에 있으므로 아무 동작 안 함
   }
 
   return (

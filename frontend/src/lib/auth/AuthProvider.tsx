@@ -1,9 +1,10 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { login, logout, getSession as apiGetSession, refreshToken } from "@/api/auth";
-import { AuthRouter } from "./AuthRouter";
 import { pushNotificationService } from "@/services/pushNotificationService";
+import { ensureTrailingSlash } from "@/lib/utils/router";
 
 // NextAuth와 호환되는 타입 정의
 interface User {
@@ -35,7 +36,7 @@ interface AuthContextType {
   status: 'loading' | 'authenticated' | 'unauthenticated';
   isInitializing: boolean;
   update: (data?: Partial<Session>) => Promise<void>;
-  signIn: (provider: string, options?: SignInOptions) => Promise<{ ok: boolean; error: string | null }>;
+  signIn: (provider: string, options?: SignInOptions) => Promise<{ ok: boolean; error: string | null; role?: string }>;
   signOut: (options?: SignOutOptions) => Promise<void>;
 }
 
@@ -44,7 +45,7 @@ const AuthContext = createContext<AuthContextType>({
   status: 'unauthenticated',
   isInitializing: false,
   update: async () => {},
-  signIn: async () => ({ ok: false, error: "Not initialized" }),
+  signIn: async () => ({ ok: false, error: "Not initialized", role: undefined }),
   signOut: async () => {},
 });
 
@@ -99,6 +100,7 @@ interface SessionProviderProps {
 }
 
 export const SessionProvider = ({ children, session: initialSession }: SessionProviderProps) => {
+  const router = useRouter();
   const [session, setSession] = useState<Session | null>(initialSession || null);
   const [loading, setLoading] = useState(!initialSession);
   const [isAutoRedirecting, setIsAutoRedirecting] = useState(false);
@@ -172,33 +174,38 @@ export const SessionProvider = ({ children, session: initialSession }: SessionPr
     initializeSession();
   }, [initialSession]);
 
+  // 역할 기반 대시보드 경로 가져오기 헬퍼 함수
+  const getDashboardPath = useCallback((role?: string): string => {
+    if (!role) {
+      return "/dashboard/";
+    }
+    const roleUpper = role.toUpperCase();
+    switch (roleUpper) {
+      case "STUDENT":
+        return "/dashboard/student/";
+      case "TEACHER":
+        return "/dashboard/teacher/";
+      case "PRINCIPAL":
+        return "/dashboard/principal/";
+      default:
+        return "/dashboard/";
+    }
+  }, []);
+
   // 자동 리디렉션 처리 (로그인 성공과 동일한 플로우)
   useEffect(() => {
     if (isAutoRedirecting && session?.user && !loading) {
-      const waitForAuthRouter = () => {
-        return new Promise<void>((resolve) => {
-          const checkRouter = () => {
-            setTimeout(() => {
-              resolve();
-            }, 200); // 200ms 대기
-          };
-          checkRouter();
-        });
-      };
-
-      // 로그인 성공과 동일한 플로우 적용
-      // AuthRouter 대기 후 리디렉션
-      waitForAuthRouter().then(() => {
-        // 로그인 성공과 동일한 지연 적용
-        setTimeout(() => {
-          AuthRouter.redirectToDashboard();
-        }, 100);
-      });
+      // 세션 상태 업데이트를 위한 짧은 지연 후 리디렉션
+      setTimeout(() => {
+        const userRole = session.user?.role;
+        const dashboardPath = getDashboardPath(userRole);
+        router.push(ensureTrailingSlash(dashboardPath));
+      }, 100);
       
       // 리디렉션 플래그 리셋
       setIsAutoRedirecting(false);
     }
-  }, [isAutoRedirecting, session, loading]);
+  }, [isAutoRedirecting, session, loading, router, getDashboardPath]);
 
   // 로그인 함수 (NextAuth signIn과 호환)
   const signIn = useCallback(async (provider: string, options?: SignInOptions) => {
@@ -238,7 +245,7 @@ export const SessionProvider = ({ children, session: initialSession }: SessionPr
           // 토큰 동기화 실패해도 로그인은 성공으로 처리
         }
         
-        return { ok: true, error: null };
+        return { ok: true, error: null, role: newSession.user.role };
       }
       return { ok: false, error: "로그인 실패" };
     } catch (error) {

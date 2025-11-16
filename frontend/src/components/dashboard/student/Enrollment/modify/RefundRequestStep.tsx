@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { InfoBubble } from '@/components/common/InfoBubble';
-import { useApp } from '@/contexts/AppContext';
 
 import { useStudentRefundAccount } from '@/hooks/queries/student/useStudentRefundAccount';
 import { useUpdateStudentRefundAccount } from '@/hooks/mutations/student/useUpdateStudentRefundAccount';
@@ -18,13 +18,16 @@ import {
 import { BANKS } from '@/constants/banks';
 import { processBankInfo, getBankNameToSave } from '@/utils/bankUtils';
 import { EnrollmentModificationData } from '@/contexts/forms/EnrollmentFormManager';
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 interface RefundRequestStepProps {
   modificationData: EnrollmentModificationData;
 }
 
 export function RefundRequestStep({ modificationData }: RefundRequestStepProps) {
-  const { setEnrollmentModificationStep } = useApp();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const enrollmentId = searchParams.get('id') || '';
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -280,7 +283,7 @@ export function RefundRequestStep({ modificationData }: RefundRequestStepProps) 
       }
       
       toast.success(`${refundRequests.length}개 세션의 환불 신청이 완료되었습니다.`);
-      setEnrollmentModificationStep('refund-complete');
+      router.push(ensureTrailingSlash(`/dashboard/student/modify?id=${enrollmentId}&step=refund-complete`));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : '환불 신청에 실패했습니다. 다시 시도해주세요.');
     } finally {

@@ -2,7 +2,7 @@
 
 import { useSession, useSignOut } from '@/lib/auth/AuthProvider'
 import { useState, useMemo } from 'react'
-
+import { ensureTrailingSlash } from '@/lib/utils/router'
 import { usePrincipalCalendarSessions } from '@/hooks/queries/principal/usePrincipalCalendarSessions'
 import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessionModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'
@@ -11,6 +11,7 @@ import { useApp } from '@/contexts/AppContext'
 import { toClassSessionForCalendar, convertPrincipalSessionToClassSessionWithCounts } from '@/lib/adapters/principal'
 import type { PrincipalClassSession } from '@/types/api/principal'
 import type { ClassSession } from '@/types/api/class'
+import { useRouter } from 'next/navigation'
 
 // 강의 개설 카드 컴포넌트
 const CreateClassCard: React.FC<{
@@ -63,12 +64,11 @@ const CreateClassCard: React.FC<{
 
 export default function PrincipalClassPage() {
   const signOut = useSignOut()
+  const router = useRouter()
 
   const { data: session, status } = useSession()
 
-
-  const { navigation, data } = useApp()
-  const { navigateToSubPage } = navigation
+  const { data } = useApp()
   
   // React Query 기반 데이터 관리
   const { data: calendarSessionsData, isLoading, error, refetch } = usePrincipalCalendarSessions();
@@ -150,19 +150,19 @@ export default function PrincipalClassPage() {
     // DateSessionModal 닫기
     closeDateModal()
     
-    // 서브페이지로 이동
-    navigateToSubPage('session-detail')
+    // 쿼리 파라미터로 세션 상세 페이지로 이동
+    router.push(ensureTrailingSlash(`/dashboard/principal/class/session-detail?id=${session.id}`))
   }
 
 
-  // 전체 클래스 SubPage로 이동
+  // 전체 클래스 페이지로 이동 (현재 페이지이므로 아무 동작 안 함)
   const handlePrincipalClassesClick = () => {
-    navigateToSubPage('principal-all-classes')
+    // 이미 전체 클래스 페이지에 있으므로 아무 동작 안 함
   }
 
-  // 강의 개설 SubPage로 이동
+  // 강의 개설 페이지로 이동
   const handleCreateClassClick = () => {
-    navigateToSubPage('create-class')
+    router.push(ensureTrailingSlash('/dashboard/principal/class/create-class/info'))
   }
 
   return (

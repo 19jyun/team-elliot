@@ -315,12 +315,6 @@ export interface EnrollmentModificationDateStepVM {
   month?: number | null;
 }
 
-export interface EnrollmentModificationContainerVM {
-  classId: number;
-  className?: string;
-  month?: number | null;
-}
-
 export interface EnrollmentPaymentStepVM {
   onComplete?: () => void;
 }

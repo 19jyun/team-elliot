@@ -1,17 +1,17 @@
 'use client';
 
 import cn from 'classnames';
-import { useApp } from '@/contexts/AppContext';
+import { useRouter } from 'next/navigation';
 import { TeacherProfileCardForStudent } from '@/components/features/student/classes/TeacherProfileCardForStudent';
 import { useClassDetails } from '@/hooks/queries/common/useClassDetails';
 import type { StudentEnrolledSessionVM, ClassDetailVM, ClassDetailDisplayVM } from '@/types/view/student';
 import { toClassDetailDisplayVM } from '@/lib/adapters/student';
 import { formatTime } from '@/utils/dateTime';
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 
 export function ClassDetail({ classId, classSessions, showModificationButton = true, onModificationClick }: ClassDetailVM) {
-  const { navigation } = useApp();
-  const { navigateToSubPage } = navigation;
+  const router = useRouter();
   
   // React Query 기반 데이터 관리
   const { data: classDetails, isLoading, error: queryError } = useClassDetails(classId);
@@ -82,15 +82,15 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
       }
     }
     
-    // 수강 변경 SubPage로 이동 (월 정보 포함)
-    const subPagePath = `modify-${classId}-${targetMonth}`;
+    // 수강 변경 페이지로 이동 (쿼리 파라미터 사용)
+    const url = `/dashboard/student/modify?id=${classId}&step=date-step${targetMonth ? `&month=${targetMonth}` : ''}`;
     
     // 모달 닫기 콜백 호출
     if (onModificationClick) {
       onModificationClick();
     }
     
-    navigateToSubPage(subPagePath);
+    router.push(ensureTrailingSlash(url));
   };
 
   if (displayVM.isLoading) {

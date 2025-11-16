@@ -2,17 +2,16 @@
 
 import React from 'react';
 import { useSession } from '@/lib/auth/AuthProvider';
-import { useApp } from '@/contexts/AppContext';
+import { useRouter } from 'next/navigation';
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 export function EnrollmentMainStep() {
-  const { navigation, setEnrollmentStep } = useApp();
-  const { navigateToSubPage } = navigation;
+  const router = useRouter();
   const { status } = useSession()
 
   const handleEnrollmentClick = () => {
-    // 새로운 수강신청 플로우 시작
-    setEnrollmentStep('academy-selection');
-    navigateToSubPage('enroll');
+    // 새로운 수강신청 플로우 시작 (정적 경로 사용)
+    router.push(ensureTrailingSlash('/dashboard/student/enroll/academy'));
   };
 
   if (status === 'loading') {

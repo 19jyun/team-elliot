@@ -12,7 +12,6 @@ export function CommonHeader() {
   const { data: session } = useSession();
   const { 
     activeTab, 
-    subPage, 
     handleTabChange, 
     goBack
   } = useApp();
@@ -101,34 +100,8 @@ export function CommonHeader() {
         <div className="w-8 h-8"></div>
       </div>
 
-      {/* 네비게이션 바 (서브 페이지가 아닐 때만 표시) */}
-      {!subPage && navigationItems.length > 0 && (
-        <nav className="flex items-center justify-center px-5 w-full bg-white shadow-sm">
-          <div
-            className="flex justify-center gap-1 -mb-px w-full max-w-[480px]"
-            role="tablist"
-          >
-            {navigationItems.map((item) => (
-              <button
-                key={item.value}
-                onClick={() => handleTabChange(item.value)}
-                className={`flex-1 focus:outline-none transition-colors ${
-                  activeTab === item.value
-                    ? 'text-stone-700 border-b-2 border-stone-700 bg-stone-50'
-                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-                }`}
-              >
-                <div className="flex justify-center items-center py-3 px-4 text-sm font-medium">
-                  {item.label}
-                </div>
-              </button>
-            ))}
-          </div>
-        </nav>
-      )}
-
-      {/* 네비게이션 바 (서브 페이지일 때도 표시) */}
-      {subPage && navigationItems.length > 0 && (
+      {/* 네비게이션 바 */}
+      {navigationItems.length > 0 && (
         <nav className="flex items-center justify-center px-5 w-full bg-white shadow-sm">
           <div
             className="flex justify-center gap-1 -mb-px w-full max-w-[480px]"

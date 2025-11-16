@@ -20,6 +20,7 @@ export function PoseSelectionModal({
 }: PoseSelectionModalProps) {
   const [selectedDifficulty, setSelectedDifficulty] = useState<PoseDifficulty | 'ALL'>('ALL');
   const { data: poses, isLoading, error } = useBalletPoses();
+  const posesArray: BalletPose[] = Array.isArray(poses) ? poses : [];
 
   const difficulties: Array<{ value: PoseDifficulty | 'ALL'; label: string }> = [
     { value: 'ALL', label: '전체' },
@@ -28,9 +29,9 @@ export function PoseSelectionModal({
     { value: 'ADVANCED', label: '고급' },
   ];
 
-  const filteredPoses = poses?.filter(pose => 
+  const filteredPoses = posesArray.filter((pose: BalletPose) => 
     selectedDifficulty === 'ALL' || pose.difficulty === selectedDifficulty
-  ) || [];
+  );
 
   const handlePoseClick = (pose: BalletPose) => {
     onSelect(pose);
@@ -77,7 +78,7 @@ export function PoseSelectionModal({
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-2 max-h-96 overflow-y-auto">
-            {filteredPoses.map((pose) => (
+            {filteredPoses.map((pose: BalletPose) => (
               <PoseCard
                 key={pose.id}
                 pose={pose}

@@ -4,9 +4,11 @@ import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { StatusStep } from './StatusStep';
 import { useApp } from '@/contexts/AppContext';
+import { useRouter } from 'next/navigation';
 import { usePrincipalTeachers } from '@/hooks/queries/principal/usePrincipalTeachers';
 import { getImageUrl } from '@/utils/imageUtils';
 import Image from 'next/image';
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 interface Teacher {
   id: number;
@@ -17,7 +19,8 @@ interface Teacher {
 }
 
 export function CreateClassStepTeacher() {
-  const { form, goBack, setCreateClassStep, setSelectedTeacherId } = useApp();
+  const router = useRouter();
+  const { form, goBack, setSelectedTeacherId } = useApp();
   const { createClass } = form;
   const { selectedTeacherId } = createClass;
   
@@ -44,7 +47,7 @@ export function CreateClassStepTeacher() {
     // DashboardContext의 selectedTeacherId 업데이트
     setSelectedTeacherId(selectedTeacher);
     
-    setCreateClassStep('schedule');
+    router.push(ensureTrailingSlash('/dashboard/principal/class/create-class/info/teacher/schedule'));
   };
 
   const handleBack = () => {

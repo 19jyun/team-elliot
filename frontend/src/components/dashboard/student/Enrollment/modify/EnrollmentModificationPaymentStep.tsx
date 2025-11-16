@@ -1,11 +1,11 @@
 'use client'
 import React, { useEffect, useState, useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { toast } from 'sonner';
 import { PrincipalPaymentBox } from '@/components/features/student/enrollment/month/date/payment/PrincipalPaymentBox';
 import { PaymentConfirmFooter } from '@/components/features/student/enrollment/month/date/payment/PaymentConfirmFooter';
 import { SelectedSession, PrincipalPaymentInfo } from '@/components/features/student/enrollment/month/date/payment/types';
-import { useApp } from '@/contexts/AppContext';
 import { useBatchModifyEnrollments } from '@/hooks/mutations/student/useBatchModifyEnrollments';
 import { useModificationErrorHandler } from '@/hooks/student/useModificationErrorHandler';
 import { useClassSessionsForModification } from '@/hooks/queries/student/useClassSessionsForModification';
@@ -15,6 +15,7 @@ import {
 import type { ModificationSessionVM } from '@/types/view/student';
 import { EnrollmentModificationData } from '@/contexts/forms/EnrollmentFormManager';
 import type { ClassSessionForModification } from '@/types/api/class';
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 interface EnrollmentModificationPaymentStepProps {
   modificationData: EnrollmentModificationData;
@@ -25,7 +26,9 @@ export function EnrollmentModificationPaymentStep({
   modificationData,
   classId
 }: EnrollmentModificationPaymentStepProps) {
-  const { setEnrollmentModificationStep } = useApp();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const enrollmentId = searchParams.get('id') || classId.toString();
   const modifyEnrollmentsMutation = useBatchModifyEnrollments();
   
   // 세션 정보를 다시 가져와서 selectedSessionIds로 필터링
@@ -69,7 +72,7 @@ export function EnrollmentModificationPaymentStep({
     setEnrollmentStep: (step) => {
       // EnrollmentStep을 EnrollmentModificationStep으로 변환
       if (step === 'date-selection') {
-        setEnrollmentModificationStep('date-selection');
+        router.push(ensureTrailingSlash(`/dashboard/student/modify?id=${enrollmentId}&step=date-step`));
       }
     },
   });
@@ -266,11 +269,11 @@ export function EnrollmentModificationPaymentStep({
         const selectedSessionsForError = contextSessions as unknown as ModificationSessionVM[];
         const shouldProceed = handlePartialModificationFailure(result, selectedSessionsForError);
         if (shouldProceed.shouldProceed) {
-          setEnrollmentModificationStep('refund-complete');
+          router.push(ensureTrailingSlash(`/dashboard/student/modify?id=${enrollmentId}&step=refund-complete`));
         }
       } else {
         // 완전 성공 (React Query mutation이 성공하면 자동으로 toast 표시)
-        setEnrollmentModificationStep('refund-complete');
+        router.push(ensureTrailingSlash(`/dashboard/student/modify?id=${enrollmentId}&step=refund-complete`));
       }
     } catch (error) {
       const shouldProceed = handleModificationError(error);

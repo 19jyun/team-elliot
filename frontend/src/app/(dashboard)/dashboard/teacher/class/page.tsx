@@ -11,13 +11,15 @@ import { useApp } from '@/contexts/AppContext'
 import { toClassSessionForCalendar } from '@/lib/adapters/teacher'
 import type { TeacherSession } from '@/types/api/teacher'
 import type { ClassSessionWithCounts } from '@/types/api/class'
+import { useRouter } from 'next/navigation'
+import { ensureTrailingSlash } from '@/lib/utils/router'
 
 export default function TeacherDashboardPage() {
   const { data: session, status } = useSession()
   const signOut = useSignOut()
+  const router = useRouter()
 
-  const { navigation, data } = useApp()
-  const { navigateToSubPage } = navigation
+  const { data } = useApp()
   
   // React Query 기반 데이터 관리
   const { data: calendarSessionsData, isLoading, error, refetch } = useTeacherCalendarSessions();
@@ -134,19 +136,19 @@ export default function TeacherDashboardPage() {
     setSelectedSessions(sessionsWithCounts);
   }
 
-  // 세션 클릭 핸들러 - 서브페이지로 이동
+  // 세션 클릭 핸들러 - 쿼리 파라미터로 이동
   const handleSessionClick = (session: ClassSessionWithCounts) => {
     // 세션 정보를 DataContext에 저장
     data.setCache('selectedSession', session);
     
-    // 서브페이지로 이동
-    navigateToSubPage('session-detail');
+    // 쿼리 파라미터로 세션 상세 페이지로 이동
+    router.push(ensureTrailingSlash(`/dashboard/teacher/class/session-detail?id=${session.id}`));
   }
 
 
-  // 담당 클래스 SubPage로 이동
+  // 담당 클래스 페이지로 이동 (현재 페이지이므로 아무 동작 안 함)
   const handleTeacherClassesClick = () => {
-    navigateToSubPage('teacher-classes')
+    // 이미 담당 클래스 페이지에 있으므로 아무 동작 안 함
   }
 
   return (

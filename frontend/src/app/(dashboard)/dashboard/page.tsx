@@ -2,9 +2,9 @@
 
 import { useSession } from '@/lib/auth/AuthProvider';
 import { AuthGuard } from '@/components/guards/AuthGuard';
-import { StudentDashboard } from '@/components/dashboard/StudentDashboard';
-import { TeacherDashboard } from '@/components/dashboard/TeacherDashboard';
-import { PrincipalDashboard } from '@/components/dashboard/PrincipalDashboard';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 export default function DashboardPage() {
   return (
@@ -15,22 +15,36 @@ export default function DashboardPage() {
 }
 
 function DashboardContent() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
-  // 역할별 대시보드 렌더링 (상태 기반)
-  const renderDashboard = () => {
-    switch (session?.user?.role) {
-      case 'STUDENT':
-        return <StudentDashboard />;
-      case 'TEACHER':
-        return <TeacherDashboard />;
-      case 'PRINCIPAL':
-        return <PrincipalDashboard />;
-      default:
-        // 알 수 없는 역할의 경우 기본적으로 학생 대시보드
-        return <StudentDashboard />;
+  useEffect(() => {
+    if (status === 'loading') return;
+    
+    if (!session?.user) {
+      router.push(ensureTrailingSlash('/'));
+      return;
     }
-  };
 
-  return renderDashboard();
+    // 역할에 따라 적절한 경로로 리디렉션
+    const role = session.user.role?.toLowerCase();
+    if (role) {
+      router.replace(ensureTrailingSlash(`/dashboard/${role}`));
+    }
+  }, [session, status, router]);
+
+  // 리디렉션 중 로딩 표시
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
+    </div>
+  );
 }

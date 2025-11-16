@@ -3,16 +3,15 @@
 import React, { useState } from 'react';
 import { TermsModal } from './TermsModal';
 import { PrivacyPolicyModal } from './PrivacyPolicyModal';
-import { useApp } from '@/contexts/AppContext';
 
 export default function FooterLinks() {
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
-  const { navigation } = useApp();
-  const { navigateToSubPage } = navigation;
 
   const handleWithdrawalClick = () => {
-    navigateToSubPage('withdrawal');
+    // 회원탈퇴는 모달이나 별도 페이지로 처리 (현재는 WithdrawalPage 컴포넌트가 있음)
+    // 필요시 router.push('/dashboard/withdrawal') 또는 모달로 처리
+    alert('회원탈퇴 기능은 준비 중입니다.');
   };
 
   return (

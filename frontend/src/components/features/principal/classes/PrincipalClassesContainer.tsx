@@ -107,7 +107,7 @@ export const PrincipalClassesContainer = () => {
         <ClassSessionModal
           isOpen={isClassSessionModalOpen}
           selectedClass={selectedClass}
-          sessions={(sessions || []).map(toClassSessionForCalendar)}
+          sessions={Array.isArray(sessions) ? sessions.map(toClassSessionForCalendar) : []}
           onClose={closeClassSessionModal}
           role="principal"
         />

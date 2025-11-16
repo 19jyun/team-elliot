@@ -245,12 +245,12 @@ export const FormsProvider: React.FC<FormsProviderProps> = ({ children }) => {
     if (data.selectedClassIds) enrollmentManager.setSelectedClassIds(data.selectedClassIds);
     if (data.selectedAcademyId !== undefined) enrollmentManager.setSelectedAcademyId(data.selectedAcademyId);
     if (data.selectedClassesWithSessions) enrollmentManager.setSelectedClassesWithSessions(data.selectedClassesWithSessions);
-    if (data.modificationData !== undefined) enrollmentManager.setModificationData(data.modificationData);
   }, [enrollmentManager]);
 
-  const setModificationData = useCallback((data: EnrollmentModificationData | null) => {
-    enrollmentManager.setModificationData(data);
-  }, [enrollmentManager]);
+  const setModificationData = useCallback((_data: EnrollmentModificationData | null) => {
+    // modificationData는 별도로 관리되므로 여기서는 처리하지 않음
+    // EnrollmentModificationFormManager에서 관리됨
+  }, []);
 
   const resetEnrollment = useCallback(() => {
     enrollmentManager.reset();

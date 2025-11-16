@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { User, Phone, Building, Edit, Save, X } from 'lucide-react';
 import { CloseCircleIcon } from '@/components/icons';
 import { toast } from 'sonner';
-import { UpdatePrincipalProfileRequest } from '@/types/api/principal';
+import { UpdatePrincipalProfileRequest, PrincipalProfile } from '@/types/api/principal';
 import { usePrincipalProfile } from '@/hooks/queries/principal/usePrincipalProfile';
 import { useUpdatePrincipalProfile } from '@/hooks/mutations/principal/useUpdatePrincipalProfile';
 import { validatePrincipalProfileData } from '@/utils/validation';
@@ -32,14 +32,15 @@ export function PrincipalPersonalInfoManagement() {
   const [isShaking, setIsShaking] = useState(false);
 
   // React Query 기반 데이터 관리
-  const { data: profile, isLoading: profileLoading, error } = usePrincipalProfile();
+  const { data: profileData, isLoading: profileLoading, error } = usePrincipalProfile();
+  const profile = profileData as PrincipalProfile | null | undefined;
   const updateProfileMutation = useUpdatePrincipalProfile();
   
   const isLoading = profileLoading || updateProfileMutation.isPending;
 
   // ViewModel 생성
   const personalInfoVM: PrincipalPersonalInfoManagementVM = toPrincipalPersonalInfoManagementVM({
-    profile: profile || null,
+    profile: (profile as PrincipalProfile | null) || null,
     isEditing,
     editedInfo,
     isLoading,

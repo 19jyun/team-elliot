@@ -11,11 +11,7 @@ const TestComponent = () => {
   const handlePublishNavigation = () => {
     const navigationState: NavigationState = {
       activeTab: 1,
-      subPage: 'test',
-      canGoBack: true,
-      isTransitioning: false,
       navigationItems: [],
-      history: [],
     };
     stateSync.publish('navigation', navigationState);
     setResult('navigation-published');
@@ -31,6 +27,10 @@ const TestComponent = () => {
         selectedClassIds: [],
         selectedAcademyId: 123,
         selectedClassesWithSessions: [],
+      },
+      enrollmentModification: {
+        currentStep: 'date-selection',
+        modificationData: null,
       },
       createClass: {
         currentStep: 'info',
@@ -126,11 +126,7 @@ const TestComponent = () => {
     stateSync.syncStates({
       navigation: {
         activeTab: 2,
-        subPage: null,
-        canGoBack: false,
-        isTransitioning: false,
         navigationItems: [],
-        history: [],
       },
     });
     setResult('states-synced');

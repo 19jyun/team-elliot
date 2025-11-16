@@ -6,9 +6,12 @@ import { toast } from 'sonner';
 import { useApp } from '@/contexts/AppContext';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { useStudentAcademies } from '@/hooks/queries/student/useStudentAcademies';
+import { useRouter } from 'next/navigation';
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 export function EnrollmentAcademyStep() {
-  const { goBack, setSelectedAcademyId: setContextSelectedAcademyId, setEnrollmentStep } = useApp();
+  const router = useRouter();
+  const { goBack, setSelectedAcademyId: setContextSelectedAcademyId } = useApp();
   const { status } = useSession()
 
   // React Query 기반 데이터 관리
@@ -52,7 +55,7 @@ export function EnrollmentAcademyStep() {
     }
     
     setContextSelectedAcademyId(localSelectedAcademyId);
-    setEnrollmentStep('class-selection');
+    router.push(ensureTrailingSlash('/dashboard/student/enroll/academy/class'));
   };
 
   // 에러 처리

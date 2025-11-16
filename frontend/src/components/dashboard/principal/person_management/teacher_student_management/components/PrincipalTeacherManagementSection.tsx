@@ -8,12 +8,17 @@ import { useTeacherJoinRequests } from '@/hooks/queries/principal/useTeacherJoin
 import { useRemoveTeacher } from '@/hooks/mutations/principal/useRemoveTeacher';
 import { useApproveTeacherJoin } from '@/hooks/mutations/principal/useApproveTeacherJoin';
 import { useRejectTeacherJoin } from '@/hooks/mutations/principal/useRejectTeacherJoin';
-import { PrincipalTeacher, TeacherJoinRequest } from '@/types/api/principal';
+import { PrincipalTeacher, TeacherJoinRequest, TeacherJoinRequestsResponse } from '@/types/api/principal';
 
 export default function PrincipalTeacherManagementSection() {
   // React Query 기반 데이터 관리
   const { data: teachers = [], isLoading: teachersLoading, error: teachersError } = usePrincipalTeachers();
-  const { data: joinRequests, isLoading: joinRequestsLoading, error: joinRequestsError } = useTeacherJoinRequests();
+  const { data: joinRequestsData, isLoading: joinRequestsLoading, error: joinRequestsError } = useTeacherJoinRequests();
+  const joinRequests = joinRequestsData as TeacherJoinRequestsResponse | null | undefined;
+
+
+  // 타입 가드
+  const hasPendingRequests = joinRequests && Array.isArray(joinRequests.pendingRequests) && joinRequests.pendingRequests.length > 0;
   
   // Mutations
   const removeTeacherMutation = useRemoveTeacher();
@@ -77,7 +82,7 @@ export default function PrincipalTeacherManagementSection() {
   return (
     <div className="space-y-4">
       {/* 가입 신청 대기 목록 */}
-      {joinRequests?.pendingRequests && joinRequests.pendingRequests.length > 0 && (
+      {hasPendingRequests && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -85,12 +90,12 @@ export default function PrincipalTeacherManagementSection() {
               가입 신청 대기
             </CardTitle>
             <CardDescription>
-              {joinRequests.pendingRequests.length}건의 가입 신청이 대기 중입니다.
+              {joinRequests!.pendingRequests.length}건의 가입 신청이 대기 중입니다.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3 overflow-y-auto">
-              {joinRequests.pendingRequests.map((request: TeacherJoinRequest) => (
+              {joinRequests!.pendingRequests.map((request: TeacherJoinRequest) => (
                 <div key={request.id} className="flex items-center justify-between p-3 bg-[#AC9592]/5 border border-[#AC9592]/20 rounded-lg">
                   <div className="flex items-center gap-3">
                     <div>

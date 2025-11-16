@@ -1,7 +1,6 @@
 'use client';
 
 import { useApp } from '@/contexts/AppContext';
-import { CommonHeader } from '@/components/layout/CommonHeader';
 import { DashboardContainer } from './DashboardContainer';
 import { useSession } from '@/lib/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
@@ -10,58 +9,14 @@ import PrincipalClassPage from '@/app/(dashboard)/dashboard/principal/class/page
 import PrincipalProfilePage from '@/app/(dashboard)/dashboard/principal/profile/page';
 import PrincipalPersonManagementPage from '@/app/(dashboard)/dashboard/principal/person_management/page';
 import PrincipalEnrollmentManagementPage from '@/app/(dashboard)/dashboard/principal/enrollment_management/page';
-import { PrincipalClassesContainer } from '@/components/features/principal/classes/PrincipalClassesContainer';
-import { CreateClassContainer } from './principal/class_management/create-class/containers/CreateClassContainer';
-import PrincipalAcademyManagementPage from '@/app/(dashboard)/dashboard/principal/academy_management/page';
-import { PrincipalProfileManagement } from './principal/profile/PrincipalProfileManagement/PrincipalProfileManagement';
-import { PrincipalPersonalInfoManagement } from './principal/profile/PrincipalPersonalInfoManagement/PrincipalPersonalInfoManagement';
-import { PrincipalBankInfoManagement } from './principal/profile/PrincipalBankInfoManagement/PrincipalBankInfoManagement';
 import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSocketListener';
-import { SettingsPage } from '@/components/settings/SettingsPage';
-import { SessionDetailContainer } from './teacher/SessionDetail/SessionDetailContainer';
-import { WithdrawalPage } from '@/components/common/WithdrawalPage';
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 
 
 function PrincipalDashboardContent() {
   const { navigation } = useApp();
-  const { activeTab, handleTabChange, subPage, isTransitioning } = navigation;
-  
-  // SubPage 렌더링 함수
-  const renderSubPage = () => {
-    if (!subPage) return null;
-    
-    switch (subPage) {
-      case 'principal-all-classes':
-        return <PrincipalClassesContainer />;
-      case 'create-class':
-        return <CreateClassContainer />;
-      case 'profile':
-        return <PrincipalProfileManagement />;
-      case 'personal-info':
-        return <PrincipalPersonalInfoManagement />;
-      case 'bank-info':
-        return <PrincipalBankInfoManagement />;
-      case 'academy-management':
-        return <PrincipalAcademyManagementPage />;
-      case 'settings':
-        return <SettingsPage role="PRINCIPAL" />;
-      case 'session-detail':
-        return <SessionDetailContainer />;
-      case 'withdrawal':
-        return <WithdrawalPage />;
-      default:
-        return (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <h2 className="text-xl font-semibold mb-2">SubPage</h2>
-              <p className="text-gray-600">SubPage: {subPage}</p>
-              <p className="text-sm text-gray-500 mt-2">개발 중...</p>
-            </div>
-          </div>
-        );
-    }
-  };
+  const { activeTab, handleTabChange } = navigation;
 
   // 메인 탭 페이지들을 배열로 준비
   const tabPages = [
@@ -72,33 +27,19 @@ function PrincipalDashboardContent() {
   ];
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 pb-safe">
-      <CommonHeader />
-      <main className="flex-1 overflow-hidden relative">
+    <>
+      {/* DashboardContainer - 항상 렌더링 */}
+      <DashboardContainer
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+      >
+        {tabPages}
+      </DashboardContainer>
 
-        {/* DashboardContainer - 항상 렌더링 */}
-        <DashboardContainer
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-          isTransitioning={isTransitioning}
-        >
-          {tabPages}
-        </DashboardContainer>
-
-        {/* SubPage 오버레이 */}
-        {subPage && (
-          <div className="absolute inset-0 bg-white z-10">
-            <div className="w-full h-full overflow-y-auto overflow-x-hidden">
-              {renderSubPage()}
-            </div>
-          </div>
-        )}
-
-        {/* Socket 관련 컴포넌트들 */}
-        <RoleBasedSocketListener />
-        {/* <SocketStatus /> */}
-      </main>
-    </div>
+      {/* Socket 관련 컴포넌트들 */}
+      <RoleBasedSocketListener />
+      {/* <SocketStatus /> */}
+    </>
   );
 }
 
@@ -108,7 +49,7 @@ export function PrincipalDashboardPage() {
 
   useEffect(() => {
     if (status !== 'loading' && !session?.user) {
-      router.push('/');
+      router.push(ensureTrailingSlash('/'));
     }
   }, [session, status, router]);
 

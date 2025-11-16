@@ -1,17 +1,17 @@
 // src/contexts/AppContext.tsx
 'use client';
 
-import React, { createContext, useContext, useCallback, ReactNode, useMemo, useEffect, useState, useRef } from 'react';
+import React, { createContext, useContext, useCallback, ReactNode, useMemo, useEffect, useState } from 'react';
 import { useSession } from '@/lib/auth/AuthProvider';
 import { StateSyncProvider, useStateSync } from './state/StateSyncContext';
 import { NavigationProvider, useNavigation } from './navigation/NavigationContext';
 import { FormsProvider, useForms } from './forms/FormsContext';
 import { UIContextProvider, useUI } from './UIContext';
 import { DataContextProvider, useData } from './DataContext';
-import { FormsState, NavigationState } from './state/StateSyncTypes';
+import { FormsState } from './state/StateSyncTypes';
 import { EnrollmentStep, ClassesWithSessionsByMonthResponse, ExtendedSessionData, EnrollmentModificationData } from './forms/EnrollmentFormManager';
-import { BackButtonHandler } from './navigation/BackButtonHandler';
 import { EnrollmentModificationStep } from './forms/EnrollmentModificationFormManager';
+import { useRouter, usePathname } from 'next/navigation';
 import { CreateClassStep, ClassFormData } from './forms/CreateClassFormManager';
 import { AuthMode, SignupStep, SignupData, LoginData } from './forms/AuthFormManager';
 import { PrincipalPersonManagementStep } from './forms/PersonManagementFormManager';
@@ -40,7 +40,7 @@ interface AppContextType {
   // StateSync
   stateSync: ReturnType<typeof useStateSync>;
   
-  // 통합된 goBack (하위 호환성)
+  // 통합된 goBack (하위 호환성 - router.back() 사용)
   goBack: () => Promise<boolean>;
   
   // 통합 폼 관리 (Legacy 호환)
@@ -53,16 +53,9 @@ interface AppContextType {
   
   // 하위 호환성을 위한 직접 접근 (Legacy API)
   activeTab: number;
-  subPage: string | null;
-  canGoBack: boolean;
-  isTransitioning: boolean;
   navigationItems: ReturnType<typeof useNavigation>['navigationItems'];
-  history: ReturnType<typeof useNavigation>['history'];
   setActiveTab: (tab: number) => void;
   handleTabChange: (tab: number) => void;
-  navigateToSubPage: (page: string) => void;
-  clearSubPage: () => Promise<void>;
-  clearHistory: () => void;
   
   // 하위 호환성을 위한 폼 접근
   form: {
@@ -167,46 +160,46 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
   const session = useSession();
   const stateSync = useStateSync();
 
-  // formsState를 navigation에 전달
-  const formsState: FormsState = useMemo(() => ({
-    enrollment: forms.enrollment,
-    enrollmentModification: forms.enrollmentModification,
-    createClass: forms.createClass,
-    auth: forms.auth,
-    personManagement: forms.personManagement,
-    principalCreateClass: forms.principalCreateClass,
-    principalPersonManagement: forms.principalPersonManagement,
-  }), [forms.enrollment, forms.enrollmentModification, forms.createClass, forms.auth, forms.personManagement, forms.principalCreateClass, forms.principalPersonManagement]);
+
+  const router = useRouter();
+  const pathname = usePathname();
 
   // SessionDetail 상태 관리
   const [sessionDetailCurrentStep, setSessionDetailCurrentStep] = useState<SessionDetailStep>('main');
   
   const sessionDetailGoBack = useCallback(async (): Promise<boolean> => {
     if (sessionDetailCurrentStep === 'main') {
-      // 메인 단계에서는 navigation의 goBack 사용
-      return await navigation.goBackWithForms(formsState);
+      // 메인 단계에서는 router.back() 사용
+      router.back();
+      return true;
     } else {
       // 하위 단계에서는 이전 단계로 이동
       setSessionDetailCurrentStep('main');
       return true;
     }
-  }, [sessionDetailCurrentStep, navigation, formsState]);
+  }, [sessionDetailCurrentStep, router]);
 
-  // 통합된 goBack (하위 호환성)
-  const unifiedGoBack = useCallback(async (): Promise<boolean> => {
-    // session-detail 서브페이지인 경우 sessionDetail 단계별 처리
-    if (navigation.subPage === 'session-detail') {
+  // 통합된 goBack (하위 호환성 - router.back() 사용)
+  const goBack = useCallback(async (): Promise<boolean> => {
+    // session-detail 페이지인 경우 sessionDetail 단계별 처리
+    if (pathname?.includes('/session/')) {
       return await sessionDetailGoBack();
     }
     
-    // 기존 navigation goBack 사용
-    return await navigation.goBackWithForms(formsState);
-  }, [navigation, sessionDetailGoBack, formsState]);
-
-  // 하위 호환성을 위한 goBack (기존 코드와의 호환성)
-  const goBack = useCallback(async (): Promise<boolean> => {
-    return await unifiedGoBack();
-  }, [unifiedGoBack]);
+    // /dashboard/{role} 경로에서는 뒤로가기 비활성화
+    const isRoleDashboard = 
+      pathname === '/dashboard/student' || 
+      pathname === '/dashboard/teacher' || 
+      pathname === '/dashboard/principal';
+    
+    if (isRoleDashboard) {
+      return false; // 뒤로가기 비활성화
+    }
+    
+    // 그 외 모든 경우 router.back() 사용
+    router.back();
+    return true;
+  }, [router, pathname, sessionDetailGoBack]);
 
   // 통합 폼 관리 메서드들 (Legacy 호환)
   const updateForm = useCallback(<T extends keyof FormsState>(
@@ -224,81 +217,28 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     return forms.getFormState(formType);
   }, [forms]);
 
-  // BackButtonHandler 인스턴스 생성 (단일 진입점)
-  const [backButtonHandler] = useState(() => {
-    const goBackManager = navigation.getGoBackManager();
-    return new BackButtonHandler(goBackManager);
-  });
-
-  // 최신 navigation과 formsState를 참조하기 위한 ref
-  const navigationRef = useRef(navigation);
-  const formsStateRef = useRef(formsState);
-  const formsRef = useRef(forms);
-
-  // ref 업데이트 (렌더링마다 최신 값으로 갱신)
-  useEffect(() => {
-    navigationRef.current = navigation;
-    formsStateRef.current = formsState;
-    formsRef.current = forms;
-  }, [navigation, formsState, forms]);
-
-  // 브라우저 뒤로가기 버튼 처리 (BackButtonHandler 사용)
-  useEffect(() => {
-    const handleBrowserBackButton = async (event: PopStateEvent) => {
-      // ref를 통해 최신 상태 참조
-      const currentNavigation = navigationRef.current;
-      const currentFormsState = formsStateRef.current;
-      const currentForms = formsRef.current;
-      
-      // preventDefault 제거 (효과 없음 - popstate는 read-only 이벤트)
-      
-      // NavigationState 생성
-      const navigationState: NavigationState = {
-        activeTab: currentNavigation.activeTab,
-        subPage: currentNavigation.subPage,
-        canGoBack: currentNavigation.canGoBack,
-        isTransitioning: currentNavigation.isTransitioning,
-        navigationItems: currentNavigation.navigationItems,
-        history: currentNavigation.history,
-      };
-      
-      // BackButtonHandler를 통해 뒤로가기 처리 (상태 직접 전달)
-      const success = await backButtonHandler.handleBackButton(
-        undefined,
-        navigationState,
-        currentFormsState
-      );
-      
-      if (!success) {
-        // 히스토리 상태 동기화 (pushState 대신 replaceState 사용)
-        window.history.replaceState(null, '', window.location.href);
-      }
-      
-      // signup-roles에서 뒤로가기한 경우 로그인 페이지로
-      if (currentNavigation.subPage === 'signup-roles') {
-        currentForms.setAuthMode('login');
-        window.history.replaceState(null, '', window.location.href);
-      }
-    };
-
-    // 브라우저 뒤로가기 버튼 리스너
-    window.addEventListener('popstate', handleBrowserBackButton);
-    
-    return () => {
-      window.removeEventListener('popstate', handleBrowserBackButton);
-    };
-  }, [backButtonHandler]); // backButtonHandler만 dependency에 포함 (한 번만 등록)
-
-  // 초기 히스토리 상태 설정 (한 번만 실행)
+  // 브라우저 앞으로가기 방지
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    
-    if (!window.history.state) {
-      window.history.replaceState({ initialized: true }, '', window.location.href);
-    }
-  }, []); // 빈 dependency array - 마운트 시 한 번만 실행
 
-  // Capacitor 뒤로가기 처리 (BackButtonHandler 사용)
+    const handlePopState = (_event: PopStateEvent) => {
+      // 앞으로가기 방지: 히스토리 상태를 현재로 고정
+      if (window.history.state && window.history.state.preventForward) {
+        window.history.pushState({ preventForward: true }, '', window.location.href);
+      }
+    };
+
+    // 초기 히스토리 상태 설정
+    window.history.pushState({ preventForward: true }, '', window.location.href);
+    
+    window.addEventListener('popstate', handlePopState);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
+  // Capacitor 뒤로가기 처리 (단순화)
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -313,31 +253,24 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
           return; // 웹 환경에서는 등록하지 않음
         }
 
-        const handleNativeBackButton = async ({ canGoBack }: { canGoBack: boolean }) => {
-          // ref를 통해 최신 상태 참조
-          const currentNavigation = navigationRef.current;
-          const currentFormsState = formsStateRef.current;
+        const handleNativeBackButton = async () => {
+          // 현재 경로가 각 역할의 메인 대시보드인지 확인
+          const isRoleDashboard = 
+            pathname === '/dashboard/student' || 
+            pathname === '/dashboard/teacher' || 
+            pathname === '/dashboard/principal';
+          
+          const isMainDashboard = isRoleDashboard || pathname === '/dashboard';
 
-          // NavigationState 생성
-          const navigationState: NavigationState = {
-            activeTab: currentNavigation.activeTab,
-            subPage: currentNavigation.subPage,
-            canGoBack: currentNavigation.canGoBack,
-            isTransitioning: currentNavigation.isTransitioning,
-            navigationItems: currentNavigation.navigationItems,
-            history: currentNavigation.history,
-          };
-
-          // BackButtonHandler를 통해 뒤로가기 처리 (상태 직접 전달)
-          const success = await backButtonHandler.handleBackButton(
-            canGoBack,
-            navigationState,
-            currentFormsState
-          );
-
-          if (!success && !canGoBack) {
-            // 더 이상 뒤로갈 수 없으면 앱 종료
+          if (isRoleDashboard) {
+            // /dashboard/{role} 경로에서는 뒤로가기 비활성화 (앱 종료)
             App.exitApp();
+          } else if (isMainDashboard) {
+            // /dashboard 경로에서도 앱 종료
+            App.exitApp();
+          } else {
+            // 그 외 모든 페이지에서는 Next.js 라우터의 '뒤로가기'를 호출
+            router.back();
           }
         };
 
@@ -360,7 +293,7 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
         }
       });
     };
-  }, [backButtonHandler]); // backButtonHandler만 dependency에 포함 (한 번만 등록) 
+  }, [router, pathname]); // pathname이 변경될 때마다 리스너가 최신 경로를 참조 
 
   // 메모이제이션된 value 객체
   const contextValue = useMemo(() => ({
@@ -373,7 +306,7 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     stateSync,
     
     // 통합된 goBack (하위 호환성)
-    goBack: unifiedGoBack,
+    goBack,
     
     // 통합 폼 관리 (Legacy 호환)
     updateForm,
@@ -382,16 +315,9 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     
     // 하위 호환성을 위한 직접 접근
     activeTab: navigation.activeTab,
-    subPage: navigation.subPage,
-    canGoBack: navigation.canGoBack,
-    isTransitioning: navigation.isTransitioning,
     navigationItems: navigation.navigationItems,
-    history: navigation.history,
     setActiveTab: navigation.setActiveTab,
     handleTabChange: navigation.handleTabChange,
-    navigateToSubPage: navigation.navigateToSubPage,
-    clearSubPage: navigation.clearSubPage,
-    clearHistory: navigation.clearHistory,
     
     // 하위 호환성을 위한 폼 접근
     form: {
@@ -480,7 +406,7 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
   }), [
     navigation, forms, ui, data, session, stateSync,
     updateForm, resetAllForms, getFormState,
-    sessionDetailCurrentStep, sessionDetailGoBack, unifiedGoBack
+    sessionDetailCurrentStep, sessionDetailGoBack, goBack
   ]);
 
   return (

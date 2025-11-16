@@ -13,6 +13,8 @@ import { useStudentAvailableSessions } from '@/hooks/queries/student/useStudentA
 import type { EnrollmentClassVM } from '@/types/view/student';
 import type { AvailableSessionForEnrollment } from '@/types/api/student';
 import { toEnrollmentClassVMs } from '@/lib/adapters/student';
+import { useRouter } from 'next/navigation';
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 const daysKor = ['월', '화', '수', '목', '금', '토', '일'];
@@ -39,7 +41,8 @@ function formatTimeForCalendar(date: string | Date) {
 }
 
 export function EnrollmentClassStep() {
-  const { form, setEnrollmentStep, setSelectedClassIds } = useApp();
+  const router = useRouter();
+  const { form, setSelectedClassIds } = useApp();
   const { enrollment } = form;
   const { selectedAcademyId } = enrollment;
   const { status } = useSession()
@@ -152,7 +155,7 @@ export function EnrollmentClassStep() {
     }
     
     setSelectedClassIds(selectedIds);
-    setEnrollmentStep('date-selection');
+    router.push(ensureTrailingSlash('/dashboard/student/enroll/academy/class/date'));
   };
 
   // 에러 처리

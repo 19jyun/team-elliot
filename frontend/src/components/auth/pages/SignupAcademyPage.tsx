@@ -4,7 +4,8 @@ import * as React from 'react'
 import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
-import { useApp } from '@/contexts/AppContext'
+import { useRouter } from 'next/navigation'
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 interface InputFieldProps {
   label: string
@@ -112,8 +113,7 @@ const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
 )
 
 export function SignupAcademyPage() {
-  const { navigation } = useApp()
-  const { navigateToSubPage } = navigation
+  const router = useRouter()
   const [currentStep] = useState(4) // academy-info는 4단계
   const [formData, setFormData] = useState({
     name: '',
@@ -250,7 +250,7 @@ export function SignupAcademyPage() {
       }),
     )
     
-    navigateToSubPage('signup-terms')
+    router.push(ensureTrailingSlash('/signup/roles/personal/account/academy/terms'))
   }
 
   return (

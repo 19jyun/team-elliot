@@ -1,7 +1,7 @@
 'use client';
 
-import { AuthContainer } from '@/components/auth/AuthContainer';
+import { LoginPage } from '@/components/auth/pages/LoginPage';
 
 export default function HomePage() {
-  return <AuthContainer />;
+  return <LoginPage />;
 }

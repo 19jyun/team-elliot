@@ -4,7 +4,8 @@ import * as React from 'react'
 import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
-import { useApp } from '@/contexts/AppContext'
+import { useRouter } from 'next/navigation'
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
   <div
@@ -16,8 +17,7 @@ const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
 )
 
 export function SignupRolePage() {
-  const { navigation } = useApp()
-  const { navigateToSubPage } = navigation
+  const router = useRouter()
   const [currentStep] = useState(1)
   const [_selectedRole, setSelectedRole] = useState<'STUDENT' | 'TEACHER' | 'PRINCIPAL' | null>(null)
 
@@ -36,7 +36,7 @@ export function SignupRolePage() {
         role: role,
       }),
     )
-    navigateToSubPage('signup-personal')
+    router.push(ensureTrailingSlash('/signup/roles/personal'))
   }
 
   return (

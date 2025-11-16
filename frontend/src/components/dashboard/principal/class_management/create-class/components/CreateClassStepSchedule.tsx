@@ -2,11 +2,13 @@
 
 import React, { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
+import { useRouter } from 'next/navigation';
 import { StatusStep } from './StatusStep';
 import { toast } from 'sonner';
 import TimePicker from '@/components/common/WheelPicker/TimePicker';
 import DatePicker from '@/components/common/WheelPicker/DatePicker';
 import { SlideUpModal } from '@/components/common/SlideUpModal';
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 const DAYS_OF_WEEK = [
   { value: 'MONDAY', label: '월요일' },
@@ -19,7 +21,8 @@ const DAYS_OF_WEEK = [
 ];
 
 export function CreateClassStepSchedule() {
-  const { form, setClassFormData, setCreateClassStep } = useApp();
+  const router = useRouter();
+  const { form, setClassFormData } = useApp();
   const { createClass } = form;
   const { classFormData } = createClass;
 
@@ -122,11 +125,11 @@ export function CreateClassStepSchedule() {
         endDate: formData.endDate,
       },
     });
-    setCreateClassStep('content');
+    router.push(ensureTrailingSlash('/dashboard/principal/class/create-class/info/teacher/schedule/content'));
   };
 
   const handleBack = () => {
-    setCreateClassStep('teacher');
+    router.push(ensureTrailingSlash('/dashboard/principal/class/create-class/info/teacher'));
   };
 
   const statusSteps = [

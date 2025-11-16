@@ -5,19 +5,23 @@ import * as React from 'react'
 import { MenuLinks } from '@/components/navigation/MenuLinks'
 import { useSession } from '@/lib/auth/AuthProvider'
 import { LogoutModal } from '@/components/user/LogoutModal'
-import { useApp } from '@/contexts/AppContext'
 import { useLogout } from '@/hooks/auth/useLogout'
 import FooterLinks from '@/components/common/FooterLinks'
 import { usePrincipalProfile } from '@/hooks/queries/principal/usePrincipalProfile'
+import { useRouter } from 'next/navigation'
+import type { PrincipalProfile } from '@/types/api/principal'
+import { ensureTrailingSlash } from '@/lib/utils/router'
 
 export default function PrincipalProfilePage() {
   const [showLogoutModal, setShowLogoutModal] = React.useState(false)
-  const { navigation } = useApp()
-  const { navigateToSubPage } = navigation
-  const { status } = useSession()
+  const router = useRouter()
+  const { data: session, status } = useSession()
 
   // React Query 기반 데이터 관리
   const { data: profile, isLoading, error } = usePrincipalProfile()
+  
+  // 타입 안전성을 위한 타입 단언
+  const profileData = profile as PrincipalProfile | null | undefined
 
   const { logout } = useLogout()
 
@@ -26,23 +30,23 @@ export default function PrincipalProfilePage() {
   }
 
   const handleProfileClick = () => {
-    navigateToSubPage('profile')
+    router.push(ensureTrailingSlash('/dashboard/principal/profile/profile'))
   }
 
   const handlePersonalInfoClick = () => {
-    navigateToSubPage('personal-info')
+    router.push(ensureTrailingSlash('/dashboard/principal/profile/personal-info'))
   }
 
   const handleBankInfoClick = () => {
-    navigateToSubPage('bank-info')
+    router.push(ensureTrailingSlash('/dashboard/principal/profile/bank-info'))
   }
 
   const handleAcademyManagementClick = () => {
-    navigateToSubPage('academy-management')
+    router.push(ensureTrailingSlash('/dashboard/principal/profile/academy-management'))
   }
 
   const handleSettingsClick = () => {
-    navigateToSubPage('settings')
+    router.push(ensureTrailingSlash('/dashboard/principal/profile/settings'))
   }
 
   const menuLinks = [
@@ -134,7 +138,7 @@ export default function PrincipalProfilePage() {
       {/* Header - 고정 */}
       <header className="flex-shrink-0 flex flex-col px-5 py-6">
         <h1 className="text-2xl font-bold text-stone-700">
-          {profile?.name}님의 정보
+          {profileData?.name || session?.user?.name}님의 정보
         </h1>
       </header>
 

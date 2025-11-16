@@ -4,24 +4,20 @@ import React from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { StatusStep } from './StatusStep';
 import { CompleteIcon } from '@/components/icons';
+import { useRouter } from 'next/navigation';
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 export function CreateClassComplete() {
-  const { form, resetCreateClass, navigation } = useApp();
+  const { form, resetCreateClass } = useApp();
   const { createClass } = form;
   const { classFormData } = createClass;
-  const { clearSubPage } = navigation;
+  const router = useRouter();
 
   const handleFinish = async () => {
     resetCreateClass();
 
-    // ❌ 제거: clearHistory() - Virtual History 관리는 clearSubPage에서 처리됨
-    // clearSubPage()가 GoBackManager.closeSubPage()를 호출하여
-    // Virtual History에서 현재 subpage 엔트리만 제거합니다.
-    // 전체 히스토리를 초기화하지 않아 다른 서브페이지 히스토리가 유지됩니다.
-
-    // 클래스 생성 컨테이너(subpage) 완전히 닫기
-    // GoBackManager가 Virtual History에서 현재 subpage만 pop합니다.
-    await clearSubPage();
+    // 메인 대시보드로 이동
+    router.push(ensureTrailingSlash('/dashboard/principal'));
   };
 
   const statusSteps = [

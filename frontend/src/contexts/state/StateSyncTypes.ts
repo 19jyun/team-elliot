@@ -7,19 +7,12 @@ import { CreateClassFormState } from "../forms/CreateClassFormManager";
 import { AuthFormState } from "../forms/AuthFormManager";
 import { PersonManagementFormState } from "../forms/PersonManagementFormManager";
 import { PrincipalCreateClassFormState } from "../forms/PrincipalCreateClassFormManager";
-import {
-  NavigationItem,
-  NavigationHistoryItem,
-} from "../types/NavigationTypes";
+import { NavigationItem } from "../types/NavigationTypes";
 
 // 네비게이션 상태 타입
 export interface NavigationState {
   activeTab: number;
-  subPage: string | null;
-  canGoBack: boolean;
-  isTransitioning: boolean;
   navigationItems: NavigationItem[];
-  history: NavigationHistoryItem[];
 }
 
 // 폼 상태 통합 타입

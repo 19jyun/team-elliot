@@ -24,12 +24,13 @@ export function EnrolledClassesContainer() {
   const [isSessionDetailModalOpen, setIsSessionDetailModalOpen] = useState(false)
 
   // React Query 기반 데이터 관리
-  const { data: sessionClasses = [], isLoading, error } = useStudentCalendarSessions()
+  const { data: sessionClasses, isLoading, error } = useStudentCalendarSessions()
 
   // sessionClasses에서 enrolledClasses 추출 (어댑터 사용)
   const enrolledClasses: EnrolledClassVM[] = React.useMemo(() => {
-    if (!sessionClasses || sessionClasses.length === 0) return [];
-    return toEnrolledClassVMs(sessionClasses);
+    const classesArray = Array.isArray(sessionClasses) ? sessionClasses : [];
+    if (classesArray.length === 0) return [];
+    return toEnrolledClassVMs(classesArray);
   }, [sessionClasses]);
 
   // ClassSessionModal에 전달할 ClassDataVM으로 변환 (어댑터 사용)

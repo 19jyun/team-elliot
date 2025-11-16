@@ -5,7 +5,8 @@ import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
-import { useApp } from '@/contexts/AppContext'
+import { useRouter } from 'next/navigation'
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 interface InputFieldProps {
   label: string
@@ -140,8 +141,7 @@ const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
 )
 
 export function SignupPersonalPage() {
-  const { navigation } = useApp()
-  const { navigateToSubPage } = navigation
+  const router = useRouter()
   const [currentStep] = useState(2)
   const [formData, setFormData] = useState({
     name: '',
@@ -333,7 +333,7 @@ export function SignupPersonalPage() {
     
     // 모든 역할은 동일하게 account-info 단계로 진행
     sessionStorage.setItem('currentSignupStep', 'account-info')
-    navigateToSubPage('signup-account')
+    router.push(ensureTrailingSlash('/signup/roles/personal/account'))
   }
 
   return (

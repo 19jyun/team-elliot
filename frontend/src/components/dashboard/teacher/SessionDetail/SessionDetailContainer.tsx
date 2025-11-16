@@ -33,7 +33,7 @@ export function SessionDetailContainer() {
     return `${year}년 ${month}월 ${day}일 ${className}(${hours}시)`
   }
 
-  // 현재 단계에 따라 적절한 컴포넌트 렌더링 (EnrollmentContainer와 동일한 패턴)
+  // 현재 단계에 따라 적절한 컴포넌트 렌더링
   const renderCurrentStep = () => {
     switch (currentStep) {
       case 'main':

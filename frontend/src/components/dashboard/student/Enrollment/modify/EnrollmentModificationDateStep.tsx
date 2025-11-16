@@ -1,5 +1,6 @@
 'use client'
 import * as React from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import DateSelectFooter from '@/components/features/student/enrollment/month/date/DateSelectFooter'
@@ -14,13 +15,17 @@ import { toast } from 'sonner'
 import type { ClassSessionForModification } from '@/types/api/class'
 import type { ClassSession } from '@/types/api/class'
 import type { EnrollmentModificationDateStepVM } from '@/types/view/student'
+import { ensureTrailingSlash } from '@/lib/utils/router'
 
 export function EnrollmentModificationDateStep({ 
   classId, 
   existingEnrollments, 
   month: _month
 }: EnrollmentModificationDateStepVM) {
-  const { setSelectedSessions, setEnrollmentModificationStep, setEnrollmentModificationData } = useApp()
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const enrollmentId = searchParams.get('id') || classId.toString();
+  const { setSelectedSessions, setEnrollmentModificationData } = useApp()
   
   // React Query 기반 데이터 관리
   const { data: modificationData, isLoading: isLoadingSessions, error: queryError } = useClassSessionsForModification(classId);
@@ -176,7 +181,7 @@ export function EnrollmentModificationDateStep({
   };
 
 
-  // 수강 변경 완료 처리 - EnrollmentContainer 패턴 적용
+  // 수강 변경 완료 처리
   const handleModificationComplete = () => {
     // netChange가 0이고 실제 변경이 없으면 처리하지 않음
     if (netChangeCount === 0 && !hasRealChanges) {
@@ -248,7 +253,16 @@ export function EnrollmentModificationDateStep({
     
     // Context에 저장하고 다음 단계로 이동
     setEnrollmentModificationData({ modificationData: modData });
-    setEnrollmentModificationStep(nextStep);
+    
+    // nextStep에 따라 적절한 URL로 이동
+    const stepMap: Record<string, string> = {
+      'payment': 'payment',
+      'refund-request': 'refund',
+      'refund-complete': 'refund-complete',
+      'complete': 'complete',
+    };
+    const stepParam = stepMap[nextStep] || 'payment';
+    router.push(ensureTrailingSlash(`/dashboard/student/modify?id=${enrollmentId}&step=${stepParam}`));
   }
 
   // 에러 처리 - 기본적인 패턴

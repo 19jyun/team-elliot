@@ -9,9 +9,12 @@ import { StatusStep } from '@/components/features/student/enrollment/month/Statu
 import { CalendarProvider } from '@/contexts/CalendarContext';
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar';
 import { useStudentAvailableSessions } from '@/hooks/queries/student/useStudentAvailableSessions';
+import { useRouter } from 'next/navigation';
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 export function EnrollmentDateStep() {
-  const { form, goBack, setEnrollmentStep, setSelectedSessions } = useApp();
+  const router = useRouter();
+  const { form, goBack, setSelectedSessions } = useApp();
   const { enrollment } = form;
   const { selectedAcademyId, selectedClassIds } = enrollment;
   const { status } = useSession()
@@ -141,7 +144,7 @@ export function EnrollmentDateStep() {
       }));
     
     setSelectedSessions(selectedSessionsData);
-    setEnrollmentStep('payment');
+    router.push(ensureTrailingSlash('/dashboard/student/enroll/academy/class/date/payment'));
   };
 
   // 에러 처리

@@ -5,14 +5,14 @@ import * as React from 'react'
 import { MenuLinks } from '@/components/navigation/MenuLinks'
 import { useSession } from '@/lib/auth/AuthProvider'
 import { LogoutModal } from '@/components/user/LogoutModal'
-import { useApp } from '@/contexts/AppContext'
 import { useLogout } from '@/hooks/auth/useLogout'
 import FooterLinks from '@/components/common/FooterLinks'
+import { useRouter } from 'next/navigation'
+import { ensureTrailingSlash } from '@/lib/utils/router'
 
 export default function ProfilePage() {
   const [showLogoutModal, setShowLogoutModal] = React.useState(false)
-  const { navigation } = useApp()
-  const { navigateToSubPage } = navigation
+  const router = useRouter()
   const { data: session, status } = useSession()
 
   const { logout } = useLogout()
@@ -22,27 +22,27 @@ export default function ProfilePage() {
   }
 
   const handleAcademyClick = () => {
-    navigateToSubPage('academy')
+    router.push(ensureTrailingSlash('/dashboard/student/profile/academy'))
   }
 
   const handlePersonalInfoClick = () => {
-    navigateToSubPage('personal-info')
+    router.push(ensureTrailingSlash('/dashboard/student/profile/personal-info'))
   }
 
   const handleEnrollmentHistoryClick = () => {
-    navigateToSubPage('enrollment-history')
+    router.push(ensureTrailingSlash('/dashboard/student/profile/enrollment-history'))
   }
 
   const handleRefundHistoryClick = () => {
-    navigateToSubPage('cancellation-history')
+    router.push(ensureTrailingSlash('/dashboard/student/profile/cancellation-history'))
   }
 
   const handleRefundAccountClick = () => {
-    navigateToSubPage('refund-account')
+    router.push(ensureTrailingSlash('/dashboard/student/profile/refund-account'))
   }
 
   const handleSettingsClick = () => {
-    navigateToSubPage('settings')
+    router.push(ensureTrailingSlash('/dashboard/student/profile/settings'))
   }
 
   const menuLinks = [

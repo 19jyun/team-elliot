@@ -21,7 +21,7 @@ export default function PrincipalStudentManagementSection() {
   const studentListVM: PrincipalStudentListVM = toPrincipalStudentListVM(
     students,
     isLoading,
-    error
+    error?.message || null
   );
 
   // 로딩 상태 처리

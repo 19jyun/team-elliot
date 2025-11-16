@@ -5,40 +5,40 @@ import * as React from 'react'
 import { MenuLinks } from '@/components/navigation/MenuLinks'
 import { useSession } from '@/lib/auth/AuthProvider'
 import { LogoutModal } from '@/components/user/LogoutModal'
-import { useApp } from '@/contexts/AppContext'
 import { useLogout } from '@/hooks/auth/useLogout'
 import FooterLinks from '@/components/common/FooterLinks'
 import { useTeacherProfile } from '@/hooks/queries/teacher/useTeacherProfile'
-
+import { useRouter } from 'next/navigation'
+import type { TeacherProfileResponse } from '@/types/api/teacher'
+import { ensureTrailingSlash } from '@/lib/utils/router'
 export default function TeacherProfilePage() {
   const [showLogoutModal, setShowLogoutModal] = React.useState(false)
-  const { navigation } = useApp()
-  const { navigateToSubPage } = navigation
+  const router = useRouter()
   const { data: session, status } = useSession()
 
   // React Query 기반 데이터 관리
   const { data: profile, isLoading, error } = useTeacherProfile()
-
   const { logout } = useLogout()
+  const profileData = profile as TeacherProfileResponse | null | undefined
 
   const handleSignOut = async () => {
     await logout()
   }
 
   const handleProfileClick = () => {
-    navigateToSubPage('profile')
+    router.push(ensureTrailingSlash('/dashboard/teacher/profile/profile'))
   }
 
   const handlePersonalInfoClick = () => {
-    navigateToSubPage('personal-info')
+    router.push(ensureTrailingSlash('/dashboard/teacher/profile/personal-info'))
   }
 
   const handleAcademyManagementClick = () => {
-    navigateToSubPage('academy-management')
+    router.push(ensureTrailingSlash('/dashboard/teacher/profile/academy-management'))
   }
 
   const handleSettingsClick = () => {
-    navigateToSubPage('settings')
+    router.push(ensureTrailingSlash('/dashboard/teacher/profile/settings'))
   }
 
   const menuLinks = [
@@ -125,7 +125,7 @@ export default function TeacherProfilePage() {
       {/* Header - 고정 */}
       <header className="flex-shrink-0 flex flex-col px-5 py-6">
         <h1 className="text-2xl font-bold text-stone-700">
-          {profile?.name || session?.user?.name}님의 정보
+          {profileData?.name || session?.user?.name}님의 정보
         </h1>
       </header>
 
