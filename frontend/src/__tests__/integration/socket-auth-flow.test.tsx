@@ -1,12 +1,26 @@
 import React from "react";
 import { render, waitFor } from "@/__tests__/utils/test-utils";
-import { useSession } from "@/lib/auth/AuthProvider";
+import {
+  useSession,
+  getSession,
+  SessionManager,
+} from "@/lib/auth/AuthProvider";
 import { initializeSocket } from "@/lib/socket";
+import { refreshToken } from "@/api/auth";
 
 // Mock AuthProvider
 jest.mock("@/lib/auth/AuthProvider", () => ({
   useSession: jest.fn(),
   getSession: jest.fn(),
+  SessionManager: {
+    get: jest.fn(),
+    set: jest.fn(),
+    clear: jest.fn(),
+  },
+}));
+
+jest.mock("@/api/auth", () => ({
+  refreshToken: jest.fn(),
 }));
 
 // Mock socket.io
@@ -48,6 +62,10 @@ interface MockSocket {
 describe("Socket Authentication Flow", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (refreshToken as jest.Mock).mockReset();
+    (SessionManager.get as jest.Mock).mockReset();
+    process.env.NEXT_PUBLIC_API_URL =
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   });
 
   it("should handle token expired error and attempt refresh", async () => {
@@ -60,22 +78,23 @@ describe("Socket Authentication Flow", () => {
       data: mockSession,
       update: jest.fn(),
     });
+    (getSession as jest.Mock).mockResolvedValue(mockSession);
+    (SessionManager.get as jest.Mock).mockReturnValue(mockSession);
 
     // Mock successful token refresh
-    global.fetch = jest.fn().mockResolvedValueOnce({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          access_token: "new-token",
-          expires_in: 3600,
-          token_type: "Bearer",
-          user: {
-            id: 1,
-            userId: "1",
-            name: "Test User",
-            role: "STUDENT",
-          },
-        }),
+    (refreshToken as jest.Mock).mockResolvedValue({
+      success: true,
+      data: {
+        access_token: "new-token",
+        expires_in: 3600,
+        token_type: "Bearer",
+        user: {
+          id: 1,
+          userId: "1",
+          name: "Test User",
+          role: "STUDENT",
+        },
+      },
     });
 
     // Create mock socket
@@ -106,10 +125,6 @@ describe("Socket Authentication Flow", () => {
     SyncStorage.setItem("session", JSON.stringify(mockSession));
     SyncStorage.setItem("accessToken", mockSession.accessToken);
 
-    // Mock getSession to return our mock session
-    const { getSession } = await import("@/lib/auth/AuthProvider");
-    (getSession as jest.Mock).mockResolvedValue(mockSession);
-
     const TestComponent: React.FC = () => {
       return <div data-testid="socket-status">Socket connection test</div>;
     };
@@ -128,14 +143,7 @@ describe("Socket Authentication Flow", () => {
 
     // Wait for token refresh attempt
     await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
-        expect.objectContaining({
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: "1" }),
-        })
-      );
+      expect(refreshToken).toHaveBeenCalledWith({ userId: "1" });
     });
   });
 
@@ -149,6 +157,8 @@ describe("Socket Authentication Flow", () => {
       data: mockSession,
       update: jest.fn(),
     });
+    (getSession as jest.Mock).mockResolvedValue(mockSession);
+    (SessionManager.get as jest.Mock).mockReturnValue(mockSession);
 
     // Mock window.location
     const mockLocation = { href: "" };
@@ -184,10 +194,6 @@ describe("Socket Authentication Flow", () => {
     const { SyncStorage } = await import('@/lib/storage/StorageAdapter');
     SyncStorage.setItem("session", JSON.stringify(mockSession));
     SyncStorage.setItem("accessToken", mockSession.accessToken);
-
-    // Mock getSession to return our mock session
-    const { getSession } = await import("@/lib/auth/AuthProvider");
-    (getSession as jest.Mock).mockResolvedValue(mockSession);
 
     const TestComponent: React.FC = () => {
       return <div data-testid="socket-status">Socket connection test</div>;
