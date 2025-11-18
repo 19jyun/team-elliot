@@ -3,11 +3,9 @@
 
 import React, { createContext, useContext, useCallback, ReactNode, useMemo, useEffect, useState } from 'react';
 import { useSession } from '@/lib/auth/AuthProvider';
-import { StateSyncProvider, useStateSync } from './state/StateSyncContext';
 import { NavigationProvider, useNavigation } from './navigation/NavigationContext';
-import { FormsProvider, useForms } from './forms/FormsContext';
+import { FormsProvider, useForms, FormsState } from './forms/FormsContext';
 import { UIContextProvider, useUI } from './UIContext';
-import { FormsState } from './state/StateSyncTypes';
 import { EnrollmentStep, ClassesWithSessionsByMonthResponse, ExtendedSessionData, EnrollmentModificationData } from './forms/EnrollmentFormManager';
 import { EnrollmentModificationStep } from './forms/EnrollmentModificationFormManager';
 import { useRouter, usePathname } from 'next/navigation';
@@ -32,9 +30,6 @@ interface AppContextType {
   
   // Session
   session: ReturnType<typeof useSession>;
-  
-  // StateSync
-  stateSync: ReturnType<typeof useStateSync>;
   
   // 통합된 goBack (하위 호환성 - router.back() 사용)
   goBack: () => Promise<boolean>;
@@ -153,7 +148,6 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
   const forms = useForms();
   const ui = useUI();
   const session = useSession();
-  const stateSync = useStateSync();
 
 
   const router = useRouter();
@@ -297,7 +291,6 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     forms,
     ui,
     session,
-    stateSync,
     
     // 통합된 goBack (하위 호환성)
     goBack,
@@ -398,7 +391,7 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
       forms.switchPrincipalPersonManagementTab(tab);
     },
   }), [
-    navigation, forms, ui, session, stateSync,
+    navigation, forms, ui, session,
     updateForm, resetAllForms, getFormState,
     sessionDetailCurrentStep, sessionDetailGoBack, goBack
   ]);
@@ -417,17 +410,15 @@ interface AppProviderProps {
 
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   return (
-    <StateSyncProvider>
-      <FormsProvider>
-        <NavigationProvider>
-          <UIContextProvider>
-            <AppConsumer>
-              {children}
-            </AppConsumer>
-          </UIContextProvider>
-        </NavigationProvider>
-      </FormsProvider>
-    </StateSyncProvider>
+    <FormsProvider>
+      <NavigationProvider>
+        <UIContextProvider>
+          <AppConsumer>
+            {children}
+          </AppConsumer>
+        </UIContextProvider>
+      </NavigationProvider>
+    </FormsProvider>
   );
 };
 

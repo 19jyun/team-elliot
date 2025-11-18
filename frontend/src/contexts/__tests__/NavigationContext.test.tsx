@@ -3,20 +3,6 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { SessionProvider } from '@/lib/auth/AuthProvider';
 import { NavigationProvider, useNavigation } from '../navigation/NavigationContext';
-import { StateSyncProvider } from '../state/StateSyncContext';
-
-// StateSyncContext 모킹 - 무한 루프 방지
-jest.mock('../state/StateSyncContext', () => ({
-  StateSyncProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  useStateSync: jest.fn(() => ({
-    publish: jest.fn(),
-    subscribe: jest.fn(() => jest.fn()),
-    getState: jest.fn(() => ({})),
-    syncStates: jest.fn(),
-    clearState: jest.fn(),
-    clearAllStates: jest.fn(),
-  })),
-}));
 // Mock SessionProvider
 const mockSession = {
   data: {
@@ -82,11 +68,9 @@ describe('ImprovedNavigationContext', () => {
   it('should provide navigation context', () => {
     render(
       <SessionProvider session={mockSession}>
-        <StateSyncProvider>
-          <NavigationProvider>
-            <TestComponent />
-          </NavigationProvider>
-        </StateSyncProvider>
+        <NavigationProvider>
+          <TestComponent />
+        </NavigationProvider>
       </SessionProvider>
     );
 
@@ -97,11 +81,9 @@ describe('ImprovedNavigationContext', () => {
   it('should handle tab changes', async () => {
     render(
       <SessionProvider session={mockSession}>
-        <StateSyncProvider>
-          <NavigationProvider>
-            <TestComponent />
-          </NavigationProvider>
-        </StateSyncProvider>
+        <NavigationProvider>
+          <TestComponent />
+        </NavigationProvider>
       </SessionProvider>
     );
 
@@ -137,11 +119,9 @@ describe('ImprovedNavigationContext', () => {
 
     render(
       <SessionProvider session={teacherSession}>
-        <StateSyncProvider>
-          <NavigationProvider>
-            <TestComponent />
-          </NavigationProvider>
-        </StateSyncProvider>
+        <NavigationProvider>
+          <TestComponent />
+        </NavigationProvider>
       </SessionProvider>
     );
 

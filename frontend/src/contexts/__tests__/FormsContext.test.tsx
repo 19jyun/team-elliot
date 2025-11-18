@@ -2,20 +2,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { FormsProvider, useForms } from '../forms/FormsContext';
-import { StateSyncProvider } from '../state/StateSyncContext';
-
-// StateSyncContext 모킹 - 무한 루프 방지
-jest.mock('../state/StateSyncContext', () => ({
-  StateSyncProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  useStateSync: jest.fn(() => ({
-    publish: jest.fn(),
-    subscribe: jest.fn(() => jest.fn()),
-    getState: jest.fn(() => ({})),
-    syncStates: jest.fn(),
-    clearState: jest.fn(),
-    clearAllStates: jest.fn(),
-  })),
-}));
 
 // Test component
 const TestComponent = () => {
@@ -76,11 +62,9 @@ const TestComponent = () => {
 describe('ImprovedFormsContext', () => {
   it('should provide forms context', () => {
     render(
-      <StateSyncProvider>
-        <FormsProvider>
-          <TestComponent />
-        </FormsProvider>
-      </StateSyncProvider>
+      <FormsProvider>
+        <TestComponent />
+      </FormsProvider>
     );
 
     expect(screen.getByTestId('enrollment-step')).toHaveTextContent('academy-selection');
@@ -91,11 +75,9 @@ describe('ImprovedFormsContext', () => {
 
   it('should handle enrollment step changes', async () => {
     render(
-      <StateSyncProvider>
-        <FormsProvider>
-          <TestComponent />
-        </FormsProvider>
-      </StateSyncProvider>
+      <FormsProvider>
+        <TestComponent />
+      </FormsProvider>
     );
 
     fireEvent.click(screen.getByTestId('enrollment-step-button'));
@@ -108,11 +90,9 @@ describe('ImprovedFormsContext', () => {
 
   it('should handle enrollment data changes', async () => {
     render(
-      <StateSyncProvider>
-        <FormsProvider>
-          <TestComponent />
-        </FormsProvider>
-      </StateSyncProvider>
+      <FormsProvider>
+        <TestComponent />
+      </FormsProvider>
     );
 
     fireEvent.click(screen.getByTestId('enrollment-data-button'));
@@ -125,11 +105,9 @@ describe('ImprovedFormsContext', () => {
 
   it('should handle create class step changes', async () => {
     render(
-      <StateSyncProvider>
-        <FormsProvider>
-          <TestComponent />
-        </FormsProvider>
-      </StateSyncProvider>
+      <FormsProvider>
+        <TestComponent />
+      </FormsProvider>
     );
 
     fireEvent.click(screen.getByTestId('create-class-step-button'));
@@ -142,11 +120,9 @@ describe('ImprovedFormsContext', () => {
 
   it('should handle auth mode changes', async () => {
     render(
-      <StateSyncProvider>
-        <FormsProvider>
-          <TestComponent />
-        </FormsProvider>
-      </StateSyncProvider>
+      <FormsProvider>
+        <TestComponent />
+      </FormsProvider>
     );
 
     fireEvent.click(screen.getByTestId('auth-mode-button'));
@@ -159,11 +135,9 @@ describe('ImprovedFormsContext', () => {
 
   it('should reset all forms', async () => {
     render(
-      <StateSyncProvider>
-        <FormsProvider>
-          <TestComponent />
-        </FormsProvider>
-      </StateSyncProvider>
+      <FormsProvider>
+        <TestComponent />
+      </FormsProvider>
     );
 
     // First change some data

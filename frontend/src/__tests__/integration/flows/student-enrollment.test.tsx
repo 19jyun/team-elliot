@@ -30,19 +30,6 @@ jest.mock("next/navigation", () => ({
   })),
 }));
 
-// Context 모킹 - 실제 구현에 맞게 정확하게 모킹
-jest.mock("@/contexts/state/StateSyncContext", () => ({
-  useStateSync: jest.fn(() => ({
-    publish: jest.fn(),
-    subscribe: jest.fn(() => jest.fn()),
-    getState: jest.fn(() => ({})),
-    syncStates: jest.fn(),
-    clearState: jest.fn(),
-    clearAllStates: jest.fn(),
-  })),
-  StateSyncProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}));
-
 jest.mock("@/contexts/navigation/NavigationContext", () => ({
   useNavigation: jest.fn(() => ({
     activeTab: 1,
@@ -320,14 +307,6 @@ jest.mock("@/contexts/AppContext", () => ({
         accessToken: "mock-token"
       },
       status: "authenticated"
-    },
-    stateSync: {
-      publish: jest.fn(),
-      subscribe: jest.fn(() => jest.fn()),
-      getState: jest.fn(() => ({})),
-      syncStates: jest.fn(),
-      clearState: jest.fn(),
-      clearAllStates: jest.fn(),
     },
     goBack: jest.fn(),
     updateForm: jest.fn(),
