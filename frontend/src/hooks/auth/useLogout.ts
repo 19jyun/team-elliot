@@ -3,16 +3,12 @@ import { useSession, useSignOut } from "@/lib/auth/AuthProvider";
 import { AuthRouter } from "@/lib/auth/AuthRouter";
 import { toast } from "sonner";
 import { logout as apiLogout } from "@/api/auth";
-import { useAppDispatch } from "@/store/hooks";
-import { clearPrincipalData } from "@/store/slices/principalSlice";
-import { clearStudentData } from "@/store/slices/studentSlice";
 import { clearApiClientSessionCache } from "@/api/apiClient";
 import { logger } from "@/lib/logger";
 
 export const useLogout = () => {
   const { data: session } = useSession();
   const signOut = useSignOut();
-  const dispatch = useAppDispatch();
 
   const logout = useCallback(async () => {
     try {
@@ -30,10 +26,6 @@ export const useLogout = () => {
 
       // 2. 백엔드 로그아웃 API 호출
       await apiLogout();
-
-      // 3. Redux 상태 완전 정리 (모든 역할의 데이터)
-      dispatch(clearPrincipalData());
-      dispatch(clearStudentData());
 
       // 3-1. API 클라이언트 세션 캐시 클리어
       clearApiClientSessionCache();
@@ -66,19 +58,7 @@ export const useLogout = () => {
         error: error instanceof Error ? error.message : String(error),
       });
 
-      // API 호출 실패 시에도 cleanup은 진행
-      try {
-        dispatch(clearPrincipalData());
-        dispatch(clearStudentData());
-        await signOut({ redirect: false });
-      } catch (cleanupError) {
-        logger.error("Cleanup failed", {
-          error:
-            cleanupError instanceof Error
-              ? cleanupError.message
-              : String(cleanupError),
-        });
-      }
+      await signOut({ redirect: false });
 
       toast.error("로그아웃 중 오류가 발생했습니다");
 
@@ -86,7 +66,7 @@ export const useLogout = () => {
         AuthRouter.redirectToLogin();
       }, 500);
     }
-  }, [session, signOut, dispatch]);
+  }, [session, signOut]);
 
   return { logout };
 };

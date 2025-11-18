@@ -1,5 +1,6 @@
 import { useSession } from "@/lib/auth/AuthProvider";
 import { useCallback, useEffect, useRef } from "react";
+import { refreshToken as refreshTokenApi } from "@/api/auth";
 
 // 사용자 활동 감지 및 토큰 연장 훅
 export const useSlidingSession = () => {
@@ -21,22 +22,16 @@ export const useSlidingSession = () => {
       if (session?.accessToken) {
         try {
           // 토큰 갱신 API 호출
-          const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ userId: session.user.id }),
-            }
-          );
+          const response = await refreshTokenApi({
+            userId: session.user.id,
+          });
 
-          if (response.ok) {
-            const data = await response.json();
+          if (response.success && response.data) {
             console.log("🔄 활동 기반 토큰 갱신 성공");
 
             // 세션 업데이트
             await update({
-              accessToken: data.access_token,
+              accessToken: response.data.access_token,
             });
           }
         } catch (error) {

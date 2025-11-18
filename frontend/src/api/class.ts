@@ -6,5 +6,5 @@ import type { ClassDetailsResponse } from "@/types/api/class";
 export const getClassDetails = (
   classId: number
 ): Promise<ApiResponse<ClassDetailsResponse>> => {
-  return get<ApiResponse<ClassDetailsResponse>>(`/classes/${classId}/details`);
+  return get<ApiResponse<ClassDetailsResponse>>(`/classes/${classId}`);
 };

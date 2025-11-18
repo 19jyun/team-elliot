@@ -30,6 +30,7 @@ export interface AppError {
   fieldErrors?: FieldError[];
   action?: () => void;
   recoverable?: boolean;
+  details?: unknown; // 에러 상세 정보 (회원 탈퇴 등에서 사용)
 }
 
 export interface FieldError {

@@ -3,12 +3,9 @@
 
 import React, { createContext, useContext, useCallback, ReactNode, useMemo, useEffect, useState } from 'react';
 import { useSession } from '@/lib/auth/AuthProvider';
-import { StateSyncProvider, useStateSync } from './state/StateSyncContext';
 import { NavigationProvider, useNavigation } from './navigation/NavigationContext';
-import { FormsProvider, useForms } from './forms/FormsContext';
+import { FormsProvider, useForms, FormsState } from './forms/FormsContext';
 import { UIContextProvider, useUI } from './UIContext';
-import { DataContextProvider, useData } from './DataContext';
-import { FormsState } from './state/StateSyncTypes';
 import { EnrollmentStep, ClassesWithSessionsByMonthResponse, ExtendedSessionData, EnrollmentModificationData } from './forms/EnrollmentFormManager';
 import { EnrollmentModificationStep } from './forms/EnrollmentModificationFormManager';
 import { useRouter, usePathname } from 'next/navigation';
@@ -31,14 +28,8 @@ interface AppContextType {
   // UI
   ui: ReturnType<typeof useUI>;
   
-  // Data
-  data: ReturnType<typeof useData>;
-  
   // Session
   session: ReturnType<typeof useSession>;
-  
-  // StateSync
-  stateSync: ReturnType<typeof useStateSync>;
   
   // 통합된 goBack (하위 호환성 - router.back() 사용)
   goBack: () => Promise<boolean>;
@@ -156,9 +147,7 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
   const navigation = useNavigation();
   const forms = useForms();
   const ui = useUI();
-  const data = useData();
   const session = useSession();
-  const stateSync = useStateSync();
 
 
   const router = useRouter();
@@ -301,9 +290,7 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     navigation,
     forms,
     ui,
-    data,
     session,
-    stateSync,
     
     // 통합된 goBack (하위 호환성)
     goBack,
@@ -404,7 +391,7 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
       forms.switchPrincipalPersonManagementTab(tab);
     },
   }), [
-    navigation, forms, ui, data, session, stateSync,
+    navigation, forms, ui, session,
     updateForm, resetAllForms, getFormState,
     sessionDetailCurrentStep, sessionDetailGoBack, goBack
   ]);
@@ -423,19 +410,15 @@ interface AppProviderProps {
 
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   return (
-    <StateSyncProvider>
-      <FormsProvider>
-        <NavigationProvider>
-          <UIContextProvider>
-            <DataContextProvider>
-              <AppConsumer>
-                {children}
-              </AppConsumer>
-            </DataContextProvider>
-          </UIContextProvider>
-        </NavigationProvider>
-      </FormsProvider>
-    </StateSyncProvider>
+    <FormsProvider>
+      <NavigationProvider>
+        <UIContextProvider>
+          <AppConsumer>
+            {children}
+          </AppConsumer>
+        </UIContextProvider>
+      </NavigationProvider>
+    </FormsProvider>
   );
 };
 
@@ -446,4 +429,3 @@ export const useCreateClassFormContext = () => useForms().forms.createClass;
 export const useAuthFormContext = () => useForms().forms.auth;
 export const usePersonManagementFormContext = () => useForms().forms.personManagement;
 export const useUIContext = useUI;
-export const useDataContext = useData;

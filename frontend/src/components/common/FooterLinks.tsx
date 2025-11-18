@@ -1,17 +1,26 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSession } from '@/lib/auth/AuthProvider';
 import { TermsModal } from './TermsModal';
 import { PrivacyPolicyModal } from './PrivacyPolicyModal';
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 export default function FooterLinks() {
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const router = useRouter();
+  const { data: session } = useSession();
 
   const handleWithdrawalClick = () => {
-    // 회원탈퇴는 모달이나 별도 페이지로 처리 (현재는 WithdrawalPage 컴포넌트가 있음)
-    // 필요시 router.push('/dashboard/withdrawal') 또는 모달로 처리
-    alert('회원탈퇴 기능은 준비 중입니다.');
+    if (!session?.user?.role) {
+      return;
+    }
+
+    const role = session.user.role.toLowerCase();
+    const withdrawalPath = ensureTrailingSlash(`/dashboard/${role}/profile/withdrawal`);
+    router.push(withdrawalPath);
   };
 
   return (

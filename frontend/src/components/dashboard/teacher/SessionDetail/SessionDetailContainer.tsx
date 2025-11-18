@@ -1,8 +1,9 @@
 'use client'
 
 import React from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useApp } from '@/contexts/AppContext'
-import type { ClassSessionWithCounts } from '@/types/api/class'
+import { useSessionDetail } from '@/hooks/queries/common/useSessionDetail'
 
 // 컴포넌트 import
 import { SessionDetailPage } from './SessionDetailPage'
@@ -10,14 +11,19 @@ import { ContentDetailComponent } from './SessionDetailComponents/ContentDetailC
 import { PoseAdditionDetailComponent } from './SessionDetailComponents/PoseAdditionDetailComponent'
 
 export function SessionDetailContainer() {
-  const { sessionDetail, data } = useApp()
+  const { sessionDetail } = useApp()
   const { currentStep } = sessionDetail
+  const searchParams = useSearchParams()
   
-  // DataContext에서 선택된 세션 정보 가져오기
-  const selectedSession = data.getCache('selectedSession') as ClassSessionWithCounts | null
+  // URL 파라미터에서 sessionId 가져오기
+  const sessionId = searchParams.get('id') ? Number(searchParams.get('id')) : null
+  
+  // React Query로 세션 데이터 조회
+  const { data: selectedSession, isLoading } = useSessionDetail(sessionId)
 
   // 날짜와 시간 포맷팅 함수
   const formatSessionInfo = () => {
+    if (isLoading) return '로딩 중...'
     if (!selectedSession) return '세션 정보 없음'
     
     const sessionDate = new Date(selectedSession.date)
@@ -55,6 +61,24 @@ export function SessionDetailContainer() {
       default:
         return null
     }
+  }
+
+  // 로딩 상태 처리
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
+      </div>
+    )
+  }
+
+  // 세션 데이터가 없으면 에러 표시
+  if (!selectedSession) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-red-500">세션 정보를 불러올 수 없습니다.</p>
+      </div>
+    )
   }
 
   return (

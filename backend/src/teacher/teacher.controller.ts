@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Body,
   Param,
   ParseIntPipe,
@@ -31,11 +32,11 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 export class TeacherController {
   constructor(private readonly teacherService: TeacherService) {}
 
-  @Post('me/request-join-academy')
+  @Post('me/academy-join-requests')
   @Roles(Role.TEACHER)
   @ApiOperation({ summary: '학원 가입 요청' })
   @ApiResponse({ status: 201, description: '가입 요청 성공' })
-  async requestJoinAcademy(
+  async createJoinRequest(
     @GetUser() user: any,
     @Body() joinAcademyRequestDto: JoinAcademyRequestDto,
   ) {
@@ -43,6 +44,21 @@ export class TeacherController {
       user.id,
       joinAcademyRequestDto,
     );
+  }
+
+  @Patch('me')
+  @Roles(Role.TEACHER)
+  @ApiOperation({ summary: '선생님 정보 부분 수정 (학원 변경 포함)' })
+  @ApiResponse({ status: 200, description: '선생님 정보 수정 성공' })
+  async updateMyInfo(
+    @GetUser() user: any,
+    @Body() body: { academyCode?: string },
+  ) {
+    if (body.academyCode) {
+      return this.teacherService.changeAcademy(user.id, body.academyCode);
+    }
+
+    return this.teacherService.getTeacherProfile(user.id);
   }
 
   @Get('me')
@@ -98,15 +114,6 @@ export class TeacherController {
   })
   async getMyAcademy(@GetUser() user: any) {
     return this.teacherService.getMyAcademy(user.id);
-  }
-
-  // 선생님의 학원 변경
-  @Post('me/change-academy')
-  @Roles(Role.TEACHER)
-  @ApiOperation({ summary: '학원 변경' })
-  @ApiResponse({ status: 200, description: '학원 변경이 완료되었습니다.' })
-  async changeAcademy(@GetUser() user: any, @Body() body: { code: string }) {
-    return this.teacherService.changeAcademy(user.id, body.code);
   }
 
   // 학원 탈퇴 (관리자 불가)

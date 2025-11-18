@@ -21,6 +21,7 @@ describe('ClassController', () => {
     updateClassStatus: jest.fn(),
     getDraftClasses: jest.fn(),
     getActiveClasses: jest.fn(),
+    getAllAcademyClasses: jest.fn(),
     enrollStudent: jest.fn(),
     unenrollStudent: jest.fn(),
     getClassesByMonth: jest.fn(),
@@ -33,6 +34,7 @@ describe('ClassController', () => {
     id: 1,
     userId: 'testuser',
     role: 'PRINCIPAL',
+    academyId: 10,
   };
 
   beforeEach(async () => {
@@ -54,18 +56,65 @@ describe('ClassController', () => {
     });
   });
 
-  describe('getAllClasses', () => {
+  describe('getAcademyClasses', () => {
+    it('should return draft classes when status is DRAFT', async () => {
+      const classes = [{ id: 1 }];
+      mockService.getDraftClasses.mockResolvedValue(classes);
+      await expect(
+        controller.getAcademyClasses(mockUser, 'DRAFT'),
+      ).resolves.toBe(classes);
+      expect(service.getDraftClasses).toHaveBeenCalledWith(mockUser.academyId);
+    });
+
+    it('should return active classes when status is ACTIVE', async () => {
+      const classes = [{ id: 2 }];
+      mockService.getActiveClasses.mockResolvedValue(classes);
+      await expect(
+        controller.getAcademyClasses(mockUser, 'ACTIVE'),
+      ).resolves.toBe(classes);
+      expect(service.getActiveClasses).toHaveBeenCalledWith(mockUser.academyId);
+    });
+
+    it('should return all academy classes when status is omitted', async () => {
+      const classes = [{ id: 3 }];
+      mockService.getAllAcademyClasses.mockResolvedValue(classes);
+      await expect(controller.getAcademyClasses(mockUser)).resolves.toBe(
+        classes,
+      );
+      expect(service.getAllAcademyClasses).toHaveBeenCalledWith(mockUser.id);
+    });
+  });
+
+  describe('getClasses', () => {
     it('should get all classes without filters', async () => {
       const classes = [{ id: 1, className: 'Test Class' }];
       mockService.getAllClasses.mockResolvedValue(classes);
-      await expect(controller.getAllClasses()).resolves.toBe(classes);
+      await expect(
+        controller.getClasses(
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+        ),
+      ).resolves.toBe(classes);
       expect(service.getAllClasses).toHaveBeenCalledWith({});
     });
 
     it('should get classes with dayOfWeek filter', async () => {
       const classes = [{ id: 1, className: 'Test Class' }];
       mockService.getAllClasses.mockResolvedValue(classes);
-      await expect(controller.getAllClasses('MONDAY')).resolves.toBe(classes);
+      await expect(
+        controller.getClasses(
+          undefined,
+          undefined,
+          undefined,
+          'MONDAY',
+          undefined,
+          undefined,
+        ),
+      ).resolves.toBe(classes);
       expect(service.getAllClasses).toHaveBeenCalledWith({
         dayOfWeek: 'MONDAY',
         teacherId: undefined,
@@ -75,13 +124,48 @@ describe('ClassController', () => {
     it('should get classes with teacherId filter', async () => {
       const classes = [{ id: 1, className: 'Test Class' }];
       mockService.getAllClasses.mockResolvedValue(classes);
-      await expect(controller.getAllClasses(undefined, '1')).resolves.toBe(
-        classes,
-      );
+      await expect(
+        controller.getClasses(
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          '1',
+          undefined,
+        ),
+      ).resolves.toBe(classes);
       expect(service.getAllClasses).toHaveBeenCalledWith({
         dayOfWeek: undefined,
         teacherId: 1,
       });
+    });
+
+    it('should get classes by month when filters provided', async () => {
+      const classes = [{ id: 1, className: 'January Class' }];
+      mockService.getClassesByMonth.mockResolvedValue(classes);
+      await expect(controller.getClasses('2024', '01')).resolves.toBe(classes);
+      expect(service.getClassesByMonth).toHaveBeenCalledWith('01', 2024);
+    });
+
+    it('should include sessions when includeSessions is true', async () => {
+      const classes = [{ id: 1 }];
+      mockService.getClassesWithSessionsByMonth.mockResolvedValue(classes);
+      const studentUser = { id: 9, role: 'STUDENT' };
+      await expect(
+        controller.getClasses(
+          '2024',
+          '02',
+          'true',
+          undefined,
+          undefined,
+          studentUser,
+        ),
+      ).resolves.toBe(classes);
+      expect(service.getClassesWithSessionsByMonth).toHaveBeenCalledWith(
+        '02',
+        2024,
+        studentUser.id,
+      );
     });
   });
 
@@ -179,15 +263,15 @@ describe('ClassController', () => {
     });
   });
 
-  describe('enrollClass', () => {
+  describe('createEnrollment', () => {
     it('should enroll student in class', async () => {
       const classId = 1;
       const studentId = 1;
       const result = { message: 'Student enrolled successfully' };
       mockService.enrollStudent.mockResolvedValue(result);
-      await expect(controller.enrollClass(classId, studentId)).resolves.toBe(
-        result,
-      );
+      await expect(
+        controller.createEnrollment(classId, studentId),
+      ).resolves.toBe(result);
       expect(service.enrollStudent).toHaveBeenCalledWith(classId, studentId);
     });
   });
@@ -205,30 +289,14 @@ describe('ClassController', () => {
     });
   });
 
-  describe('getClassesByMonth', () => {
-    it('should get classes by month', async () => {
-      const month = '01';
-      const year = '2024';
-      const classes = [{ id: 1, className: 'January Class' }];
-      mockService.getClassesByMonth.mockResolvedValue(classes);
-      await expect(controller.getClassesByMonth(month, year)).resolves.toBe(
-        classes,
-      );
-      expect(service.getClassesByMonth).toHaveBeenCalledWith(
-        month,
-        parseInt(year),
-      );
-    });
-  });
-
-  describe('generateSessionsForClass', () => {
+  describe('createSessionGenerationJob', () => {
     it('should generate sessions for class', async () => {
       const classId = 1;
       const result = { message: 'Sessions generated successfully' };
       mockService.generateSessionsForExistingClass.mockResolvedValue(result);
-      await expect(controller.generateSessionsForClass(classId)).resolves.toBe(
-        result,
-      );
+      await expect(
+        controller.createSessionGenerationJob(classId),
+      ).resolves.toBe(result);
       expect(service.generateSessionsForExistingClass).toHaveBeenCalledWith(
         classId,
       );

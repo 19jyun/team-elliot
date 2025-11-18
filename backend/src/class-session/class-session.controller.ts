@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -143,9 +144,9 @@ export class ClassSessionController {
   /**
    * 배치 수강 신청 상태 업데이트
    */
-  @Put('enrollments/batch-status')
+  @Patch('enrollments')
   @Roles(Role.TEACHER)
-  @ApiOperation({ summary: '배치 수강 신청 상태 업데이트' })
+  @ApiOperation({ summary: '수강 신청 상태 일괄 업데이트' })
   @ApiResponse({ status: 200, description: '배치 상태 업데이트 성공' })
   async batchUpdateEnrollmentStatus(
     @Body() batchDto: BatchUpdateEnrollmentStatusDto,
@@ -200,7 +201,7 @@ export class ClassSessionController {
   /**
    * 수업 완료 처리 (스케줄러용)
    */
-  @Post('complete-sessions')
+  @Post('completion-jobs')
   @Roles(Role.TEACHER)
   @ApiOperation({ summary: '수업 완료 처리 (스케줄러용)' })
   @ApiResponse({ status: 200, description: '수업 완료 처리 성공' })
@@ -225,7 +226,7 @@ export class ClassSessionController {
     return this.classSessionService.enrollSession(sessionId, student.id);
   }
 
-  @Post('batch-enroll')
+  @Post('enrollments/bulk')
   @Roles(Role.STUDENT)
   @ApiOperation({ summary: '여러 세션 일괄 수강 신청' })
   async batchEnrollSessions(

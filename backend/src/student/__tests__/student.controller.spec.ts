@@ -39,7 +39,7 @@ describe('StudentController', () => {
     jest.clearAllMocks();
   });
 
-  describe('getMyClasses', () => {
+  describe('getMyEnrollments', () => {
     it('should return student classes successfully', async () => {
       const mockClasses = [
         {
@@ -74,7 +74,7 @@ describe('StudentController', () => {
 
       mockStudentService.getStudentClasses.mockResolvedValue(mockClasses);
 
-      const result = await controller.getMyClasses(mockUser);
+      const result = await controller.getMyEnrollments(mockUser);
 
       expect(studentService.getStudentClasses).toHaveBeenCalledWith(
         mockUser.id,

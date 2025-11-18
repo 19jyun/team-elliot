@@ -18,6 +18,7 @@ import {
   batchCheckAttendance,
 } from "@/api/session-content";
 import { updateSessionSummary } from "@/api/teacher";
+import { queryKeys } from "@/lib/react-query/queryKeys";
 import { useSession } from "@/lib/auth/AuthProvider";
 
 // 세션 내용 목록 조회
@@ -180,6 +181,13 @@ export const useUpdateSessionSummary = (sessionId: number) => {
       });
 
       if (userRole === "TEACHER") {
+        // 캘린더 세션 쿼리 무효화 (세션 상세 페이지에서 업데이트된 데이터를 볼 수 있도록)
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.teacher.calendarSessions.lists(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.teacher.calendarSessions.detail(sessionId),
+        });
         queryClient.invalidateQueries({
           queryKey: ["teacher-classes-with-sessions"],
         });
@@ -187,6 +195,13 @@ export const useUpdateSessionSummary = (sessionId: number) => {
           queryKey: ["teacher-profile"],
         });
       } else if (userRole === "PRINCIPAL") {
+        // 캘린더 세션 쿼리 무효화
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.principal.calendarSessions.lists(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.principal.calendarSessions.detail(sessionId),
+        });
         queryClient.invalidateQueries({
           queryKey: ["principal-sessions"],
         });

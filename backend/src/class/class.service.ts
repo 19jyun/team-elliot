@@ -509,6 +509,39 @@ export class ClassService {
     });
   }
 
+  async getAllAcademyClasses(teacherId: number) {
+    const teacher = await this.prisma.teacher.findUnique({
+      where: { id: teacherId },
+      select: { academyId: true },
+    });
+
+    if (!teacher?.academyId) {
+      throw new NotFoundException('소속된 학원이 없습니다.');
+    }
+
+    return this.prisma.class.findMany({
+      where: {
+        academyId: teacher.academyId,
+      },
+      include: {
+        teacher: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        classSessions: {
+          orderBy: {
+            date: 'asc',
+          },
+        },
+      },
+      orderBy: {
+        id: 'desc',
+      },
+    });
+  }
+
   async deleteClass(id: number) {
     const existingClass = await this.prisma.class.findUnique({
       where: { id },

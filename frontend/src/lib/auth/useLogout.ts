@@ -3,9 +3,6 @@ import { useRouter } from "next/navigation";
 import { useSession, useSignOut } from "./AuthProvider";
 import { toast } from "sonner";
 import { logout as apiLogout } from "@/api/auth";
-import { useAppDispatch } from "@/store/hooks";
-import { clearPrincipalData } from "@/store/slices/principalSlice";
-import { clearStudentData } from "@/store/slices/studentSlice";
 import { clearApiClientSessionCache } from "@/api/apiClient";
 import { logger } from "@/lib/logger";
 import { ensureTrailingSlash } from "@/lib/utils/router";
@@ -14,7 +11,6 @@ export const useLogout = () => {
   const router = useRouter();
   const { data: session } = useSession();
   const signOut = useSignOut();
-  const dispatch = useAppDispatch();
 
   const logout = useCallback(async () => {
     try {
@@ -34,8 +30,6 @@ export const useLogout = () => {
       await apiLogout();
 
       // 3. Redux 상태 완전 정리 (모든 역할의 데이터)
-      dispatch(clearPrincipalData());
-      dispatch(clearStudentData());
 
       // 3-1. API 클라이언트 세션 캐시 클리어
       clearApiClientSessionCache();
@@ -63,7 +57,7 @@ export const useLogout = () => {
 
       // 6. 세션 정리 완료 후 리디렉션
       setTimeout(() => {
-        router.replace(ensureTrailingSlash("/auth"));
+        router.replace(ensureTrailingSlash("/"));
       }, 500);
 
       logger.info("사용자 로그아웃 완료", {
@@ -74,8 +68,6 @@ export const useLogout = () => {
       console.error("로그아웃 처리 중 오류:", error);
 
       // 에러가 발생해도 로컬 상태는 정리
-      dispatch(clearPrincipalData());
-      dispatch(clearStudentData());
       clearApiClientSessionCache();
 
       if (typeof window !== "undefined") {
@@ -85,7 +77,7 @@ export const useLogout = () => {
       }
 
       // 강제 리디렉션
-      router.replace(ensureTrailingSlash("/auth"));
+      router.replace(ensureTrailingSlash("/"));
 
       toast.error("로그아웃 처리 중 오류가 발생했습니다");
 
@@ -94,7 +86,7 @@ export const useLogout = () => {
         timestamp: new Date().toISOString(),
       });
     }
-  }, [session, signOut, dispatch, router]);
+  }, [session, signOut, router]);
 
   return { logout };
 };

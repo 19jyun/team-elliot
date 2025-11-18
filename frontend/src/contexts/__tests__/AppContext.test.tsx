@@ -5,18 +5,6 @@ import { SessionProvider } from '@/lib/auth/AuthProvider';
 import { AppProvider, useApp } from '../AppContext';
 
 // Context 모킹 - 무한 루프 방지
-jest.mock('../state/StateSyncContext', () => ({
-  StateSyncProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  useStateSync: jest.fn(() => ({
-    publish: jest.fn(),
-    subscribe: jest.fn(() => jest.fn()),
-    getState: jest.fn(() => ({})),
-    syncStates: jest.fn(),
-    clearState: jest.fn(),
-    clearAllStates: jest.fn(),
-  })),
-}));
-
 jest.mock('../forms/FormsContext', () => ({
   FormsProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   useForms: jest.fn(() => ({

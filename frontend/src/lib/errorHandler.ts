@@ -238,6 +238,18 @@ export class ErrorHandler {
           recoverable: true,
         };
 
+      // 회원 탈퇴 관련 에러
+      case "HAS_ONGOING_CLASSES":
+      case "HAS_PENDING_REFUNDS":
+      case "HAS_PENDING_ENROLLMENTS":
+        return {
+          type: ErrorType.BUSINESS,
+          code,
+          message,
+          details, // details를 포함하여 전달
+          recoverable: true,
+        };
+
       // 기본 에러
       default:
         return {

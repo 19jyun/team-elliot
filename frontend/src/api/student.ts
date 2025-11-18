@@ -1,4 +1,4 @@
-import { get, post, put } from "./apiClient";
+import { get, post, put, del } from "./apiClient";
 import type { ApiResponse } from "@/types/api";
 import {
   MyClassesResponse,
@@ -27,11 +27,11 @@ import { GetClassSessionsForModificationResponse } from "../types/api/class";
 // === 기본 Student API ===
 
 export const getMyClasses = (): Promise<ApiResponse<MyClassesResponse>> =>
-  get<ApiResponse<MyClassesResponse>>("/student/classes");
+  get<ApiResponse<MyClassesResponse>>("/students/me/enrollments");
 
 // 개인 정보 조회
 export const getMyProfile = (): Promise<ApiResponse<StudentProfile>> => {
-  return get<ApiResponse<StudentProfile>>("/student/profile");
+  return get<ApiResponse<StudentProfile>>("/students/me/profile");
 };
 
 // 선생님 프로필 조회 (학생용)
@@ -39,7 +39,7 @@ export const getTeacherProfile = (
   teacherId: number
 ): Promise<ApiResponse<TeacherProfileForStudentResponse>> => {
   return get<ApiResponse<TeacherProfileForStudentResponse>>(
-    `/student/teachers/${teacherId}/profile`
+    `/students/teachers/${teacherId}/profile`
   );
 };
 
@@ -47,14 +47,14 @@ export const getTeacherProfile = (
 export const updateMyProfile = (
   updateData: UpdateStudentProfileRequest
 ): Promise<ApiResponse<StudentProfile>> => {
-  return put<ApiResponse<StudentProfile>>("/student/profile", updateData);
+  return put<ApiResponse<StudentProfile>>("/students/me/profile", updateData);
 };
 
 // 환불 계좌 정보 조회
 export const getRefundAccount = (): Promise<
   ApiResponse<StudentRefundAccount>
 > => {
-  return get<ApiResponse<StudentRefundAccount>>("/student/refund-account");
+  return get<ApiResponse<StudentRefundAccount>>("/students/me/refund-account");
 };
 
 // 환불 계좌 정보 수정
@@ -62,7 +62,7 @@ export const updateRefundAccount = (
   updateData: UpdateStudentRefundAccountRequest
 ): Promise<ApiResponse<UpdateStudentRefundAccountResponse>> => {
   return put<ApiResponse<UpdateStudentRefundAccountResponse>>(
-    "/student/refund-account",
+    "/students/me/refund-account",
     updateData
   );
 };
@@ -72,7 +72,7 @@ export const getEnrollmentHistory = (): Promise<
   ApiResponse<EnrollmentHistoryResponse>
 > => {
   return get<ApiResponse<EnrollmentHistoryResponse>>(
-    "/student/enrollment-history"
+    "/students/me/enrollment-history"
   );
 };
 
@@ -81,7 +81,7 @@ export const getCancellationHistory = (): Promise<
   ApiResponse<CancellationHistoryResponse>
 > =>
   get<ApiResponse<CancellationHistoryResponse>>(
-    "/student/cancellation-history"
+    "/students/me/cancellation-history"
   );
 
 // 세션별 입금 정보 조회 (결제 시 사용)
@@ -89,7 +89,7 @@ export const getSessionPaymentInfo = (
   sessionId: number
 ): Promise<ApiResponse<GetSessionPaymentInfoResponse>> =>
   get<ApiResponse<GetSessionPaymentInfoResponse>>(
-    `/student/sessions/${sessionId}/payment-info`
+    `/students/sessions/${sessionId}/payment-info`
   );
 
 // === 학생 전용: 학원 관련 ===
@@ -97,17 +97,19 @@ export const getSessionPaymentInfo = (
 export const joinAcademy = (
   data: StudentJoinAcademyRequest
 ): Promise<ApiResponse<StudentJoinAcademyResponse>> =>
-  post<ApiResponse<StudentJoinAcademyResponse>>("/academy/join", data);
+  post<ApiResponse<StudentJoinAcademyResponse>>("/academies/memberships", data);
 
 export const leaveAcademy = (
   data: StudentLeaveAcademyRequest
 ): Promise<ApiResponse<StudentLeaveAcademyResponse>> =>
-  post<ApiResponse<StudentLeaveAcademyResponse>>("/academy/leave", data);
+  del<ApiResponse<StudentLeaveAcademyResponse>>("/academies/memberships", {
+    data,
+  });
 
 // 내가 가입한 학원 목록 (학생 전용)
 export const getMyAcademies = (): Promise<
   ApiResponse<GetMyAcademiesResponse>
-> => get<ApiResponse<GetMyAcademiesResponse>>("/academy/my/list");
+> => get<ApiResponse<GetMyAcademiesResponse>>("/academies/me/memberships");
 
 // === 학생 전용: 수강신청/변경 관련 ===
 
@@ -122,7 +124,7 @@ export const batchEnrollSessions = (
   data: StudentBatchEnrollSessionsRequest
 ): Promise<ApiResponse<StudentBatchEnrollSessionsResponse>> =>
   post<ApiResponse<StudentBatchEnrollSessionsResponse>>(
-    "/class-sessions/batch-enroll",
+    "/class-sessions/enrollments/bulk",
     data
   );
 

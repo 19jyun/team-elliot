@@ -13,10 +13,7 @@ export function PrincipalSocketListener() {
   // 새로운 수강신청 요청 알림
   useSocketEvent('new_enrollment_request', (data) => {
     console.log('📨 새로운 수강신청 요청 패킷 수신:', data)
-    
-    // React Query 캐시 무효화
     socketSync.handleSocketEvent('new_enrollment_request', data as SocketEventData<'new_enrollment_request'>)
-    
     toast.info('새로운 수강 신청이 도착했습니다.', {
       description: '수강신청 목록을 확인해주세요.',
       duration: 8000,
