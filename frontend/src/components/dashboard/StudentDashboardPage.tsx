@@ -8,7 +8,6 @@ import { DashboardContainer } from './DashboardContainer';
 import { useSession } from '@/lib/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { useStudentInitialization } from '@/hooks/redux/useStudentInitialization';
 import { RoleBasedSocketListener } from '@/components/common/Socket/RoleBasedSocketListener';
 import { ensureTrailingSlash } from '@/lib/utils/router';
 
@@ -16,9 +15,6 @@ import { ensureTrailingSlash } from '@/lib/utils/router';
 function StudentDashboardContent() {
   const { navigation } = useApp();
   const { activeTab, handleTabChange } = navigation;
-
-  // Student 데이터 초기화
-  useStudentInitialization();
 
   // 메인 탭 페이지들을 배열로 준비
   const tabPages = [

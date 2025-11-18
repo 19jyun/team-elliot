@@ -7,9 +7,6 @@ import {
   withdrawalTeacher as apiWithdrawalTeacher,
   withdrawalPrincipal as apiWithdrawalPrincipal,
 } from "@/api/auth";
-import { useAppDispatch } from "@/store/hooks";
-import { clearPrincipalData } from "@/store/slices/principalSlice";
-import { clearStudentData } from "@/store/slices/studentSlice";
 import { clearApiClientSessionCache } from "@/api/apiClient";
 import { logger } from "@/lib/logger";
 import { WithdrawalErrorCode, isWithdrawalError } from "@/types/withdrawal";
@@ -17,7 +14,6 @@ import { WithdrawalErrorCode, isWithdrawalError } from "@/types/withdrawal";
 export const useWithdrawal = () => {
   const { data: session } = useSession();
   const signOut = useSignOut();
-  const dispatch = useAppDispatch();
 
   const withdrawal = useCallback(
     async (reason: string) => {
@@ -46,8 +42,6 @@ export const useWithdrawal = () => {
         }
 
         // 3. Redux 상태 완전 정리 (모든 역할의 데이터)
-        dispatch(clearPrincipalData());
-        dispatch(clearStudentData());
 
         // 3-1. API 클라이언트 세션 캐시 클리어
         clearApiClientSessionCache();
@@ -95,8 +89,6 @@ export const useWithdrawal = () => {
 
           // cleanup 진행
           try {
-            dispatch(clearPrincipalData());
-            dispatch(clearStudentData());
             await signOut({ redirect: false });
           } catch (cleanupError) {
             logger.error("Cleanup failed", {
@@ -173,8 +165,6 @@ export const useWithdrawal = () => {
 
         // 비즈니스 에러가 아닌 경우에만 cleanup 진행
         try {
-          dispatch(clearPrincipalData());
-          dispatch(clearStudentData());
           await signOut({ redirect: false });
         } catch (cleanupError) {
           logger.error("Cleanup failed", {
@@ -190,7 +180,7 @@ export const useWithdrawal = () => {
         }, 500);
       }
     },
-    [session, signOut, dispatch]
+    [session, signOut]
   );
 
   return { withdrawal };

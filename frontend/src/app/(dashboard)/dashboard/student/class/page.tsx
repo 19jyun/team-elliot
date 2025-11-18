@@ -2,62 +2,33 @@
 
 import { useSession } from '@/lib/auth/AuthProvider'
 import { useState, useMemo } from 'react'
-import { useSelector } from 'react-redux'
 
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
 import { SessionCardDisplay } from '@/components/calendar/SessionCardDisplay'
 import { StudentSessionDetailModal } from '@/components/features/student/classes/StudentSessionDetailModal'
-import type { RootState } from '@/store/index'
 import type { ClassSession, ClassSessionWithCounts } from '@/types/api/class'
-import type { ClassSession as Session } from '@/types/api/class-session'
+import { useStudentCalendarSessions } from '@/hooks/queries/student/useStudentCalendarSessions'
+import { useSignOut } from '@/lib/auth/AuthProvider'
 
 export default function StudentDashboard() {
+  const signOut = useSignOut()
+
   const { data: session, status } = useSession()
 
-  // Redux store에서 캘린더 데이터 가져오기
-  const studentData = useSelector((state: RootState) => state.student.data);
-  const rawCalendarSessions = studentData?.calendarSessions || [];
-  const rawCalendarRange = studentData?.calendarRange || null;
-  
-  // Session을 ClassSession 타입으로 변환 (ConnectedCalendar에 전달용)
-  const calendarSessions: ClassSession[] = rawCalendarSessions
-    .filter((session: Session) => session.date) // 날짜가 있는 세션만
-    .map((session: Session) => ({
-      id: session.id,
-      classId: session.class?.id || 0,
-      date: session.date!,
-      startTime: session.startTime,
-      endTime: session.endTime,
-      currentStudents: session.currentStudents,
-      maxStudents: session.maxStudents,
-      isEnrollable: session.isEnrollable,
-      isFull: session.isFull,
-      isPastStartTime: session.isPastStartTime,
-      isAlreadyEnrolled: session.isAlreadyEnrolled,
-      studentEnrollmentStatus: session.studentEnrollmentStatus,
-      class: session.class,
-    }));
+  // React Query 기반 데이터 관리
+  const { data: calendarSessionsData, isLoading, error } = useStudentCalendarSessions();
+  const calendarSessions = (calendarSessionsData as ClassSession[]) || [];
   
   // Redux에서 가져온 캘린더 범위를 Date 객체로 변환
-  const calendarRange = useMemo(() => {
-    if (rawCalendarRange) {
-      return {
-        startDate: new Date(rawCalendarRange.startDate),
-        endDate: new Date(rawCalendarRange.endDate),
-      };
-    }
+  const calendarRangeForCalendar = useMemo(() => {
     const now = new Date();
     return {
       startDate: new Date(now.getFullYear(), now.getMonth(), 1),
       endDate: new Date(now.getFullYear(), now.getMonth() + 2, 0),
     };
-  }, [rawCalendarRange]);
+  }, []);
   
-  // Redux store에서 데이터만 사용 (student initialization에서 이미 로드됨)
-  const isLoading = false
-  const error = null
-
   // 선택된 날짜와 세션 상태 (teacher/class/page.tsx와 유사)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedSessions, setSelectedSessions] = useState<ClassSessionWithCounts[]>([])
@@ -77,6 +48,14 @@ export default function StudentDashboard() {
 
   // 에러 처리
   if (error) {
+    const errorResponse = error && typeof error === 'object' && 'response' in error 
+      ? (error as { response?: { status?: number } })
+      : null;
+    if (errorResponse?.response?.status === 401) {
+      signOut({ redirect: true, callbackUrl: '/' });
+      return null;
+    }
+    
     return (
       <div className="flex flex-col items-center justify-center min-h-full">
         <p className="text-red-500">데이터를 불러오는데 실패했습니다.</p>
@@ -208,7 +187,7 @@ export default function StudentDashboard() {
           selectedSessionIds={new Set()}
           onSessionSelect={() => {}} // student-view에서는 선택 기능 없음
           onDateClick={handleDateClick}
-          calendarRange={calendarRange}
+          calendarRange={calendarRangeForCalendar}
           selectedDate={selectedDate ? selectedDate.toISOString().split('T')[0] : undefined}
         >
           <ConnectedCalendar />

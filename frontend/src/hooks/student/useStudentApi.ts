@@ -1,12 +1,6 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import { toast } from "sonner";
-import { useAppDispatch } from "@/store/hooks";
 import { useSession } from "@/lib/auth/AuthProvider";
-import {
-  addOptimisticCancellation,
-  replaceOptimisticCancellation,
-  removeOptimisticCancellation,
-} from "@/store/slices/studentSlice";
 
 import {
   getEnrollmentHistory,
@@ -51,7 +45,6 @@ import type {
 // Student 대시보드에서 사용할 API 훅
 export function useStudentApi() {
   const {} = useApiError();
-  const dispatch = useAppDispatch();
   const { data: session, status } = useSession();
   const [isLoading, _setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -286,29 +279,7 @@ export function useStudentApi() {
       // 요청 시작 표시
       pendingRequests.current.add(requestKey);
 
-      // 낙관적 업데이트를 위한 임시 환불 요청 생성
-      const optimisticCancellation: Omit<CancellationHistory, "id"> & {
-        id: string;
-        isOptimistic: boolean;
-      } = {
-        id: `temp_${Date.now()}`,
-        sessionId: data.sessionEnrollmentId,
-        className: "환불 요청 중...",
-        teacherName: "선생님",
-        sessionDate: new Date().toISOString().split("T")[0],
-        sessionTime: "09:00-10:00",
-        refundAmount: data.refundAmount || 0,
-        status: "REFUND_REQUESTED" as const,
-        reason: data.reason,
-        detailedReason: data.detailedReason,
-        requestedAt: new Date().toISOString(),
-        isOptimistic: true,
-      };
-
       try {
-        // 1. 낙관적 업데이트 (즉시 UI에 반영)
-        dispatch(addOptimisticCancellation(optimisticCancellation));
-
         toast.success("환불 요청을 처리하고 있습니다...", {
           description: "잠시만 기다려주세요.",
         });
@@ -317,47 +288,6 @@ export function useStudentApi() {
         const res = await refundApi.createRefundRequest(data);
 
         if (res.data && res.data.id) {
-          // 3. 실제 데이터로 교체
-          const refundData = res.data; // ResponseInterceptor가 래핑한 data
-
-          const realCancellation: CancellationHistory = {
-            id: refundData.id,
-            sessionId: refundData.sessionEnrollmentId,
-            className:
-              refundData.sessionEnrollment?.session?.class?.className ||
-              "클래스명",
-            teacherName:
-              refundData.sessionEnrollment?.session?.class?.teacher?.name ||
-              "선생님",
-            sessionDate:
-              refundData.sessionEnrollment?.session?.date ||
-              new Date().toISOString().split("T")[0],
-            sessionTime: `${
-              refundData.sessionEnrollment?.session?.startTime || "09:00"
-            }-${refundData.sessionEnrollment?.session?.endTime || "10:00"}`,
-            refundAmount: refundData.refundAmount,
-            status: refundData.status as
-              | "REFUND_REQUESTED"
-              | "APPROVED"
-              | "REJECTED",
-            reason: refundData.reason,
-            detailedReason: refundData.detailedReason,
-            requestedAt: refundData.requestedAt,
-            processedAt: refundData.processedAt,
-            cancelledAt: refundData.cancelledAt,
-          };
-
-          dispatch(
-            replaceOptimisticCancellation({
-              optimisticId: optimisticCancellation.id,
-              realCancellation: realCancellation, // isOptimistic 제거, 실제 데이터만 사용
-            })
-          );
-
-          toast.success("환불 요청이 완료되었습니다!", {
-            description: "승인 대기 중입니다.",
-          });
-
           // 요청 완료 시 pendingRequests에서 제거
           pendingRequests.current.delete(requestKey);
 
@@ -379,7 +309,6 @@ export function useStudentApi() {
 
         // 4. 실패 시 낙관적 업데이트 롤백
         console.log("🔄 [환불 요청] 낙관적 업데이트 롤백 시작");
-        dispatch(removeOptimisticCancellation(optimisticCancellation.id));
         console.log("✅ [환불 요청] 낙관적 업데이트 롤백 완료");
 
         // 에러 발생 시에도 pendingRequests에서 제거
@@ -394,7 +323,7 @@ export function useStudentApi() {
         throw err;
       }
     },
-    [dispatch]
+    []
   );
 
   // 사용자 프로필 로드 함수

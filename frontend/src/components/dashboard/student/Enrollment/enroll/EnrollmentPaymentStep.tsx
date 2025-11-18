@@ -333,18 +333,17 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
       // 새로운 수강 신청 모드: 실제 세션 데이터 기반
       const sessionIds = extractSessionIds(validSessions);
       
-      // 백엔드에 세션별 수강 신청 요청 (낙관적 업데이트 포함)
-      const result = await enrollSessions(sessionIds, validSessions);
-      
-      // 부분 실패 처리
-      if (result && typeof result === 'object' && 'failedSessions' in result) {
+      // 백엔드에 세션별 수강 신청 요청
+      const response = await enrollSessions(sessionIds);
+      const result = response?.data;
+
+      if (result) {
         const shouldProceed = handlePartialFailure(result, validSessions);
         if (shouldProceed.shouldProceed) {
           router.push(ensureTrailingSlash('/dashboard/student/enroll/academy/class/date/payment/complete'));
           onComplete?.();
         }
       } else {
-        // 기존 방식 (성공으로 간주)
         toast.success('수강신청이 완료되었습니다!', {
           description: '승인 대기 중입니다.',
         });
