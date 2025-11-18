@@ -35,7 +35,7 @@ describe('TeacherController', () => {
     jest.clearAllMocks();
   });
 
-  describe('requestJoinAcademy', () => {
+  describe('createJoinRequest', () => {
     it('should request to join academy successfully', async () => {
       const joinAcademyRequestDto: JoinAcademyRequestDto = {
         code: 'TEST001',
@@ -44,7 +44,7 @@ describe('TeacherController', () => {
       const result = { message: '가입 요청이 전송되었습니다.' };
       mockService.requestJoinAcademy.mockResolvedValue(result);
 
-      const response = await controller.requestJoinAcademy(
+      const response = await controller.createJoinRequest(
         mockUser,
         joinAcademyRequestDto,
       );
@@ -81,6 +81,32 @@ describe('TeacherController', () => {
       const result = await controller.getMyProfile(mockUser);
 
       expect(result).toEqual(teacherProfile);
+      expect(service.getTeacherProfile).toHaveBeenCalledWith(mockUser.id);
+    });
+  });
+
+  describe('updateMyInfo', () => {
+    it('should change academy when academyCode provided', async () => {
+      const body = { academyCode: 'NEW001' };
+      const result = { message: '학원이 변경되었습니다.' };
+      mockService.changeAcademy.mockResolvedValue(result);
+
+      const response = await controller.updateMyInfo(mockUser, body);
+
+      expect(response).toEqual(result);
+      expect(service.changeAcademy).toHaveBeenCalledWith(
+        mockUser.id,
+        body.academyCode,
+      );
+    });
+
+    it('should fallback to profile retrieval when no academyCode provided', async () => {
+      const profile = { id: 1, name: 'Teacher' };
+      mockService.getTeacherProfile.mockResolvedValue(profile);
+
+      const response = await controller.updateMyInfo(mockUser, {});
+
+      expect(response).toEqual(profile);
       expect(service.getTeacherProfile).toHaveBeenCalledWith(mockUser.id);
     });
   });
@@ -224,22 +250,6 @@ describe('TeacherController', () => {
 
       expect(result).toEqual(academy);
       expect(service.getMyAcademy).toHaveBeenCalledWith(mockUser.id);
-    });
-  });
-
-  describe('changeAcademy', () => {
-    it('should change teacher academy successfully', async () => {
-      const body = { code: 'NEW001' };
-      const result = { message: '학원이 변경되었습니다.' };
-      mockService.changeAcademy.mockResolvedValue(result);
-
-      const response = await controller.changeAcademy(mockUser, body);
-
-      expect(response).toEqual(result);
-      expect(service.changeAcademy).toHaveBeenCalledWith(
-        mockUser.id,
-        body.code,
-      );
     });
   });
 

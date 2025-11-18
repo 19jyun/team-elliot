@@ -4,6 +4,7 @@ import {
   Post,
   Put,
   Delete,
+  Patch,
   Body,
   Param,
   Query,
@@ -26,87 +27,75 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 export class ClassController {
   constructor(private readonly classService: ClassService) {}
 
-  // 1. 구체적인 경로를 먼저 정의
-  @Get('academy/draft')
+  @Get('academy/me')
   @Roles(Role.PRINCIPAL)
-  @ApiOperation({ summary: '학원의 DRAFT 상태 강의 목록 조회' })
-  @ApiResponse({ status: 200, description: 'DRAFT 상태 강의 목록 조회 성공' })
-  async getDraftClasses(@CurrentUser() user: any) {
-    // 사용자의 학원 정보 조회
-    const teacher = await this.classService['prisma'].teacher.findUnique({
-      where: { id: user.id },
-      select: { academyId: true },
-    });
-
-    if (!teacher?.academyId) {
-      throw new NotFoundException('소속된 학원이 없습니다.');
-    }
-
-    return this.classService.getDraftClasses(teacher.academyId);
-  }
-
-  @Get('academy/active')
-  @Roles(Role.PRINCIPAL)
-  @ApiOperation({ summary: '학원의 활성 강의 목록 조회' })
-  @ApiResponse({ status: 200, description: '활성 강의 목록 조회 성공' })
-  async getActiveClasses(@CurrentUser() user: any) {
-    // 사용자의 학원 정보 조회
-    const teacher = await this.classService['prisma'].teacher.findUnique({
-      where: { id: user.id },
-      select: { academyId: true },
-    });
-
-    if (!teacher?.academyId) {
-      throw new NotFoundException('소속된 학원이 없습니다.');
-    }
-
-    return this.classService.getActiveClasses(teacher.academyId);
-  }
-
-  @Get('month/:month')
-  async getClassesByMonth(
-    @Param('month') month: string,
-    @Query('year') year: string,
-  ) {
-    return this.classService.getClassesByMonth(month, parseInt(year));
-  }
-
-  @Get('sessions/:month')
-  @ApiOperation({ summary: '해당 월에 세션이 있는 클래스들과 세션 정보 조회' })
-  @ApiResponse({ status: 200, description: '클래스와 세션 정보 조회 성공' })
-  async getClassesWithSessionsByMonth(
-    @Param('month') month: string,
-    @Query('year') year: string,
+  @ApiOperation({ summary: '내 학원의 강의 목록 조회 (상태 필터링)' })
+  @ApiResponse({
+    status: 200,
+    description: '학원의 강의 목록을 반환합니다.',
+  })
+  async getAcademyClasses(
     @CurrentUser() user: any,
+    @Query('status') status?: 'DRAFT' | 'ACTIVE',
   ) {
-    return this.classService.getClassesWithSessionsByMonth(
-      month,
-      parseInt(year),
-      user.role === 'STUDENT' ? user.id : undefined,
-    );
+    if (!user?.academyId) {
+      throw new NotFoundException('소속된 학원이 없습니다.');
+    }
+
+    if (status === 'DRAFT') {
+      return this.classService.getDraftClasses(user.academyId);
+    }
+
+    if (status === 'ACTIVE') {
+      return this.classService.getActiveClasses(user.academyId);
+    }
+
+    return this.classService.getAllAcademyClasses(user.id);
   }
 
-  // 2. 기본 CRUD 라우트
   @Get()
-  async getAllClasses(
+  @ApiOperation({ summary: '클래스 목록 조회 (검색/필터)' })
+  @ApiResponse({ status: 200, description: '클래스 목록을 반환합니다.' })
+  async getClasses(
+    @Query('year') year?: string,
+    @Query('month') month?: string,
+    @Query('includeSessions') includeSessions?: string,
     @Query('dayOfWeek') dayOfWeek?: string,
     @Query('teacherId') teacherId?: string,
+    @CurrentUser() user?: any,
   ) {
+    if (year && month) {
+      const parsedYear = parseInt(year, 10);
+      const shouldIncludeSessions =
+        typeof includeSessions === 'string'
+          ? includeSessions.toLowerCase() === 'true'
+          : false;
+
+      if (shouldIncludeSessions) {
+        const studentId = user?.role === 'STUDENT' ? user.id : undefined;
+        return this.classService.getClassesWithSessionsByMonth(
+          month,
+          parsedYear,
+          studentId,
+        );
+      }
+
+      return this.classService.getClassesByMonth(month, parsedYear);
+    }
+
     return this.classService.getAllClasses({
       dayOfWeek,
-      teacherId: teacherId ? parseInt(teacherId) : undefined,
+      teacherId: teacherId ? parseInt(teacherId, 10) : undefined,
     });
   }
 
   @Post()
   @Roles(Role.PRINCIPAL)
   async createClass(@Body() data: CreateClassDto, @CurrentUser() user: any) {
-    // Principal의 ID를 사용하여 클래스 생성
     return this.classService.createClass(data, user.id);
   }
 
-  // 3. 파라미터가 있는 라우트들
-  @Get(':id/details')
+  @Get(':id')
   async getClassDetails(@Param('id', ParseIntPipe) id: number) {
     return this.classService.getClassDetails(id);
   }
@@ -142,10 +131,10 @@ export class ClassController {
     return this.classService.deleteClass(id);
   }
 
-  @Put(':id/status')
+  @Patch(':id')
   @Roles(Role.PRINCIPAL)
-  @ApiOperation({ summary: '강의 상태 변경 (승인/거절)' })
-  @ApiResponse({ status: 200, description: '강의 상태 변경 성공' })
+  @ApiOperation({ summary: '강의 정보 수정 (상태 변경 포함)' })
+  @ApiResponse({ status: 200, description: '강의 정보 수정 성공' })
   async updateClassStatus(
     @Param('id', ParseIntPipe) classId: number,
     @Body() updateStatusDto: UpdateClassStatusDto,
@@ -159,9 +148,9 @@ export class ClassController {
     );
   }
 
-  @Post(':id/enroll')
+  @Post(':id/enrollments')
   @Roles(Role.STUDENT)
-  async enrollClass(
+  async createEnrollment(
     @Param('id', ParseIntPipe) classId: number,
     @Body('studentId', ParseIntPipe) studentId: number,
   ) {
@@ -177,13 +166,13 @@ export class ClassController {
     return this.classService.unenrollStudent(classId, studentId);
   }
 
-  @Post(':id/generate-sessions')
+  @Post(':id/session-generation-jobs')
   @Roles(Role.PRINCIPAL)
-  async generateSessionsForClass(@Param('id', ParseIntPipe) classId: number) {
+  async createSessionGenerationJob(@Param('id', ParseIntPipe) classId: number) {
     return this.classService.generateSessionsForExistingClass(classId);
   }
 
-  @Post(':id/generate-sessions/period')
+  @Post(':id/session-generation-jobs/period')
   @Roles(Role.PRINCIPAL)
   async generateSessionsForPeriod(
     @Param('id', ParseIntPipe) classId: number,

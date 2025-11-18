@@ -17,7 +17,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 
 @ApiTags('학원 관리')
-@Controller('academy')
+@Controller('academies')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AcademyController {
   constructor(private readonly academyService: AcademyService) {}
@@ -61,25 +61,25 @@ export class AcademyController {
   }
 
   // 학생용 API
-  @Post('join')
+  @Post('memberships')
   @Roles('STUDENT')
-  @ApiOperation({ summary: '학원 가입 (학생)' })
-  @ApiResponse({ status: 201, description: '학원 가입이 완료되었습니다.' })
+  @ApiOperation({ summary: '학원 가입 (멤버십 생성)' })
+  @ApiResponse({ status: 201, description: '학원 멤버십이 생성되었습니다.' })
   async joinAcademy(@GetUser() user: any, @Body() dto: JoinAcademyDto) {
     return this.academyService.joinAcademy(user.id, dto);
   }
 
-  @Post('leave')
+  @Delete('memberships')
   @Roles('STUDENT')
-  @ApiOperation({ summary: '학원 탈퇴 (학생)' })
-  @ApiResponse({ status: 200, description: '학원 탈퇴가 완료되었습니다.' })
+  @ApiOperation({ summary: '학원 탈퇴 (멤버십 삭제)' })
+  @ApiResponse({ status: 200, description: '학원 멤버십이 삭제되었습니다.' })
   async leaveAcademy(@GetUser() user: any, @Body() dto: LeaveAcademyDto) {
     return this.academyService.leaveAcademy(user.id, dto);
   }
 
-  @Get('my/list')
+  @Get('me/memberships')
   @Roles('STUDENT')
-  @ApiOperation({ summary: '내가 가입한 학원 목록 (학생)' })
+  @ApiOperation({ summary: '내가 가입한 학원 목록' })
   @ApiResponse({ status: 200, description: '가입한 학원 목록을 반환합니다.' })
   async getMyAcademies(@GetUser() user: any) {
     return this.academyService.getMyAcademies(user.id);

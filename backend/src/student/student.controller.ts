@@ -20,13 +20,15 @@ import { Role } from '@prisma/client';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @ApiTags('Student')
-@Controller('student')
+@Controller('students')
 @UseGuards(JwtAuthGuard)
 export class StudentController {
   constructor(private readonly studentService: StudentService) {}
 
-  @Get('classes')
-  async getMyClasses(@CurrentUser() user: any) {
+  @Get('me/enrollments')
+  @ApiOperation({ summary: '내 수강 내역 조회' })
+  @ApiResponse({ status: 200, description: '내 수강 내역을 반환합니다.' })
+  async getMyEnrollments(@CurrentUser() user: any) {
     return this.studentService.getStudentClasses(user.id);
   }
 
@@ -45,7 +47,7 @@ export class StudentController {
     return this.studentService.unenrollClass(Number(classId), user.id);
   }
 
-  @Get('profile')
+  @Get('me/profile')
   async getMyProfile(@CurrentUser() user: any) {
     return this.studentService.getMyProfile(user.id);
   }
@@ -57,7 +59,7 @@ export class StudentController {
     return this.studentService.getTeacherProfile(teacherId);
   }
 
-  @Put('profile')
+  @Put('me/profile')
   async updateMyProfile(
     @CurrentUser() user: any,
     @Body() updateProfileDto: UpdateProfileDto,
@@ -65,7 +67,7 @@ export class StudentController {
     return this.studentService.updateMyProfile(user.id, updateProfileDto);
   }
 
-  @Get('refund-account')
+  @Get('me/refund-account')
   @ApiOperation({ summary: '환불 계좌 정보 조회' })
   @ApiResponse({
     status: 200,
@@ -75,7 +77,7 @@ export class StudentController {
     return this.studentService.getRefundAccount(user.id);
   }
 
-  @Put('refund-account')
+  @Put('me/refund-account')
   @ApiOperation({ summary: '환불 계좌 정보 수정' })
   @ApiResponse({
     status: 200,
@@ -91,12 +93,12 @@ export class StudentController {
     );
   }
 
-  @Get('enrollment-history')
+  @Get('me/enrollment-history')
   async getEnrollmentHistory(@CurrentUser() user: any) {
     return this.studentService.getEnrollmentHistory(user.id);
   }
 
-  @Get('cancellation-history')
+  @Get('me/cancellation-history')
   async getCancellationHistory(@CurrentUser() user: any) {
     return this.studentService.getCancellationHistory(user.id);
   }
@@ -118,7 +120,7 @@ export class StudentController {
   // === 학원 관리 API (선생님용) ===
 
   // 수강생을 학원에서 제거
-  @Delete('academy/students/:studentId')
+  @Delete(':studentId/academy-membership')
   @UseGuards(RolesGuard)
   @Roles(Role.TEACHER)
   @ApiOperation({ summary: '수강생을 학원에서 제거' })
