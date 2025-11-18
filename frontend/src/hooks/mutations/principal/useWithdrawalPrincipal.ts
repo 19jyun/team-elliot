@@ -7,6 +7,9 @@ import {
   isWithdrawalError,
   type WithdrawalErrorDetails,
 } from "@/types/withdrawal";
+import type { AppError } from "@/types/api";
+import type { AxiosError } from "axios";
+import type { WithdrawalErrorResponse } from "@/types/withdrawal";
 
 /**
  * Principal 회원 탈퇴 Mutation
@@ -27,10 +30,11 @@ export function useWithdrawalPrincipal() {
       // 타입 가드를 사용하여 에러 구조 확인
       if (!isWithdrawalError(error)) {
         // 예상치 못한 에러 (네트워크 에러 등)
+        const axiosError = error as AxiosError<WithdrawalErrorResponse>;
         const errorDetails = {
           error: error instanceof Error ? error.message : String(error),
           errorObject: error,
-          response: (error as any)?.response,
+          response: axiosError.response,
           stack: error instanceof Error ? error.stack : undefined,
         };
 
@@ -56,17 +60,21 @@ export function useWithdrawalPrincipal() {
         "code" in error &&
         "message" in error
       ) {
-        const appError = error as any;
+        const appError = error as AppError;
         errorCode = appError.code;
         errorMessage = appError.message;
         errorDetails = appError.details as WithdrawalErrorDetails | undefined;
       } else {
-        const errorData = error.response?.data;
+        const axiosError = error as AxiosError<WithdrawalErrorResponse>;
+        const errorData = axiosError.response?.data;
         errorCode = errorData?.error?.code;
         errorMessage = errorData?.error?.message;
-        const errorDetailsRaw = errorData?.error?.details as any;
-        errorDetails = (errorDetailsRaw?.details ||
-          errorDetailsRaw) as WithdrawalErrorDetails;
+        const errorDetailsRaw = errorData?.error?.details;
+        if (errorDetailsRaw && typeof errorDetailsRaw === "object") {
+          const detailsObj = errorDetailsRaw as Record<string, unknown>;
+          errorDetails = (detailsObj.details ||
+            detailsObj) as WithdrawalErrorDetails;
+        }
       }
 
       logger.error("회원 탈퇴 실패", {

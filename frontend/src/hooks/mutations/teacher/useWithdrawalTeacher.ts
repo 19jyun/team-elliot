@@ -7,6 +7,9 @@ import {
   isWithdrawalError,
   type WithdrawalErrorDetails,
 } from "@/types/withdrawal";
+import type { AppError } from "@/types/api";
+import type { AxiosError } from "axios";
+import type { WithdrawalErrorResponse } from "@/types/withdrawal";
 
 /**
  * Teacher 회원 탈퇴 Mutation
@@ -25,10 +28,11 @@ export function useWithdrawalTeacher() {
     },
     onError: (error: unknown) => {
       if (!isWithdrawalError(error)) {
+        const axiosError = error as AxiosError<WithdrawalErrorResponse>;
         const errorDetails = {
           error: error instanceof Error ? error.message : String(error),
           errorObject: error,
-          response: (error as any)?.response,
+          response: axiosError.response,
           stack: error instanceof Error ? error.stack : undefined,
         };
 
@@ -52,17 +56,21 @@ export function useWithdrawalTeacher() {
         "code" in error &&
         "message" in error
       ) {
-        const appError = error as any;
+        const appError = error as AppError;
         errorCode = appError.code;
         errorMessage = appError.message;
         errorDetails = appError.details as WithdrawalErrorDetails | undefined;
       } else {
-        const errorData = error.response?.data;
+        const axiosError = error as AxiosError<WithdrawalErrorResponse>;
+        const errorData = axiosError.response?.data;
         errorCode = errorData?.error?.code;
         errorMessage = errorData?.error?.message;
-        const errorDetailsRaw = errorData?.error?.details as any;
-        errorDetails = (errorDetailsRaw?.details ||
-          errorDetailsRaw) as WithdrawalErrorDetails;
+        const errorDetailsRaw = errorData?.error?.details;
+        if (errorDetailsRaw && typeof errorDetailsRaw === "object") {
+          const detailsObj = errorDetailsRaw as Record<string, unknown>;
+          errorDetails = (detailsObj.details ||
+            detailsObj) as WithdrawalErrorDetails;
+        }
       }
 
       logger.error("회원 탈퇴 실패", {

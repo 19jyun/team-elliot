@@ -60,9 +60,6 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     };
   }, [session, status]); // 세션 정보나 인증 상태가 바뀔 때만 로직 재실행
 
-  // 현재 활성화된 소켓 인스턴스를 가져옴 (lib/socket.ts의 전역 변수)
-  const currentSocket = getSocket();
-
   return (
     <SocketContext.Provider value={{ socket: getSocket(), isConnected }}>
       {children}
