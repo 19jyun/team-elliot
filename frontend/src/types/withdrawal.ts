@@ -3,6 +3,7 @@
  */
 
 import { AxiosError } from "axios";
+import type { AppError } from "@/types/api";
 
 /**
  * 회원 탈퇴 에러 코드
@@ -82,10 +83,30 @@ export function isAxiosError(
 
 /**
  * 회원 탈퇴 에러 응답 타입 가드
+ * apiClient 인터셉터가 AppError로 변환한 경우도 처리
  */
 export function isWithdrawalError(
   error: unknown
-): error is AxiosError<WithdrawalErrorResponse> {
+): error is AxiosError<WithdrawalErrorResponse> | AppError {
+  // AppError 형태인지 확인 (apiClient 인터셉터가 변환한 경우)
+  if (
+    error &&
+    typeof error === "object" &&
+    "type" in error &&
+    "code" in error &&
+    "message" in error
+  ) {
+    const appError = error as AppError;
+    // withdrawal 관련 에러 코드인지 확인
+    const withdrawalCodes = [
+      "HAS_ONGOING_CLASSES",
+      "HAS_PENDING_REFUNDS",
+      "HAS_PENDING_ENROLLMENTS",
+    ];
+    return withdrawalCodes.includes(appError.code);
+  }
+
+  // AxiosError 형태인지 확인
   if (!isAxiosError(error)) {
     return false;
   }

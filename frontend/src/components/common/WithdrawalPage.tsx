@@ -26,10 +26,9 @@ const cancellationOptions = [
 ];
 
 export function WithdrawalPage() {
-  const { withdrawal } = useWithdrawal();
+  const { withdrawal, isLoading } = useWithdrawal();
   const [selectedReason, setSelectedReason] = useState<number | null>(null);
   const [customReason, setCustomReason] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const { goBack } = useApp();
 
@@ -65,7 +64,6 @@ export function WithdrawalPage() {
 
   const handleConfirmWithdrawal = async () => {
     setShowConfirmDialog(false);
-    setIsLoading(true);
 
     try {
       let reason = '';
@@ -84,8 +82,7 @@ export function WithdrawalPage() {
       // withdrawal 함수가 성공 시 자동으로 리다이렉트하므로 여기서는 아무것도 안 함
     } catch (error) {
       console.error('회원 탈퇴 오류:', error);
-      // useWithdrawal에서 에러 처리를 하므로 여기서는 로딩만 해제
-      setIsLoading(false);
+      // useWithdrawal에서 에러 처리를 하므로 여기서는 아무것도 안 함
     }
   };
 

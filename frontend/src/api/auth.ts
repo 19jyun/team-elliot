@@ -93,7 +93,10 @@ export const verifyToken = (): Promise<ApiResponse<VerifyResponse>> => {
 export const withdrawalStudent = (data: {
   reason: string;
 }): Promise<ApiResponse<{ message: string }>> => {
-  return post<ApiResponse<{ message: string }>>("/auth/withdrawal", data);
+  return post<ApiResponse<{ message: string }>>(
+    "/auth/withdrawal/student",
+    data
+  );
 };
 
 // 회원 탈퇴 (강사)
