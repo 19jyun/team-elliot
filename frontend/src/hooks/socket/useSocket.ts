@@ -1,6 +1,5 @@
-import { useEffect, useState, useCallback, useRef } from "react";
-import { useSession } from "@/lib/auth/AuthProvider";
-import { initializeSocket, disconnectSocket, getSocket } from "@/lib/socket";
+import { useCallback, useEffect } from "react";
+import { useSocketContext } from "@/contexts/SocketContext";
 import type {
   SocketEventName,
   SocketEventData,
@@ -9,36 +8,8 @@ import type {
 } from "@/types/socket";
 
 function useSocket() {
-  const { data: session, status } = useSession();
-  const [isConnected, setIsConnected] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const socketRef = useRef<unknown>(null);
-
-  // Socket 연결
-  const connect = useCallback(async () => {
-    if (status !== "authenticated" || !session?.accessToken) {
-      return;
-    }
-
-    try {
-      setIsConnecting(true);
-      const socket = await initializeSocket();
-      socketRef.current = socket;
-      setIsConnected(socket.connected);
-    } catch (error) {
-      console.error("Socket 연결 실패:", error);
-      setIsConnected(false);
-    } finally {
-      setIsConnecting(false);
-    }
-  }, [session, status]);
-
-  // Socket 연결 해제
-  const disconnect = useCallback(() => {
-    disconnectSocket();
-    socketRef.current = null;
-    setIsConnected(false);
-  }, []);
+  // Context에서 소켓 인스턴스와 연결 상태를 가져옴
+  const { socket, isConnected } = useSocketContext();
 
   // 이벤트 리스너 등록
   const on = useCallback(
@@ -46,7 +17,6 @@ function useSocket() {
       event: T,
       callback: (data: SocketEventData<T>) => void
     ) => {
-      const socket = getSocket();
       if (socket) {
         (
           socket as {
@@ -60,67 +30,27 @@ function useSocket() {
             }
           ).off(event, callback as (data: unknown) => void);
       }
+      return undefined;
     },
-    []
+    [socket] // socket 인스턴스 변경 시에만 on이 갱신됨
   );
 
   // 이벤트 발생
   const emit = useCallback(
     <T extends ClientEventName>(event: T, data?: ClientEventData<T>) => {
-      const socket = getSocket();
       if (socket) {
         socket.emit(event, data);
       }
     },
-    []
+    [socket]
   );
-
-  // 연결 상태 모니터링
-  useEffect(() => {
-    const socket = getSocket();
-    if (!socket) return;
-
-    const handleConnect = () => {
-      setIsConnected(true);
-    };
-    const handleDisconnect = () => setIsConnected(false);
-
-    socket.on("connect", handleConnect);
-    socket.on("disconnect", handleDisconnect);
-
-    // 초기 상태 설정
-    setIsConnected(socket.connected);
-
-    return () => {
-      socket.off("connect", handleConnect);
-      socket.off("disconnect", handleDisconnect);
-    };
-  }, []);
-
-  // 세션 변경 시 Socket 연결 관리
-  useEffect(() => {
-    if (status === "authenticated" && session?.accessToken) {
-      connect();
-    } else if (status === "unauthenticated") {
-      disconnect();
-    }
-  }, [status, session, connect, disconnect]);
-
-  // 컴포넌트 언마운트 시 연결 해제
-  useEffect(() => {
-    return () => {
-      disconnect();
-    };
-  }, [disconnect]);
 
   return {
     isConnected,
-    isConnecting,
-    connect,
-    disconnect,
+    socket,
     on,
     emit,
-    socket: socketRef.current,
+    // connect, disconnect는 Context에서 관리하므로 제거
   };
 }
 
