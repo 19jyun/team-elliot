@@ -1,9 +1,8 @@
 import { http, HttpResponse } from 'msw';
 import { server } from '@/__mocks__/server';
-import { screen, act } from '@/__tests__/utils/test-utils';
+import { screen, act, render } from '@/__tests__/utils/test-utils';
 import userEvent from '@testing-library/user-event';
-// EnrollmentContainer는 삭제되었습니다. 테스트는 EnrollmentAcademyStep을 직접 사용하도록 수정 필요
-// import { EnrollmentContainer } from '@/components/dashboard/student/Enrollment/enroll/EnrollmentContainer';
+import { EnrollmentMainStep } from '@/components/dashboard/student/Enrollment/EnrollmentMainStep';
 import { EnrollmentFormManager } from '@/contexts/forms/EnrollmentFormManager';
 
 // NextAuth mock
@@ -22,10 +21,12 @@ jest.mock("next-auth/react", () => ({
 }));
 
 // Next.js router mock
+const mockPush = jest.fn();
+const mockBack = jest.fn();
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(() => ({
-    push: jest.fn(),
-    back: jest.fn(),
+    push: mockPush,
+    back: mockBack,
   })),
 }));
 
@@ -475,11 +476,13 @@ jest.mock("@/contexts/AppContext", () => ({
   AppProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-// Student API mock - MSW 대신 직접 모킹
+// React Query hooks mock
 const mockEnrollSessions = jest.fn();
-jest.mock("@/hooks/student/useStudentApi", () => ({
-  useStudentApi: jest.fn(() => ({
-    academies: [
+
+// useStudentAcademies mock
+jest.mock("@/hooks/queries/student/useStudentAcademies", () => ({
+  useStudentAcademies: jest.fn(() => ({
+    data: [
       {
         id: 1,
         name: "Test Academy",
@@ -489,40 +492,25 @@ jest.mock("@/hooks/student/useStudentApi", () => ({
         isJoined: true,
       }
     ],
-    availableClasses: [
-      {
-        id: 1,
-        classId: 1,
-        date: "2024-01-15",
-        startTime: "10:00",
-        endTime: "11:00",
-        isEnrollable: true,
-        isFull: false,
-        isPastStartTime: false,
-        isAlreadyEnrolled: false,
-        class: {
-          id: 1,
-          className: "Ballet Class 1",
-          level: "BEGINNER",
-          tuitionFee: 50000,
-          teacher: {
-            id: 1,
-            name: "Teacher 1"
-          }
-        }
-      }
-    ],
     isLoading: false,
     error: null,
-    loadAcademies: jest.fn(),
-    loadAvailableClasses: jest.fn(),
+  })),
+}));
+
+// useEnrollment mock
+jest.mock("@/hooks/student/useEnrollment", () => ({
+  useEnrollment: jest.fn(() => ({
     enrollSessions: mockEnrollSessions,
+    isLoading: false,
   })),
 }));
 
 describe('Student Enrollment Flow', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockPush.mockClear();
+    mockBack.mockClear();
+    mockEnrollSessions.mockClear();
     
     // EnrollmentFormManager의 setCurrentStep을 더 효율적으로 모킹
     jest.spyOn(EnrollmentFormManager.prototype, 'setCurrentStep').mockImplementation(function(this: EnrollmentFormManager, step) {
@@ -541,12 +529,14 @@ describe('Student Enrollment Flow', () => {
     jest.restoreAllMocks();
   });
 
-  it('should complete enrollment flow successfully', async () => {
+  it('should render enrollment main step and navigate to academy selection', async () => {
     const user = userEvent.setup();
     
     // mockEnrollSessions를 성공 응답으로 설정
     mockEnrollSessions.mockResolvedValue({
       data: {
+        success: true,
+        message: "수강신청이 완료되었습니다.",
         enrolledSessions: [1],
         failedSessions: [],
       }
@@ -558,6 +548,8 @@ describe('Student Enrollment Flow', () => {
         return HttpResponse.json({
           success: true,
           data: {
+            success: true,
+            message: "수강신청이 완료되었습니다.",
             enrolledSessions: [1],
             failedSessions: [],
           }
@@ -565,122 +557,43 @@ describe('Student Enrollment Flow', () => {
       })
     );
 
-    // TODO: EnrollmentContainer 삭제로 인해 테스트 수정 필요
-    // render(
-    //   <EnrollmentContainer />
-    // );
-    // 임시로 테스트 스킵
-    return;
+    render(<EnrollmentMainStep />);
 
-    // 학원 선택 단계 확인
-    expect(screen.getByText('수강신청할 학원을 선택해주세요.')).toBeInTheDocument();
+    // 수강신청 메인 화면 확인
+    expect(screen.getByText('수강신청')).toBeInTheDocument();
+    expect(screen.getByText(/원하는 클래스를 선택하고/)).toBeInTheDocument();
+    expect(screen.getByText(/수강할 세션을 신청하세요/)).toBeInTheDocument();
 
-    // 학원 선택
-    const academyButton = screen.getByText('Test Academy');
-    await act(async () => {
-      await user.click(academyButton);
-    });
-
-    // 다음 단계로 이동 (academy-selection 단계로)
-    const nextButton = screen.getByText('다음');
-    await act(async () => {
-      await user.click(nextButton);
-    });
-
-    // 단계가 변경되었는지 확인 (class-selection 단계로)
-    expect(screen.getByText('클래스 선택')).toBeInTheDocument();
-
-    // 테스트 완료 - 실제로는 Context 모킹의 한계로 인해 완전한 플로우 테스트는 어려움
-    // 하지만 기본적인 컴포넌트 렌더링과 사용자 상호작용은 확인됨
+    // 수강신청 카드 클릭
+    const enrollmentCard = screen.getByText('수강신청').closest('div');
+    if (enrollmentCard) {
+      await act(async () => {
+        await user.click(enrollmentCard);
+      });
+      
+      // 라우터 push가 호출되었는지 확인
+      expect(mockPush).toHaveBeenCalledWith('/dashboard/student/enroll/academy/');
+    }
   });
 
-  it('should handle enrollment error', async () => {
-    const user = userEvent.setup();
-    
-    // mockEnrollSessions를 에러 응답으로 설정
-    mockEnrollSessions.mockRejectedValue(new Error('이미 신청한 클래스입니다.'));
+  it('should render enrollment main step correctly', () => {
+    render(<EnrollmentMainStep />);
 
-    // MSW 핸들러 설정 (에러 응답)
-    server.use(
-      http.post('/api/class-sessions/enrollments/bulk', () => {
-        return HttpResponse.json(
-          {
-            success: false,
-            message: '이미 신청한 클래스입니다.',
-          },
-          { status: 400 }
-        );
-      })
-    );
-
-    // TODO: EnrollmentContainer 삭제로 인해 테스트 수정 필요
-    // render(
-    //   <EnrollmentContainer />
-    // );
-    // 임시로 테스트 스킵
-    return;
-
-    // 학원 선택 단계 확인
-    expect(screen.getByText('수강신청할 학원을 선택해주세요.')).toBeInTheDocument();
-
-    // 학원 선택
-    const academyButton = screen.getByText('Test Academy');
-    await act(async () => {
-      await user.click(academyButton);
-    });
-
-    // 다음 단계로 이동 (academy-selection 단계로)
-    const nextButton = screen.getByText('다음');
-    await act(async () => {
-      await user.click(nextButton);
-    });
-
-    // 단계가 변경되었는지 확인 (class-selection 단계로)
-    expect(screen.getByText('클래스 선택')).toBeInTheDocument();
-
-    // 테스트 완료 - 실제로는 Context 모킹의 한계로 인해 완전한 플로우 테스트는 어려움
-    // 하지만 기본적인 컴포넌트 렌더링과 사용자 상호작용은 확인됨
+    // 수강신청 메인 화면 확인
+    expect(screen.getByText('수강신청')).toBeInTheDocument();
+    expect(screen.getByText('공지사항')).toBeInTheDocument();
+    expect(screen.getByText('수강신청 안내')).toBeInTheDocument();
+    expect(screen.getByText(/원하는 클래스를 선택해주세요/)).toBeInTheDocument();
   });
 
-  it('should handle network error during enrollment', async () => {
-    const user = userEvent.setup();
-    
-    // mockEnrollSessions를 네트워크 에러로 설정
-    mockEnrollSessions.mockRejectedValue(new Error('네트워크 오류가 발생했습니다.'));
+  it('should display all required elements', () => {
+    render(<EnrollmentMainStep />);
 
-    // MSW 핸들러 설정 (네트워크 에러)
-    server.use(
-      http.post('/api/class-sessions/enrollments/bulk', () => {
-        return new Response(null, { status: 0 });
-      })
-    );
-
-    // TODO: EnrollmentContainer 삭제로 인해 테스트 수정 필요
-    // render(
-    //   <EnrollmentContainer />
-    // );
-    // 임시로 테스트 스킵
-    return;
-
-    // 학원 선택 단계 확인
-    expect(screen.getByText('수강신청할 학원을 선택해주세요.')).toBeInTheDocument();
-
-    // 학원 선택
-    const academyButton = screen.getByText('Test Academy');
-    await act(async () => {
-      await user.click(academyButton);
-    });
-
-    // 다음 단계로 이동 (academy-selection 단계로)
-    const nextButton = screen.getByText('다음');
-    await act(async () => {
-      await user.click(nextButton);
-    });
-
-    // 단계가 변경되었는지 확인 (class-selection 단계로)
-    expect(screen.getByText('클래스 선택')).toBeInTheDocument();
-
-    // 테스트 완료 - 실제로는 Context 모킹의 한계로 인해 완전한 플로우 테스트는 어려움
-    // 하지만 기본적인 컴포넌트 렌더링과 사용자 상호작용은 확인됨
+    // 모든 필수 요소 확인
+    expect(screen.getByText('수강신청')).toBeInTheDocument();
+    expect(screen.getByText(/원하는 클래스를 선택하고/)).toBeInTheDocument();
+    expect(screen.getByText(/수강할 세션을 신청하세요/)).toBeInTheDocument();
+    expect(screen.getByText('공지사항')).toBeInTheDocument();
+    expect(screen.getByText('수강신청 안내')).toBeInTheDocument();
   });
 });
