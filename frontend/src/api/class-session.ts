@@ -23,7 +23,7 @@ export const batchEnrollSessions = (data: {
   sessionIds: number[];
 }): Promise<ApiResponse<{ success: boolean; message: string }>> => {
   return post<ApiResponse<{ success: boolean; message: string }>>(
-    "/class-sessions/batch-enroll",
+    "/class-sessions/enrollments/bulk",
     data
   );
 };

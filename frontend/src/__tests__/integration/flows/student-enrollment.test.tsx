@@ -554,7 +554,7 @@ describe('Student Enrollment Flow', () => {
 
     // MSW 핸들러 설정
     server.use(
-      http.post('/api/students/batch-enroll', () => {
+      http.post('/api/class-sessions/enrollments/bulk', () => {
         return HttpResponse.json({
           success: true,
           data: {
@@ -602,7 +602,7 @@ describe('Student Enrollment Flow', () => {
 
     // MSW 핸들러 설정 (에러 응답)
     server.use(
-      http.post('/api/students/batch-enroll', () => {
+      http.post('/api/class-sessions/enrollments/bulk', () => {
         return HttpResponse.json(
           {
             success: false,
@@ -650,7 +650,7 @@ describe('Student Enrollment Flow', () => {
 
     // MSW 핸들러 설정 (네트워크 에러)
     server.use(
-      http.post('/api/students/batch-enroll', () => {
+      http.post('/api/class-sessions/enrollments/bulk', () => {
         return new Response(null, { status: 0 });
       })
     );

@@ -72,7 +72,7 @@ export const handlers = [
   }),
 
   // 학생 관련 API
-  http.get("/api/students/profile", () => {
+  http.get("/api/students/me/profile", () => {
     return HttpResponse.json({
       id: "1",
       userId: "testuser",
@@ -83,7 +83,7 @@ export const handlers = [
     });
   }),
 
-  http.get("/api/students/classes", () => {
+  http.get("/api/students/me/enrollments", () => {
     return HttpResponse.json([
       {
         id: "1",
@@ -122,7 +122,7 @@ export const handlers = [
   }),
 
   // 학생 학원 목록 API
-  http.get("/api/academy/my/list", () => {
+  http.get("/api/academies/me/memberships", () => {
     return HttpResponse.json([
       {
         id: 1,
@@ -280,7 +280,7 @@ export const handlers = [
   }),
 
   // 학생 등록 관련 API
-  http.post("/api/students/enroll", () => {
+  http.post("/api/classes/1/enrollments", () => {
     return HttpResponse.json({
       success: true,
       enrollmentId: "enrollment-123",

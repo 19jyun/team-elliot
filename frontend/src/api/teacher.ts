@@ -99,7 +99,7 @@ export const requestJoinAcademy = (
   data: RequestJoinAcademyRequest
 ): Promise<ApiResponse<RequestJoinAcademyResponse>> => {
   return post<ApiResponse<RequestJoinAcademyResponse>>(
-    "/teachers/me/request-join-academy",
+    "/teachers/me/academy-join-requests",
     data
   );
 };
