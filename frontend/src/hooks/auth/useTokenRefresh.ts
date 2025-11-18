@@ -1,17 +1,7 @@
 import { useSession } from "@/lib/auth/AuthProvider";
 import { useCallback } from "react";
-
-interface RefreshTokenResponse {
-  access_token: string;
-  expires_in: number;
-  token_type: string;
-  user: {
-    id: number;
-    userId: string;
-    name: string;
-    role: string;
-  };
-}
+import { refreshToken as refreshTokenApi } from "@/api/auth";
+import type { RefreshTokenResponse } from "@/types/api/auth";
 
 export const useTokenRefresh = () => {
   const { data: session, update } = useSession();
@@ -25,26 +15,16 @@ export const useTokenRefresh = () => {
     try {
       console.log("🔄 토큰 갱신 시도:", session.user.id);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            userId: session.user.id,
-          }),
-        }
-      );
+      const response = await refreshTokenApi({
+        userId: session.user.id,
+      });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("토큰 갱신 API 오류:", errorData);
+      if (!response.success || !response.data) {
+        console.error("토큰 갱신 API 오류:", response.error);
         return null;
       }
 
-      const data: RefreshTokenResponse = await response.json();
+      const data: RefreshTokenResponse = response.data;
       console.log("✅ 토큰 갱신 성공");
 
       // NextAuth 세션 업데이트

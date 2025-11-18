@@ -1,3 +1,5 @@
+import { sendRemoteLog } from "@/api/logger";
+
 type LogLevel = "debug" | "info" | "warn" | "error";
 
 interface LoggerConfig {
@@ -72,19 +74,14 @@ class Logger {
     if (!this.config.enableRemote || !this.config.remoteEndpoint) return;
 
     try {
-      await fetch(this.config.remoteEndpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          level,
-          message,
-          data: this.sanitizeData(data),
-          timestamp: new Date().toISOString(),
-          userAgent: navigator.userAgent,
-          url: window.location.href,
-        }),
+      await sendRemoteLog(this.config.remoteEndpoint, {
+        level,
+        message,
+        data: this.sanitizeData(data),
+        timestamp: new Date().toISOString(),
+        userAgent:
+          typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+        url: typeof window !== "undefined" ? window.location.href : undefined,
       });
     } catch (_error) {
       // 원격 로깅 실패 시 무시 (무한 루프 방지)

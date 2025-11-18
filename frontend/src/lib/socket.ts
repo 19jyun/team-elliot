@@ -1,5 +1,6 @@
 import { io, Socket } from "socket.io-client";
 import { getSession } from "@/lib/auth/AuthProvider";
+import { refreshToken as refreshTokenApi } from "@/api/auth";
 
 // Socket.IO 클라이언트 인스턴스
 let socket: Socket | null = null;
@@ -16,26 +17,16 @@ const handleTokenRefresh = async () => {
     }
 
     console.log("🔄 토큰 갱신 API 호출");
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: session.user.id, // NextAuth에서 id를 userId로 사용
-        }),
-      }
-    );
+    const response = await refreshTokenApi({
+      userId: session.user.id.toString(), // NextAuth에서 id를 userId로 사용
+    });
 
-    if (!response.ok) {
+    if (!response.success) {
       console.error("토큰 갱신 API 실패");
       window.location.href = "/";
       return;
     }
 
-    await response.json();
     console.log("✅ 토큰 갱신 성공 - 소켓 재연결 시도");
 
     // 소켓 재연결
