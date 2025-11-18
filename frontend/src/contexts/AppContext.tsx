@@ -7,7 +7,6 @@ import { StateSyncProvider, useStateSync } from './state/StateSyncContext';
 import { NavigationProvider, useNavigation } from './navigation/NavigationContext';
 import { FormsProvider, useForms } from './forms/FormsContext';
 import { UIContextProvider, useUI } from './UIContext';
-import { DataContextProvider, useData } from './DataContext';
 import { FormsState } from './state/StateSyncTypes';
 import { EnrollmentStep, ClassesWithSessionsByMonthResponse, ExtendedSessionData, EnrollmentModificationData } from './forms/EnrollmentFormManager';
 import { EnrollmentModificationStep } from './forms/EnrollmentModificationFormManager';
@@ -30,9 +29,6 @@ interface AppContextType {
   
   // UI
   ui: ReturnType<typeof useUI>;
-  
-  // Data
-  data: ReturnType<typeof useData>;
   
   // Session
   session: ReturnType<typeof useSession>;
@@ -156,7 +152,6 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
   const navigation = useNavigation();
   const forms = useForms();
   const ui = useUI();
-  const data = useData();
   const session = useSession();
   const stateSync = useStateSync();
 
@@ -301,7 +296,6 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     navigation,
     forms,
     ui,
-    data,
     session,
     stateSync,
     
@@ -404,7 +398,7 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
       forms.switchPrincipalPersonManagementTab(tab);
     },
   }), [
-    navigation, forms, ui, data, session, stateSync,
+    navigation, forms, ui, session, stateSync,
     updateForm, resetAllForms, getFormState,
     sessionDetailCurrentStep, sessionDetailGoBack, goBack
   ]);
@@ -427,11 +421,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       <FormsProvider>
         <NavigationProvider>
           <UIContextProvider>
-            <DataContextProvider>
-              <AppConsumer>
-                {children}
-              </AppConsumer>
-            </DataContextProvider>
+            <AppConsumer>
+              {children}
+            </AppConsumer>
           </UIContextProvider>
         </NavigationProvider>
       </FormsProvider>
@@ -446,4 +438,3 @@ export const useCreateClassFormContext = () => useForms().forms.createClass;
 export const useAuthFormContext = () => useForms().forms.auth;
 export const usePersonManagementFormContext = () => useForms().forms.personManagement;
 export const useUIContext = useUI;
-export const useDataContext = useData;

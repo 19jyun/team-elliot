@@ -9,8 +9,6 @@ export { useCreateClassFormContext } from "./AppContext";
 export { useAuthFormContext } from "./AppContext";
 export { usePersonManagementFormContext } from "./AppContext";
 export { useUIContext } from "./AppContext";
-export { useDataContext } from "./AppContext";
-
 // Navigation
 export {
   NavigationProvider,
@@ -22,9 +20,6 @@ export * from "./forms";
 
 // UI
 export { UIContextProvider, useUI } from "./UIContext";
-
-// Data
-export { DataContextProvider, useData } from "./DataContext";
 
 // Events
 export * from "./events";

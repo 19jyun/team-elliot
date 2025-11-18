@@ -7,8 +7,7 @@ import { usePrincipalCalendarSessions } from '@/hooks/queries/principal/usePrinc
 import { DateSessionModal } from '@/components/common/DateSessionModal/DateSessionModal'
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
-import { useApp } from '@/contexts/AppContext'
-import { toClassSessionForCalendar, convertPrincipalSessionToClassSessionWithCounts } from '@/lib/adapters/principal'
+import { toClassSessionForCalendar } from '@/lib/adapters/principal'
 import type { PrincipalClassSession } from '@/types/api/principal'
 import type { ClassSession } from '@/types/api/class'
 import { useRouter } from 'next/navigation'
@@ -68,11 +67,9 @@ export default function PrincipalClassPage() {
 
   const { data: session, status } = useSession()
 
-  const { data } = useApp()
-  
   // React Query 기반 데이터 관리
   const { data: calendarSessionsData, isLoading, error, refetch } = usePrincipalCalendarSessions();
-  const calendarSessions = (calendarSessionsData as PrincipalClassSession[]) || [];
+  const calendarSessions = (calendarSessionsData || []) as PrincipalClassSession[];
   
   // 날짜 클릭 관련 상태 추가
   const [clickedDate, setClickedDate] = useState<Date | null>(null)
@@ -133,24 +130,10 @@ export default function PrincipalClassPage() {
 
   // 세션 클릭 핸들러 - 서브페이지로 이동
   const handleSessionClick = (session: ClassSession) => {
-    // ClassSession을 PrincipalClassSession으로 변환
-    const principalSession = calendarSessions.find(s => s.id === session.id) as PrincipalClassSession
-    
-    if (!principalSession) {
-      console.error('Principal session not found')
-      return
-    }
-    
-    // PrincipalClassSession을 ClassSessionWithCounts로 변환
-    const sessionForDetail = convertPrincipalSessionToClassSessionWithCounts(principalSession)
-    
-    // DataContext에 저장
-    data.setCache('selectedSession', sessionForDetail)
-    
     // DateSessionModal 닫기
     closeDateModal()
     
-    // 쿼리 파라미터로 세션 상세 페이지로 이동
+    // 쿼리 파라미터로 세션 상세 페이지로 이동 (React Query 캐시에서 데이터 조회)
     router.push(ensureTrailingSlash(`/dashboard/principal/class/session-detail?id=${session.id}`))
   }
 

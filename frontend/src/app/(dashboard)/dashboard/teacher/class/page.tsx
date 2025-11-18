@@ -7,7 +7,6 @@ import { useTeacherCalendarSessions } from '@/hooks/queries/teacher/useTeacherCa
 import { CalendarProvider } from '@/contexts/CalendarContext'
 import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar'
 import { SessionCardDisplay } from '@/components/calendar/SessionCardDisplay'
-import { useApp } from '@/contexts/AppContext'
 import { toClassSessionForCalendar } from '@/lib/adapters/teacher'
 import type { TeacherSession } from '@/types/api/teacher'
 import type { ClassSessionWithCounts } from '@/types/api/class'
@@ -19,8 +18,6 @@ export default function TeacherDashboardPage() {
   const signOut = useSignOut()
   const router = useRouter()
 
-  const { data } = useApp()
-  
   // React Query 기반 데이터 관리
   const { data: calendarSessionsData, isLoading, error, refetch } = useTeacherCalendarSessions();
   const calendarSessions = useMemo(
@@ -138,10 +135,7 @@ export default function TeacherDashboardPage() {
 
   // 세션 클릭 핸들러 - 쿼리 파라미터로 이동
   const handleSessionClick = (session: ClassSessionWithCounts) => {
-    // 세션 정보를 DataContext에 저장
-    data.setCache('selectedSession', session);
-    
-    // 쿼리 파라미터로 세션 상세 페이지로 이동
+    // 쿼리 파라미터로 세션 상세 페이지로 이동 (React Query 캐시에서 데이터 조회)
     router.push(ensureTrailingSlash(`/dashboard/teacher/class/session-detail?id=${session.id}`));
   }
 
