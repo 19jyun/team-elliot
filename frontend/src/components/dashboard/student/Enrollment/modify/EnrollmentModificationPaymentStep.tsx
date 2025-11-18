@@ -110,7 +110,6 @@ export function EnrollmentModificationPaymentStep({
         return;
       }
       
-      // modificationData에서 재구성된 세션 정보 사용
       if (!contextSessions || contextSessions.length === 0) {
         console.warn('No sessions found in context');
         return;
@@ -119,17 +118,20 @@ export function EnrollmentModificationPaymentStep({
       const sessions = contextSessions;
       setSelectedSessions(sessions);
       
-      // 실제 API에서 원장 결제 정보 가져오기
       try {
-        // 첫 번째 세션의 결제 정보를 가져옴 (모든 세션이 같은 원장에게 속함)
+        const enrollableSession = sessions.find(s => !s.isAlreadyEnrolled) || sessions[0];
+        
+        if (!enrollableSession) {
+          console.warn('결제 정보를 가져올 수 있는 세션이 없습니다.');
+          return;
+        }
+        
         const { getSessionPaymentInfo } = await import('@/api/student');
-        const response = await getSessionPaymentInfo(sessions[0].sessionId || sessions[0].id);
+        const response = await getSessionPaymentInfo(enrollableSession.sessionId || enrollableSession.id);
         const paymentInfo = response.data;
         
         if (paymentInfo && paymentInfo.principal) {
-          // 수강 변경 모드: 원장 기준으로 통합된 결제 정보
           if (modificationData.changeType === 'additional_payment' && modificationData.netChangeCount > 0) {
-            // 추가 결제 모드: 변경된 금액만 표시
             setPrincipalPayment({
               principalId: paymentInfo.principal.id || 0,
               principalName: paymentInfo.principal.name || '원장님',
