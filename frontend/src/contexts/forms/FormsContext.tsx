@@ -265,6 +265,7 @@ export const FormsProvider: React.FC<FormsProviderProps> = ({ children }) => {
       if (data.signup.role) authManager.setRole(data.signup.role);
       if (data.signup.personalInfo) authManager.setPersonalInfo(data.signup.personalInfo);
       if (data.signup.accountInfo) authManager.setAccountInfo(data.signup.accountInfo);
+      if (data.signup.academyInfo) authManager.setAcademyInfo(data.signup.academyInfo);
       if (data.signup.terms) authManager.setTerms(data.signup.terms);
     }
     if (data.login) authManager.setLoginInfo(data.login);

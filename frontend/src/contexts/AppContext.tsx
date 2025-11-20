@@ -105,6 +105,7 @@ interface AppContextType {
   setRole: (role: 'STUDENT' | 'TEACHER' | 'PRINCIPAL') => void;
   setPersonalInfo: (info: SignupData['personalInfo']) => void;
   setAccountInfo: (info: SignupData['accountInfo']) => void;
+  setAcademyInfo: (info: SignupData['academyInfo']) => void;
   setTerms: (terms: SignupData['terms']) => void;
   resetSignup: () => void;
   setLoginInfo: (info: LoginData) => void;
@@ -363,6 +364,7 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     setRole: (role: 'STUDENT' | 'TEACHER' | 'PRINCIPAL') => forms.setAuthData({ signup: { ...forms.auth.signup, role } }),
     setPersonalInfo: (info: SignupData['personalInfo']) => forms.setAuthData({ signup: { ...forms.auth.signup, personalInfo: info } }),
     setAccountInfo: (info: SignupData['accountInfo']) => forms.setAuthData({ signup: { ...forms.auth.signup, accountInfo: info } }),
+    setAcademyInfo: (info: SignupData['academyInfo']) => forms.setAuthData({ signup: { ...forms.auth.signup, academyInfo: info } }),
     setTerms: (terms: SignupData['terms']) => forms.setAuthData({ signup: { ...forms.auth.signup, terms: terms } }),
     resetSignup: () => forms.resetAuth(),
     setLoginInfo: (info: LoginData) => forms.setAuthData({ login: info }),

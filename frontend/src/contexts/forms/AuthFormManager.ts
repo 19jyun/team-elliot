@@ -103,6 +103,17 @@ export class AuthFormManager {
     this.notifyListeners();
   }
 
+  setAcademyInfo(info: {
+    name: string;
+    phoneNumber: string;
+    address: string;
+    description: string;
+  }): void {
+    this.state.signup.academyInfo = info;
+    this.emitStateChange();
+    this.notifyListeners();
+  }
+
   setTerms(terms: {
     age: boolean;
     terms1: boolean;

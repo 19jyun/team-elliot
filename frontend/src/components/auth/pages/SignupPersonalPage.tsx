@@ -6,7 +6,11 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { ensureTrailingSlash } from '@/lib/utils/router';
+import { ensureTrailingSlash } from '@/lib/utils/router'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { personalInfoSchema, PersonalInfoSchemaType } from '@/lib/schemas/auth-signup'
+import { useApp } from '@/contexts/AppContext'
 
 interface InputFieldProps {
   label: string
@@ -15,6 +19,7 @@ interface InputFieldProps {
   id: string
   value: string
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onBlur?: () => void
   required?: boolean
   onIconClick?: () => void
   showPassword?: boolean
@@ -22,114 +27,124 @@ interface InputFieldProps {
   errorMessage?: string
 }
 
-const InputField: React.FC<InputFieldProps> = ({
-  label,
-  icon,
-  type = 'text',
-  id,
-  value,
-  onChange,
-  required = false,
-  onIconClick,
-  showPassword,
-  error = false,
-  errorMessage,
-}) => {
-  const handleClear = (e: React.MouseEvent) => {
-    e.preventDefault()
-    const event = {
-      target: { value: '' },
-    } as React.ChangeEvent<HTMLInputElement>
-    onChange(event)
-  }
+const InputField = React.forwardRef<HTMLInputElement, InputFieldProps>(
+  (
+    {
+      label,
+      icon,
+      type = 'text',
+      id,
+      value,
+      onChange,
+      onBlur,
+      required = false,
+      onIconClick,
+      showPassword,
+      error = false,
+      errorMessage,
+    },
+    ref,
+  ) => {
+    const handleClear = (e: React.MouseEvent) => {
+      e.preventDefault()
+      const event = {
+        target: { value: '' },
+      } as React.ChangeEvent<HTMLInputElement>
+      onChange(event)
+    }
 
-  return (
-    <div className="relative">
-      {errorMessage && (
-        <div className="absolute -top-5 right-0 text-sm text-red-500">
-          {errorMessage}
-        </div>
-      )}
-      <div
-        className={cn(
-          'flex justify-between items-center p-4 w-full bg-white rounded-lg border border-solid',
-          error ? 'border-red-500' : 'border-zinc-300',
+    return (
+      <div className="relative">
+        {errorMessage && (
+          <div className="absolute -top-5 right-0 text-sm text-red-500">
+            {errorMessage}
+          </div>
         )}
-      >
-        <div className="flex gap-4 items-center self-stretch my-auto">
-          <label
-            htmlFor={id}
-            className="self-stretch my-auto w-[55px] text-[#595959] font-['Pretendard_Variable'] text-base font-medium leading-[140%] tracking-[-0.16px]"
-          >
-            {label}
-          </label>
-          <div
-            className={cn(
-              'shrink-0 self-stretch my-auto w-0 h-6 border border-solid',
-              error
-                ? 'bg-red-500 border-red-500'
-                : 'bg-[#D9D9D9] border-[#D9D9D9]',
-            )}
-          />
-        </div>
-        <input
-          type={type}
-          id={id}
-          value={value}
-          onChange={onChange}
-          required={required}
-          className="ml-4 w-full bg-transparent border-none outline-none text-[#595959] font-['Pretendard_Variable'] text-base font-medium leading-[140%] tracking-[-0.16px]"
-          aria-label={label}
-        />
-        <div className="flex items-center gap-2">
-          {value && (
-            <button
-              type="button"
-              onClick={handleClear}
-              className="p-1 text-gray-400 hover:text-gray-600"
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="15" y1="9" x2="9" y2="15" />
-                <line x1="9" y1="9" x2="15" y2="15" />
-              </svg>
-            </button>
+        <div
+          className={cn(
+            'flex justify-between items-center p-4 w-full bg-white rounded-lg border border-solid',
+            error ? 'border-red-500' : 'border-zinc-300',
           )}
-          {icon && onIconClick && (
-            <button
-              type="button"
-              onClick={onIconClick}
-              className="p-1 text-[#595959]"
+        >
+          <div className="flex gap-4 items-center self-stretch my-auto">
+            <label
+              htmlFor={id}
+              className="self-stretch my-auto w-[55px] text-[#595959] font-['Pretendard_Variable'] text-base font-medium leading-[140%] tracking-[-0.16px]"
             >
-              {showPassword ? (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-              ) : (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-                  <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-                  <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-                  <line x1="2" y1="2" x2="22" y2="22" />
-                </svg>
+              {label}
+            </label>
+            <div
+              className={cn(
+                'shrink-0 self-stretch my-auto w-0 h-6 border border-solid',
+                error
+                  ? 'bg-red-500 border-red-500'
+                  : 'bg-[#D9D9D9] border-[#D9D9D9]',
               )}
-            </button>
-          )}
+            />
+          </div>
+          <input
+            ref={ref}
+            type={type}
+            id={id}
+            value={value}
+            onChange={onChange}
+            onBlur={onBlur}
+            required={required}
+            className="ml-4 w-full bg-transparent border-none outline-none text-[#595959] font-['Pretendard_Variable'] text-base font-medium leading-[140%] tracking-[-0.16px]"
+            aria-label={label}
+          />
+          <div className="flex items-center gap-2">
+            {value && (
+              <button
+                type="button"
+                onClick={handleClear}
+                className="p-1 text-gray-400 hover:text-gray-600"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="15" y1="9" x2="9" y2="15" />
+                  <line x1="9" y1="9" x2="15" y2="15" />
+                </svg>
+              </button>
+            )}
+            {icon && onIconClick && (
+              <button
+                type="button"
+                onClick={onIconClick}
+                className="p-1 text-[#595959]"
+              >
+                {showPassword ? (
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                ) : (
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                    <line x1="2" y1="2" x2="22" y2="22" />
+                  </svg>
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
-    </div>
-  )
-}
+    )
+  },
+)
+
+InputField.displayName = 'InputField'
 
 const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
   <div
@@ -142,33 +157,33 @@ const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
 
 export function SignupPersonalPage() {
   const router = useRouter()
+  const { form, setPersonalInfo } = useApp()
   const [currentStep] = useState(2)
-  const [formData, setFormData] = useState({
-    name: '',
-    phoneNumber: '',
-  })
-  const [, setVerificationSent] = useState(false)
-  const [errors, setErrors] = useState({
-    name: '',
-    phoneNumber: '',
-  })
 
   // 전화번호 인증 관련 상태
-  const [isPhoneVerificationRequired, setIsPhoneVerificationRequired] = useState(false);
-  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
-  const [verificationCode, setVerificationCode] = useState('');
-  const [timeLeft, setTimeLeft] = useState(180); // 3분 = 180초
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [isPhoneVerificationRequired, setIsPhoneVerificationRequired] = useState(false)
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false)
+  const [verificationCode, setVerificationCode] = useState('')
+  const [timeLeft, setTimeLeft] = useState(180) // 3분 = 180초
+  const [isTimerRunning, setIsTimerRunning] = useState(false)
 
-  useEffect(() => {
-    const savedData = JSON.parse(sessionStorage.getItem('signupData') || '{}')
-    if (savedData.name || savedData.phoneNumber) {
-      setFormData({
-        name: savedData.name || '',
-        phoneNumber: savedData.phoneNumber || '',
-      })
-    }
-  }, [])
+  // RHF 설정 - Context에서 초기값 가져오기
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isValid },
+    watch,
+  } = useForm<PersonalInfoSchemaType>({
+    resolver: zodResolver(personalInfoSchema),
+    defaultValues: {
+      name: form.auth.signup.personalInfo.name,
+      phoneNumber: form.auth.signup.personalInfo.phoneNumber,
+    },
+    mode: 'onBlur',
+  })
+
+  // 전화번호 값 감시 (인증 로직용)
+  const phoneNumber = watch('phoneNumber')
 
   // 타이머 효과
   useEffect(() => {
@@ -178,11 +193,10 @@ export function SignupPersonalPage() {
       interval = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
-            setIsTimerRunning(false);
-            setIsPhoneVerificationRequired(false);
-            setIsPhoneVerified(false);
-            setVerificationSent(false);
-            return 180;
+            setIsTimerRunning(false)
+            setIsPhoneVerificationRequired(false)
+            setIsPhoneVerified(false)
+            return 180
           }
           return prev - 1;
         });
@@ -212,48 +226,43 @@ export function SignupPersonalPage() {
 
   // 전화번호 변경 감지
   useEffect(() => {
-    const cleanPhoneNumber = formData.phoneNumber.replace(/-/g, '');
-    const phoneRegex = /^01[0|1|6|7|8|9][0-9]{8}$/;
-    
+    const cleanPhoneNumber = phoneNumber.replace(/-/g, '')
+    const phoneRegex = /^01[0|1|6|7|8|9][0-9]{8}$/
+
     if (phoneRegex.test(cleanPhoneNumber)) {
-      setIsPhoneVerificationRequired(true);
-      setIsPhoneVerified(false);
-      setTimeLeft(180);
-      setIsTimerRunning(false);
+      setIsPhoneVerificationRequired(true)
+      setIsPhoneVerified(false)
+      setTimeLeft(180)
+      setIsTimerRunning(false)
     } else {
-      setIsPhoneVerificationRequired(false);
-      setIsPhoneVerified(false);
-      setIsTimerRunning(false);
-      setTimeLeft(180);
-      setVerificationCode('');
-      setVerificationSent(false);
+      setIsPhoneVerificationRequired(false)
+      setIsPhoneVerified(false)
+      setIsTimerRunning(false)
+      setTimeLeft(180)
+      setVerificationCode('')
     }
-  }, [formData.phoneNumber]);
+  }, [phoneNumber])
 
   const handleSendVerification = async () => {
-    const cleanPhoneNumber = formData.phoneNumber.replace(/-/g, '')
+    const cleanPhoneNumber = phoneNumber.replace(/-/g, '')
     const phoneRegex = /^01[0|1|6|7|8|9][0-9]{8}$/
 
     if (!phoneRegex.test(cleanPhoneNumber)) {
-      setErrors((prev) => ({
-        ...prev,
-        phoneNumber: '올바른 전화번호 형식이 아닙니다',
-      }))
+      toast.error('올바른 전화번호 형식이 아닙니다')
       return
     }
     // 인증 로직은 미구현 상태이므로 바로 인증 완료 처리
-    toast.success('인증 로직은 미구현 상태입니다. 다음단계로 진행하세요.');
-    setIsPhoneVerified(true);
-    setIsTimerRunning(false);
-    setVerificationSent(true);
+    toast.success('인증 로직은 미구현 상태입니다. 다음단계로 진행하세요.')
+    setIsPhoneVerified(true)
+    setIsTimerRunning(false)
   }
 
   const handleVerifyCode = async () => {
     // 인증 로직은 미구현 상태이므로 바로 인증 완료 처리
-    toast.success('인증 로직은 미구현 상태입니다. 다음단계로 진행하세요.');
-    setIsPhoneVerified(true);
-    setIsTimerRunning(false);
-    setVerificationCode('');
+    toast.success('인증 로직은 미구현 상태입니다. 다음단계로 진행하세요.')
+    setIsPhoneVerified(true)
+    setIsTimerRunning(false)
+    setVerificationCode('')
   }
 
   const handleClearVerificationCode = () => {
@@ -268,71 +277,34 @@ export function SignupPersonalPage() {
 
   // 다음 버튼 활성화 조건 체크
   const isNextButtonEnabled = () => {
-    // 이름이 없으면 비활성화
-    if (!formData.name.trim()) {
-      return false;
-    }
-
-    // 전화번호가 없으면 비활성화
-    if (!formData.phoneNumber) {
-      return false;
-    }
-
-    // 전화번호 형식 검증
-    const cleanPhoneNumber = formData.phoneNumber.replace(/-/g, '');
-    const phoneRegex = /^01[0|1|6|7|8|9][0-9]{8}$/;
-    
-    if (!phoneRegex.test(cleanPhoneNumber)) {
-      return false;
+    // RHF 검증 통과 여부
+    if (!isValid) {
+      return false
     }
 
     // 인증이 필요한 경우 인증 완료 여부 확인
     if (isPhoneVerificationRequired && !isPhoneVerified) {
-      return false;
+      return false
     }
 
-    return true;
-  };
+    return true
+  }
 
-  const handleNextStep = () => {
-    if (!formData.name) {
-      toast.error('이름을 입력해주세요')
-      return
-    }
-
-    if (!formData.phoneNumber) {
-      toast.error('전화번호를 입력해주세요')
-      return
-    }
-
-    // 전화번호 형식 검증
-    const cleanPhoneNumber = formData.phoneNumber.replace(/-/g, '');
-    const phoneRegex = /^01[0|1|6|7|8|9][0-9]{8}$/;
-    
-    if (!phoneRegex.test(cleanPhoneNumber)) {
-      toast.error('올바른 전화번호 형식을 입력해주세요')
-      return
-    }
-
+  // 제출 핸들러: Context 업데이트 -> 페이지 이동
+  const onNext = (data: PersonalInfoSchemaType) => {
+    // 전화번호 인증 확인
     if (isPhoneVerificationRequired && !isPhoneVerified) {
       toast.error('전화번호 인증을 완료해주세요.')
       return
     }
 
-    // 세션 스토리지에서 기존 데이터 가져오기
-    const existingData = JSON.parse(sessionStorage.getItem('signupData') || '{}')
-    
-    sessionStorage.setItem(
-      'signupData',
-      JSON.stringify({
-        ...existingData,
-        name: formData.name,
-        phoneNumber: formatPhoneNumber(formData.phoneNumber), 
-      }),
-    )
-    
-    // 모든 역할은 동일하게 account-info 단계로 진행
-    sessionStorage.setItem('currentSignupStep', 'account-info')
+    // Context에 데이터 저장
+    setPersonalInfo({
+      name: data.name,
+      phoneNumber: formatPhoneNumber(data.phoneNumber),
+    })
+
+    // 다음 페이지로 이동
     router.push(ensureTrailingSlash('/signup/roles/personal/account'))
   }
 
@@ -365,33 +337,56 @@ export function SignupPersonalPage() {
         이름과 전화번호를 입력해주세요
       </div>
 
-      <div className="flex flex-col mt-16 w-full whitespace-nowrap">
+      <form
+        onSubmit={handleSubmit(onNext)}
+        className="flex flex-col mt-16 w-full whitespace-nowrap"
+      >
         <div className="flex flex-col w-full">
-          <InputField
-            label="이름"
-            id="name"
-            value={formData.name}
-            onChange={(e) =>
-              setFormData({ ...formData, name: e.target.value })
-            }
-            required
-            error={!!errors.name}
-            errorMessage={errors.name}
+          <Controller
+            control={control}
+            name="name"
+            render={({ field, fieldState: { error } }) => (
+              <InputField
+                {...field}
+                label="이름"
+                id="name"
+                required
+                error={!!error}
+                errorMessage={error?.message}
+              />
+            )}
           />
 
           <div className="flex gap-2.5 items-start mt-3 w-full text-base">
-            <InputField
-              label="전화번호"
-              id="phoneNumber"
-              type="tel"
-              value={formatPhoneNumber(formData.phoneNumber)}
-              onChange={(e) => {
-                const onlyNumbers = e.target.value.replace(/[^0-9]/g, '')
-                setFormData({ ...formData, phoneNumber: onlyNumbers })
+            <Controller
+              control={control}
+              name="phoneNumber"
+              render={({ field, fieldState: { error } }) => {
+                // 전화번호 포맷팅 처리
+                const handlePhoneChange = (
+                  e: React.ChangeEvent<HTMLInputElement>,
+                ) => {
+                  const onlyNumbers = e.target.value.replace(/[^0-9]/g, '')
+                  field.onChange({
+                    ...e,
+                    target: { ...e.target, value: onlyNumbers },
+                  })
+                }
+
+                return (
+                  <InputField
+                    {...field}
+                    label="전화번호"
+                    id="phoneNumber"
+                    type="tel"
+                    value={formatPhoneNumber(field.value)}
+                    onChange={handlePhoneChange}
+                    required
+                    error={!!error}
+                    errorMessage={error?.message}
+                  />
+                )
               }}
-              required
-              error={!!errors.phoneNumber}
-              errorMessage={errors.phoneNumber}
             />
             <button
               type="button"
@@ -481,8 +476,7 @@ export function SignupPersonalPage() {
           )}
 
           <button
-            type="button"
-            onClick={handleNextStep}
+            type="submit"
             className={cn(
               'mt-6 w-full h-11 px-8 inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
               isNextButtonEnabled()
@@ -494,7 +488,7 @@ export function SignupPersonalPage() {
             다음으로
           </button>
         </div>
-      </div>
+      </form>
     </div>
   )
 } 
