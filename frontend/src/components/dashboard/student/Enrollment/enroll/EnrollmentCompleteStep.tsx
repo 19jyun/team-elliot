@@ -1,12 +1,10 @@
 'use client'
 import React from 'react';
-import { useApp } from '@/contexts/AppContext';
 import { CompleteIcon } from '@/components/icons';
 import { useRouter } from 'next/navigation';
 import { ensureTrailingSlash } from '@/lib/utils/router';
 
 export function EnrollmentCompleteStep() {
-  const { resetEnrollment } = useApp();
   const router = useRouter();
 
   const handleConfirm = async () => {
@@ -32,16 +30,8 @@ export function EnrollmentCompleteStep() {
       SyncStorage.removeItem('enrollmentStep');
       SyncStorage.removeItem('selectedMonth');
     }
-    
-    // 수강신청 상태 초기화
-    resetEnrollment();
-    
     // 메인 대시보드로 이동
-    if (typeof window !== 'undefined') {
-      window.location.href = ensureTrailingSlash('/dashboard/student');
-    } else {
-      router.push(ensureTrailingSlash('/dashboard/student'));
-    }
+    router.push(ensureTrailingSlash('/dashboard/student'));
   };
 
   return (

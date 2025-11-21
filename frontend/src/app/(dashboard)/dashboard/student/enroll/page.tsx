@@ -1,11 +1,18 @@
 'use client'
 
 import * as React from 'react'
+import { useEffect } from 'react'
 import { useSession } from '@/lib/auth/AuthProvider'
 import { EnrollmentMainStep } from '@/components/dashboard/student/Enrollment/EnrollmentMainStep'
+import { useApp } from '@/contexts/AppContext'
 
 export default function EnrollPage() {
   const { status } = useSession()
+  const { resetEnrollment } = useApp()
+
+  useEffect(() => {
+    resetEnrollment()
+  }, [resetEnrollment])
 
   if (status === 'loading') {
     return (

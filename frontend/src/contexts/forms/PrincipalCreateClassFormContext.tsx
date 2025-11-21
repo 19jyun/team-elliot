@@ -90,18 +90,6 @@ export const PrincipalCreateClassFormProvider: React.FC<
     return unsubscribe;
   }, [manager]);
 
-  // 이벤트 버스 구독
-  useEffect(() => {
-    const unsubscribe = contextEventBus.subscribe("navigationChanged", (data) => {
-      // 네비게이션 변경 시 폼 상태 초기화 (필요한 경우)
-      if (data.subPage !== "create-class") {
-        manager.reset();
-      }
-    });
-
-    return unsubscribe;
-  }, [manager]);
-
   // Context 메서드들
   const setCurrentStep = useCallback((step: PrincipalCreateClassStep) => {
     manager.setCurrentStep(step);

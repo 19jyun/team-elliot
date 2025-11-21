@@ -57,17 +57,6 @@ export const AuthFormProvider: React.FC<AuthFormProviderProps> = ({ children }) 
     return unsubscribe;
   }, [manager]);
 
-  // 네비게이션 변경 시 자동 초기화 (Auth 외의 페이지로 갈 때)
-  useEffect(() => {
-    const unsubscribe = contextEventBus.subscribe('navigationChanged', (data) => {
-      // data.subPage 체크 로직도 필요에 따라 수정 가능 (예: pathname 검사)
-      if (data.subPage !== 'auth') {
-        manager.reset();
-      }
-    });
-    return unsubscribe;
-  }, [manager]);
-
   // 메서드 래핑 (useCallback)
   const setSignupStep = useCallback((step: SignupStep) => manager.setSignupStep(step), [manager]);
   const setRole = useCallback((role: 'STUDENT' | 'TEACHER' | 'PRINCIPAL') => manager.setRole(role), [manager]);

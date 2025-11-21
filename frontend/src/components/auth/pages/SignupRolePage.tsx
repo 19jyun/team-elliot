@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -22,8 +22,12 @@ const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
 
 export function SignupRolePage() {
   const router = useRouter()
-  const { form, setRole } = useApp()
+  const { form, setRole, resetSignup } = useApp()
   const [currentStep] = useState(1)
+
+  useEffect(() => {
+    resetSignup()
+  }, [resetSignup])
 
   // RHF 설정 - Context에서 초기값 가져오기
   const { control, handleSubmit, watch } = useForm<RoleSchemaType>({

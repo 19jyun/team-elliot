@@ -15,6 +15,7 @@ import { ensureTrailingSlash } from '@/lib/utils/router'
 import { loginSchema, LoginSchemaType } from '@/lib/schemas/auth'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, Controller } from 'react-hook-form'
+import { useApp } from '@/contexts'
 
 const buttonVariants = cva(
   'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
@@ -190,6 +191,7 @@ export function LoginPage() {
     },
   })
   const router = useRouter()
+  const { resetSignup } = useApp()
   const signIn = useSignIn()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -335,6 +337,7 @@ export function LoginPage() {
           </Typography>
           <Button
             onClick={() => {
+              resetSignup()
               router.push(ensureTrailingSlash('/signup/roles'))
             }}
             sx={{

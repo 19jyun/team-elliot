@@ -12,6 +12,8 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { termsSchema, TermsSchemaType } from '@/lib/schemas/auth-signup'
 import { useApp } from '@/contexts/AppContext'
+import { useRouter } from 'next/navigation'
+import { ensureTrailingSlash } from '@/lib/utils/router'
 
 const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
   <div
@@ -23,7 +25,7 @@ const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
 )
 
 export function SignupTermsPage() {
-  const { form, setTerms, resetSignup } = useApp()
+  const { form, setTerms } = useApp()
   const [currentStep] = useState(4)
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false)
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false)
@@ -31,6 +33,7 @@ export function SignupTermsPage() {
   // React Query 기반 mutation hooks
   const signupMutation = useSignup()
   const signupPrincipalMutation = useSignupPrincipal()
+  const router = useRouter()
 
   const isLoading = signupMutation.isPending || signupPrincipalMutation.isPending
 
@@ -110,10 +113,7 @@ export function SignupTermsPage() {
       }
 
       // 성공 시 Context 데이터 초기화 및 리디렉션
-      resetSignup()
-      if (typeof window !== 'undefined') {
-        window.location.href = '/'
-      }
+      router.push(ensureTrailingSlash('/'))
     } catch (error) {
       // 에러는 mutation hook에서 처리됨
       console.error('회원가입 오류:', error)

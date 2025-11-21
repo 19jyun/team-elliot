@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useApp } from '@/contexts/AppContext'; // resetEnrollmentModification 포함
 import { CompleteIcon } from '@/components/icons';
 import { useRouter } from 'next/navigation';
 import { ensureTrailingSlash } from '@/lib/utils/router';
@@ -13,7 +12,6 @@ interface ModificationCompleteStepProps {
 
 export function ModificationCompleteStep({ type }: ModificationCompleteStepProps) {
   // 1. 수강 변경 전용 초기화 함수 가져오기
-  const { resetEnrollmentModification } = useApp();
   const router = useRouter();
 
   // 2. 마운트 시점에 스토리지 정리 (선택 사항)
@@ -26,11 +24,7 @@ export function ModificationCompleteStep({ type }: ModificationCompleteStepProps
   }, []);
 
   const handleConfirm = () => {
-    // 3. 수강 변경 상태 초기화
-    resetEnrollmentModification();
-    
-    // 4. 목록 페이지로 이동
-    router.push(ensureTrailingSlash('/dashboard/student/class'));
+    router.push(ensureTrailingSlash('/dashboard/student'));
   };
 
   // 텍스트 매핑 로직

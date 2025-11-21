@@ -55,6 +55,10 @@ function ModifyPageContent() {
     };
   }, []);
 
+  useEffect(() => {
+    resetEnrollmentModification();
+  }, [resetEnrollmentModification]);
+
   // 데이터 가공 (ViewModel)
   const existingEnrollments: ModificationSessionVM[] = React.useMemo(() => {
     if (!enrollmentHistory || !classId) return [];
