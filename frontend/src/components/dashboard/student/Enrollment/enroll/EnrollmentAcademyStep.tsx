@@ -2,23 +2,42 @@
 
 import React from 'react';
 import { useSession } from '@/lib/auth/AuthProvider';
-import { toast } from 'sonner';
 import { useApp } from '@/contexts/AppContext';
 import { StatusStep } from '@/components/features/student/enrollment/month/StatusStep';
 import { useStudentAcademies } from '@/hooks/queries/student/useStudentAcademies';
 import { useRouter } from 'next/navigation';
 import { ensureTrailingSlash } from '@/lib/utils/router';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  enrollmentAcademySchema,
+  EnrollmentAcademySchemaType,
+} from '@/lib/schemas/enrollment';
 
 export function EnrollmentAcademyStep() {
   const router = useRouter();
-  const { goBack, setSelectedAcademyId: setContextSelectedAcademyId } = useApp();
-  const { status } = useSession()
+  const { goBack, setSelectedAcademyId: setContextSelectedAcademyId, form } = useApp();
+  const { status } = useSession();
+  const defaultSelectedAcademyId = form.enrollment.selectedAcademyId;
 
   // React Query 기반 데이터 관리
   const { data: academiesData, isLoading, error } = useStudentAcademies();
   const academies = academiesData || [];
 
-  const [localSelectedAcademyId, setLocalSelectedAcademyId] = React.useState<number | null>(null);
+  const {
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { isValid },
+  } = useForm<EnrollmentAcademySchemaType>({
+    resolver: zodResolver(enrollmentAcademySchema),
+    defaultValues: {
+      academyId: defaultSelectedAcademyId ?? 0,
+    },
+    mode: 'onChange',
+  });
+
+  const localSelectedAcademyId = watch('academyId');
 
   const statusSteps = [
     {
@@ -44,17 +63,11 @@ export function EnrollmentAcademyStep() {
   ];
 
   const handleAcademySelect = (academyId: number) => {
-    // 하나만 선택 가능하도록 수정
-    setLocalSelectedAcademyId(academyId);
+    setValue('academyId', academyId, { shouldValidate: true });
   };
 
-  const handleNextStep = () => {
-    if (!localSelectedAcademyId) {
-      toast.error('학원을 선택해주세요.');
-      return;
-    }
-    
-    setContextSelectedAcademyId(localSelectedAcademyId);
+  const onNext = (data: EnrollmentAcademySchemaType) => {
+    setContextSelectedAcademyId(data.academyId);
     router.push(ensureTrailingSlash('/dashboard/student/enroll/academy/class'));
   };
 
@@ -82,7 +95,10 @@ export function EnrollmentAcademyStep() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-white relative">
+    <form
+      onSubmit={handleSubmit(onNext)}
+      className="flex flex-col h-full bg-white relative"
+    >
       {/* Header */}
       <header className="flex-shrink-0 flex flex-col bg-white border-b border-gray-200 py-5 min-h-[120px] relative">
         <div className="flex gap-6 self-center w-full text-sm font-medium tracking-normal leading-snug max-w-[320px] mt-2 mb-2">
@@ -144,14 +160,14 @@ export function EnrollmentAcademyStep() {
       <footer className="sticky bottom-0 flex flex-col w-full bg-white z-50">
         <div className="flex gap-3 justify-center px-5 pt-2.5 pb-4 w-full text-base font-semibold leading-snug text-white">
           <button
-            onClick={handleNextStep}
-            disabled={!localSelectedAcademyId}
+            type="submit"
+            disabled={!isValid}
             className="flex-1 shrink self-stretch px-2.5 py-4 rounded-lg min-w-[240px] size-full transition-colors duration-300 text-center bg-[#AC9592] text-white cursor-pointer hover:bg-[#9A8582] disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             다음
           </button>
         </div>
       </footer>
-    </div>
+    </form>
   );
 } 

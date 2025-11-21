@@ -5,7 +5,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { StatusStep } from './StatusStep';
-import { usePrincipalCreateClassForm } from '@/contexts/forms/PrincipalCreateClassFormContext';
+import { useApp } from '@/contexts/AppContext';
 import { classScheduleSchema, ClassScheduleSchemaType } from '@/lib/schemas/class-create';
 import TimePicker from '@/components/common/WheelPicker/TimePicker';
 import DatePicker from '@/components/common/WheelPicker/DatePicker';
@@ -25,8 +25,9 @@ const DAYS_OF_WEEK = [
 
 export function CreateClassStepSchedule() {
   const router = useRouter();
-  const { state, actions } = usePrincipalCreateClassForm();
-  const { classFormData } = state;
+  const { form, setPrincipalClassFormData } = useApp();
+  const { principalCreateClass } = form;
+  const { classFormData } = principalCreateClass;
 
   // 기존 데이터를 스키마 형식으로 변환
   const defaultSchedules = useMemo(() => {
@@ -141,7 +142,12 @@ export function CreateClassStepSchedule() {
     }
 
     // Context 업데이트
-    actions.setSchedule(data);
+    setPrincipalClassFormData({
+      ...classFormData,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      schedule: data.schedules,
+    });
     
     // 다음 단계로 이동
     router.push(ensureTrailingSlash('/dashboard/principal/class/create-class/info/teacher/schedule/content'));

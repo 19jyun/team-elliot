@@ -98,11 +98,9 @@ export class EnrollmentFormManager {
   }
 
   setCurrentStep(step: EnrollmentStep): void {
-    if (this.canNavigateToStep(step)) {
-      this.state.currentStep = step;
-      this.emitStateChange();
-      this.notifyListeners();
-    }
+    this.state.currentStep = step;
+    this.emitStateChange();
+    this.notifyListeners();
   }
 
   setSelectedMonth(month: number): void {
@@ -141,51 +139,6 @@ export class EnrollmentFormManager {
     this.state.selectedClassesWithSessions = classes;
     this.emitStateChange();
     this.notifyListeners();
-  }
-
-  // 유효성 검사
-  validateStep(step: EnrollmentStep): { isValid: boolean; errors: string[] } {
-    const errors: string[] = [];
-
-    switch (step) {
-      case "academy-selection":
-        if (!this.state.selectedAcademyId) {
-          errors.push("학원을 선택해주세요.");
-        }
-        break;
-      case "class-selection":
-        if (this.state.selectedClassIds.length === 0) {
-          errors.push("최소 하나의 클래스를 선택해주세요.");
-        }
-        if (!this.state.selectedAcademyId) {
-          errors.push("학원을 선택해주세요.");
-        }
-        break;
-      case "date-selection":
-        if (this.state.selectedSessions.length === 0) {
-          errors.push("최소 하나의 세션을 선택해주세요.");
-        }
-        break;
-      case "payment":
-        if (this.state.selectedClassesWithSessions.length === 0) {
-          errors.push("선택된 클래스와 세션이 없습니다.");
-        }
-        break;
-    }
-
-    return {
-      isValid: errors.length === 0,
-      errors,
-    };
-  }
-
-  validateCurrentStep(): { isValid: boolean; errors: string[] } {
-    return this.validateStep(this.state.currentStep);
-  }
-
-  canProceedToNextStep(): boolean {
-    const validation = this.validateCurrentStep();
-    return validation.isValid;
   }
 
   // 성능 최적화: 상태 변경이 실제로 필요한지 확인
@@ -239,22 +192,6 @@ export class EnrollmentFormManager {
       selectedAcademyId: null,
       selectedClassesWithSessions: [],
     };
-  }
-
-  private canNavigateToStep(step: EnrollmentStep): boolean {
-    const stepOrder: EnrollmentStep[] = [
-      "academy-selection",
-      "class-selection",
-      "date-selection",
-      "payment",
-      "complete",
-    ];
-
-    const currentIndex = stepOrder.indexOf(this.state.currentStep);
-    const newIndex = stepOrder.indexOf(step);
-
-    // 이전 단계로 돌아가거나 다음 단계로 진행하는 것만 허용
-    return newIndex >= currentIndex - 1 && newIndex <= currentIndex + 1;
   }
 
   private emitStateChange(): void {

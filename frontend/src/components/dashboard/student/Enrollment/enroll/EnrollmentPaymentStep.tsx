@@ -22,6 +22,12 @@ import type {
 } from '@/types/view/student';
 import { useRouter } from 'next/navigation';
 import { ensureTrailingSlash } from '@/lib/utils/router';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  enrollmentPaymentSchema,
+  EnrollmentPaymentSchemaType,
+} from '@/lib/schemas/enrollment';
 
 // 새로운 수강신청 플로우 전용 결제 페이지
 export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
@@ -42,8 +48,19 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
   });
   const [selectedSessions, setSelectedSessions] = useState<SelectedSessionVM[]>([]);
   const [principalPayment, setPrincipalPayment] = useState<PrincipalPaymentInfoVM | null>(null);
-  const [confirmed, setConfirmed] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const {
+    control,
+    handleSubmit,
+    watch,
+  } = useForm<EnrollmentPaymentSchemaType>({
+    resolver: zodResolver(enrollmentPaymentSchema),
+    defaultValues: {
+      confirmed: false,
+    },
+  });
+
+  const confirmed = watch('confirmed');
   
   // 선택된 세션 ID 배열
   const sessionIds = useMemo(() => {
@@ -315,8 +332,8 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
   };
 
   // 결제 완료 버튼 클릭 시
-  const handleComplete = async () => {
-    if (!confirmed || isProcessing) return;
+  const handleComplete = async (data: EnrollmentPaymentSchemaType) => {
+    if (!data.confirmed || isProcessing) return;
     
     setIsProcessing(true);
     
@@ -399,12 +416,20 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
       
       {/* Footer - 자동 크기 조정 */}
       <footer className="flex-shrink-0 bg-white border-t border-gray-200">
-        <PaymentConfirmFooter 
-          confirmed={confirmed} 
-          setConfirmed={setConfirmed} 
-          onComplete={handleComplete}
-          isProcessing={isProcessing}
-        />
+        <form onSubmit={handleSubmit(handleComplete)}>
+          <Controller
+            name="confirmed"
+            control={control}
+            render={({ field }) => (
+              <PaymentConfirmFooter 
+                confirmed={field.value} 
+                setConfirmed={(val) => field.onChange(val)}
+                onComplete={handleSubmit(handleComplete)}
+                isProcessing={isProcessing}
+              />
+            )}
+          />
+        </form>
       </footer>
     </div>
   );

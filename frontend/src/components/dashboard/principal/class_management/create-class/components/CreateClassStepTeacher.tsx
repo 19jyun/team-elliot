@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { StatusStep } from './StatusStep';
 import { usePrincipalTeachers } from '@/hooks/queries/principal/usePrincipalTeachers';
-import { usePrincipalCreateClassForm } from '@/contexts/forms/PrincipalCreateClassFormContext';
+import { useApp } from '@/contexts/AppContext';
 import { classTeacherSchema, ClassTeacherSchemaType } from '@/lib/schemas/class-create';
 import { getImageUrl } from '@/utils/imageUtils';
 import Image from 'next/image';
@@ -22,8 +22,9 @@ interface Teacher {
 
 export function CreateClassStepTeacher() {
   const router = useRouter();
-  const { state, actions } = usePrincipalCreateClassForm();
-  const { selectedTeacherId } = state;
+  const { form, setPrincipalSelectedTeacherId } = useApp();
+  const { principalCreateClass } = form;
+  const { selectedTeacherId } = principalCreateClass;
 
   // React Query 기반 데이터 관리
   const { data: teachers = [], isLoading, error, refetch } = usePrincipalTeachers();
@@ -42,7 +43,7 @@ export function CreateClassStepTeacher() {
 
   const onNext = (data: ClassTeacherSchemaType) => {
     // Context 업데이트
-    actions.setTeacher(data.teacherId);
+    setPrincipalSelectedTeacherId(data.teacherId);
     
     // 다음 단계로 이동
     router.push(ensureTrailingSlash('/dashboard/principal/class/create-class/info/teacher/schedule'));

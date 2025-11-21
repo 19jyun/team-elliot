@@ -11,13 +11,19 @@ import { ConnectedCalendar } from '@/components/calendar/ConnectedCalendar';
 import { useStudentAvailableSessions } from '@/hooks/queries/student/useStudentAvailableSessions';
 import { useRouter } from 'next/navigation';
 import { ensureTrailingSlash } from '@/lib/utils/router';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  enrollmentDateSchema,
+  EnrollmentDateSchemaType,
+} from '@/lib/schemas/enrollment';
 
 export function EnrollmentDateStep() {
   const router = useRouter();
   const { form, goBack, setSelectedSessions } = useApp();
   const { enrollment } = form;
-  const { selectedAcademyId, selectedClassIds } = enrollment;
-  const { status } = useSession()
+  const { selectedAcademyId, selectedClassIds, selectedSessions } = enrollment;
+  const { status } = useSession();
 
   // React Query 기반 데이터 관리
   const { data: availableSessionsData, isLoading, error } = useStudentAvailableSessions(selectedAcademyId || 0);
@@ -26,7 +32,19 @@ export function EnrollmentDateStep() {
     [availableSessionsData]
   );
 
-  const [selectedSessionIds, setSelectedSessionIds] = React.useState<Set<number>>(new Set());
+  const {
+    handleSubmit,
+    setValue,
+    watch,
+  } = useForm<EnrollmentDateSchemaType>({
+    resolver: zodResolver(enrollmentDateSchema),
+    defaultValues: {
+      sessionIds: selectedSessions.map((session) => session.sessionId) || [],
+    },
+    mode: 'onChange',
+  });
+
+  const selectedSessionIds = React.useMemo(() => new Set(watch('sessionIds') || []), [watch('sessionIds')]);
 
   // 선택된 클래스들의 세션만 필터링하고 ClassSession 형식으로 변환
   const selectedClassSessions = React.useMemo(() => {
@@ -112,26 +130,23 @@ export function EnrollmentDateStep() {
   ];
 
   const handleSessionSelect = (sessionId: number) => {
-    setSelectedSessionIds(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(sessionId)) {
-        newSet.delete(sessionId);
-      } else {
-        newSet.add(sessionId);
-      }
-      return newSet;
-    });
+    const currentSessionIds = watch('sessionIds') || [];
+    if (currentSessionIds.includes(sessionId)) {
+      setValue('sessionIds', currentSessionIds.filter((id) => id !== sessionId), { shouldValidate: true });
+    } else {
+      setValue('sessionIds', [...currentSessionIds, sessionId], { shouldValidate: true });
+    }
   };
 
-  const handleNextStep = () => {
-    if (selectedSessionIds.size === 0) {
+  const handleNextStep = (data: EnrollmentDateSchemaType) => {
+    if (data.sessionIds.length === 0) {
       toast.error('최소 1개 이상의 세션을 선택해주세요.');
       return;
     }
     
     // 선택된 세션들의 정보를 Context에 저장
     const selectedSessionsData: ExtendedSessionData[] = selectedClassSessions
-      .filter(session => selectedSessionIds.has(session.id))
+      .filter(session => data.sessionIds.includes(session.id))
       .map(session => ({
         sessionId: session.id,
         sessionName: session.class.className,
@@ -201,7 +216,7 @@ export function EnrollmentDateStep() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-white relative">
+    <form onSubmit={handleSubmit(handleNextStep)} className="flex flex-col h-full bg-white relative">
       {/* Header */}
       <header className="flex-shrink-0 flex flex-col bg-white border-b border-gray-200 py-5 min-h-[120px] relative">
         <div className="flex gap-6 self-center w-full text-sm font-medium tracking-normal leading-snug max-w-[320px] mt-2 mb-2">
@@ -249,12 +264,12 @@ export function EnrollmentDateStep() {
       </main>
 
       {/* Fixed Footer */}
-      <footer className="flex-shrink-0 flex flex-col w-full bg-white border-t border-gray-200 min-h-[100px]">
+      <footer className="flex-shrink-0 flex flex-col w-full bg-white border-t border-gray-200 min-h/[100px]">
         <div className="flex gap-3 justify-center px-5 pt-2.5 pb-4 w-full text-base font-semibold leading-snug text-white">
           <button
             className={`flex-1 shrink self-stretch px-2.5 py-4 rounded-lg min-w-[240px] size-full transition-colors duration-300 text-center ${selectedSessionIds.size > 0 ? 'bg-[#AC9592] text-white cursor-pointer' : 'bg-zinc-300 text-white cursor-not-allowed'}`}
             disabled={selectedSessionIds.size === 0}
-            onClick={handleNextStep}
+            type="submit"
           >
             {selectedSessionIds.size > 0 ? (
               <span className="inline-flex items-center justify-center w-full">
@@ -267,6 +282,6 @@ export function EnrollmentDateStep() {
           </button>
         </div>
       </footer>
-    </div>
+    </form>
   );
 } 

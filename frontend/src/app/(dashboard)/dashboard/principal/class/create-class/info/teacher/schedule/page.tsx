@@ -2,13 +2,13 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { usePrincipalCreateClassForm } from '@/contexts/forms/PrincipalCreateClassFormContext';
+import { useApp } from '@/contexts';
 import { CreateClassStepSchedule } from '@/components/dashboard/principal/class_management/create-class/components/CreateClassStepSchedule';
 
 export default function CreateClassSchedulePage() {
   const router = useRouter();
-  const { state } = usePrincipalCreateClassForm();
-  const { classFormData, selectedTeacherId } = state;
+  const { createClass } = useApp().form;
+  const { classFormData, selectedTeacherId } = createClass;
 
   // 🛡️ 가드 로직: 순서대로 진행해야 함
   useEffect(() => {

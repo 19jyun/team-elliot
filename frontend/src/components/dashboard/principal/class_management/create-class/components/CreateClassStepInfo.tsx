@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { StatusStep } from './StatusStep';
 import { usePrincipalAcademy } from '@/hooks/queries/principal/usePrincipalAcademy';
-import { usePrincipalCreateClassForm } from '@/contexts/forms/PrincipalCreateClassFormContext';
+import { useApp } from '@/contexts/AppContext';
 import { classInfoSchema, ClassInfoSchemaType } from '@/lib/schemas/class-create';
 import { toast } from 'sonner';
 import { ensureTrailingSlash } from '@/lib/utils/router';
@@ -19,8 +19,9 @@ const LEVELS = [
 
 export function CreateClassStepInfo() {
   const router = useRouter();
-  const { state, actions, nextStep, prevStep } = usePrincipalCreateClassForm();
-  const { classFormData } = state;
+  const { form, setPrincipalClassFormData } = useApp();
+  const { principalCreateClass } = form;
+  const { classFormData } = principalCreateClass;
   
   // React Query 기반 데이터 관리
   const { data: academy, isLoading: isAcademyLoading } = usePrincipalAcademy();
@@ -51,7 +52,10 @@ export function CreateClassStepInfo() {
     }
 
     // Context 업데이트
-    actions.setInfo(data);
+    setPrincipalClassFormData({
+      ...classFormData,
+      ...data,
+    });
     
     // 다음 단계로 이동
     router.push(ensureTrailingSlash('/dashboard/principal/class/create-class/info/teacher'));

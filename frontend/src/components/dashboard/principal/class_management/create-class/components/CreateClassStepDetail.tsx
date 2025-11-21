@@ -5,7 +5,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { StatusStep } from './StatusStep';
-import { usePrincipalCreateClassForm } from '@/contexts/forms/PrincipalCreateClassFormContext';
+import { useApp } from '@/contexts/AppContext';
 import { classDetailSchema, ClassDetailSchemaType } from '@/lib/schemas/class-create';
 import { useCreatePrincipalClass } from '@/hooks/mutations/principal/useCreatePrincipalClass';
 import { toast } from 'sonner';
@@ -34,8 +34,9 @@ const DAY_LABEL_MAP: { [key: string]: string } = {
 
 export function CreateClassStepDetail() {
   const router = useRouter();
-  const { state } = usePrincipalCreateClassForm();
-  const { classFormData, selectedTeacherId } = state;
+  const { form } = useApp();
+  const { principalCreateClass } = form;
+  const { classFormData, selectedTeacherId } = principalCreateClass;
 
   // React Query 기반 데이터 관리
   const createClassMutation = useCreatePrincipalClass();

@@ -37,7 +37,11 @@ export function EnrollmentCompleteStep() {
     resetEnrollment();
     
     // 메인 대시보드로 이동
-    router.push(ensureTrailingSlash('/dashboard/student'));
+    if (typeof window !== 'undefined') {
+      window.location.href = ensureTrailingSlash('/dashboard/student');
+    } else {
+      router.push(ensureTrailingSlash('/dashboard/student'));
+    }
   };
 
   return (

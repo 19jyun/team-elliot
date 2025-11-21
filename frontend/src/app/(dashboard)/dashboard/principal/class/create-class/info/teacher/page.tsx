@@ -2,22 +2,21 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { usePrincipalCreateClassForm } from '@/contexts/forms/PrincipalCreateClassFormContext';
+import { useApp } from '@/contexts';
 import { CreateClassStepTeacher } from '@/components/dashboard/principal/class_management/create-class/components/CreateClassStepTeacher';
 
 export default function CreateClassTeacherPage() {
   const router = useRouter();
-  const { state } = usePrincipalCreateClassForm();
-  const { classFormData } = state;
+  const { createClass } = useApp().form;
 
   // 🛡️ 가드 로직: 순서대로 진행해야 함
   useEffect(() => {
-    const hasClassFormData = !!classFormData?.name;
+    const hasClassFormData = !!createClass.classFormData.name;
 
     if (!hasClassFormData) {
       router.replace('/dashboard/principal/class/create-class/info');
     }
-  }, [router, classFormData]);
+  }, [router, createClass]);
 
   return <CreateClassStepTeacher />;
 }
