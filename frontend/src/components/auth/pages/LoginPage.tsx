@@ -9,7 +9,6 @@ import { cva } from 'class-variance-authority'
 import { Box, Button, Typography } from '@mui/material'
 import { Visibility, VisibilityOff } from '@mui/icons-material'
 import Image from 'next/image'
-import { useApp } from '@/contexts/AppContext'
 import { useApiError } from '@/hooks/useApiError'
 import { useRouter } from 'next/navigation'
 import { ensureTrailingSlash } from '@/lib/utils/router'
@@ -182,7 +181,7 @@ export function LoginPage() {
   const {
     control,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<LoginSchemaType>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -191,7 +190,6 @@ export function LoginPage() {
     },
   })
   const router = useRouter()
-  const { setAuthMode } = useApp()
   const signIn = useSignIn()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -337,7 +335,6 @@ export function LoginPage() {
           </Typography>
           <Button
             onClick={() => {
-              setAuthMode('signup');
               router.push(ensureTrailingSlash('/signup/roles'))
             }}
             sx={{

@@ -18,14 +18,14 @@ const TestComponent = () => {
     setResult('enrollment-data-changed');
   };
 
-  const handleCreateClassStep = () => {
-    forms.setCreateClassStep('teacher');
-    setResult('create-class-step-changed');
+  const handlePrincipalStep = () => {
+    forms.setPrincipalCreateClassStep('teacher');
+    setResult('principal-step-changed');
   };
 
-  const handleAuthMode = () => {
-    forms.setAuthMode('login');
-    setResult('auth-mode-changed');
+  const handleSignupStep = () => {
+    forms.setAuthStep('personal-info');
+    setResult('signup-step-changed');
   };
 
   const handleResetAll = () => {
@@ -41,11 +41,11 @@ const TestComponent = () => {
       <button onClick={handleEnrollmentData} data-testid="enrollment-data-button">
         Change Enrollment Data
       </button>
-      <button onClick={handleCreateClassStep} data-testid="create-class-step-button">
-        Change Create Class Step
+      <button onClick={handlePrincipalStep} data-testid="principal-step-button">
+        Change Principal Step
       </button>
-      <button onClick={handleAuthMode} data-testid="auth-mode-button">
-        Change Auth Mode
+      <button onClick={handleSignupStep} data-testid="signup-step-button">
+        Change Signup Step
       </button>
       <button onClick={handleResetAll} data-testid="reset-all-button">
         Reset All Forms
@@ -53,8 +53,8 @@ const TestComponent = () => {
       <div data-testid="result">{result}</div>
       <div data-testid="enrollment-step">{forms.enrollment.currentStep}</div>
       <div data-testid="enrollment-academy-id">{forms.enrollment.selectedAcademyId || 'null'}</div>
-      <div data-testid="create-class-step">{forms.createClass.currentStep}</div>
-      <div data-testid="auth-mode">{forms.auth.authMode}</div>
+      <div data-testid="principal-step">{forms.principalCreateClass.currentStep}</div>
+      <div data-testid="signup-step">{forms.auth.signup.step}</div>
     </div>
   );
 };
@@ -69,8 +69,8 @@ describe('ImprovedFormsContext', () => {
 
     expect(screen.getByTestId('enrollment-step')).toHaveTextContent('academy-selection');
     expect(screen.getByTestId('enrollment-academy-id')).toHaveTextContent('null');
-    expect(screen.getByTestId('create-class-step')).toHaveTextContent('info');
-    expect(screen.getByTestId('auth-mode')).toHaveTextContent('login');
+    expect(screen.getByTestId('principal-step')).toHaveTextContent('info');
+    expect(screen.getByTestId('signup-step')).toHaveTextContent('role-selection');
   });
 
   it('should handle enrollment step changes', async () => {
@@ -103,33 +103,33 @@ describe('ImprovedFormsContext', () => {
     });
   });
 
-  it('should handle create class step changes', async () => {
+  it('should handle principal create class step changes', async () => {
     render(
       <FormsProvider>
         <TestComponent />
       </FormsProvider>
     );
 
-    fireEvent.click(screen.getByTestId('create-class-step-button'));
+    fireEvent.click(screen.getByTestId('principal-step-button'));
     
     await waitFor(() => {
-      expect(screen.getByTestId('result')).toHaveTextContent('create-class-step-changed');
-      expect(screen.getByTestId('create-class-step')).toHaveTextContent('teacher');
+      expect(screen.getByTestId('result')).toHaveTextContent('principal-step-changed');
+      expect(screen.getByTestId('principal-step')).toHaveTextContent('teacher');
     });
   });
 
-  it('should handle auth mode changes', async () => {
+  it('should handle signup step changes', async () => {
     render(
       <FormsProvider>
         <TestComponent />
       </FormsProvider>
     );
 
-    fireEvent.click(screen.getByTestId('auth-mode-button'));
+    fireEvent.click(screen.getByTestId('signup-step-button'));
     
     await waitFor(() => {
-      expect(screen.getByTestId('result')).toHaveTextContent('auth-mode-changed');
-      expect(screen.getByTestId('auth-mode')).toHaveTextContent('login');
+      expect(screen.getByTestId('result')).toHaveTextContent('signup-step-changed');
+      expect(screen.getByTestId('signup-step')).toHaveTextContent('personal-info');
     });
   });
 

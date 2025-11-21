@@ -4,65 +4,78 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { SessionProvider } from '@/lib/auth/AuthProvider';
 import { AppProvider, useApp } from '../AppContext';
 
+const mockEnrollmentState = {
+  currentStep: 'academy-selection',
+  selectedAcademyId: null,
+  selectedClassIds: [],
+  selectedSessions: [],
+  selectedClasses: [],
+  selectedClassesWithSessions: [],
+  selectedMonth: null,
+};
+
+const mockEnrollmentModificationState = {
+  currentStep: 'date-selection',
+  modificationData: null,
+};
+
+const mockAuthState = {
+  signup: {
+    step: 'role-selection',
+    role: null,
+    personalInfo: { name: '', phoneNumber: '' },
+    accountInfo: { userId: '', password: '', confirmPassword: '' },
+    terms: { age: false, terms1: false, terms2: false, marketing: false },
+  },
+};
+
+const mockPrincipalCreateClassState = {
+  currentStep: 'info',
+  classFormData: {
+    name: '',
+    description: '',
+    level: 'BEGINNER',
+    maxStudents: 0,
+    price: 0,
+    startDate: '',
+    endDate: '',
+    schedule: [],
+  },
+  selectedTeacherId: null,
+};
+
+const mockUseFormsValue = {
+  forms: {
+    enrollment: mockEnrollmentState,
+    enrollmentModification: mockEnrollmentModificationState,
+    auth: mockAuthState,
+    principalCreateClass: mockPrincipalCreateClassState,
+  },
+  enrollment: mockEnrollmentState,
+  enrollmentModification: mockEnrollmentModificationState,
+  auth: mockAuthState,
+  principalCreateClass: mockPrincipalCreateClassState,
+  updateForm: jest.fn(),
+  resetAllForms: jest.fn(),
+  getFormState: jest.fn(),
+  setEnrollmentStep: jest.fn(),
+  setEnrollmentData: jest.fn(),
+  resetEnrollment: jest.fn(),
+  setEnrollmentModificationStep: jest.fn(),
+  setEnrollmentModificationData: jest.fn(),
+  resetEnrollmentModification: jest.fn(),
+  setAuthStep: jest.fn(),
+  setAuthData: jest.fn(),
+  resetAuth: jest.fn(),
+  setPrincipalCreateClassStep: jest.fn(),
+  setPrincipalCreateClassData: jest.fn(),
+  resetPrincipalCreateClass: jest.fn(),
+};
+
 // Context 모킹 - 무한 루프 방지
 jest.mock('../forms/FormsContext', () => ({
   FormsProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  useForms: jest.fn(() => ({
-    forms: {
-      enrollment: {
-        currentStep: 'academy-selection',
-        selectedAcademyId: null,
-        selectedClassIds: [],
-        selectedSessions: [],
-        selectedClasses: [],
-        selectedClassesWithSessions: [],
-        selectedMonth: null,
-      },
-      createClass: {
-        currentStep: 'teacher',
-        selectedTeacherId: null,
-        selectedAcademyId: null,
-        classData: null,
-        sessionData: null,
-      },
-      auth: {
-        authMode: 'login',
-        userType: 'student',
-        formData: null,
-      },
-    },
-    enrollment: {
-      currentStep: 'academy-selection',
-      selectedAcademyId: null,
-      selectedClassIds: [],
-      selectedSessions: [],
-      selectedClasses: [],
-      selectedClassesWithSessions: [],
-      selectedMonth: null,
-    },
-    createClass: {
-      currentStep: 'teacher',
-      selectedTeacherId: null,
-      selectedAcademyId: null,
-      classData: null,
-      sessionData: null,
-    },
-    auth: {
-      authMode: 'login',
-      userType: 'student',
-      formData: null,
-    },
-    updateForm: jest.fn(),
-    setEnrollmentStep: jest.fn(),
-    setEnrollmentData: jest.fn(),
-    resetEnrollment: jest.fn(),
-    setCreateClassStep: jest.fn(),
-    setCreateClassData: jest.fn(),
-    resetCreateClass: jest.fn(),
-    setAuthMode: jest.fn(),
-    setAuthData: jest.fn(),
-    resetAuth: jest.fn(),
-  })),
+  useForms: jest.fn(() => mockUseFormsValue),
 }));
 
 jest.mock('../navigation/NavigationContext', () => ({
@@ -124,7 +137,8 @@ const TestComponent = () => {
   const app = useApp();
   const [result, setResult] = React.useState<string>('');
   const [enrollmentStep, setEnrollmentStep] = React.useState('academy-selection');
-  const [authMode, setAuthMode] = React.useState('login');
+  const [principalStep, setPrincipalStep] = React.useState('info');
+  const [signupStep, setSignupStep] = React.useState('role-selection');
   const [selectedAcademyId, setSelectedAcademyId] = React.useState<number | null>(null);
 
   const handleGoBack = async () => {
@@ -150,14 +164,15 @@ const TestComponent = () => {
 
 
   const handleCreateClassStep = () => {
-    app.setCreateClassStep('teacher');
-    setResult('create-class-step-changed');
+    app.setPrincipalCreateClassStep('teacher');
+    setPrincipalStep('teacher');
+    setResult('principal-step-changed');
   };
 
-  const handleAuthMode = () => {
-    app.setAuthMode('signup');
-    setAuthMode('signup');
-    setResult('auth-mode-changed');
+  const handleSignupStep = () => {
+    app.setSignupStep('personal-info');
+    setSignupStep('personal-info');
+    setResult('signup-step-changed');
   };
 
   return (
@@ -171,18 +186,18 @@ const TestComponent = () => {
       <button onClick={handleEnrollmentData} data-testid="enrollment-data-button">
         Change Enrollment Data
       </button>
-      <button onClick={handleCreateClassStep} data-testid="create-class-step-button">
-        Change Create Class Step
+      <button onClick={handleCreateClassStep} data-testid="principal-step-button">
+        Change Principal Create Class Step
       </button>
-      <button onClick={handleAuthMode} data-testid="auth-mode-button">
-        Change Auth Mode
+      <button onClick={handleSignupStep} data-testid="signup-step-button">
+        Change Signup Step
       </button>
       <div data-testid="result">{result}</div>
       <div data-testid="active-tab">{app.activeTab}</div>
       <div data-testid="enrollment-step">{enrollmentStep}</div>
       <div data-testid="enrollment-academy-id">{selectedAcademyId || 'null'}</div>
-      <div data-testid="create-class-step">{app.form.createClass.currentStep}</div>
-      <div data-testid="auth-mode">{authMode}</div>
+      <div data-testid="principal-step">{principalStep}</div>
+      <div data-testid="signup-step">{signupStep}</div>
     </div>
   );
 };
@@ -227,7 +242,7 @@ describe('AppContext', () => {
     });
   });
 
-  it('should handle create class form state changes', async () => {
+  it('should handle principal create class form state changes', async () => {
     render(
       <SessionProvider session={mockSession}>
         <AppProvider>
@@ -236,15 +251,15 @@ describe('AppContext', () => {
       </SessionProvider>
     );
 
-    fireEvent.click(screen.getByTestId('create-class-step-button'));
+    fireEvent.click(screen.getByTestId('principal-step-button'));
     
     await waitFor(() => {
-      expect(screen.getByTestId('result')).toHaveTextContent('create-class-step-changed');
-      expect(screen.getByTestId('create-class-step')).toHaveTextContent('teacher');
+      expect(screen.getByTestId('result')).toHaveTextContent('principal-step-changed');
+      expect(screen.getByTestId('principal-step')).toHaveTextContent('teacher');
     });
   });
 
-  it('should handle auth form state changes', async () => {
+  it('should handle signup step changes', async () => {
     render(
       <SessionProvider session={mockSession}>
         <AppProvider>
@@ -253,11 +268,11 @@ describe('AppContext', () => {
       </SessionProvider>
     );
 
-    fireEvent.click(screen.getByTestId('auth-mode-button'));
+    fireEvent.click(screen.getByTestId('signup-step-button'));
     
     await waitFor(() => {
-      expect(screen.getByTestId('result')).toHaveTextContent('auth-mode-changed');
-      expect(screen.getByTestId('auth-mode')).toHaveTextContent('signup');
+      expect(screen.getByTestId('result')).toHaveTextContent('signup-step-changed');
+      expect(screen.getByTestId('signup-step')).toHaveTextContent('personal-info');
     });
   });
 

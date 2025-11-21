@@ -1,88 +1,59 @@
-// src/contexts/forms/FormsContext.tsx
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, ReactNode } from 'react';
 import { contextEventBus } from '../events/ContextEventBus';
 
 // 개별 폼 Manager들 import
-import { EnrollmentFormManager, EnrollmentFormState, EnrollmentStep, EnrollmentModificationData } from './EnrollmentFormManager';
+import { EnrollmentFormManager, EnrollmentFormState, EnrollmentStep } from './EnrollmentFormManager';
 import { EnrollmentModificationFormManager, EnrollmentModificationFormState, EnrollmentModificationStep } from './EnrollmentModificationFormManager';
-import { CreateClassFormManager, CreateClassFormState, CreateClassStep } from './CreateClassFormManager';
-import { AuthFormManager, AuthFormState, AuthMode, SignupStep } from './AuthFormManager';
-import { PersonManagementFormManager, PersonManagementFormState, PrincipalPersonManagementStep } from './PersonManagementFormManager';
+import { AuthFormManager, AuthFormState, SignupStep } from './AuthFormManager';
 import { PrincipalCreateClassFormManager, PrincipalCreateClassFormState, PrincipalCreateClassStep } from './PrincipalCreateClassFormManager';
-import { PrincipalPersonManagementFormManager, PrincipalPersonManagementFormState } from './PrincipalPersonManagementFormManager';
 
 // 폼 상태 통합 타입
 export interface FormsState {
   enrollment: EnrollmentFormState;
   enrollmentModification: EnrollmentModificationFormState;
-  createClass: CreateClassFormState;
   auth: AuthFormState;
-  personManagement: PersonManagementFormState;
   principalCreateClass: PrincipalCreateClassFormState;
-  principalPersonManagement: PersonManagementFormState;
 }
 
 interface FormsContextType {
   // 상태
   forms: FormsState;
   
-  // 개별 폼 상태 접근
+  // 개별 폼 상태 접근 (Helper)
   enrollment: EnrollmentFormState;
   enrollmentModification: EnrollmentModificationFormState;
-  createClass: CreateClassFormState;
   auth: AuthFormState;
-  personManagement: PersonManagementFormState;
   principalCreateClass: PrincipalCreateClassFormState;
-  principalPersonManagement: PrincipalPersonManagementFormState;
   
-  // 폼 상태 업데이트
+  // 폼 상태 업데이트 (Generic)
   updateForm: <T extends keyof FormsState>(
     formType: T,
     updates: Partial<FormsState[T]>
   ) => void;
   
-  // 개별 폼 메서드들
-  // Enrollment
+  // --- Enrollment ---
   setEnrollmentStep: (step: EnrollmentStep) => void;
   setEnrollmentData: (data: Partial<EnrollmentFormState>) => void;
-  setModificationData: (data: EnrollmentModificationData | null) => void;
   resetEnrollment: () => void;
   
-  // EnrollmentModification
+  // --- EnrollmentModification ---
   setEnrollmentModificationStep: (step: EnrollmentModificationStep) => void;
   setEnrollmentModificationData: (data: Partial<EnrollmentModificationFormState>) => void;
   resetEnrollmentModification: () => void;
   
-  // CreateClass
-  setCreateClassStep: (step: CreateClassStep) => void;
-  setCreateClassData: (data: Partial<CreateClassFormState>) => void;
-  resetCreateClass: () => void;
-  
-  // Auth
-  setAuthMode: (mode: AuthMode) => void;
+  // --- Auth (Signup) ---
   setAuthStep: (step: SignupStep) => void;
   setAuthData: (data: Partial<AuthFormState>) => void;
   resetAuth: () => void;
   
-  // PersonManagement
-  setPersonManagementStep: (step: PrincipalPersonManagementStep) => void;
-  setPersonManagementData: (data: Partial<PersonManagementFormState>) => void;
-  resetPersonManagement: () => void;
-  
-  // PrincipalCreateClass
+  // --- PrincipalCreateClass ---
   setPrincipalCreateClassStep: (step: PrincipalCreateClassStep) => void;
   setPrincipalCreateClassData: (data: Partial<PrincipalCreateClassFormState>) => void;
   resetPrincipalCreateClass: () => void;
-  
-  // PrincipalPersonManagement
-  setPrincipalPersonManagementStep: (step: PrincipalPersonManagementStep) => void;
-  setPrincipalPersonManagementData: (data: Partial<PrincipalPersonManagementFormState>) => void;
-  resetPrincipalPersonManagement: () => void;
-  switchPrincipalPersonManagementTab: (tab: 'enrollment' | 'refund') => void;
-  
-  // 전체 폼 관리
+
+  // --- Global ---
   resetAllForms: () => void;
   getFormState: <T extends keyof FormsState>(formType: T) => FormsState[T];
 }
@@ -105,100 +76,61 @@ export const FormsProvider: React.FC<FormsProviderProps> = ({ children }) => {
   // 개별 폼 Manager들 초기화
   const [enrollmentManager] = useState(() => new EnrollmentFormManager(contextEventBus));
   const [enrollmentModificationManager] = useState(() => new EnrollmentModificationFormManager(contextEventBus));
-  const [createClassManager] = useState(() => new CreateClassFormManager(contextEventBus));
   const [authManager] = useState(() => new AuthFormManager(contextEventBus));
-  const [personManagementManager] = useState(() => new PersonManagementFormManager(contextEventBus));
   const [principalCreateClassManager] = useState(() => new PrincipalCreateClassFormManager(contextEventBus));
-  const [principalPersonManagementManager] = useState(() => new PrincipalPersonManagementFormManager(contextEventBus));
   
   // 폼 상태들
   const [enrollment, setEnrollment] = useState<EnrollmentFormState>(enrollmentManager.getState());
   const [enrollmentModification, setEnrollmentModification] = useState<EnrollmentModificationFormState>(enrollmentModificationManager.getState());
-  const [createClass, setCreateClass] = useState<CreateClassFormState>(createClassManager.getState());
   const [auth, setAuth] = useState<AuthFormState>(authManager.getState());
-  const [personManagement, setPersonManagement] = useState<PersonManagementFormState>(personManagementManager.getState());
   const [principalCreateClass, setPrincipalCreateClass] = useState<PrincipalCreateClassFormState>(principalCreateClassManager.getState());
-  const [principalPersonManagement, setPrincipalPersonManagement] = useState<PrincipalPersonManagementFormState>(principalPersonManagementManager.getState());
   
   // 통합 폼 상태
   const forms: FormsState = useMemo(() => ({
     enrollment,
     enrollmentModification,
-    createClass,
     auth,
-    personManagement,
     principalCreateClass,
-    principalPersonManagement,
-  }), [enrollment, enrollmentModification, createClass, auth, personManagement, principalCreateClass, principalPersonManagement]);
+  }), [enrollment, enrollmentModification, auth, principalCreateClass]);
 
   // Manager 상태 구독
   useEffect(() => {
-    const unsubscribeEnrollment = enrollmentManager.subscribe((newState) => {
-      setEnrollment(newState);
-    });
-    
-    const unsubscribeEnrollmentModification = enrollmentModificationManager.subscribe((newState) => {
-      setEnrollmentModification(newState);
-    });
-    
-    const unsubscribeCreateClass = createClassManager.subscribe((newState) => {
-      setCreateClass(newState);
-    });
-    
-    const unsubscribeAuth = authManager.subscribe((newState) => {
-      setAuth(newState);
-    });
-    
-    const unsubscribePersonManagement = personManagementManager.subscribe((newState) => {
-      setPersonManagement(newState);
-    });
-    
-    const unsubscribePrincipalCreateClass = principalCreateClassManager.subscribe((newState) => {
-      setPrincipalCreateClass(newState);
-    });
-    
-    const unsubscribePrincipalPersonManagement = principalPersonManagementManager.subscribe((newState) => {
-      setPrincipalPersonManagement(newState);
-    });
+    const unsubscribeEnrollment = enrollmentManager.subscribe(setEnrollment);
+    const unsubscribeEnrollmentModification = enrollmentModificationManager.subscribe(setEnrollmentModification);
+    const unsubscribeAuth = authManager.subscribe(setAuth);
+    const unsubscribePrincipalCreateClass = principalCreateClassManager.subscribe(setPrincipalCreateClass);
 
     return () => {
       unsubscribeEnrollment();
       unsubscribeEnrollmentModification();
-      unsubscribeCreateClass();
       unsubscribeAuth();
-      unsubscribePersonManagement();
       unsubscribePrincipalCreateClass();
-      unsubscribePrincipalPersonManagement();
     };
-  }, [enrollmentManager, enrollmentModificationManager, createClassManager, authManager, personManagementManager, principalCreateClassManager, principalPersonManagementManager]);
+  }, [enrollmentManager, enrollmentModificationManager, authManager, principalCreateClassManager]);
 
 
-  // 📢 탭 변경 이벤트 구독 - 모든 폼 초기화
+  // 📢 탭/네비게이션 변경 이벤트 구독 - 폼 초기화 정책 적용
   useEffect(() => {
     const unsubscribe = contextEventBus.subscribe('tabChanged', () => {
-      // 탭이 변경되면 모든 폼 상태를 초기화
+      // 탭 변경 시 모든 폼 초기화 (필요에 따라 정책 조정 가능)
       enrollmentManager.reset();
       enrollmentModificationManager.reset();
-      createClassManager.reset();
       authManager.reset();
-      personManagementManager.reset();
       principalCreateClassManager.reset();
-      principalPersonManagementManager.reset();
     });
 
     return unsubscribe;
-  }, [enrollmentManager, enrollmentModificationManager, createClassManager, authManager, personManagementManager, principalCreateClassManager, principalPersonManagementManager]);
+  }, [enrollmentManager, enrollmentModificationManager, authManager, principalCreateClassManager]);
 
-  // 폼 상태 업데이트
+  // 폼 상태 업데이트 (Placeholder)
   const updateForm = useCallback(<T extends keyof FormsState>(
     _formType: T,
     _updates: Partial<FormsState[T]>
   ) => {
-    // 폼 상태는 Manager를 통해 직접 업데이트되므로 여기서는 처리하지 않음
-    // 필요시 개별 Manager 메서드를 호출하여 업데이트
+    // 개별 Manager를 통해 상태가 업데이트되므로 여기서는 구현하지 않음
   }, []);
 
-  // 개별 폼 메서드들
+  // --- Enrollment Methods ---
   const setEnrollmentStep = useCallback((step: EnrollmentStep) => {
     enrollmentManager.setCurrentStep(step);
   }, [enrollmentManager]);
@@ -213,15 +145,11 @@ export const FormsProvider: React.FC<FormsProviderProps> = ({ children }) => {
     if (data.selectedClassesWithSessions) enrollmentManager.setSelectedClassesWithSessions(data.selectedClassesWithSessions);
   }, [enrollmentManager]);
 
-  const setModificationData = useCallback((_data: EnrollmentModificationData | null) => {
-    // modificationData는 별도로 관리되므로 여기서는 처리하지 않음
-    // EnrollmentModificationFormManager에서 관리됨
-  }, []);
-
   const resetEnrollment = useCallback(() => {
     enrollmentManager.reset();
   }, [enrollmentManager]);
 
+  // --- EnrollmentModification Methods ---
   const setEnrollmentModificationStep = useCallback((step: EnrollmentModificationStep) => {
     enrollmentModificationManager.setCurrentStep(step);
   }, [enrollmentModificationManager]);
@@ -235,63 +163,29 @@ export const FormsProvider: React.FC<FormsProviderProps> = ({ children }) => {
     enrollmentModificationManager.reset();
   }, [enrollmentModificationManager]);
 
-  const setCreateClassStep = useCallback((step: CreateClassStep) => {
-    createClassManager.setCurrentStep(step);
-  }, [createClassManager]);
-
-  const setCreateClassData = useCallback((data: Partial<CreateClassFormState>) => {
-    if (data.currentStep) createClassManager.setCurrentStep(data.currentStep);
-    if (data.classFormData) createClassManager.setClassFormData(data.classFormData);
-    if (data.selectedTeacherId !== undefined) createClassManager.setSelectedTeacherId(data.selectedTeacherId);
-  }, [createClassManager]);
-
-  const resetCreateClass = useCallback(() => {
-    createClassManager.reset();
-  }, [createClassManager]);
-
-  const setAuthMode = useCallback((mode: AuthMode) => {
-    authManager.setAuthMode(mode);
-  }, [authManager]);
-
+  // --- Auth Methods (Signup Only) ---
   const setAuthStep = useCallback((step: SignupStep) => {
     authManager.setSignupStep(step);
   }, [authManager]);
 
   const setAuthData = useCallback((data: Partial<AuthFormState>) => {
-    if (data.authMode) authManager.setAuthMode(data.authMode);
-    if (data.authSubPage !== undefined) authManager.setAuthSubPage(data.authSubPage);
+    // AuthFormState 구조 변경 반영: data.signup 내부 데이터만 처리
     if (data.signup) {
-      if (data.signup.step) authManager.setSignupStep(data.signup.step);
-      if (data.signup.role) authManager.setRole(data.signup.role);
-      if (data.signup.personalInfo) authManager.setPersonalInfo(data.signup.personalInfo);
-      if (data.signup.accountInfo) authManager.setAccountInfo(data.signup.accountInfo);
-      if (data.signup.academyInfo) authManager.setAcademyInfo(data.signup.academyInfo);
-      if (data.signup.terms) authManager.setTerms(data.signup.terms);
+      const s = data.signup;
+      if (s.step) authManager.setSignupStep(s.step);
+      if (s.role) authManager.setRole(s.role);
+      if (s.personalInfo) authManager.setPersonalInfo(s.personalInfo);
+      if (s.accountInfo) authManager.setAccountInfo(s.accountInfo);
+      if (s.academyInfo) authManager.setAcademyInfo(s.academyInfo);
+      if (s.terms) authManager.setTerms(s.terms);
     }
-    if (data.login) authManager.setLoginInfo(data.login);
   }, [authManager]);
 
   const resetAuth = useCallback(() => {
     authManager.reset();
   }, [authManager]);
 
-  const setPersonManagementStep = useCallback((step: PrincipalPersonManagementStep) => {
-    personManagementManager.setCurrentStep(step);
-  }, [personManagementManager]);
-
-  const setPersonManagementData = useCallback((data: Partial<PersonManagementFormState>) => {
-    if (data.currentStep) personManagementManager.setCurrentStep(data.currentStep);
-    if (data.selectedTab) personManagementManager.setSelectedTab(data.selectedTab);
-    if (data.selectedClassId !== undefined) personManagementManager.setSelectedClassId(data.selectedClassId);
-    if (data.selectedSessionId !== undefined) personManagementManager.setSelectedSessionId(data.selectedSessionId);
-    if (data.selectedRequestId !== undefined) personManagementManager.setSelectedRequestId(data.selectedRequestId);
-    if (data.selectedRequestType !== undefined) personManagementManager.setSelectedRequestType(data.selectedRequestType);
-  }, [personManagementManager]);
-
-  const resetPersonManagement = useCallback(() => {
-    personManagementManager.reset();
-  }, [personManagementManager]);
-
+  // --- PrincipalCreateClass Methods ---
   const setPrincipalCreateClassStep = useCallback((step: PrincipalCreateClassStep) => {
     principalCreateClassManager.setCurrentStep(step);
   }, [principalCreateClassManager]);
@@ -306,36 +200,13 @@ export const FormsProvider: React.FC<FormsProviderProps> = ({ children }) => {
     principalCreateClassManager.reset();
   }, [principalCreateClassManager]);
 
-  const setPrincipalPersonManagementStep = useCallback((step: PrincipalPersonManagementStep) => {
-    principalPersonManagementManager.setCurrentStep(step);
-  }, [principalPersonManagementManager]);
-
-  const setPrincipalPersonManagementData = useCallback((data: Partial<PrincipalPersonManagementFormState>) => {
-    if (data.currentStep) principalPersonManagementManager.setCurrentStep(data.currentStep);
-    if (data.selectedTab) principalPersonManagementManager.setSelectedTab(data.selectedTab);
-    if (data.selectedClassId !== undefined) principalPersonManagementManager.setSelectedClassId(data.selectedClassId);
-    if (data.selectedSessionId !== undefined) principalPersonManagementManager.setSelectedSessionId(data.selectedSessionId);
-    if (data.selectedRequestId !== undefined) principalPersonManagementManager.setSelectedRequestId(data.selectedRequestId);
-    if (data.selectedRequestType !== undefined) principalPersonManagementManager.setSelectedRequestType(data.selectedRequestType);
-  }, [principalPersonManagementManager]);
-
-  const resetPrincipalPersonManagement = useCallback(() => {
-    principalPersonManagementManager.reset();
-  }, [principalPersonManagementManager]);
-
-  const switchPrincipalPersonManagementTab = useCallback((tab: 'enrollment' | 'refund') => {
-    principalPersonManagementManager.switchTab(tab);
-  }, [principalPersonManagementManager]);
-
+  // --- Global Methods ---
   const resetAllForms = useCallback(() => {
     enrollmentManager.reset();
     enrollmentModificationManager.reset();
-    createClassManager.reset();
     authManager.reset();
-    personManagementManager.reset();
     principalCreateClassManager.reset();
-    principalPersonManagementManager.reset();
-  }, [enrollmentManager, enrollmentModificationManager, createClassManager, authManager, personManagementManager, principalCreateClassManager, principalPersonManagementManager]);
+  }, [enrollmentManager, enrollmentModificationManager, authManager, principalCreateClassManager]);
 
   const getFormState = useCallback(<T extends keyof FormsState>(formType: T): FormsState[T] => {
     return forms[formType];
@@ -345,36 +216,26 @@ export const FormsProvider: React.FC<FormsProviderProps> = ({ children }) => {
     forms,
     enrollment,
     enrollmentModification,
-    createClass,
     auth,
-    personManagement,
     principalCreateClass,
-    principalPersonManagement,
     updateForm,
+    // Enrollment
     setEnrollmentStep,
     setEnrollmentData,
-    setModificationData,
     resetEnrollment,
+    // Modification
     setEnrollmentModificationStep,
     setEnrollmentModificationData,
     resetEnrollmentModification,
-    setCreateClassStep,
-    setCreateClassData,
-    resetCreateClass,
-    setAuthMode,
+    // Auth
     setAuthStep,
     setAuthData,
     resetAuth,
-    setPersonManagementStep,
-    setPersonManagementData,
-    resetPersonManagement,
+    // Principal
     setPrincipalCreateClassStep,
     setPrincipalCreateClassData,
     resetPrincipalCreateClass,
-    setPrincipalPersonManagementStep,
-    setPrincipalPersonManagementData,
-    resetPrincipalPersonManagement,
-    switchPrincipalPersonManagementTab,
+    // Global
     resetAllForms,
     getFormState,
   };

@@ -171,7 +171,7 @@ export function SignupPersonalPage() {
   const {
     control,
     handleSubmit,
-    formState: { errors, isValid },
+    formState: { isValid },
     watch,
   } = useForm<PersonalInfoSchemaType>({
     resolver: zodResolver(personalInfoSchema),

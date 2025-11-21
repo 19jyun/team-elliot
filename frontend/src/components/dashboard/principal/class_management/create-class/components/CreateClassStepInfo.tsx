@@ -27,7 +27,7 @@ export function CreateClassStepInfo() {
   const { data: academy, isLoading: isAcademyLoading } = usePrincipalAcademy();
 
   // React Hook Form 설정
-  const { control, handleSubmit, formState: { isValid, errors }, setValue, watch, trigger } = useForm<ClassInfoSchemaType>({
+  const { control, handleSubmit, formState: { isValid }, setValue, watch, trigger } = useForm<ClassInfoSchemaType>({
     resolver: zodResolver(classInfoSchema),
     defaultValues: {
       name: classFormData.name || '',
@@ -179,7 +179,7 @@ export function CreateClassStepInfo() {
                 <Controller
                   name="level"
                   control={control}
-                  render={({ field, fieldState: { error } }) => (
+                  render={({ fieldState: { error } }) => (
                     <>
                       <div className="grid grid-cols-3 gap-2">
                         {LEVELS.map((level) => (

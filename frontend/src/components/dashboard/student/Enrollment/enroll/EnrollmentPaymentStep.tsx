@@ -52,15 +52,12 @@ export function EnrollmentPaymentStep({ onComplete }: EnrollmentPaymentStepVM) {
   const {
     control,
     handleSubmit,
-    watch,
   } = useForm<EnrollmentPaymentSchemaType>({
     resolver: zodResolver(enrollmentPaymentSchema),
     defaultValues: {
       confirmed: false,
     },
   });
-
-  const confirmed = watch('confirmed');
   
   // 선택된 세션 ID 배열
   const sessionIds = useMemo(() => {

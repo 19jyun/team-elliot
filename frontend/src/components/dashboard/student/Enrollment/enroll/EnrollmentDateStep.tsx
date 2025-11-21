@@ -44,7 +44,12 @@ export function EnrollmentDateStep() {
     mode: 'onChange',
   });
 
-  const selectedSessionIds = React.useMemo(() => new Set(watch('sessionIds') || []), [watch('sessionIds')]);
+  const sessionIds = watch('sessionIds');
+
+  const selectedSessionIds = React.useMemo(
+    () => new Set(sessionIds || []),
+    [sessionIds] 
+  );
 
   // 선택된 클래스들의 세션만 필터링하고 ClassSession 형식으로 변환
   const selectedClassSessions = React.useMemo(() => {

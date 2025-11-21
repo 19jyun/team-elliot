@@ -154,7 +154,7 @@ export function CreateClassStepTeacher() {
                 <Controller
                   name="teacherId"
                   control={control}
-                  render={({ field, fieldState: { error } }) => (
+                  render={({ fieldState: { error } }) => (
                     <>
                       <div className="space-y-3">
                         {teachers?.map((teacher: Teacher) => (

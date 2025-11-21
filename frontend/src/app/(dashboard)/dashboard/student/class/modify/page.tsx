@@ -156,16 +156,13 @@ function ModifyPageContent() {
       return (
         <ModificationCompleteStep
           type="refund"
-          amount={modificationData?.changeAmount || 0}
         />
       );
 
-    // ✅ [추가] 결제 완료 단계 처리
     case 'payment-complete':
       return (
         <ModificationCompleteStep
           type="payment"
-          amount={modificationData?.changeAmount || 0}
         />
       );
 

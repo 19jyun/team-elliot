@@ -72,7 +72,7 @@ export function CreateClassStepDetail() {
     return `${firstSchedule.startTime} ~ ${firstSchedule.endTime}`;
   }, [classFormData.schedule]);
 
-  const onNext = async (data: ClassDetailSchemaType) => {
+  const onNext = async (_data: ClassDetailSchemaType) => {
     // 필수 필드 검증
     if (!classFormData.startDate || !classFormData.endDate) {
       toast.error('강의 기간을 설정해주세요.');

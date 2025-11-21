@@ -167,7 +167,6 @@ export function SignupAccountPage() {
   const {
     control,
     handleSubmit,
-    formState: { errors, isValid },
     setError,
   } = useForm<AccountInfoSchemaType>({
     resolver: zodResolver(accountInfoSchema),

@@ -140,7 +140,6 @@ export function SignupAcademyPage() {
   const {
     control,
     handleSubmit,
-    formState: { errors },
     watch,
     setValue,
   } = useForm<AcademyInfoSchemaType>({

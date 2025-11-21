@@ -87,7 +87,6 @@ export function EnrollmentModificationPaymentStep({
   const [isProcessing, setIsProcessing] = useState(false);
 
   const {
-    control,
     handleSubmit,
     setValue,
     watch,

@@ -7,8 +7,8 @@ import { CreateClassStepSchedule } from '@/components/dashboard/principal/class_
 
 export default function CreateClassSchedulePage() {
   const router = useRouter();
-  const { createClass } = useApp().form;
-  const { classFormData, selectedTeacherId } = createClass;
+  const { principalCreateClass } = useApp().form;
+  const { classFormData, selectedTeacherId } = principalCreateClass;
 
   // 🛡️ 가드 로직: 순서대로 진행해야 함
   useEffect(() => {
@@ -20,7 +20,7 @@ export default function CreateClassSchedulePage() {
     } else if (!hasSelectedTeacher) {
       router.replace('/dashboard/principal/class/create-class/info/teacher');
     }
-  }, [router, classFormData, selectedTeacherId]);
+  }, [router, principalCreateClass, classFormData, selectedTeacherId]);
 
   return <CreateClassStepSchedule />;
 }

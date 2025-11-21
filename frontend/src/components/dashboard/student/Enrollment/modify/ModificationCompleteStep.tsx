@@ -9,10 +9,9 @@ import { ensureTrailingSlash } from '@/lib/utils/router';
 interface ModificationCompleteStepProps {
   // 어떤 완료 상태인지 명시
   type: 'refund' | 'payment' | 'default'; 
-  amount?: number;
 }
 
-export function ModificationCompleteStep({ type, amount = 0 }: ModificationCompleteStepProps) {
+export function ModificationCompleteStep({ type }: ModificationCompleteStepProps) {
   // 1. 수강 변경 전용 초기화 함수 가져오기
   const { resetEnrollmentModification } = useApp();
   const router = useRouter();

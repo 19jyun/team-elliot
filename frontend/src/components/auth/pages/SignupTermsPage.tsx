@@ -12,8 +12,6 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { termsSchema, TermsSchemaType } from '@/lib/schemas/auth-signup'
 import { useApp } from '@/contexts/AppContext'
-import { useRouter } from 'next/navigation'
-
 
 const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
   <div
@@ -25,7 +23,6 @@ const ProgressBarItem = ({ isActive }: { isActive: boolean }) => (
 )
 
 export function SignupTermsPage() {
-  const router = useRouter()
   const { form, setTerms, resetSignup } = useApp()
   const [currentStep] = useState(4)
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false)
