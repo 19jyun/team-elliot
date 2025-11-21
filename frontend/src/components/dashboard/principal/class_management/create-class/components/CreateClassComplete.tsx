@@ -1,22 +1,26 @@
 'use client';
 
 import React from 'react';
-import { usePrincipalCreateClassForm } from '@/contexts/forms/PrincipalCreateClassFormContext';
+import { useApp } from '@/contexts/AppContext'; // [변경] 통합 Context 사용
 import { StatusStep } from './StatusStep';
 import { CompleteIcon } from '@/components/icons';
 import { useRouter } from 'next/navigation';
 import { ensureTrailingSlash } from '@/lib/utils/router';
 
 export function CreateClassComplete() {
-  const { state, reset } = usePrincipalCreateClassForm();
-  const { classFormData } = state;
   const router = useRouter();
+  
+  // [변경] useApp을 통해 상태와 초기화 함수 접근
+  const { form, resetPrincipalCreateClass } = useApp();
+  const { classFormData } = form.principalCreateClass; // state 접근
 
   const handleFinish = async () => {
     // Context 초기화
-    reset();
+    resetPrincipalCreateClass();
 
     // 메인 대시보드로 이동
+    // router.push를 사용할 경우 create-class 가드가 다시 실행되어 첫 단계로 돌려보내는 문제가 있으므로
+    // window.location.href로 완전한 페이지 이동을 수행한다.
     if (typeof window !== 'undefined') {
       window.location.href = ensureTrailingSlash('/dashboard/principal');
     } else {
@@ -148,4 +152,4 @@ export function CreateClassComplete() {
       </footer>
     </div>
   );
-} 
+}

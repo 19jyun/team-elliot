@@ -2,13 +2,13 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { usePrincipalCreateClassForm } from '@/contexts/forms/PrincipalCreateClassFormContext';
+import { useApp } from '@/contexts';
 import { CreateClassComplete } from '@/components/dashboard/principal/class_management/create-class/components/CreateClassComplete';
 
 export default function CreateClassCompletePage() {
   const router = useRouter();
-  const { state } = usePrincipalCreateClassForm();
-  const { classFormData } = state;
+  const { principalCreateClass } = useApp().form;
+  const { classFormData } = principalCreateClass;
 
   // 🛡️ 가드 로직: 순서대로 진행해야 함
   useEffect(() => {
