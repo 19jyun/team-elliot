@@ -16,6 +16,12 @@ import type { ModificationSessionVM } from '@/types/view/student';
 import { EnrollmentModificationData } from '@/contexts/forms/EnrollmentFormManager';
 import type { ClassSessionForModification } from '@/types/api/class';
 import { ensureTrailingSlash } from '@/lib/utils/router';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  modificationPaymentSchema,
+  ModificationPaymentSchemaType,
+} from '@/lib/schemas/enrollment-modification';
 
 interface EnrollmentModificationPaymentStepProps {
   modificationData: EnrollmentModificationData;
@@ -72,14 +78,27 @@ export function EnrollmentModificationPaymentStep({
     setEnrollmentStep: (step) => {
       // EnrollmentStep을 EnrollmentModificationStep으로 변환
       if (step === 'date-selection') {
-        router.push(ensureTrailingSlash(`/dashboard/student/modify?id=${enrollmentId}&step=date-step`));
+        router.push(ensureTrailingSlash(`/dashboard/student/class/modify?id=${enrollmentId}&step=date-step`));
       }
     },
   });
   const [_selectedSessions, setSelectedSessions] = useState<SelectedSession[]>([]);
   const [principalPayment, setPrincipalPayment] = useState<PrincipalPaymentInfo | null>(null);
-  const [confirmed, setConfirmed] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    watch,
+  } = useForm<ModificationPaymentSchemaType>({
+    resolver: zodResolver(modificationPaymentSchema),
+    defaultValues: {
+      confirmed: false,
+    },
+  });
+
+  const confirmed = watch('confirmed');
   
   const statusSteps = [
     {
@@ -194,8 +213,8 @@ export function EnrollmentModificationPaymentStep({
   };
 
   // 결제 완료 버튼 클릭 시
-  const handleComplete = async () => {
-    if (!confirmed || isProcessing) return;
+  const handleComplete = async (data: ModificationPaymentSchemaType) => {
+    if (!data.confirmed || isProcessing) return;
     
     setIsProcessing(true);
     
@@ -271,11 +290,11 @@ export function EnrollmentModificationPaymentStep({
         const selectedSessionsForError = contextSessions as unknown as ModificationSessionVM[];
         const shouldProceed = handlePartialModificationFailure(result, selectedSessionsForError);
         if (shouldProceed.shouldProceed) {
-          router.push(ensureTrailingSlash(`/dashboard/student/modify?id=${enrollmentId}&step=refund-complete`));
+          router.push(ensureTrailingSlash(`/dashboard/student/class/modify?id=${enrollmentId}&step=payment-complete`));
         }
       } else {
         // 완전 성공 (React Query mutation이 성공하면 자동으로 toast 표시)
-        router.push(ensureTrailingSlash(`/dashboard/student/modify?id=${enrollmentId}&step=refund-complete`));
+        router.push(ensureTrailingSlash(`/dashboard/student/class/modify?id=${enrollmentId}&step=payment-complete`));
       }
     } catch (error) {
       const shouldProceed = handleModificationError(error);
@@ -335,12 +354,14 @@ export function EnrollmentModificationPaymentStep({
       
       {/* Fixed Footer - 고정 크기 */}
       <footer className="flex-shrink-0 bg-white border-t border-gray-200">
-        <PaymentConfirmFooter 
-          confirmed={confirmed} 
-          setConfirmed={setConfirmed} 
-          onComplete={handleComplete}
-          isProcessing={isProcessing}
-        />
+        <form onSubmit={handleSubmit(handleComplete)}>
+          <PaymentConfirmFooter 
+            confirmed={confirmed} 
+            setConfirmed={(val) => setValue('confirmed', val)}
+            onComplete={handleSubmit(handleComplete)}
+            isProcessing={isProcessing}
+          />
+        </form>
       </footer>
     </div>
   );

@@ -16,6 +16,9 @@ import type { ClassSessionForModification } from '@/types/api/class'
 import type { ClassSession } from '@/types/api/class'
 import type { EnrollmentModificationDateStepVM } from '@/types/view/student'
 import { ensureTrailingSlash } from '@/lib/utils/router'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { modificationDateSchema, ModificationDateSchemaType } from '@/lib/schemas/enrollment-modification'
 
 export function EnrollmentModificationDateStep({ 
   classId, 
@@ -37,9 +40,22 @@ export function EnrollmentModificationDateStep({
     }
   });
 
-  const [selectedCount, setSelectedCount] = useState(0);
   const [_selectedClasses, setSelectedClasses] = useState<Array<{ id: number; sessions: ClassSessionForModification[] }>>([]);
-  const [selectedSessionIds, setSelectedSessionIds] = useState<Set<number>>(new Set());
+
+  const {
+    handleSubmit,
+    setValue,
+    watch,
+  } = useForm<ModificationDateSchemaType>({
+    resolver: zodResolver(modificationDateSchema),
+    defaultValues: {
+      selectedSessionIds: [],
+    },
+    mode: 'onChange',
+  });
+
+  const selectedSessionIds = watch('selectedSessionIds');
+  const selectedSessionIdsSet = React.useMemo(() => new Set(selectedSessionIds), [selectedSessionIds]);
   
   // modificationData에서 세션 및 캘린더 범위 추출 (메모이제이션으로 무한 루프 방지)
   const modificationSessions = React.useMemo(() => {
@@ -94,12 +110,12 @@ export function EnrollmentModificationDateStep({
       });
       
       if (preSelectedSessionIds.size > 0) {
-        setSelectedSessionIds(preSelectedSessionIds);
+        setValue('selectedSessionIds', Array.from(preSelectedSessionIds));
       }
       
       hasInitialized.current = true;
     }
-  }, [modificationSessions, existingEnrollments]);
+  }, [modificationSessions, existingEnrollments, setValue]);
 
   // selectedClassCards는 더 이상 localStorage에 저장하지 않음 (Context 사용)
     
@@ -134,11 +150,9 @@ export function EnrollmentModificationDateStep({
 
   // selectedSessionIds가 변경되면 selectedClasses 업데이트
   // selectedSessionIds의 size와 modificationSessionIds를 의존성으로 사용하여 무한 루프 방지
-  const selectedSessionIdsSize = selectedSessionIds.size;
-  
   React.useEffect(() => {
     const selectedSessions = modificationSessions.filter((session: ClassSessionForModification) => 
-      selectedSessionIds.has(session.id)
+      selectedSessionIdsSet.has(session.id)
     );
     
     const selectedClassInfo = {
@@ -147,9 +161,8 @@ export function EnrollmentModificationDateStep({
     };
     
     setSelectedClasses([selectedClassInfo]);
-    setSelectedCount(selectedSessions.length);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSessionIdsSize, modificationSessionIds, classId]);
+  }, [selectedSessionIds.join(','), modificationSessionIds, classId]);
 
   // 수강 변경 계산 hook 사용
   const {
@@ -163,26 +176,23 @@ export function EnrollmentModificationDateStep({
     nextStep,
   } = useEnrollmentModificationCalculation({
     existingEnrollments,
-    selectedSessionIds,
+    selectedSessionIds: selectedSessionIdsSet,
     modificationSessions,
   });
 
   // 세션 선택 핸들러
   const handleSessionSelect = (sessionId: number) => {
-    setSelectedSessionIds(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(sessionId)) {
-        newSet.delete(sessionId);
-      } else {
-        newSet.add(sessionId);
-      }
-      return newSet;
-    });
+    const current = selectedSessionIds;
+    if (current.includes(sessionId)) {
+      setValue('selectedSessionIds', current.filter(id => id !== sessionId), { shouldValidate: true });
+    } else {
+      setValue('selectedSessionIds', [...current, sessionId], { shouldValidate: true });
+    }
   };
 
 
   // 수강 변경 완료 처리
-  const handleModificationComplete = () => {
+  const handleModificationComplete = (formData: ModificationDateSchemaType) => {
     // netChange가 0이고 실제 변경이 없으면 처리하지 않음
     if (netChangeCount === 0 && !hasRealChanges) {
       toast.error('변경 사항이 없습니다.');
@@ -200,7 +210,7 @@ export function EnrollmentModificationDateStep({
 
     // 선택된 세션 정보를 Context에 저장 (ExtendedSessionData 타입으로 변환)
     const selectedSessions = modificationSessions.filter(session => 
-      selectedSessionIds.has(session.id)
+      selectedSessionIdsSet.has(session.id)
     );
     
     const convertedSessions: ExtendedSessionData[] = selectedSessions.map(session => ({
@@ -236,7 +246,7 @@ export function EnrollmentModificationDateStep({
       newSessionsCount: newlyAddedSessionsCount,
       cancelledSessionsCount: newlyCancelledSessionsCount,
       sessionPrice,
-      selectedSessionIds: Array.from(selectedSessionIds),
+      selectedSessionIds: formData.selectedSessionIds,
       originalEnrollments: originalEnrolledSessions.map(session => ({
         id: session.id,
         date: session.date,
@@ -262,7 +272,7 @@ export function EnrollmentModificationDateStep({
       'complete': 'complete',
     };
     const stepParam = stepMap[nextStep] || 'payment';
-    router.push(ensureTrailingSlash(`/dashboard/student/modify?id=${enrollmentId}&step=${stepParam}`));
+    router.push(ensureTrailingSlash(`/dashboard/student/class/modify?id=${enrollmentId}&step=${stepParam}`));
   }
 
   // 에러 처리 - 기본적인 패턴
@@ -306,7 +316,7 @@ export function EnrollmentModificationDateStep({
             <CalendarProvider
               mode="modification"
               sessions={modificationSessions as unknown as ClassSession[]}
-              selectedSessionIds={selectedSessionIds}
+              selectedSessionIds={selectedSessionIdsSet}
               onSessionSelect={handleSessionSelect}
               calendarRange={calendarRange ? {
                 startDate: new Date(calendarRange.startDate),
@@ -322,8 +332,8 @@ export function EnrollmentModificationDateStep({
       {/* Footer */}
       <footer className="flex-shrink-0">
         <DateSelectFooter 
-          selectedCount={selectedCount}
-          onGoToPayment={handleModificationComplete}
+          selectedCount={selectedSessionIds.length}
+          onGoToPayment={handleSubmit(handleModificationComplete)}
           mode="modification"
           netChange={netChangeCount}
           hasChanges={hasRealChanges}
