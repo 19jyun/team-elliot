@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
-import { toast } from 'sonner';
-import { StatusStep } from './StatusStep';
-import { useApp } from '@/contexts/AppContext';
+import React from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
+import { StatusStep } from './StatusStep';
 import { usePrincipalTeachers } from '@/hooks/queries/principal/usePrincipalTeachers';
+import { usePrincipalCreateClassForm } from '@/contexts/forms/PrincipalCreateClassFormContext';
+import { classTeacherSchema, ClassTeacherSchemaType } from '@/lib/schemas/class-create';
 import { getImageUrl } from '@/utils/imageUtils';
 import Image from 'next/image';
 import { ensureTrailingSlash } from '@/lib/utils/router';
@@ -20,38 +22,34 @@ interface Teacher {
 
 export function CreateClassStepTeacher() {
   const router = useRouter();
-  const { form, goBack, setSelectedTeacherId } = useApp();
-  const { createClass } = form;
-  const { selectedTeacherId } = createClass;
-  
-  const [selectedTeacher, setSelectedTeacher] = useState<number | null>(selectedTeacherId);
+  const { state, actions } = usePrincipalCreateClassForm();
+  const { selectedTeacherId } = state;
 
   // React Query 기반 데이터 관리
   const { data: teachers = [], isLoading, error, refetch } = usePrincipalTeachers();
 
-  const handleTeacherSelect = (teacherId: number) => {
-    setSelectedTeacher(teacherId);
-  };
+  // React Hook Form 설정
+  const { control, handleSubmit, formState: { isValid }, setValue, watch, trigger } = useForm<ClassTeacherSchemaType>({
+    resolver: zodResolver(classTeacherSchema),
+    defaultValues: {
+      teacherId: selectedTeacherId || 0,
+    },
+    mode: 'onChange', // 실시간 검증
+    reValidateMode: 'onChange',
+  });
 
-  // 필수 필드 검증 함수
-  const isFormValid = () => {
-    return !!selectedTeacher;
-  };
+  const watchedTeacherId = watch('teacherId');
 
-  const handleNext = () => {
-    if (!selectedTeacher) {
-      toast.error('선생님을 선택해주세요.');
-      return;
-    }
-
-    // DashboardContext의 selectedTeacherId 업데이트
-    setSelectedTeacherId(selectedTeacher);
+  const onNext = (data: ClassTeacherSchemaType) => {
+    // Context 업데이트
+    actions.setTeacher(data.teacherId);
     
+    // 다음 단계로 이동
     router.push(ensureTrailingSlash('/dashboard/principal/class/create-class/info/teacher/schedule'));
   };
 
   const handleBack = () => {
-    goBack();
+    router.back();
   };
 
   const statusSteps = [
@@ -144,113 +142,132 @@ export function CreateClassStepTeacher() {
 
       {/* 메인 콘텐츠 */}
       <main className="flex-1 min-h-0 bg-white px-5">
-        <div className="flex flex-col self-center mt-5 w-full font-semibold leading-snug text-center max-w-[335px] mx-auto">
-          <div className="space-y-4">
-            {/* 선생님 목록 */}
-            <div className="text-left">
-              <label className="block text-sm font-medium text-stone-700 mb-3">
-                선생님 선택 *
-              </label>
-              <div className="space-y-3">
-                {teachers?.map((teacher: Teacher) => (
-                  <div
-                    key={teacher.id}
-                    onClick={() => handleTeacherSelect(teacher.id)}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                      selectedTeacher === teacher.id
-                        ? 'border-[#AC9592] bg-[#F8F6F6]'
-                        : 'border-stone-300 hover:border-stone-500'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      {/* 선생님 프로필 이미지 */}
-                      <div className="w-12 h-12 rounded-full bg-stone-200 flex items-center justify-center">
-                        {teacher.photoUrl ? (
-                          <Image
-                            src={getImageUrl(teacher.photoUrl) || ''}
-                            alt={teacher.name}
-                            width={48}
-                            height={48}
-                            className="w-12 h-12 rounded-full object-cover"
-                          />
-                        ) : (
-                          <svg
-                            className="w-6 h-6 text-stone-500"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+        <form onSubmit={handleSubmit(onNext)} className="flex flex-col h-full">
+          <div className="flex flex-col self-center mt-5 w-full font-semibold leading-snug text-center max-w-[335px] mx-auto">
+            <div className="space-y-4">
+              {/* 선생님 목록 */}
+              <div className="text-left">
+                <label className="block text-sm font-medium text-stone-700 mb-3">
+                  선생님 선택 *
+                </label>
+                <Controller
+                  name="teacherId"
+                  control={control}
+                  render={({ field, fieldState: { error } }) => (
+                    <>
+                      <div className="space-y-3">
+                        {teachers?.map((teacher: Teacher) => (
+                          <div
+                            key={teacher.id}
+                            onClick={() => {
+                              setValue('teacherId', teacher.id, { shouldValidate: true });
+                              trigger('teacherId');
+                            }}
+                            className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                              watchedTeacherId === teacher.id
+                                ? 'border-[#AC9592] bg-[#F8F6F6]'
+                                : 'border-stone-300 hover:border-stone-500'
+                            }`}
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                            />
-                          </svg>
-                        )}
+                            <div className="flex items-center gap-3">
+                              {/* 선생님 프로필 이미지 */}
+                              <div className="w-12 h-12 rounded-full bg-stone-200 flex items-center justify-center">
+                                {teacher.photoUrl ? (
+                                  <Image
+                                    src={getImageUrl(teacher.photoUrl) || ''}
+                                    alt={teacher.name}
+                                    width={48}
+                                    height={48}
+                                    className="w-12 h-12 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  <svg
+                                    className="w-6 h-6 text-stone-500"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                    />
+                                  </svg>
+                                )}
+                              </div>
+                              
+                              {/* 선생님 정보 */}
+                              <div className="flex-1">
+                                <h3 className="font-medium text-stone-800">{teacher.name}</h3>
+                                {teacher.phoneNumber && (
+                                  <p className="text-sm text-stone-600">{teacher.phoneNumber}</p>
+                                )}
+                                {teacher.introduction && (
+                                  <p className="text-sm text-stone-500 mt-1 line-clamp-2">
+                                    {teacher.introduction}
+                                  </p>
+                                )}
+                              </div>
+                              
+                              {/* 선택 표시 */}
+                              {watchedTeacherId === teacher.id && (
+                                <div className="w-6 h-6 rounded-full bg-[#AC9592] flex items-center justify-center">
+                                  <svg
+                                    className="w-4 h-4 text-white"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M5 13l4 4L19 7"
+                                    />
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                       
-                      {/* 선생님 정보 */}
-                      <div className="flex-1">
-                        <h3 className="font-medium text-stone-800">{teacher.name}</h3>
-                        {teacher.phoneNumber && (
-                          <p className="text-sm text-stone-600">{teacher.phoneNumber}</p>
-                        )}
-                        {teacher.introduction && (
-                          <p className="text-sm text-stone-500 mt-1 line-clamp-2">
-                            {teacher.introduction}
-                          </p>
-                        )}
-                      </div>
-                      
-                      {/* 선택 표시 */}
-                      {selectedTeacher === teacher.id && (
-                        <div className="w-6 h-6 rounded-full bg-[#AC9592] flex items-center justify-center">
-                          <svg
-                            className="w-4 h-4 text-white"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
+                      {teachers?.length === 0 && (
+                        <div className="text-center py-8">
+                          <p className="text-stone-500">등록된 선생님이 없습니다.</p>
+                          <p className="text-sm text-stone-400 mt-1">먼저 선생님을 등록해주세요.</p>
                         </div>
                       )}
-                    </div>
-                  </div>
-                ))}
+                      
+                      {error && (
+                        <p className="mt-2 text-sm text-red-500">{error.message}</p>
+                      )}
+                    </>
+                  )}
+                />
               </div>
-              
-              {teachers?.length === 0 && (
-                <div className="text-center py-8">
-                  <p className="text-stone-500">등록된 선생님이 없습니다.</p>
-                  <p className="text-sm text-stone-400 mt-1">먼저 선생님을 등록해주세요.</p>
-                </div>
-              )}
+            </div>
+            
+            {/* 버튼 */}
+            <div className="flex gap-3 mt-8">
+              <button
+                type="button"
+                onClick={handleBack}
+                className="flex-1 px-4 py-3 text-stone-700 bg-stone-200 rounded-lg hover:bg-stone-300 transition-colors"
+              >
+                뒤로
+              </button>
+              <button
+                type="submit"
+                disabled={!isValid || teachers.length === 0}
+                className="flex-1 px-4 py-3 text-white bg-[#AC9592] rounded-lg hover:bg-[#9A8582] transition-colors disabled:bg-stone-400 disabled:cursor-not-allowed"
+              >
+                다음
+              </button>
             </div>
           </div>
-          {/* 버튼 */}
-          <div className="flex gap-3 mt-8">
-            <button
-              onClick={handleBack}
-              className="flex-1 px-4 py-3 text-stone-700 bg-stone-200 rounded-lg hover:bg-stone-300 transition-colors"
-            >
-              뒤로
-            </button>
-            <button
-              onClick={handleNext}
-              disabled={!isFormValid()}
-              className="flex-1 px-4 py-3 text-white bg-[#AC9592] rounded-lg hover:bg-[#9A8582] transition-colors disabled:bg-stone-400 disabled:cursor-not-allowed"
-            >
-              다음
-            </button>
-          </div>
-        </div>
+        </form>
       </main>
     </div>
   );

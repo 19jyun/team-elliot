@@ -114,7 +114,9 @@ export function SignupTermsPage() {
 
       // 성공 시 Context 데이터 초기화 및 리디렉션
       resetSignup()
-      router.push('/')
+      if (typeof window !== 'undefined') {
+        window.location.href = '/'
+      }
     } catch (error) {
       // 에러는 mutation hook에서 처리됨
       console.error('회원가입 오류:', error)
