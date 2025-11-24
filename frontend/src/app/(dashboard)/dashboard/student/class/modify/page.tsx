@@ -1,14 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Suspense, useEffect } from 'react';
 import { useApp } from '@/contexts';
 import { EnrollmentModificationDateStep } from '@/components/dashboard/student/Enrollment/modify/EnrollmentModificationDateStep';
 import { EnrollmentModificationPaymentStep } from '@/components/dashboard/student/Enrollment/modify/EnrollmentModificationPaymentStep';
-import { EnrollmentCompleteStep } from '@/components/dashboard/student/Enrollment/enroll/EnrollmentCompleteStep';
 import { RefundRequestStep } from '@/components/dashboard/student/Enrollment/modify/RefundRequestStep';
-import { RefundCompleteStep } from '@/components/dashboard/student/Enrollment/modify/RefundCompleteStep';
+import { ModificationCompleteStep } from '@/components/dashboard/student/Enrollment/modify/ModificationCompleteStep';
 import { useStudentEnrollmentHistory } from '@/hooks/queries/student/useStudentEnrollmentHistory';
 import type { ModificationSessionVM } from '@/types/view/student';
 import { ensureTrailingSlash } from '@/lib/utils/router';
@@ -16,6 +14,8 @@ import { ensureTrailingSlash } from '@/lib/utils/router';
 function ModifyPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  
+  // URL 파라미터 파싱
   const enrollmentId = searchParams.get('id');
   const step = searchParams.get('step') || 'date-step';
   const month = searchParams.get('month') ? parseInt(searchParams.get('month')!, 10) : undefined;
@@ -27,22 +27,24 @@ function ModifyPageContent() {
   // React Query 기반 데이터 관리
   const { data: enrollmentHistory = [], isLoading, error } = useStudentEnrollmentHistory();
 
-  // 🛡️ 가드 로직: ID가 없으면 접근 불가
+  // 🛡️ 가드 로직 1: ID가 없으면 클래스 목록(상위 페이지)으로 리다이렉트
   useEffect(() => {
     if (!enrollmentId) {
-      router.replace(ensureTrailingSlash('/dashboard/student'));
+      router.replace(ensureTrailingSlash('/dashboard/student/class'));
       return;
     }
   }, [enrollmentId, router]);
 
   const classId = enrollmentId ? parseInt(enrollmentId, 10) : 0;
 
-  // 페이지가 마운트될 때 진행상황 초기화
+  // 초기화 로직
   useEffect(() => {
-    resetEnrollmentModification();
-  }, [resetEnrollmentModification]);
+    // 첫 단계일 때만 초기화 (새로고침 시 데이터 유실 방지 로직과 충돌 주의)
+    if (step === 'date-step') {
+      resetEnrollmentModification();
+    }
+  }, [step, resetEnrollmentModification]);
 
-  // 페이지가 unmount될 때 정리
   useEffect(() => {
     return () => {
       const clearRefundPolicyAgreement = async () => {
@@ -53,66 +55,75 @@ function ModifyPageContent() {
     };
   }, []);
 
-  // 해당 클래스의 수강 신청 정보 필터링 (ViewModel로 정규화)
+  useEffect(() => {
+    resetEnrollmentModification();
+  }, [resetEnrollmentModification]);
+
+  // 데이터 가공 (ViewModel)
   const existingEnrollments: ModificationSessionVM[] = React.useMemo(() => {
-    if (!enrollmentHistory || !classId) {
-      return [];
-    }
+    if (!enrollmentHistory || !classId) return [];
 
-    const filtered = enrollmentHistory.filter((enrollment) =>
-      enrollment.session.class.id === classId
-    );
-
-    const result = filtered.map((enrollment) => ({
-      id: enrollment.session.id,
-      date: enrollment.session.date,
-      startTime: enrollment.session.startTime,
-      endTime: enrollment.session.endTime,
-      class: enrollment.session.class,
-      isAlreadyEnrolled: enrollment.status !== 'REJECTED',
-      enrollment: {
-        id: enrollment.id,
-        status: enrollment.status,
-        enrolledAt: enrollment.enrolledAt,
-        description: enrollment.description,
-        refundRejection: enrollment.refundRejection,
-      },
-    }));
-
-    return result;
+    return enrollmentHistory
+      .filter((enrollment) => enrollment.session.class.id === classId)
+      .map((enrollment) => ({
+        id: enrollment.session.id,
+        date: enrollment.session.date,
+        startTime: enrollment.session.startTime,
+        endTime: enrollment.session.endTime,
+        class: enrollment.session.class,
+        isAlreadyEnrolled: enrollment.status !== 'REJECTED',
+        enrollment: {
+          id: enrollment.id,
+          status: enrollment.status,
+          enrolledAt: enrollment.enrolledAt,
+          description: enrollment.description,
+          refundRejection: enrollment.refundRejection,
+        },
+      }));
   }, [enrollmentHistory, classId]);
 
-  // 🛡️ 가드 로직: 순서대로 진행해야 함
+  // 🛡️ 가드 로직 2: 유효하지 않은 단계(Step) 접근 시 리다이렉트 (Render 단계 에러 해결)
   useEffect(() => {
     if (!enrollmentId) return;
 
-    if (step === 'payment' && !modificationData) {
-      router.replace(ensureTrailingSlash(`/dashboard/student/modify?id=${enrollmentId}&step=date-step`));
-    } else if (step === 'refund' && !modificationData) {
-      router.replace(ensureTrailingSlash(`/dashboard/student/modify?id=${enrollmentId}&step=date-step`));
-    } else if (step === 'refund-complete' && !modificationData) {
-      router.replace(ensureTrailingSlash(`/dashboard/student/modify?id=${enrollmentId}&step=date-step`));
-    } else if (step === 'complete' && !modificationData) {
-      router.replace(ensureTrailingSlash(`/dashboard/student/modify?id=${enrollmentId}&step=date-step`));
+    const validSteps = [
+      'date-step', 
+      'payment', 
+      'refund', 
+      'refund-complete', 
+      'payment-complete', 
+      'complete'
+    ];
+
+    if (!validSteps.includes(step)) {
+      router.replace(ensureTrailingSlash(`/dashboard/student/class/modify?id=${enrollmentId}&step=date-step`));
+    }
+  }, [step, enrollmentId, router]);
+
+  // 🛡️ 가드 로직 3: 데이터가 필요한 단계에 데이터가 없으면 리다이렉트
+  useEffect(() => {
+    if (!enrollmentId) return;
+    const basePath = `/dashboard/student/class/modify?id=${enrollmentId}&step=date-step`;
+
+    const stepsRequiringData = ['payment', 'refund', 'refund-complete', 'payment-complete', 'complete'];
+    
+    if (stepsRequiringData.includes(step) && !modificationData) {
+      router.replace(ensureTrailingSlash(basePath));
     }
   }, [step, router, enrollmentId, modificationData]);
 
-  // 에러 처리
+  // 렌더링 로직
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-white">
         <p className="text-red-500">수강 변경 정보를 불러오는데 실패했습니다.</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800"
-        >
+        <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-stone-700 text-white rounded-lg hover:bg-stone-800">
           다시 시도
         </button>
       </div>
     );
   }
 
-  // 로딩 상태 처리
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-white">
@@ -122,12 +133,8 @@ function ModifyPageContent() {
     );
   }
 
-  // ID가 없으면 아무것도 렌더링하지 않음 (가드에서 리디렉션됨)
-  if (!enrollmentId) {
-    return null;
-  }
+  if (!enrollmentId) return null;
 
-  // 현재 단계에 따라 적절한 컴포넌트 렌더링
   switch (step) {
     case 'date-step':
       return (
@@ -138,9 +145,7 @@ function ModifyPageContent() {
         />
       );
     case 'payment':
-      if (!modificationData) {
-        return null;
-      }
+      if (!modificationData) return null;
       return (
         <EnrollmentModificationPaymentStep
           modificationData={modificationData}
@@ -148,24 +153,28 @@ function ModifyPageContent() {
         />
       );
     case 'refund':
-      if (!modificationData) {
-        return null;
-      }
+      if (!modificationData) return null;
       return <RefundRequestStep modificationData={modificationData} />;
+    
     case 'refund-complete':
-      const isRefundRequest = modificationData?.changeType === 'refund';
       return (
-        <RefundCompleteStep
-          refundAmount={modificationData?.changeAmount || 0}
-          cancelledSessionsCount={modificationData?.cancelledSessionsCount || 0}
-          isModification={!isRefundRequest}
+        <ModificationCompleteStep
+          type="refund"
         />
       );
+
+    case 'payment-complete':
+      return (
+        <ModificationCompleteStep
+          type="payment"
+        />
+      );
+
     case 'complete':
-      return <EnrollmentCompleteStep />;
+      return <ModificationCompleteStep type="default" />;
+      
     default:
-      // 잘못된 스텝 접근 시 첫 단계로 리디렉션
-      router.replace(ensureTrailingSlash(`/dashboard/student/modify?id=${enrollmentId}&step=date-step`));
+      // 🚀 [수정] default에서는 렌더링만 중단하고, 실제 이동은 useEffect(가드 로직 2)에서 처리
       return null;
   }
 }
@@ -181,4 +190,3 @@ export default function ModifyPage() {
     </Suspense>
   );
 }
-

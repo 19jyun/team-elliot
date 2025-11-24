@@ -1,22 +1,20 @@
 'use client';
 
 import React from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useApp } from '@/contexts/AppContext'; // [변경] 통합 Context 사용
 import { StatusStep } from './StatusStep';
 import { CompleteIcon } from '@/components/icons';
 import { useRouter } from 'next/navigation';
 import { ensureTrailingSlash } from '@/lib/utils/router';
 
 export function CreateClassComplete() {
-  const { form, resetCreateClass } = useApp();
-  const { createClass } = form;
-  const { classFormData } = createClass;
   const router = useRouter();
+  
+  // [변경] useApp을 통해 상태와 초기화 함수 접근
+  const { form } = useApp();
+  const { classFormData } = form.principalCreateClass; // state 접근
 
-  const handleFinish = async () => {
-    resetCreateClass();
-
-    // 메인 대시보드로 이동
+  const handleFinish = () => {
     router.push(ensureTrailingSlash('/dashboard/principal'));
   };
 
@@ -106,18 +104,24 @@ export function CreateClassComplete() {
               <div>
                 <span className="font-medium text-stone-600">강의 요일:</span>
                 <span className="ml-2 text-stone-800">
-                  {classFormData.schedule.days[0] === 'MONDAY' ? '월요일' :
-                   classFormData.schedule.days[0] === 'TUESDAY' ? '화요일' :
-                   classFormData.schedule.days[0] === 'WEDNESDAY' ? '수요일' :
-                   classFormData.schedule.days[0] === 'THURSDAY' ? '목요일' :
-                   classFormData.schedule.days[0] === 'FRIDAY' ? '금요일' :
-                   classFormData.schedule.days[0] === 'SATURDAY' ? '토요일' : '일요일'}
+                  {classFormData.schedule && classFormData.schedule.length > 0 ? (
+                    (() => {
+                      const dayOfWeek = classFormData.schedule[0].dayOfWeek;
+                      const dayMap: { [key: number]: string } = {
+                        0: '일요일', 1: '월요일', 2: '화요일', 3: '수요일',
+                        4: '목요일', 5: '금요일', 6: '토요일'
+                      };
+                      return dayMap[dayOfWeek] || '미설정';
+                    })()
+                  ) : '미설정'}
                 </span>
               </div>
               <div>
                 <span className="font-medium text-stone-600">강의 시간:</span>
                 <span className="ml-2 text-stone-800">
-                  {classFormData.schedule.startTime} ~ {classFormData.schedule.endTime}
+                  {classFormData.schedule && classFormData.schedule.length > 0
+                    ? `${classFormData.schedule[0].startTime} ~ ${classFormData.schedule[0].endTime}`
+                    : '미설정'}
                 </span>
               </div>
             </div>
@@ -138,4 +142,4 @@ export function CreateClassComplete() {
       </footer>
     </div>
   );
-} 
+}

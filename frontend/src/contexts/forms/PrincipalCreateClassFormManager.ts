@@ -11,6 +11,7 @@ export type PrincipalCreateClassStep =
 export interface PrincipalClassFormData {
   name: string;
   description: string;
+  level: "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
   maxStudents: number;
   price: number;
   startDate: string;
@@ -45,11 +46,9 @@ export class PrincipalCreateClassFormManager {
   }
 
   setCurrentStep(step: PrincipalCreateClassStep): void {
-    if (this.validateStep(step)) {
-      this.state.currentStep = step;
-      this.emitStateChange();
-      this.notifyListeners();
-    }
+    this.state.currentStep = step;
+    this.emitStateChange();
+    this.notifyListeners();
   }
 
   setClassFormData(data: Partial<PrincipalClassFormData>): void {
@@ -60,6 +59,47 @@ export class PrincipalCreateClassFormManager {
 
   setSelectedTeacherId(teacherId: number | null): void {
     this.state.selectedTeacherId = teacherId;
+    this.emitStateChange();
+    this.notifyListeners();
+  }
+
+  // 편의 메서드: Step별 데이터 설정
+  setInfo(data: {
+    name: string;
+    description: string;
+    level: "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
+    maxStudents: number;
+    price: number;
+  }): void {
+    this.state.classFormData = {
+      ...this.state.classFormData,
+      ...data,
+    };
+    this.emitStateChange();
+    this.notifyListeners();
+  }
+
+  setTeacher(teacherId: number): void {
+    this.state.selectedTeacherId = teacherId;
+    this.emitStateChange();
+    this.notifyListeners();
+  }
+
+  setSchedule(data: {
+    startDate: string;
+    endDate: string;
+    schedules: {
+      dayOfWeek: number;
+      startTime: string;
+      endTime: string;
+    }[];
+  }): void {
+    this.state.classFormData = {
+      ...this.state.classFormData,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      schedule: data.schedules,
+    };
     this.emitStateChange();
     this.notifyListeners();
   }
@@ -85,6 +125,7 @@ export class PrincipalCreateClassFormManager {
       classFormData: {
         name: "",
         description: "",
+        level: "BEGINNER",
         maxStudents: 0,
         price: 0,
         startDate: "",
@@ -93,22 +134,6 @@ export class PrincipalCreateClassFormManager {
       },
       selectedTeacherId: null,
     };
-  }
-
-  private validateStep(step: PrincipalCreateClassStep): boolean {
-    const stepOrder: PrincipalCreateClassStep[] = [
-      "info",
-      "teacher",
-      "schedule",
-      "content",
-      "complete",
-    ];
-
-    const currentIndex = stepOrder.indexOf(this.state.currentStep);
-    const newIndex = stepOrder.indexOf(step);
-
-    // 이전 단계로 돌아가거나 다음 단계로 진행하는 것만 허용
-    return newIndex >= currentIndex - 1 && newIndex <= currentIndex + 1;
   }
 
   private emitStateChange(): void {

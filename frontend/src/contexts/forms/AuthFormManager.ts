@@ -1,7 +1,6 @@
 // src/contexts/forms/AuthFormManager.ts
 import { ContextEventBus } from "../events/ContextEventBus";
 
-export type AuthMode = "login" | "signup";
 export type SignupStep =
   | "role-selection"
   | "personal-info"
@@ -22,7 +21,6 @@ export interface SignupData {
     confirmPassword: string;
   };
   academyInfo?: {
-    // Principal 전용
     name: string;
     phoneNumber: string;
     address: string;
@@ -36,16 +34,9 @@ export interface SignupData {
   };
 }
 
-export interface LoginData {
-  userId: string;
-  password: string;
-}
-
 export interface AuthFormState {
-  authMode: AuthMode;
-  authSubPage: string | null;
+  // [삭제됨] authMode, authSubPage
   signup: SignupData;
-  login: LoginData;
 }
 
 export class AuthFormManager {
@@ -58,23 +49,13 @@ export class AuthFormManager {
     this.eventBus = eventBus;
   }
 
-  // 공개 API
+  // --- 공개 API ---
+
   getState(): AuthFormState {
     return { ...this.state };
   }
 
-  setAuthMode(mode: AuthMode): void {
-    this.state.authMode = mode;
-    this.emitStateChange();
-    this.notifyListeners();
-  }
-
-  setAuthSubPage(page: string | null): void {
-    this.state.authSubPage = page;
-    this.emitStateChange();
-    this.notifyListeners();
-  }
-
+  // [Signup Data Setters] - 데이터 저장 메서드만 유지
   setSignupStep(step: SignupStep): void {
     this.state.signup.step = step;
     this.emitStateChange();
@@ -103,6 +84,17 @@ export class AuthFormManager {
     this.notifyListeners();
   }
 
+  setAcademyInfo(info: {
+    name: string;
+    phoneNumber: string;
+    address: string;
+    description: string;
+  }): void {
+    this.state.signup.academyInfo = info;
+    this.emitStateChange();
+    this.notifyListeners();
+  }
+
   setTerms(terms: {
     age: boolean;
     terms1: boolean;
@@ -114,113 +106,11 @@ export class AuthFormManager {
     this.notifyListeners();
   }
 
-  setLoginInfo(info: { userId: string; password: string }): void {
-    this.state.login = info;
-    this.emitStateChange();
-    this.notifyListeners();
-  }
-
-  // Auth 관련 특수 메서드들
-  navigateToAuthSubPage(page: string): void {
-    this.state.authSubPage = page;
-    this.emitStateChange();
-    this.notifyListeners();
-  }
-
-  goBackFromAuth(): void {
-    this.state.authSubPage = null;
-    this.emitStateChange();
-    this.notifyListeners();
-  }
-
-  clearAuthSubPage(): void {
-    this.state.authSubPage = null;
-    this.emitStateChange();
-    this.notifyListeners();
-  }
-
+  // [Resets]
   resetSignup(): void {
     this.state.signup = this.getInitialSignupState();
     this.emitStateChange();
     this.notifyListeners();
-  }
-
-  resetLogin(): void {
-    this.state.login = this.getInitialLoginState();
-    this.emitStateChange();
-    this.notifyListeners();
-  }
-
-  // 유효성 검사
-  validateSignupStep(step: SignupStep): { isValid: boolean; errors: string[] } {
-    const errors: string[] = [];
-
-    switch (step) {
-      case "role-selection":
-        if (!this.state.signup.role) {
-          errors.push("역할을 선택해주세요.");
-        }
-        break;
-      case "personal-info":
-        if (!this.state.signup.personalInfo.name.trim()) {
-          errors.push("이름을 입력해주세요.");
-        }
-        if (!this.state.signup.personalInfo.phoneNumber.trim()) {
-          errors.push("전화번호를 입력해주세요.");
-        }
-        break;
-      case "account-info":
-        if (!this.state.signup.accountInfo.userId.trim()) {
-          errors.push("아이디를 입력해주세요.");
-        }
-        if (!this.state.signup.accountInfo.password.trim()) {
-          errors.push("비밀번호를 입력해주세요.");
-        }
-        if (
-          this.state.signup.accountInfo.password !==
-          this.state.signup.accountInfo.confirmPassword
-        ) {
-          errors.push("비밀번호가 일치하지 않습니다.");
-        }
-        break;
-      case "terms":
-        if (!this.state.signup.terms.age) {
-          errors.push("나이 확인에 동의해주세요.");
-        }
-        if (!this.state.signup.terms.terms1) {
-          errors.push("이용약관에 동의해주세요.");
-        }
-        if (!this.state.signup.terms.terms2) {
-          errors.push("개인정보처리방침에 동의해주세요.");
-        }
-        break;
-    }
-
-    return {
-      isValid: errors.length === 0,
-      errors,
-    };
-  }
-
-  validateLogin(): { isValid: boolean; errors: string[] } {
-    const errors: string[] = [];
-
-    if (!this.state.login.userId.trim()) {
-      errors.push("아이디를 입력해주세요.");
-    }
-    if (!this.state.login.password.trim()) {
-      errors.push("비밀번호를 입력해주세요.");
-    }
-
-    return {
-      isValid: errors.length === 0,
-      errors,
-    };
-  }
-
-  canProceedToNextSignupStep(): boolean {
-    const validation = this.validateSignupStep(this.state.signup.step);
-    return validation.isValid;
   }
 
   reset(): void {
@@ -229,19 +119,18 @@ export class AuthFormManager {
     this.notifyListeners();
   }
 
-  // 구독/구독 해제
+  // [Subscriptions]
   subscribe(listener: (state: AuthFormState) => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
 
-  // 내부 구현 (캡슐화됨)
+  // --- 내부 구현 ---
+
   private getInitialState(): AuthFormState {
     return {
-      authMode: "login",
-      authSubPage: null,
+      // [삭제됨] authSubPage: null
       signup: this.getInitialSignupState(),
-      login: this.getInitialLoginState(),
     };
   }
 
@@ -249,35 +138,16 @@ export class AuthFormManager {
     return {
       step: "role-selection" as SignupStep,
       role: null as "STUDENT" | "TEACHER" | null,
-      personalInfo: {
-        name: "",
-        phoneNumber: "",
-      },
-      accountInfo: {
-        userId: "",
-        password: "",
-        confirmPassword: "",
-      },
-      terms: {
-        age: false,
-        terms1: false,
-        terms2: false,
-        marketing: false,
-      },
-    };
-  }
-
-  private getInitialLoginState() {
-    return {
-      userId: "",
-      password: "",
+      personalInfo: { name: "", phoneNumber: "" },
+      accountInfo: { userId: "", password: "", confirmPassword: "" },
+      terms: { age: false, terms1: false, terms2: false, marketing: false },
     };
   }
 
   private emitStateChange(): void {
     this.eventBus.emit("formStateChanged", {
       formType: "auth",
-      step: this.state.authMode === "login" ? "login" : this.state.signup.step,
+      step: this.state.signup.step,
     });
   }
 

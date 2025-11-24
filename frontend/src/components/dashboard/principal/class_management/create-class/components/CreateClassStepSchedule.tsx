@@ -1,107 +1,134 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import React, { useState, useMemo } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { StatusStep } from './StatusStep';
-import { toast } from 'sonner';
+import { useApp } from '@/contexts/AppContext';
+import { classScheduleSchema, ClassScheduleSchemaType } from '@/lib/schemas/class-create';
 import TimePicker from '@/components/common/WheelPicker/TimePicker';
 import DatePicker from '@/components/common/WheelPicker/DatePicker';
 import { SlideUpModal } from '@/components/common/SlideUpModal';
 import { ensureTrailingSlash } from '@/lib/utils/router';
 
+// 요일 매핑: 문자열 -> 숫자 (0: 일요일 ~ 6: 토요일)
 const DAYS_OF_WEEK = [
-  { value: 'MONDAY', label: '월요일' },
-  { value: 'TUESDAY', label: '화요일' },
-  { value: 'WEDNESDAY', label: '수요일' },
-  { value: 'THURSDAY', label: '목요일' },
-  { value: 'FRIDAY', label: '금요일' },
-  { value: 'SATURDAY', label: '토요일' },
-  { value: 'SUNDAY', label: '일요일' },
+  { value: 'MONDAY', label: '월요일', dayOfWeek: 1 },
+  { value: 'TUESDAY', label: '화요일', dayOfWeek: 2 },
+  { value: 'WEDNESDAY', label: '수요일', dayOfWeek: 3 },
+  { value: 'THURSDAY', label: '목요일', dayOfWeek: 4 },
+  { value: 'FRIDAY', label: '금요일', dayOfWeek: 5 },
+  { value: 'SATURDAY', label: '토요일', dayOfWeek: 6 },
+  { value: 'SUNDAY', label: '일요일', dayOfWeek: 0 },
 ];
 
 export function CreateClassStepSchedule() {
   const router = useRouter();
-  const { form, setClassFormData } = useApp();
-  const { createClass } = form;
-  const { classFormData } = createClass;
+  const { form, setPrincipalClassFormData } = useApp();
+  const { principalCreateClass } = form;
+  const { classFormData } = principalCreateClass;
 
-  const [formData, setFormData] = useState({
-    days: classFormData.schedule.days || [],
-    startTime: classFormData.schedule.startTime || '',
-    endTime: classFormData.schedule.endTime || '',
-    startDate: classFormData.schedule.startDate || '',
-    endDate: classFormData.schedule.endDate || '',
+  // 기존 데이터를 스키마 형식으로 변환
+  const defaultSchedules = useMemo(() => {
+    if (classFormData.schedule && classFormData.schedule.length > 0) {
+      return classFormData.schedule;
+    }
+    // 기본값: 빈 배열 (사용자가 요일 선택 후 추가)
+    return [];
+  }, [classFormData.schedule]);
+
+  // React Hook Form 설정
+  const { control, handleSubmit, formState: { isValid, errors }, setValue, watch, trigger } = useForm<ClassScheduleSchemaType>({
+    resolver: zodResolver(classScheduleSchema),
+    defaultValues: {
+      startDate: classFormData.startDate || '',
+      endDate: classFormData.endDate || '',
+      schedules: defaultSchedules,
+    },
+    mode: 'onChange', // 실시간 검증
+    reValidateMode: 'onChange',
   });
+
+  const watchedStartDate = watch('startDate');
+  const watchedEndDate = watch('endDate');
+  const watchedSchedules = watch('schedules');
+
+  // 선택된 요일들을 문자열 배열로 변환 (UI용)
+  const selectedDays = useMemo(() => {
+    return watchedSchedules.map(s => {
+      const day = DAYS_OF_WEEK.find(d => d.dayOfWeek === s.dayOfWeek);
+      return day?.value || '';
+    }).filter(Boolean);
+  }, [watchedSchedules]);
+
+  // 단일 시간 (모든 요일에 동일하게 적용)
+  const [startTime, setStartTime] = useState(
+    watchedSchedules.length > 0 ? watchedSchedules[0].startTime : '09:00'
+  );
+  const [endTime, setEndTime] = useState(
+    watchedSchedules.length > 0 ? watchedSchedules[0].endTime : '10:00'
+  );
 
   const [showTimePicker, setShowTimePicker] = useState<'start' | 'end' | null>(null);
   const [showDatePicker, setShowDatePicker] = useState<'start' | 'end' | null>(null);
 
-  const handleDayToggle = (day: string) => {
-    setFormData(prev => ({
-      ...prev,
-      days: prev.days.includes(day)
-        ? prev.days.filter(d => d !== day)
-        : [...prev.days, day]
-    }));
+  // 요일 토글: 선택/해제 시 schedules 배열 업데이트
+  const handleDayToggle = (dayValue: string) => {
+    const dayInfo = DAYS_OF_WEEK.find(d => d.value === dayValue);
+    if (!dayInfo) return;
+
+    const existingIndex = watchedSchedules.findIndex(s => s.dayOfWeek === dayInfo.dayOfWeek);
+    
+    if (existingIndex >= 0) {
+      // 제거
+      const newSchedules = watchedSchedules.filter((_, idx) => idx !== existingIndex);
+      setValue('schedules', newSchedules, { shouldValidate: true });
+      trigger('schedules');
+    } else {
+      // 추가 (현재 설정된 시간 사용)
+      const newSchedule = {
+        dayOfWeek: dayInfo.dayOfWeek,
+        startTime: startTime || '09:00',
+        endTime: endTime || '10:00',
+      };
+      setValue('schedules', [...watchedSchedules, newSchedule], { shouldValidate: true });
+      trigger('schedules');
+    }
   };
 
-
-
-  // 필수 필드 검증 함수
-  const isFormValid = () => {
-    return (
-      formData.days.length > 0 &&
-      !!formData.startTime &&
-      !!formData.endTime &&
-      !!formData.startDate &&
-      !!formData.endDate
-    );
+  // 시간 변경 시 모든 schedule 항목 업데이트
+  const handleTimeChange = (type: 'start' | 'end', time: string) => {
+    if (type === 'start') {
+      setStartTime(time);
+      const updatedSchedules = watchedSchedules.map(s => ({ ...s, startTime: time }));
+      setValue('schedules', updatedSchedules, { shouldValidate: true });
+      trigger('schedules');
+    } else {
+      setEndTime(time);
+      const updatedSchedules = watchedSchedules.map(s => ({ ...s, endTime: time }));
+      setValue('schedules', updatedSchedules, { shouldValidate: true });
+      trigger('schedules');
+    }
   };
-
-  const handleNext = () => {
-    // 필수 필드 검증
-    if (formData.days.length === 0) {
-      toast.error('요일을 선택해주세요.');
-      return;
-    }
-    if (!formData.startTime) {
-      toast.error('시작 시간을 선택해주세요.');
-      return;
-    }
-    if (!formData.endTime) {
-      toast.error('종료 시간을 선택해주세요.');
-      return;
-    }
-    if (!formData.startDate) {
-      toast.error('강의 시작일을 선택해주세요.');
-      return;
-    }
-    if (!formData.endDate) {
-      toast.error('강의 종료일을 선택해주세요.');
-      return;
-    }
-
-    // 시간 유효성 검증 - 시작 시간이 종료 시간보다 이전이어야 함
-    if (formData.startTime >= formData.endTime) {
-      toast.error('종료 시간은 시작 시간보다 늦어야 합니다.');
-      return;
-    }
-
-    // 날짜 유효성 검증 - 시작일이 종료일보다 이전이어야 함
-    if (formData.startDate >= formData.endDate) {
-      toast.error('강의 종료일은 시작일보다 늦어야 합니다.');
-      return;
+  const onNext = (data: ClassScheduleSchemaType) => {
+    // 추가 검증: 시간 유효성
+    if (data.schedules.length > 0) {
+      const firstSchedule = data.schedules[0];
+      if (firstSchedule.startTime >= firstSchedule.endTime) {
+        // Zod refine으로 처리되지만, 추가 확인
+        return;
+      }
     }
 
     // 날짜 범위 검증 - 최대 1년 이내
-    const startDate = new Date(formData.startDate);
-    const endDate = new Date(formData.endDate);
+    const startDate = new Date(data.startDate);
+    const endDate = new Date(data.endDate);
     const oneYearLater = new Date(startDate);
     oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
     
     if (endDate > oneYearLater) {
-      toast.error('강의 기간은 최대 1년까지 설정 가능합니다.');
+      // toast는 스키마 검증에서 처리
       return;
     }
 
@@ -110,21 +137,19 @@ export function CreateClassStepSchedule() {
     today.setHours(0, 0, 0, 0);
     
     if (startDate < today) {
-      toast.error('강의 시작일은 오늘 이후로 설정해주세요.');
+      // toast는 스키마 검증에서 처리
       return;
     }
 
-    // DashboardContext의 createClass 상태 업데이트
-    setClassFormData({
+    // Context 업데이트
+    setPrincipalClassFormData({
       ...classFormData,
-      schedule: {
-        days: formData.days,
-        startTime: formData.startTime,
-        endTime: formData.endTime,
-        startDate: formData.startDate,
-        endDate: formData.endDate,
-      },
+      startDate: data.startDate,
+      endDate: data.endDate,
+      schedule: data.schedules,
     });
+    
+    // 다음 단계로 이동
     router.push(ensureTrailingSlash('/dashboard/principal/class/create-class/info/teacher/schedule/content'));
   };
 
@@ -175,113 +200,198 @@ export function CreateClassStepSchedule() {
 
       {/* 메인 콘텐츠 */}
       <main className="flex-1 min-h-0 bg-white px-5 overflow-y-auto">
-        <div className="flex flex-col self-center mt-5 w-full font-semibold leading-snug text-center max-w-[335px] mx-auto">
-          <div className="space-y-6">
-            {/* 요일 선택 */}
-            <div className="text-left">
-              <label className="block text-sm font-medium text-stone-700 mb-3">
-                요일 선택 *
-              </label>
-              <div className="grid grid-cols-4 gap-2">
-                {DAYS_OF_WEEK.map((day) => (
-                  <button
-                    key={day.value}
-                    type="button"
-                    onClick={() => handleDayToggle(day.value)}
-                    className={`px-3 py-2 text-sm border rounded-lg transition-colors ${
-                      formData.days.includes(day.value)
-                        ? 'bg-[#AC9592] text-white border-[#AC9592]'
-                        : 'bg-white text-stone-700 border-stone-300 hover:border-stone-500'
-                    }`}
-                  >
-                    {day.label}
-                  </button>
-                ))}
+        <form onSubmit={handleSubmit(onNext)} className="flex flex-col h-full">
+          <div className="flex flex-col self-center mt-5 w-full font-semibold leading-snug text-center max-w-[335px] mx-auto">
+            <div className="space-y-6">
+              {/* 요일 선택 */}
+              <div className="text-left">
+                <label className="block text-sm font-medium text-stone-700 mb-3">
+                  요일 선택 *
+                </label>
+                <Controller
+                  name="schedules"
+                  control={control}
+                  render={({ fieldState: { error } }) => (
+                    <>
+                      <div className="grid grid-cols-4 gap-2">
+                        {DAYS_OF_WEEK.map((day) => (
+                          <button
+                            key={day.value}
+                            type="button"
+                            onClick={() => handleDayToggle(day.value)}
+                            className={`px-3 py-2 text-sm border rounded-lg transition-colors ${
+                              selectedDays.includes(day.value)
+                                ? 'bg-[#AC9592] text-white border-[#AC9592]'
+                                : 'bg-white text-stone-700 border-stone-300 hover:border-stone-500'
+                            }`}
+                          >
+                            {day.label}
+                          </button>
+                        ))}
+                      </div>
+                      {error && (
+                        <p className="mt-2 text-sm text-red-500">{error.message}</p>
+                      )}
+                      {/* schedules 배열 자체의 에러 (예: 최소 1개 필요) */}
+                      {errors.schedules && typeof errors.schedules === 'object' && 'message' in errors.schedules && (
+                        <p className="mt-2 text-sm text-red-500">{errors.schedules.message as string || '일정을 선택해주세요.'}</p>
+                      )}
+                    </>
+                  )}
+                />
+              </div>
+
+              {/* 시간 선택 */}
+              <div className="text-left">
+                <label className="block text-sm font-medium text-stone-700 mb-3">
+                  강의 시간 *
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {/* 시작 시간 */}
+                  <div>
+                    <label className="block text-xs text-stone-600 mb-1">시작 시간</label>
+                    <button
+                      type="button"
+                      onClick={() => setShowTimePicker('start')}
+                      className={`w-full px-4 py-3 border rounded-lg text-left hover:border-stone-500 transition-colors ${
+                        errors.schedules && Array.isArray(errors.schedules) && errors.schedules.some(e => e?.startTime) 
+                          ? 'border-red-500' 
+                          : 'border-stone-300'
+                      }`}
+                    >
+                      {startTime || '시간 선택'}
+                    </button>
+                  </div>
+
+                  {/* 종료 시간 */}
+                  <div>
+                    <label className="block text-xs text-stone-600 mb-1">종료 시간</label>
+                    <button
+                      type="button"
+                      onClick={() => setShowTimePicker('end')}
+                      className={`w-full px-4 py-3 border rounded-lg text-left hover:border-stone-500 transition-colors ${
+                        errors.schedules && Array.isArray(errors.schedules) && errors.schedules.some(e => e?.endTime) 
+                          ? 'border-red-500' 
+                          : 'border-stone-300'
+                      }`}
+                    >
+                      {endTime || '시간 선택'}
+                    </button>
+                  </div>
+                </div>
+                {/* 시간 관련 에러 메시지 */}
+                {errors.schedules && Array.isArray(errors.schedules) && errors.schedules.some(e => e) && (
+                  <div className="mt-2 space-y-1">
+                    {errors.schedules.map((scheduleError, index) => {
+                      if (!scheduleError) return null;
+                      const schedule = watchedSchedules[index];
+                      const dayLabel = DAYS_OF_WEEK.find(d => d.dayOfWeek === schedule?.dayOfWeek)?.label || '';
+                      if (scheduleError.endTime?.message) {
+                        return (
+                          <p key={index} className="text-sm text-red-500">
+                            {dayLabel}: {scheduleError.endTime.message}
+                          </p>
+                        );
+                      }
+                      if (scheduleError.startTime?.message) {
+                        return (
+                          <p key={index} className="text-sm text-red-500">
+                            {dayLabel}: {scheduleError.startTime.message}
+                          </p>
+                        );
+                      }
+                      return null;
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* 강의 기간 */}
+              <div className="text-left">
+                <label className="block text-sm font-medium text-stone-700 mb-3">
+                  강의 기간 *
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {/* 시작일 */}
+                  <div>
+                    <label className="block text-xs text-stone-600 mb-1">시작일</label>
+                    <Controller
+                      name="startDate"
+                      control={control}
+                      render={({ field, fieldState: { error } }) => (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => setShowDatePicker('start')}
+                            className={`w-full px-4 py-3 border rounded-lg text-left hover:border-stone-500 transition-colors ${
+                              error || errors.startDate ? 'border-red-500' : 'border-stone-300'
+                            }`}
+                          >
+                            {field.value ? new Date(field.value).toLocaleDateString('ko-KR') : '날짜 선택'}
+                          </button>
+                          {error && (
+                            <p className="mt-1 text-xs text-red-500">{error.message}</p>
+                          )}
+                          {/* refine 에러도 표시 */}
+                          {errors.endDate && errors.endDate.type === 'custom' && (
+                            <p className="mt-1 text-xs text-red-500">{errors.endDate.message}</p>
+                          )}
+                        </>
+                      )}
+                    />
+                  </div>
+
+                  {/* 종료일 */}
+                  <div>
+                    <label className="block text-xs text-stone-600 mb-1">종료일</label>
+                    <Controller
+                      name="endDate"
+                      control={control}
+                      render={({ field, fieldState: { error } }) => (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => setShowDatePicker('end')}
+                            className={`w-full px-4 py-3 border rounded-lg text-left hover:border-stone-500 transition-colors ${
+                              error || errors.endDate ? 'border-red-500' : 'border-stone-300'
+                            }`}
+                          >
+                            {field.value ? new Date(field.value).toLocaleDateString('ko-KR') : '날짜 선택'}
+                          </button>
+                          {error && (
+                            <p className="mt-1 text-xs text-red-500">{error.message}</p>
+                          )}
+                          {/* refine 에러도 표시 */}
+                          {errors.endDate && errors.endDate.type === 'custom' && (
+                            <p className="mt-1 text-xs text-red-500">{errors.endDate.message}</p>
+                          )}
+                        </>
+                      )}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* 시간 선택 */}
-            <div className="text-left">
-              <label className="block text-sm font-medium text-stone-700 mb-3">
-                강의 시간 *
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                {/* 시작 시간 */}
-                <div>
-                  <label className="block text-xs text-stone-600 mb-1">시작 시간</label>
-                  <button
-                    type="button"
-                    onClick={() => setShowTimePicker('start')}
-                    className="w-full px-4 py-3 border border-stone-300 rounded-lg text-left hover:border-stone-500 transition-colors"
-                  >
-                    {formData.startTime || '시간 선택'}
-                  </button>
-                </div>
-
-                {/* 종료 시간 */}
-                <div>
-                  <label className="block text-xs text-stone-600 mb-1">종료 시간</label>
-                  <button
-                    type="button"
-                    onClick={() => setShowTimePicker('end')}
-                    className="w-full px-4 py-3 border border-stone-300 rounded-lg text-left hover:border-stone-500 transition-colors"
-                  >
-                    {formData.endTime || '시간 선택'}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* 강의 기간 */}
-            <div className="text-left">
-              <label className="block text-sm font-medium text-stone-700 mb-3">
-                강의 기간 *
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                {/* 시작일 */}
-                <div>
-                  <label className="block text-xs text-stone-600 mb-1">시작일</label>
-                  <button
-                    type="button"
-                    onClick={() => setShowDatePicker('start')}
-                    className="w-full px-4 py-3 border border-stone-300 rounded-lg text-left hover:border-stone-500 transition-colors"
-                  >
-                    {formData.startDate ? new Date(formData.startDate).toLocaleDateString('ko-KR') : '날짜 선택'}
-                  </button>
-                </div>
-
-                {/* 종료일 */}
-                <div>
-                  <label className="block text-xs text-stone-600 mb-1">종료일</label>
-                  <button
-                    type="button"
-                    onClick={() => setShowDatePicker('end')}
-                    className="w-full px-4 py-3 border border-stone-300 rounded-lg text-left hover:border-stone-500 transition-colors"
-                  >
-                    {formData.endDate ? new Date(formData.endDate).toLocaleDateString('ko-KR') : '날짜 선택'}
-                  </button>
-                </div>
-              </div>
+            {/* 버튼 */}
+            <div className="flex gap-3 mt-8">
+              <button
+                type="button"
+                onClick={handleBack}
+                className="flex-1 px-4 py-3 text-stone-700 bg-stone-200 rounded-lg hover:bg-stone-300 transition-colors"
+              >
+                뒤로
+              </button>
+              <button
+                type="submit"
+                disabled={!isValid}
+                className="flex-1 px-4 py-3 text-white bg-[#AC9592] rounded-lg hover:bg-[#9A8582] transition-colors disabled:bg-stone-400 disabled:cursor-not-allowed"
+              >
+                다음
+              </button>
             </div>
           </div>
-
-          {/* 버튼 */}
-          <div className="flex gap-3 mt-8">
-            <button
-              onClick={handleBack}
-              className="flex-1 px-4 py-3 text-stone-700 bg-stone-200 rounded-lg hover:bg-stone-300 transition-colors"
-            >
-              뒤로
-            </button>
-            <button
-              onClick={handleNext}
-              disabled={!isFormValid()}
-              className="flex-1 px-4 py-3 text-white bg-[#AC9592] rounded-lg hover:bg-[#9A8582] transition-colors disabled:bg-stone-400 disabled:cursor-not-allowed"
-            >
-              다음
-            </button>
-          </div>
-        </div>
+        </form>
       </main>
 
       {/* 시간 선택 Slide Up Modal */}
@@ -293,12 +403,12 @@ export function CreateClassStepSchedule() {
         <div className="flex flex-col items-center">
           <div className="bg-white rounded-xl p-6 mb-4 shadow-sm border border-gray-100">
             <TimePicker
-              value={showTimePicker === 'start' ? (formData.startTime || '09:00') : (formData.endTime || '10:00')}
+              value={showTimePicker === 'start' ? (startTime || '09:00') : (endTime || '10:00')}
               onChange={(time) => {
                 if (showTimePicker === 'start') {
-                  setFormData(prev => ({ ...prev, startTime: time }));
+                  handleTimeChange('start', time);
                 } else {
-                  setFormData(prev => ({ ...prev, endTime: time }));
+                  handleTimeChange('end', time);
                 }
               }}
             />
@@ -330,14 +440,17 @@ export function CreateClassStepSchedule() {
           <div className="bg-white rounded-xl p-6 mb-4 shadow-sm border border-gray-100">
             <DatePicker
               value={showDatePicker === 'start' 
-                ? (formData.startDate || new Date().toISOString().split('T')[0])
-                : (formData.endDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
+                ? (watchedStartDate || new Date().toISOString().split('T')[0])
+                : (watchedEndDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
               }
               onChange={(date) => {
                 if (showDatePicker === 'start') {
-                  setFormData(prev => ({ ...prev, startDate: date }));
+                  setValue('startDate', date, { shouldValidate: true });
+                  trigger('startDate');
+                  trigger('endDate'); // endDate refine 검증도 트리거
                 } else {
-                  setFormData(prev => ({ ...prev, endDate: date }));
+                  setValue('endDate', date, { shouldValidate: true });
+                  trigger('endDate');
                 }
               }}
             />

@@ -7,16 +7,20 @@ import { CreateClassStepSchedule } from '@/components/dashboard/principal/class_
 
 export default function CreateClassSchedulePage() {
   const router = useRouter();
-  const { createClass } = useApp().form;
+  const { principalCreateClass } = useApp().form;
+  const { classFormData, selectedTeacherId } = principalCreateClass;
 
   // 🛡️ 가드 로직: 순서대로 진행해야 함
   useEffect(() => {
-    const hasClassFormData = !!createClass.classFormData?.name;
+    const hasClassFormData = !!classFormData?.name;
+    const hasSelectedTeacher = !!selectedTeacherId;
 
     if (!hasClassFormData) {
       router.replace('/dashboard/principal/class/create-class/info');
+    } else if (!hasSelectedTeacher) {
+      router.replace('/dashboard/principal/class/create-class/info/teacher');
     }
-  }, [router, createClass]);
+  }, [router, principalCreateClass, classFormData, selectedTeacherId]);
 
   return <CreateClassStepSchedule />;
 }

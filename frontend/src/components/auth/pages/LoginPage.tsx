@@ -9,10 +9,13 @@ import { cva } from 'class-variance-authority'
 import { Box, Button, Typography } from '@mui/material'
 import { Visibility, VisibilityOff } from '@mui/icons-material'
 import Image from 'next/image'
-import { useApp } from '@/contexts/AppContext'
 import { useApiError } from '@/hooks/useApiError'
 import { useRouter } from 'next/navigation'
 import { ensureTrailingSlash } from '@/lib/utils/router'
+import { loginSchema, LoginSchemaType } from '@/lib/schemas/auth'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm, Controller } from 'react-hook-form'
+import { useApp } from '@/contexts'
 
 const buttonVariants = cva(
   'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
@@ -50,6 +53,7 @@ interface InputFieldProps {
   id: string
   value: string
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onBlur?: () => void
   required?: boolean
   onIconClick?: () => void
   showPassword?: boolean
@@ -57,134 +61,146 @@ interface InputFieldProps {
   errorMessage?: string
 }
 
-const InputField: React.FC<InputFieldProps> = ({
-  label,
-  icon,
-  type = 'text',
-  id,
-  value,
-  onChange,
-  required = false,
-  onIconClick,
-  showPassword,
-  error = false,
-  errorMessage,
-}) => {
-  const handleClear = (e: React.MouseEvent) => {
-    e.preventDefault()
-    const event = {
-      target: { value: '' },
-    } as React.ChangeEvent<HTMLInputElement>
-    onChange(event)
-  }
+const InputField = React.forwardRef<HTMLInputElement, InputFieldProps>(
+  (
+    {
+      label,
+      icon,
+      type = 'text',
+      id,
+      value,
+      onChange,
+      onBlur,
+      required = false,
+      onIconClick,
+      showPassword,
+      error = false,
+      errorMessage,
+    },
+    ref,
+  ) => {
+    const handleClear = (e: React.MouseEvent) => {
+      e.preventDefault()
+      const event = {
+        target: { value: '' },
+      } as React.ChangeEvent<HTMLInputElement>
+      onChange(event)
+    }
 
-  // 비밀번호 라벨의 경우 더 넓은 공간 할당
-  const labelWidth = label === '비밀번호' ? 'w-[70px]' : 'w-[55px]'
+    // 비밀번호 라벨의 경우 더 넓은 공간 할당
+    const labelWidth = label === '비밀번호' ? 'w-[70px]' : 'w-[55px]'
 
-  return (
-    <div className="relative">
-      {errorMessage && (
-        <div className="absolute -top-5 right-0 text-sm text-red-500">
-          {errorMessage}
-        </div>
-      )}
-      <div
-        className={cn(
-          'flex justify-between items-center p-4 w-full bg-white rounded-lg border border-solid',
-          error ? 'border-red-500' : 'border-zinc-300',
+    return (
+      <div className="relative">
+        {errorMessage && (
+          <div className="absolute -top-5 right-0 text-sm text-red-500">
+            {errorMessage}
+          </div>
         )}
-      >
-        <div className="flex gap-4 items-center self-stretch my-auto">
-          <label
-            htmlFor={id}
-            className={cn(
-              'self-stretch my-auto text-[#595959] font-["Pretendard_Variable"] text-base font-medium leading-[140%] tracking-[-0.16px]',
-              labelWidth
-            )}
-          >
-            {label}
-          </label>
-          <div
-            className={cn(
-              'shrink-0 self-stretch my-auto w-0 h-6 border border-solid',
-              error
-                ? 'bg-red-500 border-red-500'
-                : 'bg-[#D9D9D9] border-[#D9D9D9]',
-            )}
-          />
-        </div>
-        <input
-          type={type}
-          id={id}
-          value={value}
-          onChange={onChange}
-          required={required}
-          className="ml-4 w-full bg-transparent border-none outline-none text-[#595959] font-['Pretendard_Variable'] text-base font-medium leading-[140%] tracking-[-0.16px]"
-          aria-label={label}
-        />
-        <div className="flex items-center gap-2">
-          {value && (
-            <button
-              type="button"
-              onClick={handleClear}
-              className="p-1 text-gray-400 hover:text-gray-600"
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="15" y1="9" x2="9" y2="15" />
-                <line x1="9" y1="9" x2="15" y2="15" />
-              </svg>
-            </button>
+        <div
+          className={cn(
+            'flex justify-between items-center p-4 w-full bg-white rounded-lg border border-solid',
+            error ? 'border-red-500' : 'border-zinc-300',
           )}
-          {icon && onIconClick && (
-            <button
-              type="button"
-              onClick={onIconClick}
-              className="p-1 text-[#595959]"
-            >
-              {showPassword ? (
-                <Visibility sx={{ width: 24, height: 24 }} />
-              ) : (
-                <VisibilityOff sx={{ width: 24, height: 24 }} />
+        >
+          <div className="flex gap-4 items-center self-stretch my-auto">
+            <label
+              htmlFor={id}
+              className={cn(
+                'self-stretch my-auto text-[#595959] font-["Pretendard_Variable"] text-base font-medium leading-[140%] tracking-[-0.16px]',
+                labelWidth
               )}
-            </button>
-          )}
+            >
+              {label}
+            </label>
+            <div
+              className={cn(
+                'shrink-0 self-stretch my-auto w-0 h-6 border border-solid',
+                error
+                  ? 'bg-red-500 border-red-500'
+                  : 'bg-[#D9D9D9] border-[#D9D9D9]',
+              )}
+            />
+          </div>
+          <input
+            ref={ref}
+            type={type}
+            id={id}
+            value={value}
+            onChange={onChange}
+            onBlur={onBlur}
+            required={required}
+            className="ml-4 w-full bg-transparent border-none outline-none text-[#595959] font-['Pretendard_Variable'] text-base font-medium leading-[140%] tracking-[-0.16px]"
+            aria-label={label}
+          />
+          <div className="flex items-center gap-2">
+            {value && (
+              <button
+                type="button"
+                onClick={handleClear}
+                className="p-1 text-gray-400 hover:text-gray-600"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="15" y1="9" x2="9" y2="15" />
+                  <line x1="9" y1="9" x2="15" y2="15" />
+                </svg>
+              </button>
+            )}
+            {icon && onIconClick && (
+              <button
+                type="button"
+                onClick={onIconClick}
+                className="p-1 text-[#595959]"
+              >
+                {showPassword ? (
+                  <Visibility sx={{ width: 24, height: 24 }} />
+                ) : (
+                  <VisibilityOff sx={{ width: 24, height: 24 }} />
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
-    </div>
-  )
-}
+    )
+  },
+)
+
+InputField.displayName = 'InputField'
 
 export function LoginPage() {
-  const router = useRouter()
-  const { setAuthMode } = useApp()
-  const signIn = useSignIn()
-  const [formData, setFormData] = useState({
-    userId: '',
-    password: '',
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginSchemaType>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      userId: '',
+      password: '',
+    },
   })
+  const router = useRouter()
+  const { resetSignup } = useApp()
+  const signIn = useSignIn()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const { fieldErrors, clearErrors, handleApiError } = useApiError()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    clearErrors() // 로딩 상태 설정을 제거하고 에러만 클리어
-
+  const onSubmit = async (data: LoginSchemaType) => {
+    clearErrors();
     try {
-      const result = await signIn('credentials', {
-        userId: formData.userId,
-        password: formData.password,
-      })
+      const result = await signIn('credentials', data)
 
       if (result?.error) {
         handleApiError({
@@ -203,28 +219,10 @@ export function LoginPage() {
         
         // 역할 기반 대시보드 경로 결정
         const userRole = result.role;
-        const getDashboardPath = (role?: string): string => {
-          if (!role) {
-            return "/dashboard/";
-          }
-          const roleUpper = role.toUpperCase();
-          switch (roleUpper) {
-            case "STUDENT":
-              return "/dashboard/student/";
-            case "TEACHER":
-              return "/dashboard/teacher/";
-            case "PRINCIPAL":
-              return "/dashboard/principal/";
-            default:
-              return "/dashboard/";
-          }
-        };
-        
-        const dashboardPath = getDashboardPath(userRole);
         
         // Next.js router를 직접 사용하여 리디렉션 (Capacitor 환경에서도 안정적)
         setTimeout(() => {
-          router.push(ensureTrailingSlash(dashboardPath));
+          router.push(ensureTrailingSlash(`/dashboard/${userRole?.toLowerCase()}`));
         }, 100) // 세션 상태 업데이트를 위한 짧은 지연
       }
     } catch (error) {
@@ -268,32 +266,39 @@ export function LoginPage() {
           </Typography>
         </Box>
 
-        <form className="flex flex-col mt-16 w-full" onSubmit={handleSubmit}>
+        <form className="flex flex-col mt-16 w-full" onSubmit={handleSubmit(onSubmit)}>
           <div className="flex flex-col w-full gap-3">
-            <InputField
-              label="아이디"
-              id="userId"
-              value={formData.userId}
-              onChange={(e) =>
-                setFormData({ ...formData, userId: e.target.value })
-              }
-              required
-              error={!!fieldErrors.userId}
-              errorMessage={fieldErrors.userId || fieldErrors.password}
+            <Controller
+              control={control}
+              name="userId"
+              render={({ field }) => (
+                <InputField
+                  {...field}
+                  label="아이디"
+                  id="userId"
+                  required
+                  error={!!errors.userId || !!fieldErrors.userId}
+                  errorMessage={errors.userId?.message || fieldErrors.userId || fieldErrors.password}
+                />
+              )}
             />
-            <InputField
-              label="비밀번호"
-              type={showPassword ? 'text' : 'password'}
-              id="password"
-              value={formData.password}
-              onChange={(e) =>
-                setFormData({ ...formData, password: e.target.value })
-              }
-              required
-              icon="password-toggle"
-              onIconClick={() => setShowPassword(!showPassword)}
-              showPassword={showPassword}
-              error={!!fieldErrors.password}
+            <Controller
+              control={control}
+              name="password"
+              render={({ field }) => (
+                <InputField
+                  {...field}
+                  label="비밀번호"
+                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  required
+                  icon="password-toggle"
+                  onIconClick={() => setShowPassword(!showPassword)}
+                  showPassword={showPassword}
+                  error={!!errors.password || !!fieldErrors.password}
+                  errorMessage={errors.password?.message || fieldErrors.password}
+                />
+              )}
             />
           </div>
           <button
@@ -332,7 +337,7 @@ export function LoginPage() {
           </Typography>
           <Button
             onClick={() => {
-              setAuthMode('signup');
+              resetSignup()
               router.push(ensureTrailingSlash('/signup/roles'))
             }}
             sx={{

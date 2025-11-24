@@ -7,16 +7,16 @@ import { CreateClassStepTeacher } from '@/components/dashboard/principal/class_m
 
 export default function CreateClassTeacherPage() {
   const router = useRouter();
-  const { createClass } = useApp().form;
+  const { principalCreateClass } = useApp().form;
 
   // 🛡️ 가드 로직: 순서대로 진행해야 함
   useEffect(() => {
-    const hasClassFormData = !!createClass.classFormData?.name;
+    const hasClassFormData = !!principalCreateClass.classFormData.name;
 
     if (!hasClassFormData) {
       router.replace('/dashboard/principal/class/create-class/info');
     }
-  }, [router, createClass]);
+  }, [router, principalCreateClass]);
 
   return <CreateClassStepTeacher />;
 }

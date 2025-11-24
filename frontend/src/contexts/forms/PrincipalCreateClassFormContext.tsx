@@ -20,10 +20,33 @@ interface PrincipalCreateClassFormContextType {
 
   // 단계 관리
   setCurrentStep: (step: PrincipalCreateClassStep) => void;
+  nextStep: () => void;
+  prevStep: () => void;
 
-  // 데이터 관리
+  // 데이터 관리 (기존)
   setClassFormData: (data: Partial<PrincipalClassFormData>) => void;
   setSelectedTeacherId: (teacherId: number | null) => void;
+
+  // 편의 actions (Step별 데이터 설정)
+  actions: {
+    setInfo: (data: {
+      name: string;
+      description: string;
+      level: "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
+      maxStudents: number;
+      price: number;
+    }) => void;
+    setTeacher: (teacherId: number) => void;
+    setSchedule: (data: {
+      startDate: string;
+      endDate: string;
+      schedules: {
+        dayOfWeek: number;
+        startTime: string;
+        endTime: string;
+      }[];
+    }) => void;
+  };
 
   // 초기화
   reset: () => void;
@@ -67,22 +90,38 @@ export const PrincipalCreateClassFormProvider: React.FC<
     return unsubscribe;
   }, [manager]);
 
-  // 이벤트 버스 구독
-  useEffect(() => {
-    const unsubscribe = contextEventBus.subscribe("navigationChanged", (data) => {
-      // 네비게이션 변경 시 폼 상태 초기화 (필요한 경우)
-      if (data.subPage !== "create-class") {
-        manager.reset();
-      }
-    });
-
-    return unsubscribe;
-  }, [manager]);
-
   // Context 메서드들
   const setCurrentStep = useCallback((step: PrincipalCreateClassStep) => {
     manager.setCurrentStep(step);
   }, [manager]);
+
+  const nextStep = useCallback(() => {
+    const stepOrder: PrincipalCreateClassStep[] = [
+      "info",
+      "teacher",
+      "schedule",
+      "content",
+      "complete",
+    ];
+    const currentIndex = stepOrder.indexOf(state.currentStep);
+    if (currentIndex < stepOrder.length - 1) {
+      manager.setCurrentStep(stepOrder[currentIndex + 1]);
+    }
+  }, [manager, state.currentStep]);
+
+  const prevStep = useCallback(() => {
+    const stepOrder: PrincipalCreateClassStep[] = [
+      "info",
+      "teacher",
+      "schedule",
+      "content",
+      "complete",
+    ];
+    const currentIndex = stepOrder.indexOf(state.currentStep);
+    if (currentIndex > 0) {
+      manager.setCurrentStep(stepOrder[currentIndex - 1]);
+    }
+  }, [manager, state.currentStep]);
 
   const setClassFormData = useCallback(
     (data: Partial<PrincipalClassFormData>) => {
@@ -99,11 +138,50 @@ export const PrincipalCreateClassFormProvider: React.FC<
     manager.reset();
   }, [manager]);
 
+  // Actions 객체
+  const actions = {
+    setInfo: useCallback(
+      (data: {
+        name: string;
+        description: string;
+        level: "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
+        maxStudents: number;
+        price: number;
+      }) => {
+        manager.setInfo(data);
+      },
+      [manager]
+    ),
+    setTeacher: useCallback(
+      (teacherId: number) => {
+        manager.setTeacher(teacherId);
+      },
+      [manager]
+    ),
+    setSchedule: useCallback(
+      (data: {
+        startDate: string;
+        endDate: string;
+        schedules: {
+          dayOfWeek: number;
+          startTime: string;
+          endTime: string;
+        }[];
+      }) => {
+        manager.setSchedule(data);
+      },
+      [manager]
+    ),
+  };
+
   const value: PrincipalCreateClassFormContextType = {
     state,
     setCurrentStep,
+    nextStep,
+    prevStep,
     setClassFormData,
     setSelectedTeacherId,
+    actions,
     reset,
   };
 

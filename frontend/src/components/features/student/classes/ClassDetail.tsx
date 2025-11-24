@@ -83,7 +83,7 @@ export function ClassDetail({ classId, classSessions, showModificationButton = t
     }
     
     // 수강 변경 페이지로 이동 (쿼리 파라미터 사용)
-    const url = `/dashboard/student/modify?id=${classId}&step=date-step${targetMonth ? `&month=${targetMonth}` : ''}`;
+    const url = `/dashboard/student/class/modify?id=${classId}&step=date-step${targetMonth ? `&month=${targetMonth}` : ''}`;
     
     // 모달 닫기 콜백 호출
     if (onModificationClick) {

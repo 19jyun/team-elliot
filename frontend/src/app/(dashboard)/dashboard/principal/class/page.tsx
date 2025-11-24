@@ -11,6 +11,7 @@ import { toClassSessionForCalendar } from '@/lib/adapters/principal'
 import type { PrincipalClassSession } from '@/types/api/principal'
 import type { ClassSession } from '@/types/api/class'
 import { useRouter } from 'next/navigation'
+import { useApp } from '@/contexts'
 
 // 강의 개설 카드 컴포넌트
 const CreateClassCard: React.FC<{
@@ -64,6 +65,7 @@ const CreateClassCard: React.FC<{
 export default function PrincipalClassPage() {
   const signOut = useSignOut()
   const router = useRouter()
+  const { resetPrincipalCreateClass } = useApp()
 
   const { data: session, status } = useSession()
 
@@ -145,6 +147,7 @@ export default function PrincipalClassPage() {
 
   // 강의 개설 페이지로 이동
   const handleCreateClassClick = () => {
+    resetPrincipalCreateClass()
     router.push(ensureTrailingSlash('/dashboard/principal/class/create-class/info'))
   }
 

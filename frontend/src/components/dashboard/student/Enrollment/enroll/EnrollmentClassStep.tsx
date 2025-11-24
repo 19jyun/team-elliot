@@ -15,6 +15,12 @@ import type { AvailableSessionForEnrollment } from '@/types/api/student';
 import { toEnrollmentClassVMs } from '@/lib/adapters/student';
 import { useRouter } from 'next/navigation';
 import { ensureTrailingSlash } from '@/lib/utils/router';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  enrollmentClassSchema,
+  EnrollmentClassSchemaType,
+} from '@/lib/schemas/enrollment';
 
 const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 const daysKor = ['월', '화', '수', '목', '금', '토', '일'];
@@ -44,13 +50,25 @@ export function EnrollmentClassStep() {
   const router = useRouter();
   const { form, setSelectedClassIds } = useApp();
   const { enrollment } = form;
-  const { selectedAcademyId } = enrollment;
-  const { status } = useSession()
+  const { selectedAcademyId, selectedClassIds } = enrollment;
+  const { status } = useSession();
 
   // React Query 기반 데이터 관리
   const { data: availableSessions, isLoading, error } = useStudentAvailableSessions(selectedAcademyId || 0);
 
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const {
+    handleSubmit,
+    setValue,
+    watch,
+  } = useForm<EnrollmentClassSchemaType>({
+    resolver: zodResolver(enrollmentClassSchema),
+    defaultValues: {
+      classIds: selectedClassIds ?? [],
+    },
+    mode: 'onChange',
+  });
+
+  const selectedIds = watch('classIds') || [];
   const [showClassDetailModal, setShowClassDetailModal] = useState(false);
   const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
   const [showPolicy, setShowPolicy] = useState(true);
@@ -119,9 +137,11 @@ export function EnrollmentClassStep() {
   };
 
   const handleSelect = (id: number) => {
+    const currentSelected = selectedIds;
+
     // 이미 선택된 클래스라면 선택 해제
-    if (selectedIds.includes(id)) {
-      setSelectedIds(prev => prev.filter(x => x !== id));
+    if (currentSelected.includes(id)) {
+      setValue('classIds', currentSelected.filter((x) => x !== id), { shouldValidate: true });
       return;
     }
 
@@ -132,7 +152,7 @@ export function EnrollmentClassStep() {
     const targetDayOfWeek = targetClass.dayOfWeek;
 
     // 이미 선택된 클래스들 중 같은 요일이 있는지 확인
-    const hasSameDayClass = selectedIds.some(selectedId => {
+    const hasSameDayClass = currentSelected.some(selectedId => {
       const selectedClass = classesWithSessions.find((classInfo) => classInfo.id === selectedId);
       return selectedClass?.dayOfWeek === targetDayOfWeek;
     });
@@ -143,18 +163,18 @@ export function EnrollmentClassStep() {
     }
 
     // 같은 요일이 없으면 선택 추가
-    setSelectedIds(prev => [...prev, id]);
+    setValue('classIds', [...currentSelected, id], { shouldValidate: true });
   };
 
 
 
-  const handleNextStep = () => {
-    if (selectedIds.length === 0) {
+  const handleNextStep = (data: EnrollmentClassSchemaType) => {
+    if (data.classIds.length === 0) {
       toast.error('최소 1개 이상의 클래스를 선택해주세요.');
       return;
     }
-    
-    setSelectedClassIds(selectedIds);
+
+    setSelectedClassIds(data.classIds);
     router.push(ensureTrailingSlash('/dashboard/student/enroll/academy/class/date'));
   };
 
@@ -182,7 +202,7 @@ export function EnrollmentClassStep() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-white relative">
+    <form onSubmit={handleSubmit(handleNextStep)} className="flex flex-col h-full bg-white relative">
       {/* Header */}
       <header className="flex-shrink-0 flex flex-col bg-white border-b border-gray-200 py-5 min-h-[120px] relative">
         <div className="flex gap-6 self-center w-full text-sm font-medium tracking-normal leading-snug max-w-[320px] mt-2 mb-2">
@@ -306,7 +326,7 @@ export function EnrollmentClassStep() {
           <button
             className={`flex-1 shrink self-stretch px-2.5 py-4 rounded-lg min-w-[240px] size-full transition-colors duration-300 text-center ${selectedIds.length > 0 ? 'bg-[#AC9592] text-white cursor-pointer' : 'bg-zinc-300 text-white cursor-not-allowed'}`}
             disabled={selectedIds.length === 0}
-            onClick={handleNextStep}
+            type="submit"
           >
             {selectedIds.length > 0 ? (
               <span className="inline-flex items-center justify-center w-full">
@@ -344,6 +364,6 @@ export function EnrollmentClassStep() {
           classId={selectedClassId}
         />
       )}
-    </div>
+    </form>
   );
 } 
