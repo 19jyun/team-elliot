@@ -1,25 +1,49 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { UniversalSocketManager } from './universal-socket.manager';
+import { SocketService } from '../socket.service';
+import { SocketTargetResolver } from '../resolvers/socket-target.resolver';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class ClassSocketManager {
   constructor(
     private readonly universalSocketManager: UniversalSocketManager,
+    private readonly socketService: SocketService,
+    private readonly targetResolver: SocketTargetResolver,
+    private readonly prisma: PrismaService,
     private readonly logger: Logger,
   ) {}
 
-  // 클래스 생성 알림
+  // 클래스 생성 알림 - 담임선생님에게 class_created 이벤트 직접 발송
   async notifyClassCreated(classData: any): Promise<void> {
     try {
       this.logger.log(`📢 클래스 생성 알림: ${classData.id}`);
 
-      await this.universalSocketManager.notifyClassEvent(
-        'class_created',
-        classData,
-        '새로운 클래스가 생성되었습니다.',
-      );
+      // 담임 선생님 정보 조회
+      if (classData.teacherId) {
+        const teacher = await this.prisma.teacher.findUnique({
+          where: { id: classData.teacherId },
+          include: { user: true },
+        });
 
-      this.logger.log(`✅ 클래스 생성 알림 완료`);
+        if (teacher?.user) {
+          // 담임선생님에게 class_created 이벤트 직접 발송
+          await this.socketService.emitToUser(
+            teacher.user.id,
+            'class_created',
+            {
+              classId: classData.id,
+              className: classData.className,
+              message: '새로운 클래스가 생성되었습니다.',
+              timestamp: new Date().toISOString(),
+            },
+          );
+
+          this.logger.log(
+            `✅ 클래스 생성 알림 완료: ${classData.className} (담임선생님: ${teacher.user.id})`,
+          );
+        }
+      }
     } catch (error) {
       this.logger.error('❌ 클래스 생성 알림 실패', error);
     }

@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SocketGateway } from '../socket/socket.gateway';
+import { ClassSocketManager } from '../socket/managers/class-socket.manager';
 import { PushNotificationService } from '../push-notification/push-notification.service';
 
 @Injectable()
@@ -17,6 +18,7 @@ export class ClassService {
   constructor(
     private prisma: PrismaService,
     private readonly socketGateway: SocketGateway,
+    private readonly classSocketManager: ClassSocketManager,
     private readonly pushNotificationService: PushNotificationService,
   ) {}
 
@@ -236,34 +238,36 @@ export class ClassService {
       endDate: new Date(data.endDate),
     });
 
-    // Principal이 지정한 교사에게 새 강의 배정 알림
-    if (userRole === 'PRINCIPAL' && teacher.userRefId) {
+    // 담임 선생님에게 소켓 알림 + FCM 푸시 알림 전송 (원장은 제외)
+    if (teacher.userRefId) {
       const academyName = teacher.academy?.name ?? '소속 학원';
+
       try {
-        this.socketGateway.notifyTeacherAssignedToClass(teacher.userRefId, {
-          classId: createdClass.id,
+        // 소켓 알림 전송 (ClassSocketManager 사용)
+        await this.classSocketManager.notifyClassCreated({
+          id: createdClass.id,
           className: createdClass.className,
           academyId: createdClass.academyId,
-          academyName,
-          teacherName: teacher.name,
+          teacherId: createdClass.teacherId,
         });
       } catch (error) {
-        this.logger.warn('소켓 알림 전송 실패(교사 배정)', error);
+        this.logger.warn('소켓 알림 전송 실패(클래스 생성)', error);
       }
 
       try {
+        // FCM 푸시 알림 전송
         await this.pushNotificationService.sendToUser(teacher.userRefId, {
           title: '새 강의 배정',
-          body: `${academyName}에서 ${teacher.name} 강사님이 담당하실 강의를 새로 개설됐습니다.`,
+          body: `${academyName}에서 새로운 강의 "${createdClass.className}"를 담당하시게 되었습니다.`,
           data: {
-            type: 'teacher-class-assigned',
+            type: 'class-created',
             classId: String(createdClass.id),
             className: createdClass.className,
             academyId: String(createdClass.academyId),
           },
         });
       } catch (error) {
-        this.logger.warn('푸시 알림 전송 실패(교사 배정)', error);
+        this.logger.warn('푸시 알림 전송 실패(클래스 생성)', error);
       }
     }
 

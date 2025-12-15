@@ -381,9 +381,9 @@ describe('ClassSessionService', () => {
       });
       expect(prisma.$transaction).toHaveBeenCalled();
 
-      // 푸시 알림 전송 확인
-      expect(mockPushNotificationService.sendToUsers).toHaveBeenCalledWith(
-        expect.arrayContaining([10, 20]), // 원장과 선생의 User ID
+      // 푸시 알림 전송 확인 (원장에게만)
+      expect(mockPushNotificationService.sendToUser).toHaveBeenCalledWith(
+        10, // 원장의 User ID
         expect.objectContaining({
           title: '새로운 수강 신청',
           body: expect.stringContaining('Test Student'),

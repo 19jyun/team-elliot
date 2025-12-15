@@ -1,6 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ClassService } from '../class.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { SocketGateway } from '../../socket/socket.gateway';
+import { ClassSocketManager } from '../../socket/managers/class-socket.manager';
+import { PushNotificationService } from '../../push-notification/push-notification.service';
 import { CreateClassDto, DayOfWeek } from '../../types/class.types';
 import { NotFoundException, ConflictException } from '@nestjs/common';
 
@@ -50,11 +53,29 @@ describe('ClassService', () => {
     $transaction: jest.fn(),
   };
 
+  const mockSocketGateway = {
+    notifyTeacherAssignedToClass: jest.fn(),
+  };
+
+  const mockClassSocketManager = {
+    notifyClassCreated: jest.fn(),
+  };
+
+  const mockPushNotificationService = {
+    sendToUser: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ClassService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: SocketGateway, useValue: mockSocketGateway },
+        { provide: ClassSocketManager, useValue: mockClassSocketManager },
+        {
+          provide: PushNotificationService,
+          useValue: mockPushNotificationService,
+        },
       ],
     }).compile();
     service = module.get<ClassService>(ClassService);

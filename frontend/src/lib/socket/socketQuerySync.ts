@@ -143,6 +143,12 @@ export class SocketQuerySync {
         });
         break;
 
+      case "class_created":
+        this.queryClient.invalidateQueries({
+          queryKey: queryKeys.teacher.classes.lists(),
+        });
+        break;
+
       case "connection_confirmed":
         // 연결 확인 이벤트는 캐시 무효화 불필요
         break;
