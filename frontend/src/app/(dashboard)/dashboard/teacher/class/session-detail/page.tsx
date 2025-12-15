@@ -8,6 +8,7 @@ import { useSessionDetail } from '@/hooks/queries/common/useSessionDetail'
 import { AttendanceSummaryComponent } from '@/components/dashboard/teacher/SessionDetail/SessionDetailComponents/AttendanceSummaryComponent'
 import { ContentSummaryComponent } from '@/components/dashboard/teacher/SessionDetail/SessionDetailComponents/ContentSummaryComponent'
 import { PoseAdditionSummaryComponent } from '@/components/dashboard/teacher/SessionDetail/SessionDetailComponents/PoseAdditionSummaryComponent'
+import { ensureTrailingSlash } from '@/lib/utils/router'
 
 function SessionDetailMainContent() {
   const searchParams = useSearchParams()
@@ -17,18 +18,18 @@ function SessionDetailMainContent() {
   // ID가 없으면 리다이렉트
   useEffect(() => {
     if (!sessionId) {
-      router.replace('/dashboard/teacher/class')
+      router.replace(ensureTrailingSlash('/dashboard/teacher/class'))
     }
   }, [sessionId, router])
 
   const { data: selectedSession, isLoading } = useSessionDetail(sessionId)
 
   const handleNavigateToContent = () => {
-    router.push(`/dashboard/teacher/class/session-detail/content?id=${sessionId}`)
+    router.push(ensureTrailingSlash(`/dashboard/teacher/class/session-detail/content?id=${sessionId}`))
   }
 
   const handleNavigateToPose = () => {
-    router.push(`/dashboard/teacher/class/session-detail/pose?id=${sessionId}`)
+    router.push(ensureTrailingSlash(`/dashboard/teacher/class/session-detail/pose?id=${sessionId}`))
   }
 
   if (isLoading) {
