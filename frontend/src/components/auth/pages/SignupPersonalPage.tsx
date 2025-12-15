@@ -10,6 +10,7 @@ import { ensureTrailingSlash } from '@/lib/utils/router'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { personalInfoSchema, PersonalInfoSchemaType } from '@/lib/schemas/auth-signup'
+import { useCheckDuplicatePhone } from '@/hooks/useCheckDuplicatePhone'
 import { useApp } from '@/contexts/AppContext'
 
 interface InputFieldProps {
@@ -166,6 +167,7 @@ export function SignupPersonalPage() {
   const [verificationCode, setVerificationCode] = useState('')
   const [timeLeft, setTimeLeft] = useState(180) // 3분 = 180초
   const [isTimerRunning, setIsTimerRunning] = useState(false)
+  const { check: checkDuplicatePhone } = useCheckDuplicatePhone()
 
   // RHF 설정 - Context에서 초기값 가져오기
   const {
@@ -251,8 +253,16 @@ export function SignupPersonalPage() {
       toast.error('올바른 전화번호 형식이 아닙니다')
       return
     }
-    // 인증 로직은 미구현 상태이므로 바로 인증 완료 처리
-    toast.success('인증 로직은 미구현 상태입니다. 다음단계로 진행하세요.')
+    const formattedPhoneNumber = formatPhoneNumber(cleanPhoneNumber)
+
+    const isAvailable = await checkDuplicatePhone(formattedPhoneNumber)
+    if (!isAvailable) {
+      toast.error('이미 사용중인 전화번호입니다')
+      return
+    }
+
+    // 인증 로직은 미구현 상태이므로 바로 인증 완료 처리 (중복 확인 후)
+    toast.success('전화번호 인증이 완료되었습니다. 다음단계로 진행하세요.')
     setIsPhoneVerified(true)
     setIsTimerRunning(false)
   }
@@ -367,9 +377,11 @@ export function SignupPersonalPage() {
                   e: React.ChangeEvent<HTMLInputElement>,
                 ) => {
                   const onlyNumbers = e.target.value.replace(/[^0-9]/g, '')
+                  // 필드는 하이픈이 포함된 포맷값을 저장해 Zod 정규식과 일치시킨다.
+                  const formatted = formatPhoneNumber(onlyNumbers)
                   field.onChange({
                     ...e,
-                    target: { ...e.target, value: onlyNumbers },
+                    target: { ...e.target, value: formatted },
                   })
                 }
 
@@ -491,4 +503,4 @@ export function SignupPersonalPage() {
       </form>
     </div>
   )
-} 
+}

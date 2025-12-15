@@ -4,9 +4,11 @@ import { SignupDto } from './dto/signup.dto';
 import { PrincipalSignupDto } from './dto/principal-signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { CheckUserIdDto } from './dto/check-userid.dto';
+import { CheckPhoneDto } from './dto/check-phone.dto';
 import { WithdrawalReasonDto } from './dto/withdrawal-reason.dto';
 import { AuthResponseEntity } from './entities/auth-response.entity';
 import { CheckUserIdResponseEntity } from './entities/check-userid-response.entity';
+import { CheckPhoneResponseEntity } from './entities/check-phone-response.entity';
 import { PrincipalSignupResponseEntity } from './entities/principal-signup-response.entity';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetUser } from './decorators/get-user.decorator';
@@ -143,6 +145,19 @@ export class AuthController {
     @Body() body: CheckUserIdDto,
   ): Promise<{ available: boolean }> {
     return this.authService.checkUserId(body.userId);
+  }
+
+  @Post('check-phone')
+  @ApiOperation({ summary: '전화번호 중복 체크' })
+  @ApiBody({ type: CheckPhoneDto })
+  @ApiOkResponse({
+    description: '중복 여부 반환',
+    type: CheckPhoneResponseEntity,
+  })
+  async checkPhone(
+    @Body() body: CheckPhoneDto,
+  ): Promise<{ available: boolean }> {
+    return this.authService.checkPhoneNumber(body.phoneNumber);
   }
 
   @UseGuards(JwtAuthGuard)

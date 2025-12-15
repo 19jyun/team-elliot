@@ -7,6 +7,8 @@ import type {
   LogoutResponse,
   CheckUserIdRequest,
   CheckUserIdResponse,
+  CheckPhoneRequest,
+  CheckPhoneResponse,
   SendVerificationRequest,
   SendVerificationResponse,
   VerifyCodeRequest,
@@ -43,6 +45,13 @@ export const checkUserId = (
   data: CheckUserIdRequest
 ): Promise<ApiResponse<CheckUserIdResponse>> => {
   return post<ApiResponse<CheckUserIdResponse>>("/auth/check-userid", data);
+};
+
+// 전화번호 중복 체크
+export const checkPhoneNumber = (
+  data: CheckPhoneRequest
+): Promise<ApiResponse<CheckPhoneResponse>> => {
+  return post<ApiResponse<CheckPhoneResponse>>("/auth/check-phone", data);
 };
 
 // SMS 인증번호 발송

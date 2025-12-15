@@ -293,8 +293,11 @@ export function SignupAccountPage() {
             )}
           />
 
-          <div className="mt-2 text-sm font-medium text-stone-400">
-            아이디는 영문, 숫자 8~15자로 설정해주세요
+          <div className="mt-2 text-sm font-medium text-stone-400 space-y-1">
+            <div>아이디는 영문, 숫자 8~15자로 설정해주세요.</div>
+            <div>
+              비밀번호는 영문, 숫자, 특수문자를 포함한 8자 이상으로 입력해주세요.
+            </div>
           </div>
         </div>
 

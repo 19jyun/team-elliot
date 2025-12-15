@@ -161,6 +161,18 @@ export class AuthService {
       });
     }
 
+    // 전화번호 중복 체크 (User 테이블)
+    const existingPhone = await this.prisma.user.findUnique({
+      where: { phoneNumber: signupDto.phoneNumber },
+    });
+
+    if (existingPhone) {
+      throw new ConflictException({
+        code: 'PHONE_ALREADY_EXISTS',
+        message: '이미 사용중인 전화번호입니다.',
+      });
+    }
+
     // 비밀번호 해싱
     const hashedPassword = await bcrypt.hash(signupDto.password, 10);
 
@@ -173,6 +185,7 @@ export class AuthService {
             userId: signupDto.userId,
             password: hashedPassword,
             name: signupDto.name,
+            phoneNumber: signupDto.phoneNumber,
             role: 'STUDENT',
           },
         });
@@ -220,6 +233,7 @@ export class AuthService {
             userId: signupDto.userId,
             password: hashedPassword,
             name: signupDto.name,
+            phoneNumber: signupDto.phoneNumber,
             role: 'TEACHER',
           },
         });
@@ -282,6 +296,18 @@ export class AuthService {
       });
     }
 
+    // 전화번호 중복 체크 (User 테이블)
+    const existingPhone = await this.prisma.user.findUnique({
+      where: { phoneNumber: signupDto.phoneNumber },
+    });
+
+    if (existingPhone) {
+      throw new ConflictException({
+        code: 'PHONE_ALREADY_EXISTS',
+        message: '이미 사용중인 전화번호입니다.',
+      });
+    }
+
     // 학원 코드 중복 체크
     const academyCode = this.generateAcademyCode();
     const existingAcademy = await this.prisma.academy.findUnique({
@@ -304,6 +330,7 @@ export class AuthService {
           userId: signupDto.userId,
           password: hashedPassword,
           name: signupDto.name,
+          phoneNumber: signupDto.phoneNumber,
           role: 'PRINCIPAL',
         },
       });
@@ -394,6 +421,16 @@ export class AuthService {
 
     return {
       available: !existingUser, // existingUser가 null이면 true (사용 가능), 아니면 false (사용 불가)
+    };
+  }
+
+  async checkPhoneNumber(phoneNumber: string): Promise<{ available: boolean }> {
+    const existingUser = await this.prisma.user.findFirst({
+      where: { phoneNumber },
+    });
+
+    return {
+      available: !existingUser,
     };
   }
 
