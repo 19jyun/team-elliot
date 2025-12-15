@@ -29,14 +29,14 @@ export class SocketTargetResolver {
     return targets;
   }
 
-  // 환불 요청 생성 → 원장 + 담임 선생에게 알림
+  // 환불 요청 생성 → 원장에게 알림
   async resolveRefundRequestCreatedTargets(
     refundRequest: any,
   ): Promise<string[]> {
     const targets: string[] = [];
 
     try {
-      // 해당 학원의 원장에게 알림
+      // 해당 학원의 원장에게만 알림
       const academy = await this.prisma.academy.findUnique({
         where: { id: refundRequest.sessionEnrollment.session.class.academyId },
         include: { principal: true },
@@ -44,16 +44,6 @@ export class SocketTargetResolver {
 
       if (academy?.principal) {
         targets.push(`user:${academy.principal.id}`);
-      }
-
-      // 담임 선생에게 알림 (있는 경우)
-      const class_ = await this.prisma.class.findUnique({
-        where: { id: refundRequest.sessionEnrollment.session.classId },
-        include: { teacher: true },
-      });
-
-      if (class_?.teacher) {
-        targets.push(`user:${class_.teacher.id}`);
       }
     } catch (error) {
       this.logger.error(
@@ -358,16 +348,6 @@ export class SocketTargetResolver {
 
       if (academy?.principal) {
         targets.push({ userId: academy.principal.id, userRole: 'PRINCIPAL' });
-      }
-
-      // 담임 선생 (있는 경우)
-      const class_ = await this.prisma.class.findUnique({
-        where: { id: refundRequest.sessionEnrollment.session.classId },
-        include: { teacher: true },
-      });
-
-      if (class_?.teacher) {
-        targets.push({ userId: class_.teacher.id, userRole: 'TEACHER' });
       }
     } catch (error) {
       this.logger.error('Failed to resolve refund event targets', error);

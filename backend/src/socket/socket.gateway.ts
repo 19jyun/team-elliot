@@ -137,8 +137,8 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.connectedClients.delete(client.id);
   }
 
-  // 새로운 수강신청 요청 알림
-  notifyNewEnrollmentRequest(
+  // 새로운 수강신청 요청 알림 (원장 대상)
+  async notifyNewEnrollmentRequest(
     enrollmentId: number,
     studentId: number,
     sessionId: number,
@@ -146,18 +146,31 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     console.log(`📢 새로운 수강신청 요청 알림: ${enrollmentId}`);
 
-    // 해당 학원의 원장과 선생님들에게 알림
-    this.server.to(`academy:${academyId}`).emit('new_enrollment_request', {
-      enrollmentId,
-      studentId,
-      sessionId,
-      academyId,
-      timestamp: new Date().toISOString(),
+    const principal = await this.prisma.principal.findUnique({
+      where: { academyId },
+      select: { userRefId: true },
     });
+
+    if (!principal?.userRefId) {
+      console.warn(
+        `⚠️ 수강신청 알림 대상 원장을 찾을 수 없습니다. academyId=${academyId}`,
+      );
+      return;
+    }
+
+    this.server
+      .to(`user:${principal.userRefId}`)
+      .emit('new_enrollment_request', {
+        enrollmentId,
+        studentId,
+        sessionId,
+        academyId,
+        timestamp: new Date().toISOString(),
+      });
   }
 
-  // 새로운 환불 요청 알림
-  notifyNewRefundRequest(
+  // 새로운 환불 요청 알림 (원장 대상)
+  async notifyNewRefundRequest(
     refundId: number,
     studentId: number,
     sessionId: number,
@@ -165,8 +178,19 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     console.log(`📢 새로운 환불 요청 알림: ${refundId}`);
 
-    // 해당 학원의 원장과 선생님들에게 알림
-    this.server.to(`academy:${academyId}`).emit('new_refund_request', {
+    const principal = await this.prisma.principal.findUnique({
+      where: { academyId },
+      select: { userRefId: true },
+    });
+
+    if (!principal?.userRefId) {
+      console.warn(
+        `⚠️ 환불 요청 알림 대상 원장을 찾을 수 없습니다. academyId=${academyId}`,
+      );
+      return;
+    }
+
+    this.server.to(`user:${principal.userRefId}`).emit('new_refund_request', {
       refundId,
       studentId,
       sessionId,
@@ -235,6 +259,25 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server.to(`user:${studentUserRefId}`).emit('refund_rejected', {
       refundId,
       sessionId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  // 원장이 지정한 새로운 클래스 담당 알림 (교사 대상)
+  notifyTeacherAssignedToClass(
+    teacherUserRefId: number,
+    data: {
+      classId: number;
+      className: string;
+      academyId: number;
+      academyName: string;
+      teacherName: string;
+    },
+  ) {
+    console.log(`📢 교사 담당 클래스 알림: ${data.classId}`);
+
+    this.server.to(`user:${teacherUserRefId}`).emit('teacher_class_assigned', {
+      ...data,
       timestamp: new Date().toISOString(),
     });
   }

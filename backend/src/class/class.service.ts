@@ -4,12 +4,21 @@ import {
   BadRequestException,
   ForbiddenException,
   ConflictException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { SocketGateway } from '../socket/socket.gateway';
+import { PushNotificationService } from '../push-notification/push-notification.service';
 
 @Injectable()
 export class ClassService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(ClassService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private readonly socketGateway: SocketGateway,
+    private readonly pushNotificationService: PushNotificationService,
+  ) {}
 
   /**
    * userId로 Principal 조회
@@ -226,6 +235,37 @@ export class ClassService {
       startDate: new Date(data.startDate),
       endDate: new Date(data.endDate),
     });
+
+    // Principal이 지정한 교사에게 새 강의 배정 알림
+    if (userRole === 'PRINCIPAL' && teacher.userRefId) {
+      const academyName = teacher.academy?.name ?? '소속 학원';
+      try {
+        this.socketGateway.notifyTeacherAssignedToClass(teacher.userRefId, {
+          classId: createdClass.id,
+          className: createdClass.className,
+          academyId: createdClass.academyId,
+          academyName,
+          teacherName: teacher.name,
+        });
+      } catch (error) {
+        this.logger.warn('소켓 알림 전송 실패(교사 배정)', error);
+      }
+
+      try {
+        await this.pushNotificationService.sendToUser(teacher.userRefId, {
+          title: '새 강의 배정',
+          body: `${academyName}에서 ${teacher.name} 강사님이 담당하실 강의를 새로 개설됐습니다.`,
+          data: {
+            type: 'teacher-class-assigned',
+            classId: String(createdClass.id),
+            className: createdClass.className,
+            academyId: String(createdClass.academyId),
+          },
+        });
+      } catch (error) {
+        this.logger.warn('푸시 알림 전송 실패(교사 배정)', error);
+      }
+    }
 
     return {
       ...createdClass,

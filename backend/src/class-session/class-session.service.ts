@@ -938,60 +938,33 @@ export class ClassSessionService {
     // 활동 로그 기록 (비동기)
 
     // Socket 이벤트 발생 - 새로운 수강신청 요청 알림
-    this.socketGateway.notifyNewEnrollmentRequest(
+    await this.socketGateway.notifyNewEnrollmentRequest(
       enrollment.id,
       enrollment.studentId,
       enrollment.sessionId,
       enrollment.session.class.academyId,
     );
 
-    // ===== 푸시 알림: 원장 + 담임 선생에게 =====
+    // ===== 푸시 알림: 원장에게 =====
     try {
       const academyId = enrollment.session.class.academyId;
-      const classId = enrollment.session.classId;
       const studentName = enrollment.student.name;
       const className = enrollment.session.class.className;
 
-      // 원장과 선생님의 User ID 조회
-      const [academy, class_] = await Promise.all([
-        this.prisma.academy.findUnique({
-          where: { id: academyId },
-          include: {
-            principal: {
-              include: {
-                user: { select: { id: true } },
-              },
+      const academy = await this.prisma.academy.findUnique({
+        where: { id: academyId },
+        include: {
+          principal: {
+            include: {
+              user: { select: { id: true } },
             },
           },
-        }),
-        this.prisma.class.findUnique({
-          where: { id: classId },
-          include: {
-            teacher: {
-              include: {
-                user: { select: { id: true } },
-              },
-            },
-          },
-        }),
-      ]);
+        },
+      });
 
-      const targetUserIds: number[] = [];
-
-      // 원장 추가
-      if (academy?.principal?.user) {
-        targetUserIds.push(academy.principal.user.id);
-      }
-
-      // 담임 선생 추가
-      if (class_?.teacher?.user) {
-        targetUserIds.push(class_.teacher.user.id);
-      }
-
-      // 푸시 알림 전송 (원장 + 선생)
-      if (targetUserIds.length > 0) {
+      if (academy?.principal?.user?.id) {
         await this.pushNotificationService
-          .sendToUsers(targetUserIds, {
+          .sendToUser(academy.principal.user.id, {
             title: '새로운 수강 신청',
             body: `${studentName} 학생이 ${className} 수업을 신청했습니다`,
             data: {
