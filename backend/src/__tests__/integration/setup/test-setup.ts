@@ -95,6 +95,14 @@ export const createAuthenticatedUser = async (
         where: { userRefId: user.id },
       });
 
+      if (!student) {
+        console.error('Student not found for userRefId:', user.id);
+        console.error('User:', user);
+        throw new Error(
+          `Student entity not found for userId: ${userData.userId}`,
+        );
+      }
+
       return {
         user,
         token,

@@ -20,7 +20,10 @@ describe('Refund Flow Integration Tests', () => {
         await createAuthenticatedUser('PRINCIPAL');
       const { teacher: teacherEntity } =
         await createAuthenticatedUser('TEACHER');
-      const { token: studentToken } = await createAuthenticatedUser('STUDENT');
+      const { token: studentToken, student: studentEntity } =
+        await createAuthenticatedUser('STUDENT');
+
+      console.log('Student entity:', studentEntity);
 
       // 2. 클래스 생성
       const classData = testData.classes.basic({
@@ -28,10 +31,10 @@ describe('Refund Flow Integration Tests', () => {
         level: 'BEGINNER',
         maxStudents: 10,
         tuitionFee: 150000,
-        startDate: new Date('2025-12-01'),
-        endDate: new Date('2025-12-31'),
-        registrationStartDate: new Date('2025-11-15'),
-        registrationEndDate: new Date('2025-11-30'),
+        startDate: new Date('2026-01-01'),
+        endDate: new Date('2026-01-31'),
+        registrationStartDate: new Date('2025-12-15'),
+        registrationEndDate: new Date('2025-12-31'),
         teacherId: teacherEntity.id,
         academyId: academy.id,
       });
@@ -57,11 +60,15 @@ describe('Refund Flow Integration Tests', () => {
 
       // 4. Student가 첫 번째 세션에 수강신청
       const firstSession = createdSessions[0];
+      console.log('Enrolling in session:', firstSession.id);
       const enrollmentResponse = await testApp
         .request()
         .post(`/class-sessions/${firstSession.id}/enroll`)
-        .set('Authorization', `Bearer ${studentToken}`)
-        .expect(201);
+        .set('Authorization', `Bearer ${studentToken}`);
+
+      console.log('Enrollment response status:', enrollmentResponse.status);
+      console.log('Enrollment response body:', enrollmentResponse.body);
+      expect(enrollmentResponse.status).toBe(201);
 
       const enrollment = enrollmentResponse.body;
 
@@ -109,10 +116,10 @@ describe('Refund Flow Integration Tests', () => {
         level: 'INTERMEDIATE',
         maxStudents: 8,
         tuitionFee: 200000,
-        startDate: new Date('2025-12-01'),
-        endDate: new Date('2025-12-31'),
-        registrationStartDate: new Date('2025-11-15'),
-        registrationEndDate: new Date('2025-11-30'),
+        startDate: new Date('2026-01-01'),
+        endDate: new Date('2026-01-31'),
+        registrationStartDate: new Date('2025-12-15'),
+        registrationEndDate: new Date('2025-12-31'),
         teacherId: teacherEntity.id,
         academyId: academy.id,
       });
@@ -194,10 +201,10 @@ describe('Refund Flow Integration Tests', () => {
         level: 'ADVANCED',
         maxStudents: 6,
         tuitionFee: 250000,
-        startDate: new Date('2025-12-01'),
-        endDate: new Date('2025-12-31'),
-        registrationStartDate: new Date('2025-11-15'),
-        registrationEndDate: new Date('2025-11-30'),
+        startDate: new Date('2026-01-01'),
+        endDate: new Date('2026-01-31'),
+        registrationStartDate: new Date('2025-12-15'),
+        registrationEndDate: new Date('2025-12-31'),
         teacherId: teacherEntity.id,
         academyId: academy.id,
       });

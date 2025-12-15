@@ -105,6 +105,15 @@ export class TestApp {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     try {
+      // retention 스키마 데이터 정리 (먼저 정리)
+      await this.prisma.$transaction([
+        this.prisma.anonymizedSessionEnrollment.deleteMany(),
+        this.prisma.anonymizedPayment.deleteMany(),
+        this.prisma.anonymizedRefund.deleteMany(),
+        this.prisma.anonymizedAttendance.deleteMany(),
+        this.prisma.anonymizedUser.deleteMany(),
+      ]);
+
       // 테스트 데이터 정리 (외래키 의존성 순서대로 삭제)
       await this.prisma.$transaction([
         // 1. 가장 하위 레벨: 환불 요청 (SessionEnrollment, Student, User 참조)
@@ -116,14 +125,14 @@ export class TestApp {
         // 3. 결제 정보 (SessionEnrollment, Student 참조)
         this.prisma.payment.deleteMany(),
 
-        // 4. 세션 수강신청 (ClassSession, Student 참조)
+        // 4. 출석 정보 (SessionEnrollment, Class, Student 참조) - SessionEnrollment보다 먼저 삭제
+        this.prisma.attendance.deleteMany(),
+
+        // 5. 세션 수강신청 (ClassSession, Student 참조)
         this.prisma.sessionEnrollment.deleteMany(),
 
-        // 5. 세션 내용 (ClassSession, BalletPose 참조)
+        // 6. 세션 내용 (ClassSession, BalletPose 참조)
         this.prisma.sessionContent.deleteMany(),
-
-        // 6. 출석 정보 (SessionEnrollment, Class, Student 참조)
-        this.prisma.attendance.deleteMany(),
 
         // 7. 공지사항 (User, Class 참조)
         this.prisma.notice.deleteMany(),
@@ -131,31 +140,40 @@ export class TestApp {
         // 8. 클래스 세션 (Class 참조)
         this.prisma.classSession.deleteMany(),
 
-        // 9. 클래스 (Teacher, Academy, ClassDetail 참조)
+        // 9. 클래스 등록 (Class, Student 참조)
+        this.prisma.enrollment.deleteMany(),
+
+        // 10. 클래스 (Teacher, Academy, ClassDetail 참조)
         this.prisma.class.deleteMany(),
 
-        // 10. 클래스 상세 정보 (Teacher 참조)
+        // 11. 클래스 상세 정보 (Teacher 참조)
         this.prisma.classDetail.deleteMany(),
 
-        // 11. 학생-학원 관계 (Student, Academy 참조)
+        // 12. 학생-학원 관계 (Student, Academy 참조)
         this.prisma.studentAcademy.deleteMany(),
 
-        // 13. 학생 (User 참조)
+        // 13. 디바이스 토큰 (User 참조)
+        this.prisma.deviceToken.deleteMany(),
+
+        // 14. 학생 (User 참조)
         this.prisma.student.deleteMany(),
 
-        // 14. 강사 (Academy 참조)
+        // 15. 강사 (Academy 참조)
         this.prisma.teacher.deleteMany(),
 
-        // 15. 원장 (Academy 참조)
+        // 16. 원장 (Academy 참조)
         this.prisma.principal.deleteMany(),
 
-        // 16. 탈퇴 이력 (독립적)
+        // 17. 탈퇴 이력 (독립적)
         this.prisma.withdrawalHistory.deleteMany(),
 
-        // 17. 학원 (독립적)
+        // 18. 학원 가입 요청 (Academy 참조)
+        this.prisma.academyJoinRequest.deleteMany(),
+
+        // 19. 학원 (독립적)
         this.prisma.academy.deleteMany(),
 
-        // 18. 사용자 (독립적, 마지막)
+        // 20. 사용자 (독립적, 마지막)
         this.prisma.user.deleteMany(),
       ]);
     } catch (error) {
@@ -170,18 +188,21 @@ export class TestApp {
           await this.prisma.refundRequest.deleteMany();
           await this.prisma.rejectionDetail.deleteMany();
           await this.prisma.payment.deleteMany();
+          await this.prisma.attendance.deleteMany();
           await this.prisma.sessionEnrollment.deleteMany();
           await this.prisma.sessionContent.deleteMany();
-          await this.prisma.attendance.deleteMany();
           await this.prisma.notice.deleteMany();
           await this.prisma.classSession.deleteMany();
+          await this.prisma.enrollment.deleteMany();
           await this.prisma.class.deleteMany();
           await this.prisma.classDetail.deleteMany();
           await this.prisma.studentAcademy.deleteMany();
+          await this.prisma.deviceToken.deleteMany();
           await this.prisma.student.deleteMany();
           await this.prisma.teacher.deleteMany();
           await this.prisma.principal.deleteMany();
           await this.prisma.withdrawalHistory.deleteMany();
+          await this.prisma.academyJoinRequest.deleteMany();
           await this.prisma.academy.deleteMany();
           await this.prisma.user.deleteMany();
         }
