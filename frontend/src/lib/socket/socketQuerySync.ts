@@ -144,8 +144,14 @@ export class SocketQuerySync {
         break;
 
       case "class_created":
+        // teacher.classes.lists() 무효화 (클래스 목록)
         this.queryClient.invalidateQueries({
           queryKey: queryKeys.teacher.classes.lists(),
+        });
+
+        // teacher.calendarSessions 무효화 (캘린더 세션 - 범위 무관)
+        this.queryClient.invalidateQueries({
+          queryKey: queryKeys.teacher.calendarSessions.all,
         });
         break;
 

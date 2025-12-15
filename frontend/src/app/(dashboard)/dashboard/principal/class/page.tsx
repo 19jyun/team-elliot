@@ -191,7 +191,7 @@ export default function PrincipalClassPage() {
       {/* 캘린더 섹션 - 고정 높이 + 내부 스크롤 */}
       <div 
         className="flex-shrink-0 bg-white"
-        style={{ height: 'calc(100vh - 350px)' }}
+        style={{ height: 'calc(100vh - 335px)' }}
       >
         <CalendarProvider
           mode="teacher-view"
@@ -210,7 +210,6 @@ export default function PrincipalClassPage() {
         <div className="flex flex-col self-center w-full font-semibold leading-snug text-center max-w-[375px] mx-auto">
           <CreateClassCard
             title="강의 개설"
-            description="새로운 강의를 개설하고 선생님을 배정하세요"
             onClick={handleCreateClassClick}
           />
         </div>

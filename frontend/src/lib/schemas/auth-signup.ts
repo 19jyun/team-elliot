@@ -43,10 +43,12 @@ export const accountInfoSchema = z
 // 4. 학원 정보 (Academy Info) - Principal 전용
 export const academyInfoSchema = z.object({
   name: z.string().min(1, "학원명을 입력해주세요."),
-  phoneNumber: z.string().regex(/^(0[0-9]-\d{4}-\d{4}|01[0-9]-\d{4}-\d{4})$/, {
-    message:
-      "전화번호 형식이 올바르지 않습니다. (예: 02-1234-5678 또는 010-1234-5678)",
-  }),
+  phoneNumber: z
+    .string()
+    .regex(
+      /^(0\d{1}-\d{4}-\d{4}|01[0-9]-\d{4}-\d{4})$/,
+      "전화번호 형식이 올바르지 않습니다. (예: 02-1234-5678 또는 010-1234-5678)"
+    ),
   address: z.string().min(1, "학원 주소를 입력해주세요."),
   description: z.string().min(1, "학원 소개를 입력해주세요."),
 });
