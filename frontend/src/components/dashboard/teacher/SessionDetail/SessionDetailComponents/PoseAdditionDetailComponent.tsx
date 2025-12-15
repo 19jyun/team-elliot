@@ -227,103 +227,103 @@ export function PoseAdditionDetailComponent({ session, onBack }: PoseAdditionDet
 
   return (
     <div className="flex flex-col h-full bg-white font-pretendard">
-      {/* 상단 고정 영역 */}
-      <div className="p-4 border-b border-gray-200">
-
-        {/* 검색 입력 영역 */}
-        <div className="mb-4">
-          <SeparatorInput
-            title="자세 검색"
-            placeholder=""
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            containerClassName="border border-[#AC9592] rounded-lg focus-within:ring-2 focus-within:ring-[#AC9592] focus-within:border-[#AC9592]"
-            titleClassName="text-[#AC9592] font-medium"
-          />
-        </div>
+      {/* 1. 검색창 - 최상단 고정 */}
+      <div className="flex-shrink-0 p-4 border-b border-gray-200">
+        <SeparatorInput
+          title="자세 검색"
+          placeholder=""
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          containerClassName="border border-[#AC9592] rounded-lg focus-within:ring-2 focus-within:ring-[#AC9592] focus-within:border-[#AC9592]"
+          titleClassName="text-[#AC9592] font-medium"
+        />
       </div>
 
-      {/* 중간 스크롤 영역 */}
-      <div className="flex-1 overflow-y-auto p-4">
+      {/* 2. 자세 리스트 & 추가된 수업 내용 - 동일 높이, 각각 스크롤 */}
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* 자세 목록 영역 */}
-        <div className="h-[55vh] mb-4">
-          {posesLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="text-[#AC9592]">자세 목록을 불러오는 중...</div>
-            </div>
-          ) : (
-            <div className="space-y-0">
-              {filteredPoses.map((pose: BalletPose, _index: number) => {
-                return (
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto px-4">
+            {posesLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-[#AC9592]">자세 목록을 불러오는 중...</div>
+              </div>
+            ) : (
+              <div>
+                {filteredPoses.map((pose: BalletPose, _index: number) => (
                   <div
                     key={pose.id}
                     onClick={() => handlePoseSelect(pose)}
-                    className="p-3 cursor-pointer transition-colors bg-white hover:bg-gray-50 border-b border-gray-100"
+                    className="p-3 cursor-pointer transition-colors bg-white hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
                   >
                     <div className="text-gray-800 font-medium text-base">{pose.name}</div>
                     {pose.description && (
                       <div className="text-xs text-gray-600 mt-0.5 line-clamp-2">{pose.description}</div>
                     )}
                   </div>
-                )
-              })}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Separator */}
+        <div className="flex-shrink-0 h-px bg-gray-300 mx-4 my-2" />
+
+        {/* 추가된 수업내용 영역 */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto px-4">
+            {finalPoseIds && finalPoseIds.length > 0 ? (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDragCancel={handleDragCancel}
+              >
+                <SortableContext
+                  items={finalPoseIds.map((_, index) => `pose-${index}`)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-2 py-2">
+                    {finalPoseIds.map((poseId, index) => {
+                      const pose = (allPoses && Array.isArray(allPoses)) 
+                        ? allPoses.find((p: BalletPose) => p.id === poseId)
+                        : undefined
+                      if (!pose) return null
+                      
+                      return (
+                        <SortablePoseItem
+                          key={`pose-${index}`}
+                          pose={pose}
+                          index={index}
+                          onRemove={handlePoseRemove}
+                          isSelected={selectedPoseIndex === index}
+                          isDragEnabled={isDragEnabled}
+                        />
+                      )
+                    })}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <Image 
+                  src="/images/logo/team-eliot-2.png" 
+                  alt="자세 추가" 
+                  width={96} 
+                  height={96} 
+                  className="mb-4 opacity-50" 
+                />
+                <p className="text-[#AC9592] text-lg">자세를 추가해보세요!</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-              {/* 현재 수업내용 (기존 + 새로 추가된 자세들) */}
-            <div className="mb-4 p-4">
-              <h3 className="text-lg font-semibold text-[#573B30] mb-3">추가된 수업내용</h3>
-              {finalPoseIds && finalPoseIds.length > 0 ? (
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragStart={handleDragStart}
-                  onDragEnd={handleDragEnd}
-                  onDragCancel={handleDragCancel}
-                >
-                  <SortableContext
-                    items={finalPoseIds.map((_, index) => `pose-${index}`)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <div className="space-y-1.5 h-[20vh] overflow-y-auto">
-                      {finalPoseIds.map((poseId, index) => {
-                        const pose = (allPoses && Array.isArray(allPoses)) 
-                          ? allPoses.find((p: BalletPose) => p.id === poseId)
-                          : undefined
-                        if (!pose) return null
-                        
-                        return (
-                          <SortablePoseItem
-                            key={`pose-${index}`}
-                            pose={pose}
-                            index={index}
-                            onRemove={handlePoseRemove}
-                            isSelected={selectedPoseIndex === index}
-                            isDragEnabled={isDragEnabled}
-                          />
-                        )
-                      })}
-                    </div>
-                  </SortableContext>
-                </DndContext>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <Image 
-                    src="/images/logo/team-eliot-2.png" 
-                    alt="자세 추가" 
-                    width={96} 
-                    height={96} 
-                    className="mb-4 opacity-50" 
-                  />
-                  <p className="text-[#AC9592] text-lg">자세를 추가해보세요!</p>
-                </div>
-              )}
-            </div>
-
-      {/* 하단 고정 저장하기 버튼 */}
-      <div className="p-4 border-t border-gray-200 bg-white">
+      {/* 3. 저장하기 버튼 - 최하단 고정 */}
+      <div className="flex-shrink-0 p-4 border-t border-gray-200 bg-white">
         <button
           onClick={handleSave}
           disabled={updatePosesMutation.isPending || !hasChanges}

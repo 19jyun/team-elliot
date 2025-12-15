@@ -6,7 +6,11 @@ import {
   SessionContentResponse,
   AttendanceItem,
 } from "@/types/api/session-content";
-import { UpdateSessionSummaryRequest } from "@/types/api/teacher";
+import {
+  UpdateSessionSummaryRequest,
+  TeacherSession,
+} from "@/types/api/teacher";
+import { PrincipalClassSession } from "@/types/api/principal";
 import { toast } from "sonner";
 import {
   getSessionContents,
@@ -174,39 +178,53 @@ export const useUpdateSessionSummary = (sessionId: number) => {
       const response = await updateSessionSummary(sessionId, data);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       // 역할에 따라 적절한 쿼리 무효화
       queryClient.invalidateQueries({
         queryKey: ["session-contents", sessionId, userRole],
       });
 
       if (userRole === "TEACHER") {
-        // 캘린더 세션 쿼리 무효화 (세션 상세 페이지에서 업데이트된 데이터를 볼 수 있도록)
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.teacher.calendarSessions.lists(),
-        });
+        // 캘린더 세션 캐시를 직접 업데이트 (즉시 반영)
+        queryClient.setQueriesData<TeacherSession[]>(
+          { queryKey: queryKeys.teacher.calendarSessions.lists() },
+          (oldData) => {
+            if (!oldData) return oldData;
+            return oldData.map((s) =>
+              s.id === sessionId
+                ? { ...s, sessionSummary: variables.sessionSummary }
+                : s
+            );
+          }
+        );
+
+        // detail 쿼리도 업데이트
         queryClient.invalidateQueries({
           queryKey: queryKeys.teacher.calendarSessions.detail(sessionId),
         });
         queryClient.invalidateQueries({
           queryKey: ["teacher-classes-with-sessions"],
         });
-        queryClient.invalidateQueries({
-          queryKey: ["teacher-profile"],
-        });
       } else if (userRole === "PRINCIPAL") {
-        // 캘린더 세션 쿼리 무효화
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.principal.calendarSessions.lists(),
-        });
+        // 캘린더 세션 캐시를 직접 업데이트 (즉시 반영)
+        queryClient.setQueriesData<PrincipalClassSession[]>(
+          { queryKey: queryKeys.principal.calendarSessions.lists() },
+          (oldData) => {
+            if (!oldData) return oldData;
+            return oldData.map((s) =>
+              s.id === sessionId
+                ? { ...s, sessionSummary: variables.sessionSummary }
+                : s
+            );
+          }
+        );
+
+        // detail 쿼리도 업데이트
         queryClient.invalidateQueries({
           queryKey: queryKeys.principal.calendarSessions.detail(sessionId),
         });
         queryClient.invalidateQueries({
           queryKey: ["principal-sessions"],
-        });
-        queryClient.invalidateQueries({
-          queryKey: ["principal-profile"],
         });
       }
 

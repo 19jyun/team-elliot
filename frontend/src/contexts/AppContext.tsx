@@ -11,9 +11,6 @@ import { useRouter, usePathname } from 'next/navigation';
 import { SignupStep, SignupData } from './forms/AuthFormManager';
 import { PrincipalCreateClassStep, PrincipalClassFormData } from './forms/PrincipalCreateClassFormManager';
 
-// SessionDetail 단계 타입 정의
-export type SessionDetailStep = 'main' | 'content' | 'pose';
-
 // 통합된 AppContext 타입
 interface AppContextType {
   // Navigation
@@ -51,13 +48,6 @@ interface AppContextType {
     enrollmentModification: ReturnType<typeof useForms>['enrollmentModification'];
     auth: ReturnType<typeof useForms>['auth'];
     principalCreateClass: ReturnType<typeof useForms>['principalCreateClass'];
-  };
-  
-  // SessionDetail 상태 관리
-  sessionDetail: {
-    currentStep: SessionDetailStep;
-    setCurrentStep: (step: SessionDetailStep) => void;
-    goBack: () => Promise<boolean>;
   };
   
   // --- Enrollment ---
@@ -115,25 +105,8 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
 
-  // SessionDetail 상태 관리
-  const [sessionDetailCurrentStep, setSessionDetailCurrentStep] = useState<SessionDetailStep>('main');
-  
-  const sessionDetailGoBack = useCallback(async (): Promise<boolean> => {
-    if (sessionDetailCurrentStep === 'main') {
-      router.back();
-      return true;
-    } else {
-      setSessionDetailCurrentStep('main');
-      return true;
-    }
-  }, [sessionDetailCurrentStep, router]);
-
   // 통합된 goBack
   const goBack = useCallback(async (): Promise<boolean> => {
-    if (pathname?.includes('/session/')) {
-      return await sessionDetailGoBack();
-    }
-    
     const isRoleDashboard = 
       pathname === '/dashboard/student' || 
       pathname === '/dashboard/teacher' || 
@@ -145,7 +118,7 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     
     router.back();
     return true;
-  }, [router, pathname, sessionDetailGoBack]);
+  }, [router, pathname]);
 
   // 통합 폼 관리 메서드들
   const updateForm = useCallback(<T extends keyof FormsState>(
@@ -249,12 +222,6 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
       principalCreateClass: forms.principalCreateClass,
     },
     
-    sessionDetail: {
-      currentStep: sessionDetailCurrentStep,
-      setCurrentStep: setSessionDetailCurrentStep,
-      goBack: sessionDetailGoBack,
-    },
-    
     // --- Enrollment ---
     setEnrollmentStep: forms.setEnrollmentStep,
     setSelectedMonth: (month: number) => forms.setEnrollmentData({ selectedMonth: month }),
@@ -288,7 +255,7 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
   }), [
     navigation, forms, ui, session,
     updateForm, resetAllForms, getFormState,
-    sessionDetailCurrentStep, sessionDetailGoBack, goBack
+    goBack
   ]);
 
   return (

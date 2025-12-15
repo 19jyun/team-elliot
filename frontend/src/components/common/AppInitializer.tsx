@@ -10,6 +10,41 @@ interface AppInitializerProps {
   children: React.ReactNode
 }
 
+// 줌 비활성화 유틸리티
+function preventZoom() {
+  // 더블 탭 줌 방지
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', (event) => {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) {
+      event.preventDefault();
+    }
+    lastTouchEnd = now;
+  }, { passive: false });
+
+  // 제스처 줌 방지 (Ctrl + wheel, pinch zoom)
+  document.addEventListener('wheel', (event) => {
+    if (event.ctrlKey) {
+      event.preventDefault();
+    }
+  }, { passive: false });
+
+  // 키보드 줌 방지 (Ctrl +/-, Cmd +/-)
+  document.addEventListener('keydown', (event) => {
+    if (
+      (event.ctrlKey || event.metaKey) &&
+      (event.key === '+' || event.key === '-' || event.key === '=')
+    ) {
+      event.preventDefault();
+    }
+  });
+
+  // gesturestart, gesturechange, gestureend 이벤트 방지 (iOS)
+  document.addEventListener('gesturestart', (event) => event.preventDefault());
+  document.addEventListener('gesturechange', (event) => event.preventDefault());
+  document.addEventListener('gestureend', (event) => event.preventDefault());
+}
+
 interface LoadingStateProps {
   message: string;
   subMessage?: string;
@@ -35,6 +70,11 @@ export function AppInitializer({ children }: AppInitializerProps) {
   useEffect(() => {
     AuthRouter.setRouter(router);
   }, [router])
+
+  // 줌 비활성화 설정
+  useEffect(() => {
+    preventZoom();
+  }, [])
 
   // 로딩 중일 때 스피너 표시
   if (status === 'loading') {

@@ -53,12 +53,12 @@ export function ContentDetailComponent({ session, onBack }: ContentDetailCompone
   }
 
   return (
-    <div className="flex flex-col h-full bg-white p-4 font-pretendard">
-      <div className="bg-white rounded-lg p-4 flex-1 flex flex-col">
-        <h3 className="text-lg font-semibold text-[#AC9592] mb-4">세 줄 요약</h3>
-        
-        {/* 수업내용 입력 영역 */}
-        <div className="flex-1 flex flex-col">
+    <div className="flex flex-col h-full bg-white font-pretendard">
+      {/* 수업내용 입력 영역 - 스크롤 가능 */}
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="bg-white rounded-lg">
+          <h3 className="text-lg font-semibold text-[#AC9592] mb-2">세 줄 요약</h3>
+          
           <div className="mb-4">
             <label className="block text-sm font-medium text-[#573B30] mb-2">
               오늘의 수업내용을 간단하게 요약하여 입력해주세요!
@@ -80,31 +80,31 @@ export function ContentDetailComponent({ session, onBack }: ContentDetailCompone
             </div>
           </div>
         </div>
+      </div>
 
-        {/* 저장 버튼 */}
-        <div className="mt-4">
-          <button
-            onClick={handleSave}
-            disabled={updateSummaryMutation.isPending || content.trim().length === 0}
-            className="w-full py-3 rounded-lg text-white text-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{
-              backgroundColor: updateSummaryMutation.isPending ? '#8C7A7A' : '#A08B8B',
-              fontFamily: 'Pretendard, sans-serif'
-            }}
-            onMouseEnter={(e) => {
-              if (!updateSummaryMutation.isPending && content.trim().length > 0) {
-                e.currentTarget.style.backgroundColor = '#8C7A7A'
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!updateSummaryMutation.isPending) {
-                e.currentTarget.style.backgroundColor = '#A08B8B'
-              }
-            }}
-          >
-            {updateSummaryMutation.isPending ? '저장 중...' : '저장하기'}
-          </button>
-        </div>
+      {/* 저장 버튼 - 하단 고정 */}
+      <div className="flex-shrink-0 p-4 border-t border-gray-200 bg-white">
+        <button
+          onClick={handleSave}
+          disabled={updateSummaryMutation.isPending || content.trim().length === 0}
+          className="w-full py-3 rounded-lg text-white text-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            backgroundColor: updateSummaryMutation.isPending ? '#8C7A7A' : '#A08B8B',
+            fontFamily: 'Pretendard, sans-serif'
+          }}
+          onMouseEnter={(e) => {
+            if (!updateSummaryMutation.isPending && content.trim().length > 0) {
+              e.currentTarget.style.backgroundColor = '#8C7A7A'
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!updateSummaryMutation.isPending) {
+              e.currentTarget.style.backgroundColor = '#A08B8B'
+            }
+          }}
+        >
+          {updateSummaryMutation.isPending ? '저장 중...' : '저장하기'}
+        </button>
       </div>
     </div>
   )

@@ -153,10 +153,10 @@ export default function TeacherDashboardPage() {
         <div className="flex flex-col px-5 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-stone-700">
-                안녕하세요, {session?.user?.name} 선생님!
+              <h1 className="text-xl font-bold text-stone-700">
+                안녕하세요, {session?.user?.name}님!
               </h1>
-              <p className="mt-2 text-stone-500">오늘도 즐거운 수업되세요!</p>
+              <p className="mt-2 text-stone-500 text-sm">오늘도 즐거운 수업되세요!</p>
             </div>
             {/* 캘린더 아이콘 버튼 */}
             <button
