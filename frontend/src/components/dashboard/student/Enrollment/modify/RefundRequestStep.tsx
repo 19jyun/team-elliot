@@ -36,6 +36,8 @@ export function RefundRequestStep({ modificationData }: RefundRequestStepProps) 
     setValue,
     watch,
     formState: { isValid, errors },
+    reset,
+    trigger
   } = useForm<RefundRequestSchemaType>({
     resolver: zodResolver(refundRequestSchema),
     defaultValues: {
@@ -67,16 +69,27 @@ export function RefundRequestStep({ modificationData }: RefundRequestStepProps) 
         refundAccount.refundBankName || ''
       );
 
-      setValue('bank', selectedBank);
-      setValue('customBankName', customBankName);
-      setValue('accountNumber', refundAccount.refundAccountNumber || '');
-      setValue('accountHolder', refundAccount.refundAccountHolder || '');
+      reset({
+        bank: selectedBank,
+        customBankName: customBankName,
+        accountNumber: refundAccount.refundAccountNumber || '',
+        accountHolder: refundAccount.refundAccountHolder || '',
+        reason: RefundReason.PERSONAL_SCHEDULE,
+        detailedReason: '',
+        saveAccount: !!refundAccount.refundBankName,
+      }, {
+        keepDefaultValues: false,
+      });
 
       if (refundAccount.refundBankName) {
         setValue('saveAccount', true);
       }
+      // reset 후 validation 실행
+      setTimeout(() => {
+        trigger();
+      }, 0);
     }
-  }, [refundAccount, setValue]);
+  }, [refundAccount, setValue, trigger]);
 
   const statusSteps = [
     { icon: '/icons/CourseRegistrationsStatusSteps1.svg', label: '수강 변경', isActive: false, isCompleted: true },
