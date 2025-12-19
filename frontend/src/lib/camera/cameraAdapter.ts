@@ -124,7 +124,6 @@ class BrowserCameraAdapter implements CameraAdapter {
       const {
         source = CameraSource.Prompt,
         resultType = CameraResultType.Uri,
-        quality = 90,
       } = options;
 
       // 이미지 파일만 허용

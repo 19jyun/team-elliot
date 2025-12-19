@@ -1,7 +1,6 @@
 import { CameraResultType, CameraSource } from "@capacitor/camera";
-import { Capacitor } from "@capacitor/core";
 import type { Photo, ImageOptions } from "@capacitor/camera";
-import { cameraAdapter } from "./cameraAdapter";
+import { cameraAdapter } from "@/lib/camera/cameraAdapter";
 
 /**
  * 카메라로 사진 촬영

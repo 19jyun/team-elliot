@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { CameraSource, CameraResultType } from "@capacitor/camera";
+import { CameraResultType } from "@capacitor/camera";
 import type { Photo, ImageOptions } from "@capacitor/camera";
 import {
   takePicture,

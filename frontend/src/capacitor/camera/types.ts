@@ -12,14 +12,10 @@ export type { Photo, GalleryPhotos, ImageOptions, GalleryImageOptions };
 
 export { CameraResultType, CameraSource };
 
-// 앱 전용 확장 타입
-export interface CameraOptions extends ImageOptions {
-  // 프로젝트 특화 옵션 추가 가능
-}
+// 앱 전용 확장 타입 - interface 대신 type 사용
+export type CameraOptions = ImageOptions;
 
-export interface GalleryOptions extends GalleryImageOptions {
-  // 프로젝트 특화 옵션 추가 가능
-}
+export type GalleryOptions = GalleryImageOptions;
 
 /**
  * 처리된 이미지 정보
