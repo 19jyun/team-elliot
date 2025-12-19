@@ -27,6 +27,7 @@ jest.mock('../migrator/principal-activity.migrator', () => ({
   migratePrincipalActivities: jest.fn(),
 }));
 jest.mock('../masker/masking-rules');
+jest.mock('../../common/utils/file.util');
 
 describe('WithdrawalService', () => {
   let service: WithdrawalService;
@@ -708,6 +709,51 @@ describe('WithdrawalService', () => {
         },
       });
     });
+
+    it('should delete profile photo if exists', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { FileUtil } = require('../../common/utils/file.util');
+      const teacherWithPhoto = {
+        ...mockTeacher,
+        photoUrl: '/uploads/teacher-photos/test-photo.jpg',
+      };
+      mockPrismaService.teacher.findUnique.mockResolvedValue(teacherWithPhoto);
+
+      await service.withdrawTeacher(userId, reason);
+
+      const transactionCallback =
+        mockPrismaService.$transaction.mock.calls[0][0];
+      const mockTx = {
+        anonymizedUser: {
+          create: jest.fn().mockResolvedValue(mockAnonymizedUser),
+        },
+        user: { update: jest.fn() },
+        teacher: { update: jest.fn() },
+        withdrawalHistory: { create: jest.fn() },
+      };
+
+      await transactionCallback(mockTx);
+
+      expect(FileUtil.deleteProfilePhoto).toHaveBeenCalledWith(
+        '/uploads/teacher-photos/test-photo.jpg',
+      );
+    });
+
+    it('should not delete photo if photoUrl is null', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { FileUtil } = require('../../common/utils/file.util');
+      const teacherWithoutPhoto = {
+        ...mockTeacher,
+        photoUrl: null,
+      };
+      mockPrismaService.teacher.findUnique.mockResolvedValue(
+        teacherWithoutPhoto,
+      );
+
+      await service.withdrawTeacher(userId, reason);
+
+      expect(FileUtil.deleteProfilePhoto).not.toHaveBeenCalled();
+    });
   });
 
   describe('withdrawPrincipal', () => {
@@ -1092,6 +1138,56 @@ describe('WithdrawalService', () => {
           reasonCategory: 'OTHER',
         },
       });
+    });
+
+    it('should delete profile photo if exists', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { FileUtil } = require('../../common/utils/file.util');
+      const principalWithPhoto = {
+        ...mockPrincipal,
+        photoUrl: '/uploads/principal-photos/test-photo.jpg',
+      };
+      mockPrismaService.principal.findUnique.mockResolvedValue(
+        principalWithPhoto,
+      );
+
+      await service.withdrawPrincipal(userId, reason);
+
+      const transactionCallback =
+        mockPrismaService.$transaction.mock.calls[0][0];
+      const mockTx = {
+        anonymizedUser: {
+          create: jest.fn().mockResolvedValue(mockAnonymizedUser),
+        },
+        studentAcademy: { deleteMany: jest.fn() },
+        teacher: { updateMany: jest.fn() },
+        academy: { update: jest.fn() },
+        user: { update: jest.fn() },
+        principal: { update: jest.fn() },
+        withdrawalHistory: { create: jest.fn() },
+      };
+
+      await transactionCallback(mockTx);
+
+      expect(FileUtil.deleteProfilePhoto).toHaveBeenCalledWith(
+        '/uploads/principal-photos/test-photo.jpg',
+      );
+    });
+
+    it('should not delete photo if photoUrl is null', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { FileUtil } = require('../../common/utils/file.util');
+      const principalWithoutPhoto = {
+        ...mockPrincipal,
+        photoUrl: null,
+      };
+      mockPrismaService.principal.findUnique.mockResolvedValue(
+        principalWithoutPhoto,
+      );
+
+      await service.withdrawPrincipal(userId, reason);
+
+      expect(FileUtil.deleteProfilePhoto).not.toHaveBeenCalled();
     });
   });
 });

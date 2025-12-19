@@ -9,6 +9,12 @@ import {
   checkNotificationPermission,
   requestNotificationPermission,
 } from "./notifications";
+import {
+  checkCameraPermission,
+  requestCameraPermission,
+  checkPhotosPermission,
+  requestPhotosPermission,
+} from "./camera";
 
 export async function checkPermission(
   type: PermissionType
@@ -21,6 +27,10 @@ export async function checkPermission(
       return checkCalendarWritePermission();
     case PermissionType.Notifications:
       return checkNotificationPermission();
+    case PermissionType.Camera:
+      return checkCameraPermission();
+    case PermissionType.CameraPhotos:
+      return checkPhotosPermission();
     default:
       return "denied";
   }
@@ -37,6 +47,10 @@ export async function requestPermission(
       return requestCalendarWritePermission();
     case PermissionType.Notifications:
       return requestNotificationPermission();
+    case PermissionType.Camera:
+      return requestCameraPermission();
+    case PermissionType.CameraPhotos:
+      return requestPhotosPermission();
     default:
       return "denied";
   }

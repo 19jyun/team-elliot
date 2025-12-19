@@ -19,6 +19,17 @@ const config: CapacitorConfig = {
       showSpinner: false,
     },
   },
+  // iOS 줌 비활성화
+  ios: {
+    contentInset: "never",
+    webContentsDebuggingEnabled: false,
+  },
+  // Android 줌 비활성화
+  android: {
+    allowMixedContent: true,
+    captureInput: true,
+    webContentsDebuggingEnabled: false,
+  },
 };
 
 export default config;

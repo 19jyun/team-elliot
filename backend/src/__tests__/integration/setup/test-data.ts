@@ -1,33 +1,54 @@
+// 고유 ID 생성을 위한 카운터
+let userIdCounter = 0;
+
+// 짧고 고유한 ID 생성 (영문+숫자, 최대 15자)
+function generateShortUniqueId(): string {
+  userIdCounter++;
+  const timestamp = Date.now().toString(36).slice(-4); // 4자리
+  const counter = userIdCounter.toString(36).padStart(2, '0'); // 2자리
+  const random = Math.random().toString(36).substr(2, 3); // 3자리
+  return `${timestamp}${counter}${random}`; // 총 9자리
+}
+
 // 테스트 데이터 팩토리
 export const TestDataFactory = {
   // 사용자 데이터
   users: {
-    student: (overrides = {}) => ({
-      userId: `student${Date.now().toString().slice(-6)}`,
-      password: 'Test1234',
-      name: '테스트 학생',
-      phoneNumber: '010-1234-5678',
-      role: 'STUDENT' as const,
-      ...overrides,
-    }),
+    student: (overrides = {}) => {
+      const uniqueId = generateShortUniqueId();
+      return {
+        userId: `st${uniqueId}`, // st + 9자 = 11자
+        password: 'Test1234',
+        name: '테스트 학생',
+        phoneNumber: `010-1234-${String(5000 + userIdCounter).padStart(4, '0')}`,
+        role: 'STUDENT' as const,
+        ...overrides,
+      };
+    },
 
-    teacher: (overrides = {}) => ({
-      userId: `teacher${Date.now().toString().slice(-6)}`,
-      password: 'Test1234',
-      name: '테스트 강사',
-      phoneNumber: '010-8765-4321',
-      role: 'TEACHER' as const,
-      ...overrides,
-    }),
+    teacher: (overrides = {}) => {
+      const uniqueId = generateShortUniqueId();
+      return {
+        userId: `tc${uniqueId}`, // tc + 9자 = 11자
+        password: 'Test1234',
+        name: '테스트 강사',
+        phoneNumber: `010-8765-${String(4000 + userIdCounter).padStart(4, '0')}`,
+        role: 'TEACHER' as const,
+        ...overrides,
+      };
+    },
 
-    principal: (overrides = {}) => ({
-      userId: `principal${Date.now().toString().slice(-6)}`,
-      password: 'Test1234',
-      name: '테스트 원장',
-      phoneNumber: '010-5555-5555',
-      role: 'PRINCIPAL' as const,
-      ...overrides,
-    }),
+    principal: (overrides = {}) => {
+      const uniqueId = generateShortUniqueId();
+      return {
+        userId: `pr${uniqueId}`, // pr + 9자 = 11자
+        password: 'Test1234',
+        name: '테스트 원장',
+        phoneNumber: `010-5555-${String(5000 + userIdCounter).padStart(4, '0')}`,
+        role: 'PRINCIPAL' as const,
+        ...overrides,
+      };
+    },
   },
 
   // 학원 데이터

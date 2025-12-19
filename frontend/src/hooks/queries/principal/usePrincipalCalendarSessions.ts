@@ -33,14 +33,17 @@ export function usePrincipalCalendarSession(id: number) {
   return useQuery({
     queryKey: queryKeys.principal.calendarSessions.detail(id),
     queryFn: async (): Promise<PrincipalClassSession | null> => {
-      // 먼저 목록 캐시에서 찾기
-      const sessions = queryClient.getQueryData<PrincipalClassSession[]>(
-        queryKeys.principal.calendarSessions.lists()
-      );
+      // 모든 캘린더 세션 캐시에서 찾기 (range 파라미터 무관하게)
+      const allQueries = queryClient.getQueriesData<PrincipalClassSession[]>({
+        queryKey: queryKeys.principal.calendarSessions.lists(),
+      });
 
-      if (sessions) {
-        const session = sessions.find((s) => s.id === id);
-        if (session) return session;
+      // 모든 캐시된 세션 목록에서 찾기
+      for (const [, sessions] of allQueries) {
+        if (sessions) {
+          const session = sessions.find((s) => s.id === id);
+          if (session) return session;
+        }
       }
 
       return null;

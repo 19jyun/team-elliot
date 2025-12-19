@@ -7,7 +7,7 @@ interface SocketEvents {
     message: string;
   };
 
-  // 새로운 수강신청 요청 (수강생 → 원장/선생님)
+  // 새로운 수강신청 요청 (수강생 → 원장)
   new_enrollment_request: {
     enrollmentId: number;
     studentId: number;
@@ -16,7 +16,7 @@ interface SocketEvents {
     timestamp: string;
   };
 
-  // 새로운 환불 요청 (수강생 → 원장/선생님)
+  // 새로운 환불 요청 (수강생 → 원장)
   new_refund_request: {
     refundId: number;
     studentId: number;
@@ -25,31 +25,39 @@ interface SocketEvents {
     timestamp: string;
   };
 
-  // 수강신청 승인 (원장/선생님 → 수강생)
+  // 수강신청 승인 (원장 → 수강생)
   enrollment_accepted: {
     enrollmentId: number;
     sessionId?: number;
     timestamp: string;
   };
 
-  // 수강신청 거절 (원장/선생님 → 수강생)
+  // 수강신청 거절 (원장 → 수강생)
   enrollment_rejected: {
     enrollmentId: number;
     sessionId?: number;
     timestamp: string;
   };
 
-  // 환불 요청 승인 (원장/선생님 → 수강생)
+  // 환불 요청 승인 (원장 → 수강생)
   refund_accepted: {
     refundId: number;
     sessionId?: number;
     timestamp: string;
   };
 
-  // 환불 요청 거절 (원장/선생님 → 수강생)
+  // 환불 요청 거절 (원장 → 수강생)
   refund_rejected: {
     refundId: number;
     sessionId?: number;
+    timestamp: string;
+  };
+
+  // 새로운 강의 생성 알림 (원장 → 강사)
+  class_created: {
+    classId: number;
+    className: string;
+    message: string;
     timestamp: string;
   };
 }

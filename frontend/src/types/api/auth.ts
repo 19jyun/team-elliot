@@ -98,6 +98,14 @@ export interface CheckUserIdResponse {
   available: boolean;
 }
 
+export interface CheckPhoneRequest {
+  phoneNumber: string;
+}
+
+export interface CheckPhoneResponse {
+  available: boolean;
+}
+
 export interface SendVerificationRequest {
   phoneNumber: string;
 }

@@ -65,7 +65,7 @@ const CreateClassCard: React.FC<{
 export default function PrincipalClassPage() {
   const signOut = useSignOut()
   const router = useRouter()
-  const { resetPrincipalCreateClass } = useApp()
+  const { resetPrincipalCreateClass, setSelectedSessionId } = useApp()
 
   const { data: session, status } = useSession()
 
@@ -135,8 +135,11 @@ export default function PrincipalClassPage() {
     // DateSessionModal 닫기
     closeDateModal()
     
-    // 쿼리 파라미터로 세션 상세 페이지로 이동 (React Query 캐시에서 데이터 조회)
-    router.push(ensureTrailingSlash(`/dashboard/principal/class/session-detail?id=${session.id}`))
+    // Context에 선택된 세션 ID 저장
+    setSelectedSessionId(session.id)
+    
+    // 쿼리 파라미터 없이 세션 상세 페이지로 이동 (Context에서 데이터 조회)
+    router.push(ensureTrailingSlash(`/dashboard/principal/class/session-detail/`))
   }
 
 
@@ -159,10 +162,10 @@ export default function PrincipalClassPage() {
         <div className="flex flex-col px-5 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-stone-700">
-                안녕하세요, {session?.user?.name} 원장님!
+              <h1 className="text-xl font-bold text-stone-700">
+                안녕하세요, {session?.user?.name}님!
               </h1>
-              <p className="mt-2 text-stone-500">학원의 모든 강의를 한눈에 확인하세요!</p>
+              <p className="mt-2 text-stone-500 text-sm">모든 강의들을 한눈에 확인하세요!</p>
             </div>
             {/* 캘린더 아이콘 버튼 */}
             <button
@@ -191,7 +194,7 @@ export default function PrincipalClassPage() {
       {/* 캘린더 섹션 - 고정 높이 + 내부 스크롤 */}
       <div 
         className="flex-shrink-0 bg-white"
-        style={{ height: 'calc(100vh - 350px)' }}
+        style={{ height: 'calc(100vh - 335px)' }}
       >
         <CalendarProvider
           mode="teacher-view"
@@ -210,7 +213,6 @@ export default function PrincipalClassPage() {
         <div className="flex flex-col self-center w-full font-semibold leading-snug text-center max-w-[375px] mx-auto">
           <CreateClassCard
             title="강의 개설"
-            description="새로운 강의를 개설하고 선생님을 배정하세요"
             onClick={handleCreateClassClick}
           />
         </div>

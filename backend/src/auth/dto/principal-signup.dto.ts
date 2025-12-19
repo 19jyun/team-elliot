@@ -65,8 +65,9 @@ export class PrincipalSignupDto {
   })
   @IsString()
   @MinLength(8, { message: '비밀번호는 8자 이상이어야 합니다.' })
-  @Matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/, {
-    message: '비밀번호는 영문, 숫자를 포함하여 8자 이상이어야 합니다.',
+  @Matches(/^(?=.*[A-Za-z])(?=.*\d)[\S]{8,}$/, {
+    message:
+      '비밀번호는 영문과 숫자를 포함해 8자 이상이어야 하며 특수문자를 사용할 수 있습니다.',
   })
   password: string;
 

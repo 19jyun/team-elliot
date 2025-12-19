@@ -2,6 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 전체 앱 줌 비활성화 */
+html,
+body {
+  touch-action: pan-x pan-y;
+  -ms-touch-action: pan-x pan-y;
+  overscroll-behavior: none;
+}
+
+* {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* 입력 필드는 선택 가능하게 */
+input,
+textarea,
+[contenteditable] {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
 /* Keen Slider 커스텀 스타일 */
 .keen-slider {
   display: flex;

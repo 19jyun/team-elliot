@@ -29,10 +29,10 @@ describe('Withdrawal Flow Integration Tests', () => {
         level: 'BEGINNER',
         maxStudents: 10,
         tuitionFee: 150000,
-        startDate: new Date('2025-12-01'),
-        endDate: new Date('2025-12-31'),
-        registrationStartDate: new Date('2025-11-15'),
-        registrationEndDate: new Date('2025-11-30'),
+        startDate: new Date('2026-01-01'),
+        endDate: new Date('2026-01-31'),
+        registrationStartDate: new Date('2025-12-15'),
+        registrationEndDate: new Date('2025-12-31'),
         teacherId: teacherEntity.id,
         academyId: academy.id,
       });
@@ -58,14 +58,19 @@ describe('Withdrawal Flow Integration Tests', () => {
 
       // 4. Student가 세션에 수강신청
       const firstSession = createdSessions[0];
+      console.log('First session:', firstSession);
       const enrollmentResponse = await testApp
         .request()
         .post(`/class-sessions/${firstSession.id}/enroll`)
-        .set('Authorization', `Bearer ${studentToken}`)
-        .expect(201);
+        .set('Authorization', `Bearer ${studentToken}`);
+
+      console.log('Enrollment response status:', enrollmentResponse.status);
+      console.log('Enrollment response body:', enrollmentResponse.body);
+      expect(enrollmentResponse.status).toBe(201);
 
       const enrollment = enrollmentResponse.body;
       expect(enrollment).toHaveProperty('id');
+      console.log('Created enrollment:', enrollment);
 
       // 5. 환불 신청 생성 (선택사항)
       const refundData = testData.refundRequest({
@@ -237,10 +242,10 @@ describe('Withdrawal Flow Integration Tests', () => {
         level: 'BEGINNER',
         maxStudents: 10,
         tuitionFee: 150000,
-        startDate: new Date('2025-12-01'),
-        endDate: new Date('2025-12-31'),
-        registrationStartDate: new Date('2025-11-15'),
-        registrationEndDate: new Date('2025-11-30'),
+        startDate: new Date('2026-01-01'),
+        endDate: new Date('2026-01-31'),
+        registrationStartDate: new Date('2025-12-15'),
+        registrationEndDate: new Date('2025-12-31'),
         teacherId: teacherEntity.id,
         academyId: academy.id,
       });

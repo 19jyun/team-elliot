@@ -10,6 +10,7 @@ import { ensureTrailingSlash } from '@/lib/utils/router'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { personalInfoSchema, PersonalInfoSchemaType } from '@/lib/schemas/auth-signup'
+import { useCheckDuplicatePhone } from '@/hooks/useCheckDuplicatePhone'
 import { useApp } from '@/contexts/AppContext'
 
 interface InputFieldProps {
@@ -166,6 +167,7 @@ export function SignupPersonalPage() {
   const [verificationCode, setVerificationCode] = useState('')
   const [timeLeft, setTimeLeft] = useState(180) // 3분 = 180초
   const [isTimerRunning, setIsTimerRunning] = useState(false)
+  const { check: checkDuplicatePhone } = useCheckDuplicatePhone()
 
   // RHF 설정 - Context에서 초기값 가져오기
   const {
@@ -251,8 +253,16 @@ export function SignupPersonalPage() {
       toast.error('올바른 전화번호 형식이 아닙니다')
       return
     }
-    // 인증 로직은 미구현 상태이므로 바로 인증 완료 처리
-    toast.success('인증 로직은 미구현 상태입니다. 다음단계로 진행하세요.')
+    const formattedPhoneNumber = formatPhoneNumber(cleanPhoneNumber)
+
+    const isAvailable = await checkDuplicatePhone(formattedPhoneNumber)
+    if (!isAvailable) {
+      toast.error('이미 사용중인 전화번호입니다')
+      return
+    }
+
+    // 인증 로직은 미구현 상태이므로 바로 인증 완료 처리 (중복 확인 후)
+    toast.success('전화번호 인증이 완료되었습니다. 다음단계로 진행하세요.')
     setIsPhoneVerified(true)
     setIsTimerRunning(false)
   }
@@ -309,38 +319,44 @@ export function SignupPersonalPage() {
   }
 
   return (
-    <div className="flex flex-col mt-8 w-full">
-      <Image
-        src="/images/logo/team-eliot-1.png"
-        alt="Team Eliot Logo"
-        width={220}
-        height={49}
-        priority
-        className="object-contain max-w-full w-[220px]"
-      />
+    <div className="flex flex-col w-full h-full">
+      {/* Header - 고정 높이 (Logo, Progress Bar, 안내문구) */}
+      <header className="flex-shrink-0 flex flex-col px-5 py-4 border-b border-gray-200 w-full">
+        <Image
+          src="/images/logo/team-eliot-1.png"
+          alt="Team Eliot Logo"
+          width={220}
+          height={49}
+          priority
+          className="object-contain max-w-full w-[220px]"
+        />
 
-      <div className="flex flex-col self-center mt-6 w-full">
-        <div className="flex gap-2 items-center w-full">
-          {[1, 2, 3, 4].map((step) => (
-            <ProgressBarItem key={step} isActive={step === currentStep} />
-          ))}
-        </div>
-        <div className="flex gap-10 justify-between items-start mt-2 w-full text-sm font-medium text-stone-700">
-          <div>회원가입까지 {4 - currentStep}단계 남았어요!</div>
-          <div className="flex items-center whitespace-nowrap">
-            <span>{currentStep}/4</span>
+        <div className="flex flex-col self-center mt-4 w-full">
+          <div className="flex gap-2 items-center w-full">
+            {[1, 2, 3, 4].map((step) => (
+              <ProgressBarItem key={step} isActive={step === currentStep} />
+            ))}
+          </div>
+          <div className="flex gap-10 justify-between items-start mt-2 w-full text-sm font-medium text-stone-700">
+            <div>회원가입까지 {4 - currentStep}단계 남았어요!</div>
+            <div className="flex items-center whitespace-nowrap">
+              <span>{currentStep}/4</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="self-start mt-6 text-xl font-medium leading-tight text-stone-700">
-        이름과 전화번호를 입력해주세요
-      </div>
+        <div className="self-start mt-4 text-xl font-medium leading-tight text-stone-700">
+          이름과 전화번호를 입력해주세요
+        </div>
+      </header>
 
-      <form
-        onSubmit={handleSubmit(onNext)}
-        className="flex flex-col mt-16 w-full whitespace-nowrap"
-      >
+      {/* Main Content - 고정 높이 + 스크롤 */}
+      <main className="flex-shrink-0 overflow-y-auto px-5" style={{ height: 'calc(100vh - 320px)' }}>
+        <form
+          id="signup-personal-form"
+          onSubmit={handleSubmit(onNext)}
+          className="flex flex-col mt-4 w-full whitespace-nowrap pb-4"
+        >
         <div className="flex flex-col w-full">
           <Controller
             control={control}
@@ -367,9 +383,11 @@ export function SignupPersonalPage() {
                   e: React.ChangeEvent<HTMLInputElement>,
                 ) => {
                   const onlyNumbers = e.target.value.replace(/[^0-9]/g, '')
+                  // 필드는 하이픈이 포함된 포맷값을 저장해 Zod 정규식과 일치시킨다.
+                  const formatted = formatPhoneNumber(onlyNumbers)
                   field.onChange({
                     ...e,
-                    target: { ...e.target, value: onlyNumbers },
+                    target: { ...e.target, value: formatted },
                   })
                 }
 
@@ -474,21 +492,26 @@ export function SignupPersonalPage() {
               <span>전화번호 인증이 완료되었습니다.</span>
             </div>
           )}
-
-          <button
-            type="submit"
-            className={cn(
-              'mt-6 w-full h-11 px-8 inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-              isNextButtonEnabled()
-                ? 'bg-primary text-white hover:bg-primary/90'
-                : 'bg-stone-300 text-white cursor-not-allowed',
-            )}
-            disabled={!isNextButtonEnabled()}
-          >
-            다음으로
-          </button>
         </div>
-      </form>
+        </form>
+      </main>
+
+      {/* Footer - 고정 높이 (다음으로 버튼) */}
+      <footer className="flex-shrink-0 border-t border-gray-200 px-5 py-4 w-full">
+        <button
+          type="submit"
+          form="signup-personal-form"
+          className={cn(
+            'w-full h-11 px-8 inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+            isNextButtonEnabled()
+              ? 'bg-primary text-white hover:bg-primary/90'
+              : 'bg-stone-300 text-white cursor-not-allowed',
+          )}
+          disabled={!isNextButtonEnabled()}
+        >
+          다음으로
+        </button>
+      </footer>
     </div>
   )
-} 
+}

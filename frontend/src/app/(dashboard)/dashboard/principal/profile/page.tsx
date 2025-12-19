@@ -90,15 +90,15 @@ export default function PrincipalProfilePage() {
   if (error) {
     return (
       <div className="flex flex-col h-full mx-auto w-full bg-white max-w-[480px] relative">
-        {/* Header - 고정 */}
-        <header className="flex-shrink-0 flex flex-col px-5 py-6">
+        {/* Header - 고정 높이 */}
+        <header className="flex-shrink-0 flex flex-col px-5 py-6 border-b border-gray-200">
           <h1 className="text-2xl font-bold text-stone-700">
             프로필 정보
           </h1>
         </header>
 
-        {/* Main Content - 스크롤 가능 */}
-        <main className="flex-1 min-h-0 overflow-y-auto">
+        {/* Main Content - 고정 높이 + 스크롤 */}
+        <main className="flex-shrink-0 overflow-y-auto" style={{ height: 'calc(100vh - 370px)' }}>
           <div className="flex flex-col items-center justify-center min-h-full px-5">
             <p className="text-red-500 text-center">데이터를 불러오는데 실패했습니다.</p>
             <button
@@ -110,12 +110,12 @@ export default function PrincipalProfilePage() {
           </div>
         </main>
 
-        {/* Footer - 하단 고정 */}
-        <footer className="flex-shrink-0 flex flex-col pb-2">
-          <div className="flex flex-col px-5 py-10">
+        {/* Footer - 하단 고정 (절대 줄어들지 않음) */}
+        <footer className="flex-shrink-0 flex flex-col bg-white z-50 border-t border-gray-200">
+          <div className="flex flex-col px-5 py-4">
             <button
               onClick={() => setShowLogoutModal(true)}
-              className="mt-6 w-full py-4 text-base font-semibold text-neutral-400 rounded-lg border border-zinc-300"
+              className="w-full py-4 text-base font-semibold text-neutral-400 rounded-lg border border-zinc-300 hover:bg-gray-50 transition-colors"
             >
               로그아웃
             </button>
@@ -135,24 +135,24 @@ export default function PrincipalProfilePage() {
 
   return (
     <div className="flex flex-col h-full mx-auto w-full bg-white max-w-[480px] relative">
-      {/* Header - 고정 */}
-      <header className="flex-shrink-0 flex flex-col px-5 py-6">
+      {/* Header - 고정 높이 */}
+      <header className="flex-shrink-0 flex flex-col px-5 py-6 border-b border-gray-200">
         <h1 className="text-2xl font-bold text-stone-700">
           {profileData?.name || session?.user?.name}님의 정보
         </h1>
       </header>
 
-      {/* Main Content - 스크롤 가능 */}
-      <main className="flex-1 min-h-0 overflow-y-auto">
+      {/* Main Content - 고정 높이 + 스크롤 */}
+      <main className="flex-shrink-0 overflow-y-auto" style={{ height: 'calc(100vh - 370px)' }}>
         <MenuLinks links={menuLinks} />
       </main>
 
-      {/* Footer - 하단 고정 */}
-      <footer className="flex-shrink-0 flex flex-col pb-2">
-        <div className="flex flex-col px-5 py-10">
+      {/* Footer - 하단 고정 (절대 줄어들지 않음) */}
+      <footer className="flex-shrink-0 flex flex-col bg-white z-50 border-t border-gray-200">
+        <div className="flex flex-col px-5 py-4">
           <button
             onClick={() => setShowLogoutModal(true)}
-            className="mt-6 w-full py-4 text-base font-semibold text-neutral-400 rounded-lg border border-zinc-300"
+            className="w-full py-4 text-base font-semibold text-neutral-400 rounded-lg border border-zinc-300 hover:bg-gray-50 transition-colors"
           >
             로그아웃
           </button>

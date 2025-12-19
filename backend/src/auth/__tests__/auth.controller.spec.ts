@@ -20,12 +20,12 @@ describe('AuthController', () => {
 
   const mockLoginDto: LoginDto = {
     userId: 'testuser',
-    password: 'password123',
+    password: 'Passw0rd!',
   };
 
   const mockSignupDto: SignupDto = {
     userId: 'newuser',
-    password: 'password123',
+    password: 'Passw0rd!',
     name: 'New User',
     phoneNumber: '010-1234-5678',
     role: 'STUDENT',

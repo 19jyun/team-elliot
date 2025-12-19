@@ -1,41 +1,61 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { User, Phone, Calendar, Edit, Save, X } from 'lucide-react';
-import { CloseCircleIcon } from '@/components/icons';
 import { toast } from 'sonner';
 import { UpdateStudentProfileRequest, StudentProfile } from '@/types/api/student';
 import { useStudentProfile } from '@/hooks/queries/student/useStudentProfile';
 import { useUpdateStudentProfile } from '@/hooks/mutations/student/useUpdateStudentProfile';
-import { validateProfileData } from '@/utils/validation';
-
+import { updateStudentProfileSchema, UpdateStudentProfileFormData } from '@/lib/schemas/student-profile';
+import { useCheckDuplicatePhone } from '@/hooks/useCheckDuplicatePhone';
+ 
 export function PersonalInfoManagement() {
   const { data: userProfileData, isLoading: profileLoading, error: profileError } = useStudentProfile();
   const userProfile = userProfileData as StudentProfile | null | undefined;
   const updateProfileMutation = useUpdateStudentProfile();
   
   const [isEditing, setIsEditing] = useState(false);
-  const [editedInfo, setEditedInfo] = useState<UpdateStudentProfileRequest>({});
-  const [isShaking, setIsShaking] = useState(false);
   
-  // 전화번호 인증 관련 상태
+  // 전화번호 중복 확인 관련 상태
   const [isPhoneVerificationRequired, setIsPhoneVerificationRequired] = useState(false);
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
-  const [verificationCode, setVerificationCode] = useState('');
-  const [timeLeft, setTimeLeft] = useState(180); // 3분 = 180초
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const { check: checkDuplicatePhone } = useCheckDuplicatePhone();
+
+  // React Hook Form 설정
+  const {
+    register,
+    handleSubmit,
+    watch,
+    reset,
+    setValue,
+    formState: { errors, dirtyFields },
+  } = useForm<UpdateStudentProfileFormData>({
+    resolver: zodResolver(updateStudentProfileSchema),
+    mode: 'onChange',
+    defaultValues: {
+      name: '',
+      phoneNumber: '',
+      emergencyContact: '',
+      birthDate: '',
+      notes: '',
+      level: '',
+    },
+  });
 
   const isLoading = profileLoading || updateProfileMutation.isPending;
+  const watchedPhoneNumber = watch('phoneNumber');
 
-  // API에서 가져온 데이터로 초기화
+  // API에서 가져온 데이터로 폼 초기화
   useEffect(() => {
-    if (userProfile && !isEditing) {
-      setEditedInfo({
+    if (userProfile) {
+      reset({
         name: userProfile.name || '',
         phoneNumber: userProfile.phoneNumber || '',
         emergencyContact: userProfile.emergencyContact || '',
@@ -44,38 +64,13 @@ export function PersonalInfoManagement() {
         level: userProfile.level || '',
       });
     }
-  }, [userProfile, isEditing]);
-
-  // 타이머 효과
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    
-    if (isTimerRunning && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            setIsTimerRunning(false);
-            setIsPhoneVerificationRequired(false);
-            setIsPhoneVerified(false);
-            return 180;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-
-    return () => {
-      if (interval) {
-        clearInterval(interval);
-      }
-    };
-  }, [isTimerRunning, timeLeft]);
+  }, [userProfile, reset]);
 
   // 전화번호 변경 감지
   useEffect(() => {
     if (isEditing && userProfile) {
       const originalPhone = userProfile.phoneNumber || '';
-      const currentPhone = editedInfo.phoneNumber || '';
+      const currentPhone = watchedPhoneNumber || '';
       
       // 전화번호 형식 체크 (01X-XXXX-XXXX 형식이면 13자)
       const isPhoneComplete = /^01[0-9]-[0-9]{4}-[0-9]{4}$/.test(currentPhone);
@@ -83,57 +78,25 @@ export function PersonalInfoManagement() {
       if (currentPhone !== originalPhone && isPhoneComplete) {
         setIsPhoneVerificationRequired(true);
         setIsPhoneVerified(false);
-        setTimeLeft(180);
-        setIsTimerRunning(false); // 타이머는 인증 버튼 클릭 시 시작
       } else if (currentPhone === originalPhone) {
         setIsPhoneVerificationRequired(false);
         setIsPhoneVerified(false);
-        setIsTimerRunning(false);
-        setTimeLeft(180);
-        setVerificationCode('');
       } else if (!isPhoneComplete) {
         setIsPhoneVerificationRequired(false);
         setIsPhoneVerified(false);
-        setIsTimerRunning(false);
-        setTimeLeft(180);
-        setVerificationCode('');
       }
     }
-  }, [editedInfo.phoneNumber, userProfile, isEditing]);
-
-  // Validation 에러 상태
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-
-  // 에러 발생 시 흔들리는 애니메이션 트리거
-  useEffect(() => {
-    if (Object.keys(validationErrors).length > 0) {
-      setIsShaking(true);
-      const timer = setTimeout(() => {
-        setIsShaking(false);
-      }, 1000); // 1초 후 애니메이션 종료
-      
-      return () => clearTimeout(timer);
-    }
-  }, [validationErrors]);
+  }, [watchedPhoneNumber, userProfile, isEditing]);
 
   const handleEdit = () => {
-    if (userProfile) {
-      setEditedInfo({
-        name: userProfile.name,
-        phoneNumber: userProfile.phoneNumber || '',
-        emergencyContact: userProfile.emergencyContact || '',
-        birthDate: userProfile.birthDate ? userProfile.birthDate.split('T')[0] : '',
-        notes: userProfile.notes || '',
-        level: userProfile.level || '',
-      });
-    }
     setIsEditing(true);
   };
 
   const handleCancel = () => {
+    // 폼을 원래 값으로 리셋
     if (userProfile) {
-      setEditedInfo({
-        name: userProfile.name,
+      reset({
+        name: userProfile.name || '',
         phoneNumber: userProfile.phoneNumber || '',
         emergencyContact: userProfile.emergencyContact || '',
         birthDate: userProfile.birthDate ? userProfile.birthDate.split('T')[0] : '',
@@ -144,87 +107,71 @@ export function PersonalInfoManagement() {
     setIsEditing(false);
     setIsPhoneVerificationRequired(false);
     setIsPhoneVerified(false);
-    setIsTimerRunning(false);
-    setTimeLeft(180);
-    setVerificationCode('');
   };
 
-  const handleSave = async () => {
+  const onSubmit = (data: UpdateStudentProfileFormData) => {
     // 전화번호 인증이 필요한데 아직 인증되지 않은 경우
     if (isPhoneVerificationRequired && !isPhoneVerified) {
       toast.error('전화번호 인증을 완료해주세요.');
       return;
     }
 
-    // 프론트엔드 validation 수행
-    const validation = validateProfileData(editedInfo);
-    if (!validation.isValid) {
-      // validation 에러를 validationErrors로 변환
-      const fieldErrorMap: Record<string, string> = {};
-      validation.errors.forEach(error => {
-        fieldErrorMap[error.field] = error.message;
-      });
+    // 변경된 필드만 추출 (빈 문자열 제외)
+    const changedFields: UpdateStudentProfileRequest = {};
+    
+    Object.keys(dirtyFields).forEach((key) => {
+      const field = key as keyof UpdateStudentProfileFormData;
+      const value = data[field];
       
-      setValidationErrors(fieldErrorMap);
-      setIsShaking(true);
-      setTimeout(() => {
-        setIsShaking(false);
-        setTimeout(() => {
-          setValidationErrors({});
-        }, 1000);
-      }, 1000);
+      // 빈 문자열이 아닌 경우만 추가
+      if (value && value !== '') {
+        changedFields[field] = value;
+      }
+      // 특이사항(notes)은 빈 문자열로의 변경도 허용
+      else if (field === 'notes' && dirtyFields[field]) {
+        changedFields.notes = undefined;
+      }
+    });
+
+    // 변경된 필드가 없으면 저장하지 않음
+    if (Object.keys(changedFields).length === 0) {
+      toast.info('변경된 내용이 없습니다.');
+      setIsEditing(false);
       return;
     }
-
-    setValidationErrors({});
     
-    updateProfileMutation.mutate(editedInfo, {
+    updateProfileMutation.mutate(changedFields, {
       onSuccess: () => {
         setIsEditing(false);
         setIsPhoneVerificationRequired(false);
         setIsPhoneVerified(false);
-        setIsTimerRunning(false);
-        setTimeLeft(180);
       },
     });
   };
 
-  const handleVerifyPhone = () => {
-    // 인증 버튼 클릭 시 타이머 시작
-    if (!isTimerRunning) {
-      setIsTimerRunning(true);
-      setTimeLeft(180);
-      toast.success('인증번호가 발송되었습니다.');
+  const handleVerifyPhone = async () => {
+    const phoneNumber = watchedPhoneNumber || '';
+    
+    // 전화번호 형식 검증
+    if (!/^01[0-9]-[0-9]{4}-[0-9]{4}$/.test(phoneNumber)) {
+      toast.error('올바른 전화번호 형식이 아닙니다');
       return;
     }
-    
-    // 확인 버튼 클릭 시 인증 완료 처리
+
+    // 중복 확인
+    const isAvailable = await checkDuplicatePhone(phoneNumber);
+    if (!isAvailable) {
+      toast.error('이미 사용중인 전화번호입니다');
+      setIsPhoneVerified(false);
+      return;
+    }
+
+    // 중복 확인 완료
     setIsPhoneVerified(true);
-    setIsTimerRunning(false);
-    setVerificationCode(''); // 인증번호 입력 필드 초기화
-    toast.success('전화번호 인증이 완료되었습니다.');
+    toast.success('사용 가능한 전화번호입니다.');
   };
 
 
-
-  const handleClearVerificationCode = () => {
-    setVerificationCode('');
-  };
-
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-  const handleInputChange = (field: keyof UpdateStudentProfileRequest, value: string) => {
-    setEditedInfo(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-
-    // 입력 필드 변경 시 해당 필드의 에러 초기화는 useApiError에서 자동 처리됨
-  };
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '미입력';
@@ -329,7 +276,7 @@ export function PersonalInfoManagement() {
                     취소
                   </Button>
                   <Button
-                    onClick={handleSave}
+                    onClick={handleSubmit(onSubmit)}
                     size="sm"
                     className="flex items-center gap-2"
                     disabled={isLoading || (isPhoneVerificationRequired && !isPhoneVerified)}
@@ -350,21 +297,20 @@ export function PersonalInfoManagement() {
               <label className="text-sm font-medium text-gray-700">이름</label>
               {isEditing ? (
                 <div className="space-y-1">
-                                     <Input
-                     value={editedInfo.name || ''}
-                     onChange={(e) => handleInputChange('name', e.target.value)}
-                     placeholder="이름을 입력하세요"
-                     className={`transition-all duration-200 ${
-                       validationErrors.name ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                     } ${
-                       isShaking && validationErrors.name ? 'animate-shake' : ''
-                     }`}
-                   />
-                   {validationErrors.name && (
-                     <p className="text-sm text-red-500 animate-in fade-in duration-200">
-                       {validationErrors.name}
-                     </p>
-                   )}
+                  <Input
+                    {...register('name')}
+                    placeholder="이름을 입력하세요"
+                    className={`transition-all duration-200 ${
+                      errors.name ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                    } ${
+                      errors.name ? 'animate-shake' : ''
+                    }`}
+                  />
+                  {errors.name && (
+                    <p className="text-sm text-red-500 animate-in fade-in duration-200">
+                      {errors.name.message}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="p-3 bg-gray-50 rounded-md">
@@ -379,76 +325,38 @@ export function PersonalInfoManagement() {
               {isEditing ? (
                 <div className="space-y-2">
                   <div className="flex gap-2">
-                      <PhoneInput
-                       value={editedInfo.phoneNumber || ''}
-                       onChange={(value) => handleInputChange('phoneNumber', value)}
-                       placeholder="전화번호를 입력하세요"
-                       className={`flex-1 transition-all duration-200 ${
-                         validationErrors.phoneNumber ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                       } ${
-                         isShaking && validationErrors.phoneNumber ? 'animate-shake' : ''
-                       }`}
-                     />
+                    <PhoneInput
+                      value={watchedPhoneNumber || ''}
+                      onChange={(value) => setValue('phoneNumber', value, { shouldValidate: true, shouldDirty: true })}
+                      placeholder="전화번호를 입력하세요"
+                      className={`flex-1 transition-all duration-200 ${
+                        errors.phoneNumber ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                      } ${
+                        errors.phoneNumber ? 'animate-shake' : ''
+                      }`}
+                    />
                     {isPhoneVerificationRequired && !isPhoneVerified && (
                       <Button
                         onClick={handleVerifyPhone}
                         size="sm"
-                        disabled={isTimerRunning}
                         className="whitespace-nowrap w-24"
                       >
-                        인증
+                        확인
                       </Button>
                     )}
                     {isPhoneVerified && (
                       <div className="flex items-center px-3 py-2 text-sm text-green-600 bg-green-50 rounded-md w-24 justify-center">
-                        <span>✓ 인증완료</span>
+                        <span>✓ 확인완료</span>
                       </div>
                     )}
                   </div>
                   
-                  {/* 인증번호 입력 필드 */}
-                  {isPhoneVerificationRequired && !isPhoneVerified && isTimerRunning && (
-                    <div className="flex gap-2">
-                      <div className="flex-1 relative">
-                        <Input
-                          value={verificationCode}
-                          onChange={(e) => setVerificationCode(e.target.value)}
-                          placeholder="인증번호 6자리"
-                          className="pr-20"
-                          maxLength={6}
-                        />
-                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
-                          <button
-                            onClick={handleClearVerificationCode}
-                            className="p-1 hover:bg-gray-100 rounded"
-                          >
-                            <CloseCircleIcon 
-                              width={16} 
-                              height={16}
-                            />
-                          </button>
-                          <div className="text-sm font-mono" style={{ color: '#573B30', fontFamily: 'Pretendard Variable' }}>
-                            {formatTime(timeLeft)}
-                          </div>
-                        </div>
-                      </div>
-                      <Button
-                        onClick={handleVerifyPhone}
-                        size="sm"
-                        disabled={verificationCode.length < 6}
-                        className="w-24"
-                      >
-                        확인
-                      </Button>
-                    </div>
+                  {/* 전화번호 에러 메시지 */}
+                  {errors.phoneNumber && (
+                    <p className="text-sm text-red-500 animate-in fade-in duration-200">
+                      {errors.phoneNumber.message}
+                    </p>
                   )}
-                  
-                                     {/* 전화번호 에러 메시지 */}
-                   {validationErrors.phoneNumber && (
-                     <p className="text-sm text-red-500 animate-in fade-in duration-200">
-                       {validationErrors.phoneNumber}
-                     </p>
-                   )}
                 </div>
               ) : (
                 <div className="p-3 bg-gray-50 rounded-md flex items-center gap-2">
@@ -468,21 +376,21 @@ export function PersonalInfoManagement() {
               <label className="text-sm font-medium text-gray-700">비상연락처</label>
               {isEditing ? (
                 <div className="space-y-1">
-                                     <PhoneInput
-                     value={editedInfo.emergencyContact || ''}
-                     onChange={(value) => handleInputChange('emergencyContact', value)}
-                     placeholder="비상연락처를 입력하세요"
-                     className={`transition-all duration-200 ${
-                       validationErrors.emergencyContact ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                     } ${
-                       isShaking && validationErrors.emergencyContact ? 'animate-shake' : ''
-                     }`}
-                   />
-                   {validationErrors.emergencyContact && (
-                     <p className="text-sm text-red-500 animate-in fade-in duration-200">
-                       {validationErrors.emergencyContact}
-                     </p>
-                   )}
+                  <PhoneInput
+                    value={watch('emergencyContact') || ''}
+                    onChange={(value) => setValue('emergencyContact', value, { shouldValidate: true, shouldDirty: true })}
+                    placeholder="비상연락처를 입력하세요"
+                    className={`transition-all duration-200 ${
+                      errors.emergencyContact ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                    } ${
+                      errors.emergencyContact ? 'animate-shake' : ''
+                    }`}
+                  />
+                  {errors.emergencyContact && (
+                    <p className="text-sm text-red-500 animate-in fade-in duration-200">
+                      {errors.emergencyContact.message}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="p-3 bg-gray-50 rounded-md flex items-center gap-2">
@@ -502,22 +410,21 @@ export function PersonalInfoManagement() {
               <label className="text-sm font-medium text-gray-700">생년월일</label>
               {isEditing ? (
                 <div className="space-y-1">
-                    <Input
-                     value={editedInfo.birthDate || ''}
-                     onChange={(e) => handleInputChange('birthDate', e.target.value)}
-                     placeholder="생년월일을 입력하세요"
-                     type="date"
-                     className={`transition-all duration-200 ${
-                       validationErrors.birthDate ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                     } ${
-                       isShaking && validationErrors.birthDate ? 'animate-shake' : ''
-                     }`}
-                   />
-                   {validationErrors.birthDate && (
-                     <p className="text-sm text-red-500 animate-in fade-in duration-200">
-                       {validationErrors.birthDate}
-                     </p>
-                   )}
+                  <Input
+                    {...register('birthDate')}
+                    placeholder="생년월일을 입력하세요"
+                    type="date"
+                    className={`transition-all duration-200 ${
+                      errors.birthDate ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                    } ${
+                      errors.birthDate ? 'animate-shake' : ''
+                    }`}
+                  />
+                  {errors.birthDate && (
+                    <p className="text-sm text-red-500 animate-in fade-in duration-200">
+                      {errors.birthDate.message}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="p-3 bg-gray-50 rounded-md flex items-center gap-2">
@@ -532,25 +439,24 @@ export function PersonalInfoManagement() {
               <label className="text-sm font-medium text-gray-700">레벨</label>
               {isEditing ? (
                 <div className="space-y-1">
-                   <select
-                     value={editedInfo.level || ''}
-                     onChange={(e) => handleInputChange('level', e.target.value)}
-                     className={`w-full p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 ${
-                       validationErrors.level ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                     } ${
-                       isShaking && validationErrors.level ? 'animate-shake' : ''
-                     }`}
-                   >
-                     <option value="">레벨 선택</option>
-                     <option value="초급">초급</option>
-                     <option value="중급">중급</option>
-                     <option value="고급">고급</option>
-                   </select>
-                   {validationErrors.level && (
-                     <p className="text-sm text-red-500 animate-in fade-in duration-200">
-                       {validationErrors.level}
-                     </p>
-                   )}
+                  <select
+                    {...register('level')}
+                    className={`w-full p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 ${
+                      errors.level ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                    } ${
+                      errors.level ? 'animate-shake' : ''
+                    }`}
+                  >
+                    <option value="">레벨 선택</option>
+                    <option value="초급">초급</option>
+                    <option value="중급">중급</option>
+                    <option value="고급">고급</option>
+                  </select>
+                  {errors.level && (
+                    <p className="text-sm text-red-500 animate-in fade-in duration-200">
+                      {errors.level.message}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="p-3 bg-gray-50 rounded-md">
@@ -564,21 +470,20 @@ export function PersonalInfoManagement() {
               <label className="text-sm font-medium text-gray-700">특이사항</label>
               {isEditing ? (
                 <div className="space-y-1">
-                   <Input
-                     value={editedInfo.notes || ''}
-                     onChange={(e) => handleInputChange('notes', e.target.value)}
-                     placeholder="특이사항을 입력하세요 (알러지, 부상 이력 등)"
-                     className={`transition-all duration-200 ${
-                       validationErrors.notes ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                     } ${
-                       isShaking && validationErrors.notes ? 'animate-shake' : ''
-                     }`}
-                   />
-                   {validationErrors.notes && (
-                     <p className="text-sm text-red-500 animate-in fade-in duration-200">
-                       {validationErrors.notes}
-                     </p>
-                   )}
+                  <Input
+                    {...register('notes')}
+                    placeholder="특이사항을 입력하세요 (알러지, 부상 이력 등)"
+                    className={`transition-all duration-200 ${
+                      errors.notes ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                    } ${
+                      errors.notes ? 'animate-shake' : ''
+                    }`}
+                  />
+                  {errors.notes && (
+                    <p className="text-sm text-red-500 animate-in fade-in duration-200">
+                      {errors.notes.message}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="p-3 bg-gray-50 rounded-md">

@@ -29,14 +29,14 @@ export class SocketTargetResolver {
     return targets;
   }
 
-  // 환불 요청 생성 → 원장 + 담임 선생에게 알림
+  // 환불 요청 생성 → 원장에게 알림
   async resolveRefundRequestCreatedTargets(
     refundRequest: any,
   ): Promise<string[]> {
     const targets: string[] = [];
 
     try {
-      // 해당 학원의 원장에게 알림
+      // 해당 학원의 원장에게만 알림
       const academy = await this.prisma.academy.findUnique({
         where: { id: refundRequest.sessionEnrollment.session.class.academyId },
         include: { principal: true },
@@ -44,16 +44,6 @@ export class SocketTargetResolver {
 
       if (academy?.principal) {
         targets.push(`user:${academy.principal.id}`);
-      }
-
-      // 담임 선생에게 알림 (있는 경우)
-      const class_ = await this.prisma.class.findUnique({
-        where: { id: refundRequest.sessionEnrollment.session.classId },
-        include: { teacher: true },
-      });
-
-      if (class_?.teacher) {
-        targets.push(`user:${class_.teacher.id}`);
       }
     } catch (error) {
       this.logger.error(
@@ -359,16 +349,6 @@ export class SocketTargetResolver {
       if (academy?.principal) {
         targets.push({ userId: academy.principal.id, userRole: 'PRINCIPAL' });
       }
-
-      // 담임 선생 (있는 경우)
-      const class_ = await this.prisma.class.findUnique({
-        where: { id: refundRequest.sessionEnrollment.session.classId },
-        include: { teacher: true },
-      });
-
-      if (class_?.teacher) {
-        targets.push({ userId: class_.teacher.id, userRole: 'TEACHER' });
-      }
     } catch (error) {
       this.logger.error('Failed to resolve refund event targets', error);
     }
@@ -376,7 +356,7 @@ export class SocketTargetResolver {
     return targets;
   }
 
-  // 클래스 이벤트 타겟 해결 (원장 + 담임선생)
+  // 클래스 이벤트 타겟 해결 (담임선생만 대상 - 원장 제외)
   async resolveClassEventTargets(
     classData: any,
   ): Promise<
@@ -388,20 +368,32 @@ export class SocketTargetResolver {
     }[] = [];
 
     try {
-      // 해당 학원의 원장
-      const academy = await this.prisma.academy.findUnique({
-        where: { id: classData.academyId },
-        include: { principal: true },
-      });
-
-      if (academy?.principal) {
-        targets.push({ userId: academy.principal.id, userRole: 'PRINCIPAL' });
-      }
-
       // 담임 선생 (있는 경우)
       if (classData.teacherId) {
-        targets.push({ userId: classData.teacherId, userRole: 'TEACHER' });
+        const teacher = await this.prisma.teacher.findUnique({
+          where: { id: classData.teacherId },
+          include: { user: true },
+        });
+
+        this.logger.log(
+          `🔍 Resolving targets for classId=${classData.id}, teacherId=${classData.teacherId}`,
+        );
+        if (teacher?.user) {
+          targets.push({ userId: teacher.user.id, userRole: 'TEACHER' });
+          this.logger.log(
+            `✅ Teacher target resolved: userId=${teacher.user.id}`,
+          );
+        } else {
+          this.logger.warn(
+            `⚠️ Teacher with id ${classData.teacherId} has no associated user.`,
+          );
+        }
       }
+
+      // 타겟 로깅 추가
+      this.logger.log(
+        `Resolved class event targets: ${JSON.stringify(targets)}`,
+      );
     } catch (error) {
       this.logger.error('Failed to resolve class event targets', error);
     }

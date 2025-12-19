@@ -29,7 +29,7 @@ describe('AuthService', () => {
 
   const signupDto: SignupDto = {
     userId: 'newstudent',
-    password: 'plain_pw',
+    password: 'Plain123@',
     name: 'New Student',
     phoneNumber: '010-1234-5678',
     role: 'STUDENT',
@@ -217,7 +217,9 @@ describe('AuthService', () => {
       const userId = 'invalid';
       const password = 'wrong';
 
-      mockPrismaService.user.findUnique.mockResolvedValue(null);
+      mockPrismaService.user.findUnique
+        .mockResolvedValueOnce(null) // userId 중복 체크
+        .mockResolvedValueOnce(null); // phoneNumber 중복 체크
 
       // Act & Assert
       await expect(service.validateUser(userId, password)).rejects.toThrow(
@@ -475,7 +477,9 @@ describe('AuthService', () => {
 
   describe('signup', () => {
     it('should signup a new student and return access_token and user info', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue(null);
+      mockPrismaService.user.findUnique
+        .mockResolvedValueOnce(null) // userId 중복 체크
+        .mockResolvedValueOnce(null); // phoneNumber 중복 체크
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed_pw');
 
       // 트랜잭션 Mock 설정
@@ -540,14 +544,18 @@ describe('AuthService', () => {
     });
 
     it('should handle errors during password hashing', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue(null);
+      mockPrismaService.user.findUnique
+        .mockResolvedValueOnce(null) // userId 중복 체크
+        .mockResolvedValueOnce(null); // phoneNumber 중복 체크
       (bcrypt.hash as jest.Mock).mockRejectedValue(new Error('hash error'));
 
       await expect(service.signup(signupDto)).rejects.toThrow('hash error');
     });
 
     it('should handle errors during student creation', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue(null);
+      mockPrismaService.user.findUnique
+        .mockResolvedValueOnce(null) // userId 중복 체크
+        .mockResolvedValueOnce(null); // phoneNumber 중복 체크
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed_pw');
 
       // 트랜잭션 Mock에서 에러 발생

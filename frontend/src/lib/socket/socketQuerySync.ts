@@ -143,6 +143,18 @@ export class SocketQuerySync {
         });
         break;
 
+      case "class_created":
+        // teacher.classes.lists() 무효화 (클래스 목록)
+        this.queryClient.invalidateQueries({
+          queryKey: queryKeys.teacher.classes.lists(),
+        });
+
+        // teacher.calendarSessions 무효화 (캘린더 세션 - 범위 무관)
+        this.queryClient.invalidateQueries({
+          queryKey: queryKeys.teacher.calendarSessions.all,
+        });
+        break;
+
       case "connection_confirmed":
         // 연결 확인 이벤트는 캐시 무효화 불필요
         break;
@@ -175,7 +187,7 @@ export class SocketQuerySync {
    * @param predicate 쿼리 키 필터 함수
    */
   invalidateQueriesByPredicate(
-    predicate: (query: { queryKey: unknown[] }) => boolean
+    predicate: (query: { queryKey: readonly unknown[] }) => boolean
   ) {
     this.queryClient.invalidateQueries({ predicate });
   }

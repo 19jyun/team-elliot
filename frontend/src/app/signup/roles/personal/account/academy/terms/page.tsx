@@ -38,10 +38,8 @@ export default function SignupAcademyTermsPageRoute() {
   }, [router, form.auth.signup.role, form.auth.signup.personalInfo.name, form.auth.signup.personalInfo.phoneNumber, form.auth.signup.accountInfo.userId, form.auth.signup.accountInfo.password]);
 
   return (
-    <div className="flex overflow-hidden flex-col mx-auto w-full bg-white max-w-[480px] h-full">
-      <main className="flex flex-col px-5 mt-24 w-full flex-1 overflow-hidden">
-        <SignupTermsPage />
-      </main>
+    <div className="flex overflow-hidden flex-col w-full bg-white h-full">
+      <SignupTermsPage />
     </div>
   );
 }

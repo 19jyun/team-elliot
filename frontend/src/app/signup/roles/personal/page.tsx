@@ -20,10 +20,8 @@ export default function SignupPersonalPageRoute() {
   }, [router, form.auth.signup.role]);
 
   return (
-    <div className="flex overflow-hidden flex-col mx-auto w-full bg-white max-w-[480px] h-full">
-      <main className="flex flex-col px-5 mt-24 w-full flex-1 overflow-hidden">
-        <SignupPersonalPage />
-      </main>
+    <div className="flex overflow-hidden flex-col w-full bg-white h-full">
+      <SignupPersonalPage />
     </div>
   );
 }

@@ -114,10 +114,10 @@ export function CreateClassStepInfo() {
         </div>
       </header>
 
-      {/* 메인 콘텐츠 */}
-      <main className="flex-1 min-h-0 bg-white px-5 ">
-        <form onSubmit={handleSubmit(onNext)} className="flex flex-col h-full">
-          <div className="flex flex-col self-center mt-5 w-full font-semibold leading-snug text-center max-w-[335px] mx-auto">
+      {/* 메인 콘텐츠 - 고정 높이 + 스크롤 */}
+      <main className="flex-shrink-0 overflow-y-auto px-5" style={{ height: 'calc(100vh - 390px)' }}>
+        <form id="create-class-info-form" onSubmit={handleSubmit(onNext)} className="flex flex-col">
+          <div className="flex flex-col self-center mt-5 w-full font-semibold leading-snug text-center max-w-[335px] mx-auto pb-4">
             <div className="space-y-4">
               {/* 강의명 */}
               <div className="text-left">
@@ -333,27 +333,30 @@ export function CreateClassStepInfo() {
                 </div>
               </div>
             </div>
-
-            {/* 버튼 */}
-            <div className="flex gap-3 mt-8">
-              <button
-                type="button"
-                onClick={handleBack}
-                className="flex-1 px-4 py-3 text-stone-700 bg-stone-200 rounded-lg hover:bg-stone-300 transition-colors"
-              >
-                뒤로
-              </button>
-              <button
-                type="submit"
-                disabled={!isValid || !academy}
-                className="flex-1 px-4 py-3 text-white bg-[#AC9592] rounded-lg hover:bg-[#9A8582] transition-colors disabled:bg-stone-400 disabled:cursor-not-allowed"
-              >
-                다음
-              </button>
-            </div>
           </div>
         </form>
       </main>
+
+      {/* Footer - 버튼 영역 (하단 고정) */}
+      <footer className="flex-shrink-0 px-5 py-4 border-t border-gray-200 bg-white">
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={handleBack}
+            className="flex-1 px-4 py-3 text-stone-700 bg-stone-200 rounded-lg hover:bg-stone-300 transition-colors"
+          >
+            뒤로
+          </button>
+          <button
+            form="create-class-info-form"
+            type="submit"
+            disabled={!isValid || !academy}
+            className="flex-1 px-4 py-3 text-white bg-[#AC9592] rounded-lg hover:bg-[#9A8582] transition-colors disabled:bg-stone-400 disabled:cursor-not-allowed"
+          >
+            다음
+          </button>
+        </div>
+      </footer>
     </div>
   );
 } 

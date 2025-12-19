@@ -8,6 +8,7 @@ import { ClassSessionService } from '../class-session/class-session.service';
 import { RefundService } from '../refund/refund.service';
 import { TeacherService } from '../teacher/teacher.service';
 import { StudentService } from '../student/student.service';
+import { FileUtil } from '../common/utils/file.util';
 
 @Injectable()
 export class PrincipalService {
@@ -451,13 +452,17 @@ export class PrincipalService {
       updateData.photoUrl = `/uploads/principal-photos/${photo.filename}`;
     }
 
-    // User 테이블 업데이트 데이터 (이름이 변경된 경우에만)
-    const userUpdateData = updateProfileDto.name
-      ? {
-          name: updateProfileDto.name,
-          updatedAt: new Date(),
-        }
-      : null;
+    // User 테이블 업데이트 데이터 (이름 또는 전화번호가 변경된 경우에만)
+    const userUpdateData =
+      updateProfileDto.name || updateProfileDto.phoneNumber
+        ? {
+            ...(updateProfileDto.name && { name: updateProfileDto.name }),
+            ...(updateProfileDto.phoneNumber && {
+              phoneNumber: updateProfileDto.phoneNumber,
+            }),
+            updatedAt: new Date(),
+          }
+        : null;
 
     // 트랜잭션으로 Principal과 User 테이블 동시 업데이트
     const updatedPrincipal = await this.prisma.$transaction(async (tx) => {
@@ -495,6 +500,11 @@ export class PrincipalService {
 
     if (!principal) {
       throw new NotFoundException('Principal을 찾을 수 없습니다.');
+    }
+
+    // 기존 프로필 사진 삭제
+    if (principal.photoUrl) {
+      FileUtil.deleteProfilePhoto(principal.photoUrl);
     }
 
     // 사진 URL 생성

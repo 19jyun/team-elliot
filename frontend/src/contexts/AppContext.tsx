@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useCallback, ReactNode, useMemo, useEffect, useState } from 'react';
+import React, { createContext, useContext, useCallback, ReactNode, useMemo, useEffect } from 'react';
 import { useSession } from '@/lib/auth/AuthProvider';
 import { NavigationProvider, useNavigation } from './navigation/NavigationContext';
 import { FormsProvider, useForms, FormsState } from './forms/FormsContext';
@@ -10,9 +10,6 @@ import { EnrollmentModificationStep, EnrollmentModificationFormState } from './f
 import { useRouter, usePathname } from 'next/navigation';
 import { SignupStep, SignupData } from './forms/AuthFormManager';
 import { PrincipalCreateClassStep, PrincipalClassFormData } from './forms/PrincipalCreateClassFormManager';
-
-// SessionDetail 단계 타입 정의
-export type SessionDetailStep = 'main' | 'content' | 'pose';
 
 // 통합된 AppContext 타입
 interface AppContextType {
@@ -51,13 +48,7 @@ interface AppContextType {
     enrollmentModification: ReturnType<typeof useForms>['enrollmentModification'];
     auth: ReturnType<typeof useForms>['auth'];
     principalCreateClass: ReturnType<typeof useForms>['principalCreateClass'];
-  };
-  
-  // SessionDetail 상태 관리
-  sessionDetail: {
-    currentStep: SessionDetailStep;
-    setCurrentStep: (step: SessionDetailStep) => void;
-    goBack: () => Promise<boolean>;
+    sessionDetail: ReturnType<typeof useForms>['sessionDetail'];
   };
   
   // --- Enrollment ---
@@ -90,6 +81,11 @@ interface AppContextType {
   setPrincipalSelectedTeacherId: (teacherId: number | null) => void;
   resetPrincipalCreateClass: () => void;
 
+  // --- SessionDetail ---
+  setSelectedSessionId: (sessionId: number | null) => void;
+  setSelectedTab: (tab: 'content' | 'pose') => void;
+  resetSessionDetail: () => void;
+
   // [삭제됨] CreateClass (Legacy)
   // [삭제됨] PersonManagement
   // [삭제됨] PrincipalPersonManagement
@@ -115,25 +111,8 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
 
-  // SessionDetail 상태 관리
-  const [sessionDetailCurrentStep, setSessionDetailCurrentStep] = useState<SessionDetailStep>('main');
-  
-  const sessionDetailGoBack = useCallback(async (): Promise<boolean> => {
-    if (sessionDetailCurrentStep === 'main') {
-      router.back();
-      return true;
-    } else {
-      setSessionDetailCurrentStep('main');
-      return true;
-    }
-  }, [sessionDetailCurrentStep, router]);
-
   // 통합된 goBack
   const goBack = useCallback(async (): Promise<boolean> => {
-    if (pathname?.includes('/session/')) {
-      return await sessionDetailGoBack();
-    }
-    
     const isRoleDashboard = 
       pathname === '/dashboard/student' || 
       pathname === '/dashboard/teacher' || 
@@ -145,7 +124,7 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     
     router.back();
     return true;
-  }, [router, pathname, sessionDetailGoBack]);
+  }, [router, pathname]);
 
   // 통합 폼 관리 메서드들
   const updateForm = useCallback(<T extends keyof FormsState>(
@@ -247,12 +226,7 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
       enrollmentModification: forms.enrollmentModification,
       auth: forms.auth,
       principalCreateClass: forms.principalCreateClass,
-    },
-    
-    sessionDetail: {
-      currentStep: sessionDetailCurrentStep,
-      setCurrentStep: setSessionDetailCurrentStep,
-      goBack: sessionDetailGoBack,
+      sessionDetail: forms.sessionDetail,
     },
     
     // --- Enrollment ---
@@ -284,11 +258,16 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     setAcademyInfo: (info: SignupData['academyInfo']) => forms.setAuthData({ signup: { ...forms.auth.signup, academyInfo: info } }),
     setTerms: (terms: SignupData['terms']) => forms.setAuthData({ signup: { ...forms.auth.signup, terms: terms } }),
     resetSignup: forms.resetAuth,
+
+    // --- SessionDetail ---
+    setSelectedSessionId: forms.setSelectedSessionId,
+    setSelectedTab: forms.setSelectedTab,
+    resetSessionDetail: forms.resetSessionDetail,
     
   }), [
     navigation, forms, ui, session,
     updateForm, resetAllForms, getFormState,
-    sessionDetailCurrentStep, sessionDetailGoBack, goBack
+    goBack
   ]);
 
   return (

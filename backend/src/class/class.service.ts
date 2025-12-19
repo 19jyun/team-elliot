@@ -4,12 +4,23 @@ import {
   BadRequestException,
   ForbiddenException,
   ConflictException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { SocketGateway } from '../socket/socket.gateway';
+import { ClassSocketManager } from '../socket/managers/class-socket.manager';
+import { PushNotificationService } from '../push-notification/push-notification.service';
 
 @Injectable()
 export class ClassService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(ClassService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private readonly socketGateway: SocketGateway,
+    private readonly classSocketManager: ClassSocketManager,
+    private readonly pushNotificationService: PushNotificationService,
+  ) {}
 
   /**
    * userId로 Principal 조회
@@ -226,6 +237,39 @@ export class ClassService {
       startDate: new Date(data.startDate),
       endDate: new Date(data.endDate),
     });
+
+    // 담임 선생님에게 소켓 알림 + FCM 푸시 알림 전송 (원장은 제외)
+    if (teacher.userRefId) {
+      const academyName = teacher.academy?.name ?? '소속 학원';
+
+      try {
+        // 소켓 알림 전송 (ClassSocketManager 사용)
+        await this.classSocketManager.notifyClassCreated({
+          id: createdClass.id,
+          className: createdClass.className,
+          academyId: createdClass.academyId,
+          teacherId: createdClass.teacherId,
+        });
+      } catch (error) {
+        this.logger.warn('소켓 알림 전송 실패(클래스 생성)', error);
+      }
+
+      try {
+        // FCM 푸시 알림 전송
+        await this.pushNotificationService.sendToUser(teacher.userRefId, {
+          title: '새 강의 배정',
+          body: `${academyName}에서 새로운 강의 "${createdClass.className}"를 담당하시게 되었습니다.`,
+          data: {
+            type: 'class-created',
+            classId: String(createdClass.id),
+            className: createdClass.className,
+            academyId: String(createdClass.academyId),
+          },
+        });
+      } catch (error) {
+        this.logger.warn('푸시 알림 전송 실패(클래스 생성)', error);
+      }
+    }
 
     return {
       ...createdClass,

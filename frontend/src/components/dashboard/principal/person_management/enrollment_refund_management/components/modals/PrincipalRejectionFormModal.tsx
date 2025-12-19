@@ -11,6 +11,19 @@ interface PrincipalRejectionFormModalProps {
   isLoading?: boolean;
 }
 
+const ENROLLMENT_REJECTION_REASONS = [
+  '정원 초과',
+  '수업 레벨 부적합',
+  '수업료 미입금',
+  '기타',
+] as const;
+
+const REFUND_REJECTION_REASONS = [
+  '수강일자 경과',
+  '계좌번호 및 예금주 불일치',
+  '기타',
+] as const;
+
 export function PrincipalRejectionFormModal({
   isOpen,
   onClose,
@@ -20,6 +33,10 @@ export function PrincipalRejectionFormModal({
 }: PrincipalRejectionFormModalProps) {
   const [reason, setReason] = useState('');
   const [detailedReason, setDetailedReason] = useState('');
+
+  const rejectionReasons = requestType === 'enrollment' 
+    ? ENROLLMENT_REJECTION_REASONS 
+    : REFUND_REJECTION_REASONS;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,10 +75,11 @@ export function PrincipalRejectionFormModal({
             className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
           >
             <option value="">사유를 선택해주세요</option>
-            <option value="정원 초과">정원 초과</option>
-            <option value="수업 레벨 부적합">수업 레벨 부적합</option>
-            <option value="일정 불일치">일정 불일치</option>
-            <option value="기타">기타</option>
+            {rejectionReasons.map((reasonOption) => (
+              <option key={reasonOption} value={reasonOption}>
+                {reasonOption}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -100,4 +118,4 @@ export function PrincipalRejectionFormModal({
       </form>
     </SlideUpModal>
   );
-} 
+}

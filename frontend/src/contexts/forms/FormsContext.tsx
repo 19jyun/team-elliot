@@ -8,6 +8,7 @@ import { EnrollmentFormManager, EnrollmentFormState, EnrollmentStep } from './En
 import { EnrollmentModificationFormManager, EnrollmentModificationFormState, EnrollmentModificationStep } from './EnrollmentModificationFormManager';
 import { AuthFormManager, AuthFormState, SignupStep } from './AuthFormManager';
 import { PrincipalCreateClassFormManager, PrincipalCreateClassFormState, PrincipalCreateClassStep } from './PrincipalCreateClassFormManager';
+import { SessionDetailFormManager, SessionDetailFormState } from './SessionDetailFormManager';
 
 // 폼 상태 통합 타입
 export interface FormsState {
@@ -15,6 +16,7 @@ export interface FormsState {
   enrollmentModification: EnrollmentModificationFormState;
   auth: AuthFormState;
   principalCreateClass: PrincipalCreateClassFormState;
+  sessionDetail: SessionDetailFormState;
 }
 
 interface FormsContextType {
@@ -26,6 +28,7 @@ interface FormsContextType {
   enrollmentModification: EnrollmentModificationFormState;
   auth: AuthFormState;
   principalCreateClass: PrincipalCreateClassFormState;
+  sessionDetail: SessionDetailFormState;
   
   // 폼 상태 업데이트 (Generic)
   updateForm: <T extends keyof FormsState>(
@@ -53,6 +56,11 @@ interface FormsContextType {
   setPrincipalCreateClassData: (data: Partial<PrincipalCreateClassFormState>) => void;
   resetPrincipalCreateClass: () => void;
 
+  // --- SessionDetail ---
+  setSelectedSessionId: (sessionId: number | null) => void;
+  setSelectedTab: (tab: 'content' | 'pose') => void;
+  resetSessionDetail: () => void;
+
   // --- Global ---
   resetAllForms: () => void;
   getFormState: <T extends keyof FormsState>(formType: T) => FormsState[T];
@@ -78,12 +86,14 @@ export const FormsProvider: React.FC<FormsProviderProps> = ({ children }) => {
   const [enrollmentModificationManager] = useState(() => new EnrollmentModificationFormManager(contextEventBus));
   const [authManager] = useState(() => new AuthFormManager(contextEventBus));
   const [principalCreateClassManager] = useState(() => new PrincipalCreateClassFormManager(contextEventBus));
+  const [sessionDetailManager] = useState(() => new SessionDetailFormManager(contextEventBus));
   
   // 폼 상태들
   const [enrollment, setEnrollment] = useState<EnrollmentFormState>(enrollmentManager.getState());
   const [enrollmentModification, setEnrollmentModification] = useState<EnrollmentModificationFormState>(enrollmentModificationManager.getState());
   const [auth, setAuth] = useState<AuthFormState>(authManager.getState());
   const [principalCreateClass, setPrincipalCreateClass] = useState<PrincipalCreateClassFormState>(principalCreateClassManager.getState());
+  const [sessionDetail, setSessionDetail] = useState<SessionDetailFormState>(sessionDetailManager.getState());
   
   // 통합 폼 상태
   const forms: FormsState = useMemo(() => ({
@@ -91,7 +101,8 @@ export const FormsProvider: React.FC<FormsProviderProps> = ({ children }) => {
     enrollmentModification,
     auth,
     principalCreateClass,
-  }), [enrollment, enrollmentModification, auth, principalCreateClass]);
+    sessionDetail,
+  }), [enrollment, enrollmentModification, auth, principalCreateClass, sessionDetail]);
 
   // Manager 상태 구독
   useEffect(() => {
@@ -99,14 +110,16 @@ export const FormsProvider: React.FC<FormsProviderProps> = ({ children }) => {
     const unsubscribeEnrollmentModification = enrollmentModificationManager.subscribe(setEnrollmentModification);
     const unsubscribeAuth = authManager.subscribe(setAuth);
     const unsubscribePrincipalCreateClass = principalCreateClassManager.subscribe(setPrincipalCreateClass);
+    const unsubscribeSessionDetail = sessionDetailManager.subscribe(setSessionDetail);
 
     return () => {
       unsubscribeEnrollment();
       unsubscribeEnrollmentModification();
       unsubscribeAuth();
       unsubscribePrincipalCreateClass();
+      unsubscribeSessionDetail();
     };
-  }, [enrollmentManager, enrollmentModificationManager, authManager, principalCreateClassManager]);
+  }, [enrollmentManager, enrollmentModificationManager, authManager, principalCreateClassManager, sessionDetailManager]);
 
 
   // 📢 탭/네비게이션 변경 이벤트 구독 - 폼 초기화 정책 적용
@@ -117,10 +130,11 @@ export const FormsProvider: React.FC<FormsProviderProps> = ({ children }) => {
       enrollmentModificationManager.reset();
       authManager.reset();
       principalCreateClassManager.reset();
+      sessionDetailManager.reset();
     });
 
     return unsubscribe;
-  }, [enrollmentManager, enrollmentModificationManager, authManager, principalCreateClassManager]);
+  }, [enrollmentManager, enrollmentModificationManager, authManager, principalCreateClassManager, sessionDetailManager]);
 
   // 폼 상태 업데이트 (Placeholder)
   const updateForm = useCallback(<T extends keyof FormsState>(
@@ -200,13 +214,27 @@ export const FormsProvider: React.FC<FormsProviderProps> = ({ children }) => {
     principalCreateClassManager.reset();
   }, [principalCreateClassManager]);
 
+  // --- SessionDetail Methods ---
+  const setSelectedSessionId = useCallback((sessionId: number | null) => {
+    sessionDetailManager.setSelectedSessionId(sessionId);
+  }, [sessionDetailManager]);
+
+  const setSelectedTab = useCallback((tab: 'content' | 'pose') => {
+    sessionDetailManager.setSelectedTab(tab);
+  }, [sessionDetailManager]);
+
+  const resetSessionDetail = useCallback(() => {
+    sessionDetailManager.reset();
+  }, [sessionDetailManager]);
+
   // --- Global Methods ---
   const resetAllForms = useCallback(() => {
     enrollmentManager.reset();
     enrollmentModificationManager.reset();
     authManager.reset();
     principalCreateClassManager.reset();
-  }, [enrollmentManager, enrollmentModificationManager, authManager, principalCreateClassManager]);
+    sessionDetailManager.reset();
+  }, [enrollmentManager, enrollmentModificationManager, authManager, principalCreateClassManager, sessionDetailManager]);
 
   const getFormState = useCallback(<T extends keyof FormsState>(formType: T): FormsState[T] => {
     return forms[formType];
@@ -218,6 +246,7 @@ export const FormsProvider: React.FC<FormsProviderProps> = ({ children }) => {
     enrollmentModification,
     auth,
     principalCreateClass,
+    sessionDetail,
     updateForm,
     // Enrollment
     setEnrollmentStep,
@@ -235,6 +264,10 @@ export const FormsProvider: React.FC<FormsProviderProps> = ({ children }) => {
     setPrincipalCreateClassStep,
     setPrincipalCreateClassData,
     resetPrincipalCreateClass,
+    // SessionDetail
+    setSelectedSessionId,
+    setSelectedTab,
+    resetSessionDetail,
     // Global
     resetAllForms,
     getFormState,

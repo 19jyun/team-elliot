@@ -54,13 +54,10 @@ export function CreateClassComplete() {
             <StatusStep key={index} {...step} />
           ))}
         </div>
-        <div className="self-center pb-4 text-base font-medium tracking-normal leading-snug text-center text-zinc-600">
-          강의 개설이 완료되었어요!
-        </div>
       </header>
 
       {/* 완료 콘텐츠 */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 overflow-y-auto" style={{ height: 'calc(100vh - 400px)'}}>
         <div className="flex flex-col items-center gap-6 w-full max-w-md">
           {/* 완료 아이콘 */}
           <div className="w-24 h-24 flex items-center justify-center">

@@ -12,11 +12,13 @@ import type { TeacherSession } from '@/types/api/teacher'
 import type { ClassSessionWithCounts } from '@/types/api/class'
 import { useRouter } from 'next/navigation'
 import { ensureTrailingSlash } from '@/lib/utils/router'
+import { useApp } from '@/contexts'
 
 export default function TeacherDashboardPage() {
   const { data: session, status } = useSession()
   const signOut = useSignOut()
   const router = useRouter()
+  const { setSelectedSessionId } = useApp()
 
   // React Query 기반 데이터 관리
   const { data: calendarSessionsData, isLoading, error, refetch } = useTeacherCalendarSessions();
@@ -135,8 +137,11 @@ export default function TeacherDashboardPage() {
 
   // 세션 클릭 핸들러 - 쿼리 파라미터로 이동
   const handleSessionClick = (session: ClassSessionWithCounts) => {
-    // 쿼리 파라미터로 세션 상세 페이지로 이동 (React Query 캐시에서 데이터 조회)
-    router.push(ensureTrailingSlash(`/dashboard/teacher/class/session-detail?id=${session.id}`));
+    // Context에 선택된 세션 ID 저장
+    setSelectedSessionId(session.id)
+    
+    // 쿼리 파라미터 없이 세션 상세 페이지로 이동 (Context에서 데이터 조회)
+    router.push(ensureTrailingSlash(`/dashboard/teacher/class/session-detail/`));
   }
 
 
@@ -153,10 +158,10 @@ export default function TeacherDashboardPage() {
         <div className="flex flex-col px-5 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-stone-700">
-                안녕하세요, {session?.user?.name} 선생님!
+              <h1 className="text-xl font-bold text-stone-700">
+                안녕하세요, {session?.user?.name}님!
               </h1>
-              <p className="mt-2 text-stone-500">오늘도 즐거운 수업되세요!</p>
+              <p className="mt-2 text-stone-500 text-sm">오늘도 즐거운 수업되세요!</p>
             </div>
             {/* 캘린더 아이콘 버튼 */}
             <button
