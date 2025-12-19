@@ -65,7 +65,7 @@ const CreateClassCard: React.FC<{
 export default function PrincipalClassPage() {
   const signOut = useSignOut()
   const router = useRouter()
-  const { resetPrincipalCreateClass } = useApp()
+  const { resetPrincipalCreateClass, setSelectedSessionId } = useApp()
 
   const { data: session, status } = useSession()
 
@@ -135,8 +135,11 @@ export default function PrincipalClassPage() {
     // DateSessionModal 닫기
     closeDateModal()
     
-    // 쿼리 파라미터로 세션 상세 페이지로 이동 (React Query 캐시에서 데이터 조회)
-    router.push(ensureTrailingSlash(`/dashboard/principal/class/session-detail?id=${session.id}`))
+    // Context에 선택된 세션 ID 저장
+    setSelectedSessionId(session.id)
+    
+    // 쿼리 파라미터 없이 세션 상세 페이지로 이동 (Context에서 데이터 조회)
+    router.push(ensureTrailingSlash(`/dashboard/principal/class/session-detail/`))
   }
 
 

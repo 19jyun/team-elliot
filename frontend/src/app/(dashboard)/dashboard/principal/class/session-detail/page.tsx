@@ -1,21 +1,22 @@
-'use client'
+'use client';
 
-import React, { Suspense, useEffect } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
-import { useSessionDetail } from '@/hooks/queries/common/useSessionDetail'
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useApp } from '@/contexts';
+import { useSessionDetail } from '@/hooks/queries/common/useSessionDetail';
+import { ensureTrailingSlash } from '@/lib/utils/router';
 
 // 컴포넌트
-import { AttendanceSummaryComponent } from '@/components/dashboard/teacher/SessionDetail/SessionDetailComponents/AttendanceSummaryComponent'
-import { ContentSummaryComponent } from '@/components/dashboard/teacher/SessionDetail/SessionDetailComponents/ContentSummaryComponent'
-import { PoseAdditionSummaryComponent } from '@/components/dashboard/teacher/SessionDetail/SessionDetailComponents/PoseAdditionSummaryComponent'
-import { ensureTrailingSlash } from '@/lib/utils/router'
+import { AttendanceSummaryComponent } from '@/components/dashboard/teacher/SessionDetail/SessionDetailComponents/AttendanceSummaryComponent';
+import { ContentSummaryComponent } from '@/components/dashboard/teacher/SessionDetail/SessionDetailComponents/ContentSummaryComponent';
+import { PoseAdditionSummaryComponent } from '@/components/dashboard/teacher/SessionDetail/SessionDetailComponents/PoseAdditionSummaryComponent';
 
-function SessionDetailMainContent() {
-  const searchParams = useSearchParams()
+export default function PrincipalSessionDetailPage() {
   const router = useRouter()
-  const sessionId = searchParams.get('id') ? Number(searchParams.get('id')) : null
+  const { form } = useApp()
+  const sessionId = form.sessionDetail.selectedSessionId
 
-  // ID가 없으면 리다이렉트
+  // 🛡️ 가드 로직: ID가 없으면 리다이렉트
   useEffect(() => {
     if (!sessionId) {
       router.replace(ensureTrailingSlash('/dashboard/principal/class'))
@@ -24,12 +25,15 @@ function SessionDetailMainContent() {
 
   const { data: selectedSession, isLoading } = useSessionDetail(sessionId)
 
+  // 빌드 타임에 sessionId가 없으면 null 반환 (정적 빌드 가능)
+  if (!sessionId) return null
+
   const handleNavigateToContent = () => {
-    router.push(ensureTrailingSlash(`/dashboard/principal/class/session-detail/content?id=${sessionId}`))
+    router.push(ensureTrailingSlash(`/dashboard/principal/class/session-detail/content`))
   }
 
   const handleNavigateToPose = () => {
-    router.push(ensureTrailingSlash(`/dashboard/principal/class/session-detail/pose?id=${sessionId}`))
+    router.push(ensureTrailingSlash(`/dashboard/principal/class/session-detail/pose`))
   }
 
   if (isLoading) {
@@ -61,18 +65,6 @@ function SessionDetailMainContent() {
         onNavigateToDetail={handleNavigateToPose}
       />
     </div>
-  )
-}
-
-export default function PrincipalSessionDetailPage() {
-  return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
-      </div>
-    }>
-      <SessionDetailMainContent />
-    </Suspense>
   )
 }
 

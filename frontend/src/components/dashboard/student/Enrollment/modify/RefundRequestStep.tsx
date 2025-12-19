@@ -89,7 +89,7 @@ export function RefundRequestStep({ modificationData }: RefundRequestStepProps) 
         trigger();
       }, 0);
     }
-  }, [refundAccount, setValue, trigger]);
+  }, [refundAccount, setValue, trigger, reset]);
 
   const statusSteps = [
     { icon: '/icons/CourseRegistrationsStatusSteps1.svg', label: '수강 변경', isActive: false, isCompleted: true },

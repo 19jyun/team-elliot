@@ -183,7 +183,13 @@ export function PrincipalProfileCard({
       
       // 빈 문자열이 아닌 경우만 추가
       if (value && value !== '') {
-        (changedFields as any)[field] = value;
+        if (field === 'introduction' && typeof value === 'string') {
+          changedFields.introduction = value;
+        } else if (field === 'education' && Array.isArray(value)) {
+          changedFields.education = value;
+        } else if (field === 'certifications' && Array.isArray(value)) {
+          changedFields.certifications = value;
+        }
       }
     });
 

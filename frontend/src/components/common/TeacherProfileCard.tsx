@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { UpdateProfileRequest, TeacherProfileResponse } from '@/types/api/teacher';
 import { updateTeacherProfileSchema, UpdateTeacherProfileFormData } from '@/lib/schemas/teacher-profile';
@@ -209,7 +209,19 @@ export function TeacherProfileCard({
       
       // 빈 문자열이 아닌 경우만 추가
       if (value && value !== '') {
-        (changedFields as any)[field] = value;
+        if (field === 'introduction' && typeof value === 'string') {
+          changedFields.introduction = value;
+        } else if (field === 'yearsOfExperience' && typeof value === 'number') {
+          changedFields.yearsOfExperience = value;
+        } else if (field === 'education' && Array.isArray(value)) {
+          changedFields.education = value;
+        } else if (field === 'specialties' && Array.isArray(value)) {
+          changedFields.specialties = value;
+        } else if (field === 'certifications' && Array.isArray(value)) {
+          changedFields.certifications = value;
+        } else if (field === 'availableTimes' && Array.isArray(value)) {
+          changedFields.availableTimes = value;
+        }
       }
     });
 

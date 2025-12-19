@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useApp } from '@/contexts'
 import { useSessionDetail } from '@/hooks/queries/common/useSessionDetail'
 
 interface LayoutProps {
@@ -9,8 +9,8 @@ interface LayoutProps {
 }
 
 export default function SessionDetailLayout({ children }: LayoutProps) {
-  const searchParams = useSearchParams()
-  const sessionId = searchParams.get('id') ? Number(searchParams.get('id')) : null
+  const { form } = useApp()
+  const sessionId = form.sessionDetail.selectedSessionId
 
   const { data: selectedSession, isLoading } = useSessionDetail(sessionId)
 

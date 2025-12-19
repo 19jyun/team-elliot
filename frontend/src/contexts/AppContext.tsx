@@ -48,6 +48,7 @@ interface AppContextType {
     enrollmentModification: ReturnType<typeof useForms>['enrollmentModification'];
     auth: ReturnType<typeof useForms>['auth'];
     principalCreateClass: ReturnType<typeof useForms>['principalCreateClass'];
+    sessionDetail: ReturnType<typeof useForms>['sessionDetail'];
   };
   
   // --- Enrollment ---
@@ -79,6 +80,11 @@ interface AppContextType {
   setPrincipalClassFormData: (data: PrincipalClassFormData) => void;
   setPrincipalSelectedTeacherId: (teacherId: number | null) => void;
   resetPrincipalCreateClass: () => void;
+
+  // --- SessionDetail ---
+  setSelectedSessionId: (sessionId: number | null) => void;
+  setSelectedTab: (tab: 'content' | 'pose') => void;
+  resetSessionDetail: () => void;
 
   // [삭제됨] CreateClass (Legacy)
   // [삭제됨] PersonManagement
@@ -220,6 +226,7 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
       enrollmentModification: forms.enrollmentModification,
       auth: forms.auth,
       principalCreateClass: forms.principalCreateClass,
+      sessionDetail: forms.sessionDetail,
     },
     
     // --- Enrollment ---
@@ -251,6 +258,11 @@ const AppConsumer: React.FC<{ children: ReactNode }> = ({ children }) => {
     setAcademyInfo: (info: SignupData['academyInfo']) => forms.setAuthData({ signup: { ...forms.auth.signup, academyInfo: info } }),
     setTerms: (terms: SignupData['terms']) => forms.setAuthData({ signup: { ...forms.auth.signup, terms: terms } }),
     resetSignup: forms.resetAuth,
+
+    // --- SessionDetail ---
+    setSelectedSessionId: forms.setSelectedSessionId,
+    setSelectedTab: forms.setSelectedTab,
+    resetSessionDetail: forms.resetSessionDetail,
     
   }), [
     navigation, forms, ui, session,

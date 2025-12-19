@@ -112,7 +112,11 @@ export function PrincipalPersonalInfoManagement() {
       
       // 빈 문자열이 아닌 경우만 추가
       if (value && value !== '') {
-        (changedFields as any)[field] = value;
+        if (field === 'name' && typeof value === 'string') {
+          changedFields.name = value;
+        } else if (field === 'phoneNumber' && typeof value === 'string') {
+          changedFields.phoneNumber = value;
+        }
       }
     });
 

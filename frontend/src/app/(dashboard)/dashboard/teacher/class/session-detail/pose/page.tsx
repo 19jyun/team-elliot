@@ -1,37 +1,34 @@
-'use client'
+'use client';
 
-import React, { Suspense } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
-import { useSessionDetail } from '@/hooks/queries/common/useSessionDetail'
-import { PoseAdditionDetailComponent } from '@/components/dashboard/teacher/SessionDetail/SessionDetailComponents/PoseAdditionDetailComponent'
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useApp } from '@/contexts';
+import { useSessionDetail } from '@/hooks/queries/common/useSessionDetail';
+import { PoseAdditionDetailComponent } from '@/components/dashboard/teacher/SessionDetail/SessionDetailComponents/PoseAdditionDetailComponent';
 
-function SessionDetailPoseContent() {
-  const searchParams = useSearchParams()
+export default function SessionDetailPosePage() {
   const router = useRouter()
-  const sessionId = searchParams.get('id') ? Number(searchParams.get('id')) : null
+  const { form } = useApp()
+  const sessionId = form.sessionDetail.selectedSessionId
   
+  useEffect(() => {
+    if (!sessionId) {
+      router.back()
+    }
+  }, [sessionId, router])
+
   const { data: selectedSession } = useSessionDetail(sessionId)
 
   const handleGoBack = () => {
     router.back()
   }
 
+  if (!sessionId) return null
+
   return (
     <PoseAdditionDetailComponent 
       session={selectedSession}
       onBack={handleGoBack}
     />
-  )
-}
-
-export default function SessionDetailPosePage() {
-  return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-700" />
-      </div>
-    }>
-      <SessionDetailPoseContent />
-    </Suspense>
   )
 }
