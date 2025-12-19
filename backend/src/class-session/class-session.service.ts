@@ -2030,6 +2030,19 @@ export class ClassSessionService {
       );
     }
 
+    // 새로운 세션의 정원 체크
+    if (newSession.currentStudents >= newSession.class.maxStudents) {
+      throw new BadRequestException({
+        code: 'SESSION_FULL',
+        message: '변경할 수업의 수강 인원이 초과되었습니다.',
+        details: {
+          currentStudents: newSession.currentStudents,
+          maxStudents: newSession.class.maxStudents,
+          sessionId: changeDto.newSessionId,
+        },
+      });
+    }
+
     // 트랜잭션으로 수강 변경 처리
     const result = await this.prisma.$transaction(async (prisma) => {
       // 1. 기존 수강 신청 취소
