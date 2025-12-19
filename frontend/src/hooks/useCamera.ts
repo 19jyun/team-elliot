@@ -128,8 +128,13 @@ interface UseCameraReturn {
 
   /**
    * 선택된 이미지를 File 객체로 변환 (업로드용)
+   * @param imageOrFilename - ProcessedImage 객체 또는 파일명
+   * @param filename - imageOrFilename이 ProcessedImage일 때 사용할 파일명
    */
-  getImageAsFile: (filename?: string) => Promise<File | null>;
+  getImageAsFile: (
+    imageOrFilename?: ProcessedImage | string,
+    filename?: string
+  ) => Promise<File | null>;
 }
 
 /**
@@ -358,13 +363,33 @@ export function useCamera(options: UseCameraOptions = {}): UseCameraReturn {
   );
 
   const getImageAsFile = useCallback(
-    async (filename?: string): Promise<File | null> => {
-      if (!selectedImage) {
+    async (
+      imageOrFilename?: ProcessedImage | string,
+      filename?: string
+    ): Promise<File | null> => {
+      // Determine which image to use and filename
+      let imageToConvert: ProcessedImage | null;
+      let finalFilename: string | undefined;
+
+      if (!imageOrFilename) {
+        // No parameter: use current selectedImage state
+        imageToConvert = selectedImage;
+      } else if (typeof imageOrFilename === "string") {
+        // String parameter: it's a filename, use selectedImage
+        imageToConvert = selectedImage;
+        finalFilename = imageOrFilename;
+      } else {
+        // ProcessedImage parameter: use it directly (fresh data)
+        imageToConvert = imageOrFilename;
+        finalFilename = filename;
+      }
+
+      if (!imageToConvert) {
         return null;
       }
 
       try {
-        return await processedImageToFile(selectedImage, filename);
+        return await processedImageToFile(imageToConvert, finalFilename);
       } catch (err) {
         console.error("이미지를 File로 변환 실패:", err);
         handleError(err as Error);

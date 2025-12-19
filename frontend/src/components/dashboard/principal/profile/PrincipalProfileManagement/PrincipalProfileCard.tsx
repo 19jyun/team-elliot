@@ -134,9 +134,9 @@ export function PrincipalProfileCard({
       // 권한 확인 및 카메라/갤러리 선택
       const result = await pickProfilePhotoWithPrompt();
       
-      if (result && selectedImage) {
-        // ProcessedImage를 File로 변환
-        const file = await getImageAsFile();
+      if (result) {
+        // ProcessedImage를 File로 변환 (fresh result 사용)
+        const file = await getImageAsFile(result);
         
         if (file) {
           setSelectedPhoto(file);
