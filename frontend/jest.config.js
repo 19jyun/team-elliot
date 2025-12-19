@@ -64,26 +64,20 @@ const customJestConfig = {
     '!src/__tests__/**',
     '!src/__mocks__/**',
   ],
-  
-  // 커버리지 임계값 (비활성화 - 커버리지 리포트만 생성)
-  // coverageThreshold: {
-  //   global: {
-  //     branches: 70,
-  //     functions: 70,
-  //     lines: 70,
-  //     statements: 70,
-  //   },
-  // },
-  
-  // 변환하지 않을 파일/폴더
-  transformIgnorePatterns: [
-    '/node_modules/',
-    '^.+\\.module\\.(css|sass|scss)$',
-  ],
-  
-  // 모듈 파일 확장자
+
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
 }
 
-// createJestConfig는 next/jest가 Next.js 설정을 비동기적으로 로드할 수 있도록 하는 함수
-module.exports = createJestConfig(customJestConfig)
+// createJestConfig는 비동기적으로 설정을 로드하므로 아래와 같이 처리합니다.
+module.exports = async () => {
+  const config = await createJestConfig(customJestConfig)();
+
+  // Next.js의 기본 transformIgnorePatterns 설정을 덮어씌웁니다.
+  // node_modules 중 until-async, msw, @mswjs 관련 패키지만 변환(transform) 프로세스에 포함시킵니다.
+  config.transformIgnorePatterns = [
+    '^.+\\.module\\.(css|sass|scss)$',
+    '/node_modules/(?!(until-async|msw|@mswjs)/)',
+  ];
+
+  return config;
+};

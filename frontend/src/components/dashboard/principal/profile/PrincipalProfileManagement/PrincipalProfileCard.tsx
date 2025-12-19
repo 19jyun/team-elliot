@@ -54,7 +54,7 @@ export function PrincipalProfileCard({
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // 카메라/갤러리 접근
-  const { pickProfilePhotoWithPrompt, selectedImage, getImageAsFile } = useCamera();
+  const { pickProfilePhotoWithPrompt, getImageAsFile } = useCamera();
   
   // React Hook Form 설정
   const {
