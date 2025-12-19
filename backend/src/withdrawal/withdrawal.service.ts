@@ -4,6 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { FileUtil } from '../common/utils/file.util';
 import { createAnonymizedUser } from './migrator/anonymized-user.migrator';
 import { migratePayments } from './migrator/payment-migrator';
 import { migrateRefunds } from './migrator/refund-migrator';
@@ -281,7 +282,12 @@ export class WithdrawalService {
         withdrawalDate,
       );
 
-      // [3] Teacher 테이블 마스킹 및 학원 연결 해제
+      // [3] 프로필 사진 파일 삭제
+      if (teacher.photoUrl) {
+        FileUtil.deleteProfilePhoto(teacher.photoUrl);
+      }
+
+      // [4] Teacher 테이블 마스킹 및 학원 연결 해제
       const maskedTeacherData = createMaskedTeacherData(teacher.id);
       await tx.teacher.update({
         where: { id: teacher.id },
@@ -291,7 +297,7 @@ export class WithdrawalService {
         },
       });
 
-      // [4] User 테이블 마스킹 (Teacher의 userId 사용)
+      // [5] User 테이블 마스킹 (Teacher의 userId 사용)
       await tx.user.update({
         where: { id: userId },
         data: {
@@ -301,7 +307,7 @@ export class WithdrawalService {
         },
       });
 
-      // [5] WithdrawalHistory 기록
+      // [6] WithdrawalHistory 기록
       await tx.withdrawalHistory.create({
         data: {
           userId: teacher.user.userId,
@@ -504,14 +510,19 @@ export class WithdrawalService {
         data: createMaskedAcademyData(principal.academyId),
       });
 
-      // [6] Principal 테이블 마스킹
+      // [6] 프로필 사진 파일 삭제
+      if (principal.photoUrl) {
+        FileUtil.deleteProfilePhoto(principal.photoUrl);
+      }
+
+      // [7] Principal 테이블 마스킹
       const maskedPrincipalData = createMaskedPrincipalData(principal.id);
       await tx.principal.update({
         where: { id: principal.id },
         data: maskedPrincipalData,
       });
 
-      // [7] User 테이블 마스킹 (Principal의 userId 사용)
+      // [8] User 테이블 마스킹 (Principal의 userId 사용)
       await tx.user.update({
         where: { id: userId },
         data: {
@@ -521,7 +532,7 @@ export class WithdrawalService {
         },
       });
 
-      // [8] WithdrawalHistory 기록
+      // [9] WithdrawalHistory 기록
       await tx.withdrawalHistory.create({
         data: {
           userId: principal.user.userId,

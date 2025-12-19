@@ -9,6 +9,7 @@ import { ClassService } from '../class/class.service';
 import { AcademyService } from '../academy/academy.service';
 import { JoinAcademyRequestDto } from '../academy/dto/join-academy-request.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { FileUtil } from '../common/utils/file.util';
 
 @Injectable()
 export class TeacherService {
@@ -179,6 +180,11 @@ export class TeacherService {
         message: '선생님을 찾을 수 없습니다.',
         details: { userId },
       });
+    }
+
+    // 기존 프로필 사진 삭제
+    if (teacher.photoUrl) {
+      FileUtil.deleteProfilePhoto(teacher.photoUrl);
     }
 
     const photoUrl = `/uploads/teacher-photos/${photo.filename}`;

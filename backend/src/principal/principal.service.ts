@@ -8,6 +8,7 @@ import { ClassSessionService } from '../class-session/class-session.service';
 import { RefundService } from '../refund/refund.service';
 import { TeacherService } from '../teacher/teacher.service';
 import { StudentService } from '../student/student.service';
+import { FileUtil } from '../common/utils/file.util';
 
 @Injectable()
 export class PrincipalService {
@@ -499,6 +500,11 @@ export class PrincipalService {
 
     if (!principal) {
       throw new NotFoundException('Principal을 찾을 수 없습니다.');
+    }
+
+    // 기존 프로필 사진 삭제
+    if (principal.photoUrl) {
+      FileUtil.deleteProfilePhoto(principal.photoUrl);
     }
 
     // 사진 URL 생성

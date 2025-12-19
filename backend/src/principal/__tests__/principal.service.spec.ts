@@ -10,6 +10,10 @@ import { StudentService } from '../../student/student.service';
 import { UpdateAcademyDto } from '../dto/update-academy.dto';
 import { UpdateProfileDto } from '../dto/update-profile.dto';
 import { NotFoundException } from '@nestjs/common';
+import { FileUtil } from '../../common/utils/file.util';
+
+// FileUtil 모킹
+jest.mock('../../common/utils/file.util');
 
 describe('PrincipalService', () => {
   let service: PrincipalService;
@@ -570,6 +574,137 @@ describe('PrincipalService', () => {
       await expect(
         service.getSessionsWithRefundRequests(userRefId),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('updateProfilePhoto', () => {
+    const mockFile = {
+      filename: 'new-principal-photo-123456.jpg',
+      originalname: 'profile.jpg',
+      mimetype: 'image/jpeg',
+    } as Express.Multer.File;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should delete old photo and update with new photo', async () => {
+      const userRefId = 1;
+      const oldPhotoUrl = '/uploads/principal-photos/old-photo.jpg';
+      const mockPrincipal = {
+        id: 1,
+        userRefId,
+        photoUrl: oldPhotoUrl,
+      };
+
+      const updatedPrincipal = {
+        id: 1,
+        userRefId,
+        userId: 1,
+        name: '김원장님',
+        phoneNumber: '010-1234-5678',
+        email: 'principal@example.com',
+        introduction: '학원 원장입니다.',
+        photoUrl: '/uploads/principal-photos/new-principal-photo-123456.jpg',
+        education: [],
+        certifications: [],
+        bankName: '신한은행',
+        accountNumber: '110-123-456789',
+        accountHolder: '김원장',
+        academyId: 1,
+        academy: {
+          id: 1,
+          name: '테스트 학원',
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      prisma.principal.findUnique.mockResolvedValue(mockPrincipal);
+      prisma.principal.update.mockResolvedValue(updatedPrincipal);
+      (FileUtil.deleteProfilePhoto as jest.Mock).mockReturnValue(true);
+
+      const result = await service.updateProfilePhoto(userRefId, mockFile);
+
+      // 기존 사진 삭제 확인
+      expect(FileUtil.deleteProfilePhoto).toHaveBeenCalledWith(oldPhotoUrl);
+
+      // 새 사진 URL로 업데이트 확인
+      expect(prisma.principal.update).toHaveBeenCalledWith({
+        where: { id: mockPrincipal.id },
+        data: {
+          photoUrl: '/uploads/principal-photos/new-principal-photo-123456.jpg',
+        },
+        include: {
+          academy: true,
+        },
+      });
+
+      expect(result).toEqual(updatedPrincipal);
+    });
+
+    it('should not call delete if no existing photo', async () => {
+      const userRefId = 1;
+      const mockPrincipal = {
+        id: 1,
+        userRefId,
+        photoUrl: null,
+      };
+
+      const updatedPrincipal = {
+        id: 1,
+        userRefId,
+        userId: 1,
+        name: '김원장님',
+        photoUrl: '/uploads/principal-photos/new-principal-photo-123456.jpg',
+        academy: null,
+      };
+
+      prisma.principal.findUnique.mockResolvedValue(mockPrincipal);
+      prisma.principal.update.mockResolvedValue(updatedPrincipal);
+
+      await service.updateProfilePhoto(userRefId, mockFile);
+
+      // photoUrl이 null이므로 삭제 호출 안됨
+      expect(FileUtil.deleteProfilePhoto).not.toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException when principal not found', async () => {
+      const userRefId = 999;
+
+      prisma.principal.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.updateProfilePhoto(userRefId, mockFile),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(FileUtil.deleteProfilePhoto).not.toHaveBeenCalled();
+    });
+
+    it('should continue update even if file deletion fails', async () => {
+      const userRefId = 1;
+      const oldPhotoUrl = '/uploads/principal-photos/old-photo.jpg';
+      const mockPrincipal = {
+        id: 1,
+        userRefId,
+        photoUrl: oldPhotoUrl,
+      };
+
+      const updatedPrincipal = {
+        id: 1,
+        photoUrl: '/uploads/principal-photos/new-principal-photo-123456.jpg',
+      };
+
+      prisma.principal.findUnique.mockResolvedValue(mockPrincipal);
+      prisma.principal.update.mockResolvedValue(updatedPrincipal);
+      (FileUtil.deleteProfilePhoto as jest.Mock).mockReturnValue(false); // 삭제 실패
+
+      const result = await service.updateProfilePhoto(userRefId, mockFile);
+
+      // 삭제는 실패했지만 업데이트는 진행
+      expect(FileUtil.deleteProfilePhoto).toHaveBeenCalled();
+      expect(prisma.principal.update).toHaveBeenCalled();
+      expect(result).toEqual(updatedPrincipal);
     });
   });
 });
