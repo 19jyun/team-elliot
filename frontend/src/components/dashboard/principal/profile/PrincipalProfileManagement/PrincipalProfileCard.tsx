@@ -29,6 +29,7 @@ import { useUpdatePrincipalProfile } from '@/hooks/mutations/principal/useUpdate
 import { useUpdatePrincipalProfilePhoto } from '@/hooks/mutations/principal/useUpdatePrincipalProfilePhoto';
 import { getImageUrl } from '@/utils/imageUtils';
 import Image from 'next/image';
+import { useCamera } from '@/hooks/useCamera';
 
 interface PrincipalProfileCardProps {
   principalId?: number; // 특정 원장 ID (없으면 현재 로그인한 원장)
@@ -51,6 +52,9 @@ export function PrincipalProfileCard({
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // 카메라/갤러리 접근
+  const { pickProfilePhotoWithPrompt, selectedImage, getImageAsFile } = useCamera();
   
   // React Hook Form 설정
   const {
@@ -117,8 +121,8 @@ export function PrincipalProfileCard({
     onCancel?.();
   };
 
-  // 사진 클릭 핸들러
-  const handlePhotoClick = (e: React.MouseEvent) => {
+  // 사진 클릭 핸들러 - 카메라/갤러리 선택
+  const handlePhotoClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -126,14 +130,31 @@ export function PrincipalProfileCard({
       return;
     }
     
-    if (!fileInputRef.current) {
-      return;
-    }
-    
     try {
-      fileInputRef.current.click();
+      // 권한 확인 및 카메라/갤러리 선택
+      const result = await pickProfilePhotoWithPrompt();
+      
+      if (result && selectedImage) {
+        // ProcessedImage를 File로 변환
+        const file = await getImageAsFile();
+        
+        if (file) {
+          setSelectedPhoto(file);
+          
+          // 미리보기 URL 생성
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            setPreviewUrl(e.target?.result as string);
+          };
+          reader.readAsDataURL(file);
+        }
+      }
     } catch (error) {
-      console.error('파일 입력 필드 클릭 실패:', error);
+      console.error('사진 선택 실패:', error);
+      // Fallback: 웹 파일 입력 사용
+      if (fileInputRef.current) {
+        fileInputRef.current.click();
+      }
     }
   };
 

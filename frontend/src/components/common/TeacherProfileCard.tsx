@@ -29,6 +29,7 @@ import {
 import { useTeacherProfile } from '@/hooks/queries/teacher/useTeacherProfile';
 import { useUpdateTeacherProfile } from '@/hooks/mutations/teacher/useUpdateTeacherProfile';
 import { useUpdateTeacherProfilePhoto } from '@/hooks/mutations/teacher/useUpdateTeacherProfilePhoto';
+import { useCamera } from '@/hooks/useCamera';
 
 
 interface TeacherProfileCardProps {
@@ -54,6 +55,9 @@ export function TeacherProfileCard({
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // 카메라/갤러리 접근
+  const { pickProfilePhotoWithPrompt, selectedImage, getImageAsFile } = useCamera();
   
   // React Hook Form 설정
   const {
@@ -151,8 +155,8 @@ export function TeacherProfileCard({
     onCancel?.();
   };
 
-  // 사진 클릭 핸들러
-  const handlePhotoClick = (e: React.MouseEvent) => {
+  // 사진 클릭 핸들러 - 카메라/갤러리 선택
+  const handlePhotoClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -160,14 +164,31 @@ export function TeacherProfileCard({
       return;
     }
     
-    if (!fileInputRef.current) {
-      return;
-    }
-    
     try {
-      fileInputRef.current.click();
+      // 권한 확인 및 카메라/갤러리 선택
+      const result = await pickProfilePhotoWithPrompt();
+      
+      if (result && selectedImage) {
+        // ProcessedImage를 File로 변환
+        const file = await getImageAsFile();
+        
+        if (file) {
+          setSelectedPhoto(file);
+          
+          // 미리보기 URL 생성
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            setPreviewUrl(e.target?.result as string);
+          };
+          reader.readAsDataURL(file);
+        }
+      }
     } catch (error) {
-      console.error('파일 입력 필드 클릭 실패:', error);
+      console.error('사진 선택 실패:', error);
+      // Fallback: 웹 파일 입력 사용
+      if (fileInputRef.current) {
+        fileInputRef.current.click();
+      }
     }
   };
 
