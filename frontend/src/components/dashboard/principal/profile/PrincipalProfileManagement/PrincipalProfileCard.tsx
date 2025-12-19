@@ -1,7 +1,10 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { UpdatePrincipalProfileRequest, PrincipalProfile } from '@/types/api/principal';
+import { updatePrincipalProfileSchema, UpdatePrincipalProfileFormData } from '@/lib/schemas/principal-profile';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -45,43 +48,72 @@ export function PrincipalProfileCard({
 }: PrincipalProfileCardProps) {
   
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<UpdatePrincipalProfileRequest>({});
-  const [tempEducation, setTempEducation] = useState<string[]>([]);
-  const [tempCertifications, setTempCertifications] = useState<string[]>([]);
-  const [newEducation, setNewEducation] = useState('');
-  const [newCertification, setNewCertification] = useState('');
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // React Hook Form 설정
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    formState: { dirtyFields, errors: formErrors },
+  } = useForm<UpdatePrincipalProfileFormData>({
+    resolver: zodResolver(updatePrincipalProfileSchema),
+    defaultValues: {
+      introduction: '',
+      education: [],
+      certifications: [],
+    },
+  });
+  
+  // 배열 필드 watch
+  const educationFields = watch('education') || [];
+  const certificationFields = watch('certifications') || [];
+  
+  // 배열 필드 관리 함수
+  const appendEducation = (value: string) => setValue('education', [...educationFields, value], { shouldDirty: true });
+  const removeEducation = (index: number) => setValue('education', educationFields.filter((_, i) => i !== index), { shouldDirty: true });
+  
+  const appendCertification = (value: string) => setValue('certifications', [...certificationFields, value], { shouldDirty: true });
+  const removeCertification = (index: number) => setValue('certifications', certificationFields.filter((_, i) => i !== index), { shouldDirty: true });
 
   // React Query 기반 데이터 관리
   const { data: profile, isLoading: profileLoading, error } = usePrincipalProfile();
   const typedProfile = profile as PrincipalProfile | null | undefined;
   const updateProfileMutation = useUpdatePrincipalProfile();
   const updatePhotoMutation = useUpdatePrincipalProfilePhoto();
-
-  // 편집 모드 시작
-  const handleEdit = () => {
+  
+  // API에서 가져온 데이터로 폼 초기화
+  useEffect(() => {
     if (typedProfile) {
-      setFormData({
+      reset({
         introduction: typedProfile.introduction || '',
         education: typedProfile.education || [],
         certifications: typedProfile.certifications || [],
       });
-      setTempEducation(typedProfile.education || []);
-      setTempCertifications(typedProfile.certifications || []);
     }
+  }, [typedProfile, reset]);
+
+  // 편집 모드 시작
+  const handleEdit = () => {
     setIsEditing(true);
   };
 
   // 편집 모드 취소
   const handleCancel = () => {
-    setIsEditing(false);
-    setFormData({});
-    setTempEducation([]);
-    setTempCertifications([]);
+    if (typedProfile) {
+      reset({
+        introduction: typedProfile.introduction || '',
+        education: typedProfile.education || [],
+        certifications: typedProfile.certifications || [],
+      });
+    }
     setSelectedPhoto(null);
     setPreviewUrl(null);
+    setIsEditing(false);
     onCancel?.();
   };
 
@@ -141,56 +173,56 @@ export function PrincipalProfileCard({
   };
 
   // 저장
-  const handleSave = () => {
-    const updatedData = {
-      ...formData,
-      education: tempEducation,
-      certifications: tempCertifications,
-    };
+  const onSubmit = handleSubmit((data) => {
+    // 변경된 필드만 추출 (빈 문자열 제외)
+    const changedFields: UpdatePrincipalProfileRequest = {};
     
-    // 프로필 데이터 업데이트
-    updateProfileMutation.mutate(updatedData, {
-      onSuccess: () => {
-        setIsEditing(false);
-        onSave?.();
-        // 선택된 사진이 있으면 사진도 업로드
-        if (selectedPhoto) {
-          updatePhotoMutation.mutate(selectedPhoto, {
-            onSuccess: () => {
-              setSelectedPhoto(null);
-              setPreviewUrl(null);
-            },
-          });
-        }
-      },
+    Object.keys(dirtyFields).forEach((key) => {
+      const field = key as keyof UpdatePrincipalProfileFormData;
+      const value = data[field];
+      
+      // 빈 문자열이 아닌 경우만 추가
+      if (value && value !== '') {
+        (changedFields as any)[field] = value;
+      }
     });
-  };
 
-  // 교육사항 추가
-  const addEducation = () => {
-    if (newEducation.trim()) {
-      setTempEducation([...tempEducation, newEducation.trim()]);
-      setNewEducation('');
+    // 변경된 필드가 없고 사진도 없으면 저장하지 않음
+    if (Object.keys(changedFields).length === 0 && !selectedPhoto) {
+      toast.info('변경된 내용이 없습니다.');
+      setIsEditing(false);
+      return;
     }
-  };
-
-  // 교육사항 삭제
-  const removeEducation = (index: number) => {
-    setTempEducation(tempEducation.filter((_, i) => i !== index));
-  };
-
-  // 자격증 추가
-  const addCertification = () => {
-    if (newCertification.trim()) {
-      setTempCertifications([...tempCertifications, newCertification.trim()]);
-      setNewCertification('');
+    
+    // 프로필 데이터 업데이트 (변경된 필드가 있는 경우만)
+    if (Object.keys(changedFields).length > 0) {
+      updateProfileMutation.mutate(changedFields, {
+        onSuccess: () => {
+          setIsEditing(false);
+          onSave?.();
+          // 선택된 사진이 있으면 사진도 업로드
+          if (selectedPhoto) {
+            updatePhotoMutation.mutate(selectedPhoto, {
+              onSuccess: () => {
+                setSelectedPhoto(null);
+                setPreviewUrl(null);
+              },
+            });
+          }
+        },
+      });
+    } else if (selectedPhoto) {
+      // 프로필 데이터 변경 없이 사진만 변경된 경우
+      updatePhotoMutation.mutate(selectedPhoto, {
+        onSuccess: () => {
+          setSelectedPhoto(null);
+          setPreviewUrl(null);
+          setIsEditing(false);
+          onSave?.();
+        },
+      });
     }
-  };
-
-  // 자격증 삭제
-  const removeCertification = (index: number) => {
-    setTempCertifications(tempCertifications.filter((_, i) => i !== index));
-  };
+  });
 
   // 로딩 상태
   if (profileLoading) {
@@ -391,12 +423,16 @@ export function PrincipalProfileCard({
             소개
           </h4>
           {isEditing ? (
-            <Textarea
-              value={formData.introduction || ''}
-              onChange={(e) => setFormData({ ...formData, introduction: e.target.value })}
-              placeholder="자신에 대한 소개를 작성해주세요."
-              rows={4}
-            />
+            <>
+              <Textarea
+                {...register('introduction')}
+                placeholder="자신에 대한 소개를 작성해주세요."
+                rows={4}
+              />
+              {formErrors.introduction && (
+                <p className="text-sm text-red-500">{formErrors.introduction.message}</p>
+              )}
+            </>
           ) : (
             <p className="text-gray-700 whitespace-pre-wrap">
               {typedProfile.introduction || '소개가 없습니다.'}
@@ -416,22 +452,40 @@ export function PrincipalProfileCard({
             <div className="space-y-3">
               <div className="flex gap-2">
                 <Input
-                  value={newEducation}
-                  onChange={(e) => setNewEducation(e.target.value)}
                   placeholder="교육사항을 입력하세요"
-                  onKeyPress={(e) => e.key === 'Enter' && addEducation()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const input = e.currentTarget;
+                      if (input.value.trim()) {
+                        appendEducation(input.value.trim());
+                        input.value = '';
+                      }
+                    }
+                  }}
                 />
-                <Button onClick={addEducation} size="sm">
+                <Button
+                  type="button"
+                  onClick={(e) => {
+                    const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                    if (input?.value.trim()) {
+                      appendEducation(input.value.trim());
+                      input.value = '';
+                    }
+                  }}
+                  size="sm"
+                >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
               <div className="space-y-2">
-                {tempEducation.map((education, index) => (
+                {educationFields.map((field, index) => (
                   <div key={index} className="flex items-center gap-2">
                     <Badge variant="secondary" className="flex-1">
-                      {education}
+                      {field}
                     </Badge>
                     <Button
+                      type="button"
                       onClick={() => removeEducation(index)}
                       variant="ghost"
                       size="sm"
@@ -467,22 +521,40 @@ export function PrincipalProfileCard({
             <div className="space-y-3">
               <div className="flex gap-2">
                 <Input
-                  value={newCertification}
-                  onChange={(e) => setNewCertification(e.target.value)}
                   placeholder="자격증을 입력하세요"
-                  onKeyPress={(e) => e.key === 'Enter' && addCertification()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const input = e.currentTarget;
+                      if (input.value.trim()) {
+                        appendCertification(input.value.trim());
+                        input.value = '';
+                      }
+                    }
+                  }}
                 />
-                <Button onClick={addCertification} size="sm">
+                <Button
+                  type="button"
+                  onClick={(e) => {
+                    const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                    if (input?.value.trim()) {
+                      appendCertification(input.value.trim());
+                      input.value = '';
+                    }
+                  }}
+                  size="sm"
+                >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
               <div className="space-y-2">
-                {tempCertifications.map((certification, index) => (
+                {certificationFields.map((field, index) => (
                   <div key={index} className="flex items-center gap-2">
                     <Badge variant="default" className="flex-1">
-                      {certification}
+                      {field}
                     </Badge>
                     <Button
+                      type="button"
                       onClick={() => removeCertification(index)}
                       variant="ghost"
                       size="sm"
@@ -520,7 +592,7 @@ export function PrincipalProfileCard({
               취소
             </Button>
             <Button 
-              onClick={handleSave}
+              onClick={onSubmit}
               disabled={updateProfileMutation.isPending}
             >
               <Save className="h-4 w-4 mr-2" />

@@ -1,7 +1,10 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useForm, useFieldArray } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { UpdateProfileRequest, TeacherProfileResponse } from '@/types/api/teacher';
+import { updateTeacherProfileSchema, UpdateTeacherProfileFormData } from '@/lib/schemas/teacher-profile';
 import { toast } from 'sonner';
 import { getImageUrl } from '@/utils/imageUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,16 +51,44 @@ export function TeacherProfileCard({
   
 
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<UpdateProfileRequest>({});
-  const [tempEducation, setTempEducation] = useState<string[]>([]);
-  const [tempSpecialties, setTempSpecialties] = useState<string[]>([]);
-  const [tempCertifications, setTempCertifications] = useState<string[]>([]);
-  const [newEducation, setNewEducation] = useState('');
-  const [newSpecialty, setNewSpecialty] = useState('');
-  const [newCertification, setNewCertification] = useState('');
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // React Hook Form 설정
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    formState: { dirtyFields, errors: formErrors },
+  } = useForm<UpdateTeacherProfileFormData>({
+    resolver: zodResolver(updateTeacherProfileSchema),
+    defaultValues: {
+      introduction: '',
+      yearsOfExperience: 0,
+      education: [],
+      specialties: [],
+      certifications: [],
+      availableTimes: [],
+    },
+  });
+  
+  // 배열 필드 watch
+  const educationFields = watch('education') || [];
+  const specialtyFields = watch('specialties') || [];
+  const certificationFields = watch('certifications') || [];
+  
+  // 배열 필드 관리 함수
+  const appendEducation = (value: string) => setValue('education', [...educationFields, value], { shouldDirty: true });
+  const removeEducation = (index: number) => setValue('education', educationFields.filter((_, i) => i !== index), { shouldDirty: true });
+  
+  const appendSpecialty = (value: string) => setValue('specialties', [...specialtyFields, value], { shouldDirty: true });
+  const removeSpecialty = (index: number) => setValue('specialties', specialtyFields.filter((_, i) => i !== index), { shouldDirty: true });
+  
+  const appendCertification = (value: string) => setValue('certifications', [...certificationFields, value], { shouldDirty: true });
+  const removeCertification = (index: number) => setValue('certifications', certificationFields.filter((_, i) => i !== index), { shouldDirty: true });
 
   // 특정 선생님 프로필을 조회하는 경우를 위한 상태
   // 특정 ID 조회 기능은 학생용 컴포넌트로 분리됨
@@ -82,33 +113,41 @@ export function TeacherProfileCard({
   // 2. 특정 선생님을 조회하는 경우 (다른 사람의 프로필)
   // 3. 현재 사용자가 선생님이 아닌 경우
   const canEdit = isEditable && isCurrentTeacher;
+  
+  // API에서 가져온 데이터로 폼 초기화
+  useEffect(() => {
+    if (currentProfile) {
+      reset({
+        introduction: currentProfile.introduction || '',
+        yearsOfExperience: currentProfile.yearsOfExperience || 0,
+        education: currentProfile.education || [],
+        specialties: currentProfile.specialties || [],
+        certifications: currentProfile.certifications || [],
+        availableTimes: currentProfile.availableTimes || [],
+      });
+    }
+  }, [currentProfile, reset]);
 
   // 편집 모드 시작
   const handleEdit = () => {
-    if (!currentProfile) return;
-    
-    setFormData({
-      introduction: currentProfile.introduction || '',
-      yearsOfExperience: currentProfile.yearsOfExperience || 0,
-    });
-    setTempEducation(currentProfile.education || []);
-    setTempSpecialties(currentProfile.specialties || []);
-    setTempCertifications(currentProfile.certifications || []);
     setIsEditing(true);
   };
 
   // 편집 취소
   const handleCancel = () => {
-    setIsEditing(false);
-    setFormData({});
-    setTempEducation([]);
-    setTempSpecialties([]);
-    setTempCertifications([]);
-    setNewEducation('');
-    setNewSpecialty('');
-    setNewCertification('');
+    if (currentProfile) {
+      reset({
+        introduction: currentProfile.introduction || '',
+        yearsOfExperience: currentProfile.yearsOfExperience || 0,
+        education: currentProfile.education || [],
+        specialties: currentProfile.specialties || [],
+        certifications: currentProfile.certifications || [],
+        availableTimes: currentProfile.availableTimes || [],
+      });
+    }
     setSelectedPhoto(null);
     setPreviewUrl(null);
+    setIsEditing(false);
     onCancel?.();
   };
 
@@ -160,70 +199,58 @@ export function TeacherProfileCard({
   };
 
   // 저장
-  const handleSave = () => {
-    const updatedData = {
-      ...formData,
-      education: tempEducation,
-      specialties: tempSpecialties,
-      certifications: tempCertifications,
-    };
+  const onSubmit = handleSubmit((data) => {
+    // 변경된 필드만 추출 (빈 문자열 제외)
+    const changedFields: UpdateProfileRequest = {};
     
-    // 프로필 데이터 업데이트
-    updateProfileMutation.mutate(updatedData, {
-      onSuccess: () => {
-        setIsEditing(false);
-        onSave?.();
-        // 선택된 사진이 있으면 사진도 업로드
-        if (selectedPhoto) {
-          updatePhotoMutation.mutate(selectedPhoto, {
-            onSuccess: () => {
-              setSelectedPhoto(null);
-              setPreviewUrl(null);
-            },
-          });
-        }
-      },
+    Object.keys(dirtyFields).forEach((key) => {
+      const field = key as keyof UpdateTeacherProfileFormData;
+      const value = data[field];
+      
+      // 빈 문자열이 아닌 경우만 추가
+      if (value && value !== '') {
+        (changedFields as any)[field] = value;
+      }
     });
-  };
 
-  // 교육사항 추가
-  const addEducation = () => {
-    if (newEducation.trim()) {
-      setTempEducation([...tempEducation, newEducation.trim()]);
-      setNewEducation('');
+    // 변경된 필드가 없고 사진도 없으면 저장하지 않음
+    if (Object.keys(changedFields).length === 0 && !selectedPhoto) {
+      toast.info('변경된 내용이 없습니다.');
+      setIsEditing(false);
+      return;
     }
-  };
-
-  // 교육사항 삭제
-  const removeEducation = (index: number) => {
-    setTempEducation(tempEducation.filter((_, i) => i !== index));
-  };
-
-  // 전문 분야 추가
-  const addSpecialty = () => {
-    if (newSpecialty.trim()) {
-      setTempSpecialties([...tempSpecialties, newSpecialty.trim()]);
-      setNewSpecialty('');
+    
+    // 프로필 데이터 업데이트 (변경된 필드가 있는 경우만)
+    if (Object.keys(changedFields).length > 0) {
+      updateProfileMutation.mutate(changedFields, {
+        onSuccess: () => {
+          setIsEditing(false);
+          onSave?.();
+          // 선택된 사진이 있으면 사진도 업로드
+          if (selectedPhoto) {
+            updatePhotoMutation.mutate(selectedPhoto, {
+              onSuccess: () => {
+                setSelectedPhoto(null);
+                setPreviewUrl(null);
+              },
+            });
+          }
+        },
+      });
+    } else if (selectedPhoto) {
+      // 프로필 데이터 변경 없이 사진만 변경된 경우
+      updatePhotoMutation.mutate(selectedPhoto, {
+        onSuccess: () => {
+          setSelectedPhoto(null);
+          setPreviewUrl(null);
+          setIsEditing(false);
+          onSave?.();
+        },
+      });
     }
-  };
+  });
 
-  // 전문 분야 삭제
-  const removeSpecialty = (index: number) => {
-    setTempSpecialties(tempSpecialties.filter((_, i) => i !== index));
-  };
 
-  // 자격증 추가
-  const addCertification = () => {
-    if (newCertification.trim()) {
-      setTempCertifications([...tempCertifications, newCertification.trim()]);
-      setNewCertification('');
-    }
-  };
-
-  // 자격증 삭제
-  const removeCertification = (index: number) => {
-    setTempCertifications(tempCertifications.filter((_, i) => i !== index));
-  };
 
   // 로딩 상태
   if (profileLoading) {
@@ -440,12 +467,16 @@ export function TeacherProfileCard({
             소개
           </h4>
           {isEditing ? (
-            <Textarea
-              value={formData.introduction || ''}
-              onChange={(e) => setFormData({ ...formData, introduction: e.target.value })}
-              placeholder="자신을 소개해주세요..."
-              rows={3}
-            />
+            <>
+              <Textarea
+                {...register('introduction')}
+                placeholder="자신을 소개해주세요..."
+                rows={3}
+              />
+              {formErrors.introduction && (
+                <p className="text-sm text-red-500">{formErrors.introduction.message}</p>
+              )}
+            </>
           ) : (
             <p className="text-gray-700 whitespace-pre-line">
               {currentProfile.introduction || '소개가 없습니다.'}
@@ -462,13 +493,17 @@ export function TeacherProfileCard({
             교습 경력
           </h4>
           {isEditing ? (
-            <Input
-              type="number"
-              value={formData.yearsOfExperience || ''}
-              onChange={(e) => setFormData({ ...formData, yearsOfExperience: parseInt(e.target.value) || 0 })}
-              placeholder="경력 연수"
-              className="w-32"
-            />
+            <>
+              <Input
+                type="number"
+                {...register('yearsOfExperience', { valueAsNumber: true })}
+                placeholder="경력 연수"
+                className="w-32"
+              />
+              {formErrors.yearsOfExperience && (
+                <p className="text-sm text-red-500">{formErrors.yearsOfExperience.message}</p>
+              )}
+            </>
           ) : (
             <p className="text-gray-700">
               {currentProfile.yearsOfExperience ? `${currentProfile.yearsOfExperience}년` : '경력 정보 없음'}
@@ -488,25 +523,38 @@ export function TeacherProfileCard({
             <div className="space-y-2">
               <div className="flex gap-2">
                 <Input
-                  value={newEducation}
-                  onChange={(e) => setNewEducation(e.target.value)}
                   placeholder="학력/경력 추가"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
-                      addEducation();
+                      const input = e.currentTarget;
+                      if (input.value.trim()) {
+                        appendEducation(input.value.trim());
+                        input.value = '';
+                      }
                     }
                   }}
                 />
-                <Button onClick={addEducation} size="sm">
+                <Button 
+                  type="button"
+                  onClick={(e) => {
+                    const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                    if (input?.value.trim()) {
+                      appendEducation(input.value.trim());
+                      input.value = '';
+                    }
+                  }}
+                  size="sm"
+                >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
               <div className="flex flex-wrap gap-2">
-                {tempEducation.map((item, index) => (
+                {educationFields.map((field, index) => (
                   <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                    {item}
+                    {field}
                     <button
+                      type="button"
                       onClick={() => removeEducation(index)}
                       className="ml-1 hover:text-red-500"
                     >
@@ -543,25 +591,38 @@ export function TeacherProfileCard({
             <div className="space-y-2">
               <div className="flex gap-2">
                 <Input
-                  value={newSpecialty}
-                  onChange={(e) => setNewSpecialty(e.target.value)}
                   placeholder="전문 분야 추가"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
-                      addSpecialty();
+                      const input = e.currentTarget;
+                      if (input.value.trim()) {
+                        appendSpecialty(input.value.trim());
+                        input.value = '';
+                      }
                     }
                   }}
                 />
-                <Button onClick={addSpecialty} size="sm">
+                <Button
+                  type="button"
+                  onClick={(e) => {
+                    const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                    if (input?.value.trim()) {
+                      appendSpecialty(input.value.trim());
+                      input.value = '';
+                    }
+                  }}
+                  size="sm"
+                >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
               <div className="flex flex-wrap gap-2">
-                {tempSpecialties.map((item, index) => (
+                {specialtyFields.map((field, index) => (
                   <Badge key={index} variant="outline" className="flex items-center gap-1">
-                    {item}
+                    {field}
                     <button
+                      type="button"
                       onClick={() => removeSpecialty(index)}
                       className="ml-1 hover:text-red-500"
                     >
@@ -598,25 +659,38 @@ export function TeacherProfileCard({
             <div className="space-y-2">
               <div className="flex gap-2">
                 <Input
-                  value={newCertification}
-                  onChange={(e) => setNewCertification(e.target.value)}
                   placeholder="자격증 추가"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
-                      addCertification();
+                      const input = e.currentTarget;
+                      if (input.value.trim()) {
+                        appendCertification(input.value.trim());
+                        input.value = '';
+                      }
                     }
                   }}
                 />
-                <Button onClick={addCertification} size="sm">
+                <Button
+                  type="button"
+                  onClick={(e) => {
+                    const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                    if (input?.value.trim()) {
+                      appendCertification(input.value.trim());
+                      input.value = '';
+                    }
+                  }}
+                  size="sm"
+                >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
               <div className="flex flex-wrap gap-2">
-                {tempCertifications.map((item, index) => (
+                {certificationFields.map((field, index) => (
                   <Badge key={index} variant="default" className="flex items-center gap-1">
-                    {item}
+                    {field}
                     <button
+                      type="button"
                       onClick={() => removeCertification(index)}
                       className="ml-1 hover:text-red-500"
                     >
@@ -645,7 +719,7 @@ export function TeacherProfileCard({
         {isEditing && canEdit && (
           <div className="flex gap-2 pt-4">
             <Button 
-              onClick={handleSave} 
+              onClick={onSubmit} 
               disabled={updateProfileMutation.isPending || updatePhotoMutation.isPending}
               className="flex-1"
             >
