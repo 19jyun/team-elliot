@@ -187,7 +187,7 @@ export class SocketQuerySync {
    * @param predicate 쿼리 키 필터 함수
    */
   invalidateQueriesByPredicate(
-    predicate: (query: { queryKey: unknown[] }) => boolean
+    predicate: (query: { queryKey: readonly unknown[] }) => boolean
   ) {
     this.queryClient.invalidateQueries({ predicate });
   }
