@@ -1,6 +1,7 @@
-import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
+import { CameraResultType, CameraSource } from "@capacitor/camera";
 import { Capacitor } from "@capacitor/core";
 import type { Photo, ImageOptions } from "@capacitor/camera";
+import { cameraAdapter } from "./cameraAdapter";
 
 /**
  * 카메라로 사진 촬영
@@ -19,7 +20,7 @@ export async function takePicture(
   };
 
   try {
-    return await Camera.getPhoto(defaultOptions);
+    return await cameraAdapter.getPhoto(defaultOptions);
   } catch (error) {
     console.error("사진 촬영 실패:", error);
     throw new Error("사진 촬영에 실패했습니다.");
@@ -41,7 +42,7 @@ export async function pickImageFromGallery(
   };
 
   try {
-    return await Camera.getPhoto(defaultOptions);
+    return await cameraAdapter.getPhoto(defaultOptions);
   } catch (error) {
     console.error("갤러리 이미지 선택 실패:", error);
     throw new Error("이미지 선택에 실패했습니다.");
@@ -67,7 +68,7 @@ export async function pickImageWithPrompt(
   };
 
   try {
-    return await Camera.getPhoto(defaultOptions);
+    return await cameraAdapter.getPhoto(defaultOptions);
   } catch (error) {
     console.error("이미지 선택 실패:", error);
     throw new Error("이미지 선택에 실패했습니다.");
@@ -81,7 +82,7 @@ export async function getImageAsBase64(
   source: CameraSource,
   options?: Partial<ImageOptions>
 ): Promise<Photo> {
-  return await Camera.getPhoto({
+  return await cameraAdapter.getPhoto({
     quality: 80,
     resultType: CameraResultType.Base64,
     source,
@@ -93,10 +94,5 @@ export async function getImageAsBase64(
  * 플랫폼별 Camera 지원 여부 확인
  */
 export function isCameraSupported(): boolean {
-  return (
-    Capacitor.isNativePlatform() ||
-    (typeof navigator !== "undefined" &&
-      "mediaDevices" in navigator &&
-      "getUserMedia" in navigator.mediaDevices)
-  );
+  return cameraAdapter.isSupported();
 }

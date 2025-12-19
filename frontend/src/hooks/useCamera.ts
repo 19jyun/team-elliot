@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { CameraSource } from "@capacitor/camera";
+import { CameraSource, CameraResultType } from "@capacitor/camera";
 import type { Photo, ImageOptions } from "@capacitor/camera";
 import {
   takePicture,
@@ -11,9 +11,30 @@ import {
   checkCameraPermission,
   requestCameraPermission,
 } from "@/capacitor/permissions/camera";
-import { photoToProcessedImage } from "@/capacitor/camera/imageProcessor";
+import {
+  photoToProcessedImage,
+  validateProfilePhoto,
+  processedImageToFile,
+} from "@/capacitor/camera/imageProcessor";
 import type { ProcessedImage } from "@/capacitor/camera/types";
 import { toast } from "sonner";
+
+/**
+ * 프로필 사진용 사전 설정된 옵션
+ * Backend 요구사항 준수:
+ * - 최대 크기: 5MB
+ * - 허용 포맷: jpeg, png, gif, webp
+ * - 권장 크기: 800x800
+ */
+export const PROFILE_PHOTO_OPTIONS: Partial<ImageOptions> = {
+  quality: 90,
+  allowEditing: true, // 사용자가 크롭 가능
+  resultType: CameraResultType.Uri,
+  correctOrientation: true,
+  saveToGallery: false,
+  width: 800, // 최대 너비 제한
+  height: 800, // 최대 높이 제한
+};
 
 interface UseCameraOptions {
   /**
@@ -60,6 +81,27 @@ interface UseCameraReturn {
   ) => Promise<ProcessedImage | null>;
 
   /**
+   * 프로필 사진용 카메라 촬영 (검증 포함)
+   */
+  captureProfilePhoto: (
+    options?: Partial<ImageOptions>
+  ) => Promise<ProcessedImage | null>;
+
+  /**
+   * 프로필 사진용 갤러리 선택 (검증 포함)
+   */
+  pickProfilePhotoFromGallery: (
+    options?: Partial<ImageOptions>
+  ) => Promise<ProcessedImage | null>;
+
+  /**
+   * 프로필 사진용 프롬프트 선택 (검증 포함)
+   */
+  pickProfilePhotoWithPrompt: (
+    options?: Partial<ImageOptions>
+  ) => Promise<ProcessedImage | null>;
+
+  /**
    * 카메라 지원 여부
    */
   isSupported: boolean;
@@ -83,6 +125,11 @@ interface UseCameraReturn {
    * 선택된 이미지 초기화
    */
   clearImage: () => void;
+
+  /**
+   * 선택된 이미지를 File 객체로 변환 (업로드용)
+   */
+  getImageAsFile: (filename?: string) => Promise<File | null>;
 }
 
 /**
@@ -132,7 +179,15 @@ export function useCamera(options: UseCameraOptions = {}): UseCameraReturn {
   );
 
   const handleSuccess = useCallback(
-    (photo: Photo) => {
+    (photo: Photo, validateForProfile: boolean = false) => {
+      // 프로필 사진 검증 (옵션)
+      if (validateForProfile) {
+        const validation = validateProfilePhoto(photo);
+        if (!validation.valid) {
+          throw new Error(validation.error);
+        }
+      }
+
       const processed = photoToProcessedImage(photo);
       setSelectedImage(processed);
       onSuccess?.(processed);
@@ -142,7 +197,9 @@ export function useCamera(options: UseCameraOptions = {}): UseCameraReturn {
   );
 
   const capture = useCallback(
-    async (imageOptions?: Partial<ImageOptions>): Promise<ProcessedImage | null> => {
+    async (
+      imageOptions?: Partial<ImageOptions>
+    ): Promise<ProcessedImage | null> => {
       setIsLoading(true);
       setError(null);
 
@@ -171,7 +228,9 @@ export function useCamera(options: UseCameraOptions = {}): UseCameraReturn {
   );
 
   const pickFromGallery = useCallback(
-    async (imageOptions?: Partial<ImageOptions>): Promise<ProcessedImage | null> => {
+    async (
+      imageOptions?: Partial<ImageOptions>
+    ): Promise<ProcessedImage | null> => {
       setIsLoading(true);
       setError(null);
 
@@ -189,7 +248,9 @@ export function useCamera(options: UseCameraOptions = {}): UseCameraReturn {
   );
 
   const pickWithPrompt = useCallback(
-    async (imageOptions?: Partial<ImageOptions>): Promise<ProcessedImage | null> => {
+    async (
+      imageOptions?: Partial<ImageOptions>
+    ): Promise<ProcessedImage | null> => {
       setIsLoading(true);
       setError(null);
 
@@ -211,14 +272,120 @@ export function useCamera(options: UseCameraOptions = {}): UseCameraReturn {
     setError(null);
   }, []);
 
+  // 프로필 사진용 특화 함수들
+  const captureProfilePhoto = useCallback(
+    async (
+      additionalOptions?: Partial<ImageOptions>
+    ): Promise<ProcessedImage | null> => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        // 권한 확인
+        if (autoRequestPermission) {
+          const permission = await checkCameraPermission();
+          if (permission !== "granted") {
+            const requested = await requestCameraPermission();
+            if (requested !== "granted") {
+              throw new Error("카메라 권한이 필요합니다.");
+            }
+          }
+        }
+
+        const photo = await takePicture({
+          ...PROFILE_PHOTO_OPTIONS,
+          ...additionalOptions,
+        });
+        return handleSuccess(photo, true); // 프로필 사진 검증 활성화
+      } catch (err) {
+        handleError(err as Error);
+        return null;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [autoRequestPermission, handleError, handleSuccess]
+  );
+
+  const pickProfilePhotoFromGallery = useCallback(
+    async (
+      additionalOptions?: Partial<ImageOptions>
+    ): Promise<ProcessedImage | null> => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const photo = await pickImageFromGallery({
+          ...PROFILE_PHOTO_OPTIONS,
+          ...additionalOptions,
+        });
+        return handleSuccess(photo, true); // 프로필 사진 검증 활성화
+      } catch (err) {
+        handleError(err as Error);
+        return null;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [handleError, handleSuccess]
+  );
+
+  const pickProfilePhotoWithPrompt = useCallback(
+    async (
+      additionalOptions?: Partial<ImageOptions>
+    ): Promise<ProcessedImage | null> => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const photo = await pickImageWithPrompt({
+          ...PROFILE_PHOTO_OPTIONS,
+          promptLabelHeader: "프로필 사진",
+          promptLabelCancel: "취소",
+          promptLabelPhoto: "갤러리에서 선택",
+          promptLabelPicture: "사진 촬영",
+          ...additionalOptions,
+        });
+        return handleSuccess(photo, true); // 프로필 사진 검증 활성화
+      } catch (err) {
+        handleError(err as Error);
+        return null;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [handleError, handleSuccess]
+  );
+
+  const getImageAsFile = useCallback(
+    async (filename?: string): Promise<File | null> => {
+      if (!selectedImage) {
+        return null;
+      }
+
+      try {
+        return await processedImageToFile(selectedImage, filename);
+      } catch (err) {
+        console.error("이미지를 File로 변환 실패:", err);
+        handleError(err as Error);
+        return null;
+      }
+    },
+    [selectedImage, handleError]
+  );
+
   return {
     capture,
     pickFromGallery,
     pickWithPrompt,
+    captureProfilePhoto,
+    pickProfilePhotoFromGallery,
+    pickProfilePhotoWithPrompt,
     isSupported: isCameraSupported(),
     isLoading,
     error,
     selectedImage,
     clearImage,
+    getImageAsFile,
   };
 }
